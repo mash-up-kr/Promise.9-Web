@@ -1,5 +1,23 @@
 {
   "enabledPlugins": {
     "expo@claude-plugins-official": true
+  },
+  "includeCoAuthoredBy": false,
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm run:*)",
+      "Bash(pnpm exec:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx expo:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git show:*)"
+    ]
   }
 }
