@@ -21,6 +21,7 @@ https://docs.expo.dev/versions/v56.0.0/
 - 앱·웹 상세: docs/conventions/app-web.md
 - 크롬 익스텐션 상세: docs/conventions/extension.md
 - 폴더 구조(기능 기반 + 공유 코어): docs/conventions/structure.md
+- 테스트(TDD, unit·integration): docs/conventions/testing.md
 
 ## Skills
 
