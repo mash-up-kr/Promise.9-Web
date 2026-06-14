@@ -8,6 +8,7 @@
       "Bash(pnpm install)",
       "Bash(pnpm add:*)",
       "Bash(pnpm lint)",
+      "Bash(pnpm test:*)",
       "Bash(pnpm run:*)",
       "Bash(pnpm exec:*)",
       "Bash(npx tsc:*)",

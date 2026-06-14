@@ -26,6 +26,7 @@ https://docs.expo.dev/versions/v56.0.0/
 ## Skills
 
 - `/check-dup` — 새 코드 작성 전 중복 탐지 (가장 자주 씀)
+- `/new-test` — 테스트 스캐폴드 (TDD red 단계)
 - `/new-component` — NativeWind 컴포넌트 스캐폴드
 - `/new-screen` — expo-router 화면 추가
 - `good-code` — 코드 작성/리뷰 시 품질 4원칙 (자동 트리거)
