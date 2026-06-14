@@ -33,3 +33,4 @@ https://docs.expo.dev/versions/v56.0.0/
 - `good-debug` — 버그/에러 대응 시 디버깅 절차 (자동 트리거)
 - `/commit` — 관심사별 atomic 커밋
 - `/pr` — 템플릿 기반 PR 생성
+- `/new-issue` — GitHub MCP 로 이슈 생성
