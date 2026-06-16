@@ -11,6 +11,7 @@
 5. 스타일은 NativeWind `className`. inline StyleSheet 는 동적 값 등 불가피할 때만.
 6. 커밋 메시지는 Conventional Commits (`feat:`, `fix:`, `chore:` ...). 본문 한국어 OK.
 7. **테스트 먼저 (TDD).** 새 동작·기능 코드는 **실패하는 테스트를 먼저** 쓴다(red) → 통과시키는 **최소** 구현(green) → 정리(refactor). 구현 코드를 먼저 짜지 않는다. 상세·패턴: docs/conventions/testing.md. (E2E 는 별도 담당 — unit·integration 만.)
+8. **Git 컨벤션 (브랜치 · 커밋 · PR · 이슈) 단일 출처는 `docs/conventions/git.md`.** type 은 소문자(Conventional Commits).
 
 ---
 

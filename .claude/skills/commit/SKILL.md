@@ -16,19 +16,14 @@ description: |
    - 예: 모델/타입 변경, 비즈니스 로직, UI 컴포넌트, 스타일, 테스트, 설정 등
    - 서로 의존하는 변경이라도 관심사가 다르면 별도 커밋으로 분리한다.
 3. **현재 브랜치가 `main` 이면 커밋 전에 작업 브랜치부터 생성**한다 (main 직접 커밋 금지).
+   작명 패턴: `<type>/<issue#>-<kebab-slug>` (예: `feat/2-init-setup`).
 4. 계획을 보여주지 않고, 그룹별로 관련 파일만 staging하여 순서대로 **즉시 커밋**한다.
 5. 커밋 후 push는 하지 않는다.
 
-## 커밋 메시지 규칙
+## 커밋 메시지
 
-```
-<type>: <한 줄 요약 (한글)>
+- 형식: `<type>(<scope>): <요약>` + 필요 시 본문 bullet (한글)
+- type 소문자 (Conventional Commits), scope 선택
+- **Co-authored-by 줄 절대 포함하지 않는다**
 
-- 세부 내용 1
-- 세부 내용 2
-```
-
-- type은 영어: `feat`, `fix`, `refactor`, `chore`, `docs`, `style`, `test`, `ci`
-- 요약과 세부 내용은 **한글**로 작성
-- 변경 사항이 단순하면 bullet point 생략 가능
-- **Co-authored-by 줄은 절대 포함하지 않는다**
+상세 컨벤션 (타입 집합 · scope 후보 · 예시): `docs/conventions/git.md`
