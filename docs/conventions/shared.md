@@ -26,6 +26,13 @@
 - "왜"를 적는다. "무엇"은 코드로 드러나게 한다.
 - 주변 코드의 주석 밀도·언어를 따른다. 불필요한 주석 금지.
 
+## Lint · Format
+
+- **Biome 단일 도구**로 lint + format + import 정리. ESLint/Prettier 사용하지 않는다.
+- `pnpm check` — 검증만 (CI/리뷰 전).
+- `pnpm check:fix` — 자동 수정 + 포맷.
+- 설정·룰셋: `biome.jsonc` 참고.
+
 ## 금지
 - `console.log` 커밋 금지(디버깅 후 제거).
 - 주석처리된 죽은 코드 커밋 금지.

@@ -1,0 +1,314 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
+
+  // ======================
+  // Biome 2.x Domains 설정 (프레임워크별 규칙 자동 활성화)
+  // ======================
+  // React 프로젝트에 최적화된 린트 규칙 세트 활성화
+  // - useExhaustiveDependencies, noChildrenProp, useJsxKeyInIterable 등 자동 적용
+  // - 참고: https://biomejs.dev/linter/domains/
+
+  // ======================
+  // 버전 관리 시스템(VCS) 설정
+  // ======================
+  "vcs": {
+    // VCS 통합 기능 활성화 - Biome이 버전 관리 시스템과 연동하여 작업할지 여부
+    "enabled": true,
+    // 사용할 VCS 클라이언트 종류 - 현재는 "git"만 지원
+    "clientKind": "git",
+    // VCS 무시 파일 사용 여부 - .gitignore, .ignore 파일에 명시된 파일들을 자동으로 무시
+    "useIgnoreFile": true
+  },
+
+  // ======================
+  // 파일 처리 설정
+  // ======================
+  "files": {
+    // 알 수 없는 파일 형식 무시 여부 - Biome이 처리할 수 없는 파일에 대한 진단 메시지를 표시하지 않음
+    "ignoreUnknown": false,
+    // 처리할 파일 패턴 지정 - 글로브 패턴을 사용하여 포함/제외할 파일과 폴더 정의
+    "includes": [
+      "**", // 모든 파일과 폴더를 포함
+      "!**/dist", // dist 폴더와 그 하위 파일들은 제외
+      "!**/build", // build 폴더와 그 하위 파일들은 제외
+      "!**/coverage", // coverage 폴더와 그 하위 파일들은 제외
+      "!**/node_modules", // node_modules 폴더와 그 하위 파일들은 제외
+      "!**/.expo", // Expo 캐시/자동 생성 타입 폴더 제외
+      "!**/assets", // Expo 가 관리하는 자산 폴더 제외 (icon.json 등 재생성 충돌 회피)
+      "!**/pnpm-lock.yaml", // pnpm 잠금 파일 제외
+      "!**/yarn.lock", // yarn 잠금 파일 제외
+      "!**/package-lock.json", // npm 잠금 파일 제외
+      "!**/routeTree.gen.ts", // 자동 생성된 라우트 트리 파일 제외
+      "!**/*.d.ts", // 타입 선언 파일 일괄 제외 (자동 생성·declaration 위주)
+      "!**/public" // public 폴더와 그 하위 파일들은 제외
+    ]
+  },
+
+  // ======================
+  // 포매터 설정
+  // ======================
+  "formatter": {
+    // 포매터 기능 활성화 - 코드 자동 포맷팅 기능 사용 여부
+    "enabled": true,
+    // 오류가 있는 문서 포맷팅 허용 여부 - 구문 오류가 있어도 포맷팅을 시도할지 여부
+    "formatWithErrors": false,
+    // 들여쓰기 스타일 - "space"(스페이스) 또는 "tab"(탭) 중 선택
+    "indentStyle": "space",
+    // 들여쓰기 너비 - 몇 개의 공백 문자를 사용할지 지정
+    "indentWidth": 2,
+    // 줄 끝 문자 유형 - "lf"(Unix), "crlf"(Windows), "cr"(Mac) 중 선택
+    "lineEnding": "lf",
+    // 한 줄 최대 문자 수 - 줄 바꿈의 기준이 되는 문자 수
+    "lineWidth": 80,
+    // HTML 속성 위치 스타일 - "auto"(자동) 또는 "multiline"(다중 라인) 중 선택
+    "attributePosition": "auto",
+    // 괄호 내부 공백 여부 - 중괄호 안에 공백을 추가할지 여부
+    "bracketSpacing": true,
+    // 배열/객체 확장 스타일 - "auto"(자동), "always"(항상), "never"(절대) 중 선택
+    "expand": "auto"
+  },
+
+  // ======================
+  // CSS 설정
+  // ======================
+  "css": {
+    // CSS 린터 설정
+    "linter": {
+      // CSS 린터 비활성화 - Tailwind CSS의 특수 지시어(@theme, @apply 등)와 충돌 방지
+      "enabled": false
+    }
+  },
+
+  // ======================
+  // 린터 설정 (사용자 요구사항에 맞춰 정밀하게 조정)
+  // ======================
+  "linter": {
+    // 린터 기능 활성화 - 코드 품질 검사 기능 사용 여부
+    "enabled": true,
+
+    // ======================
+    // Domains 설정 (Biome 2.x 신기능)
+    // 프레임워크별 권장 규칙 자동 활성화
+    // ======================
+    "domains": {
+      // React 도메인 - React 관련 규칙 자동 적용
+      // - useExhaustiveDependencies, noChildrenProp 등 포함
+      // - "recommended": 권장 규칙만, "all": 모든 규칙
+      "react": "recommended"
+    },
+
+    // 린터 규칙 설정
+    "rules": {
+      // 권장 규칙 활성화 - 모든 그룹의 권장 규칙을 활성화
+      "recommended": true,
+
+      // ======================
+      // Nursery 규칙 그룹
+      // ======================
+      "nursery": {
+        // CSS 유틸리티 클래스 정렬 (Tailwind CSS 스타일)
+        "useSortedClasses": {
+          "level": "error",
+          "fix": "safe",
+          "options": {
+            "attributes": ["class", "className"],
+            "functions": [
+              "clsx",
+              "cva",
+              "cn",
+              "tw",
+              "twMerge",
+              "twJoin",
+              "classNames"
+            ]
+          }
+        }
+      },
+
+      // ======================
+      // 복잡성 관련 규칙 그룹 - 코드 복잡성을 줄이기 위한 규칙
+      // ======================
+      "complexity": {
+        // static only class 사용 금지 해제
+        "noStaticOnlyClass": "off"
+      },
+
+      // ======================
+      // 정확성 관련 규칙 그룹 - 잘못된 코드나 무용한 코드를 탐지
+      // ======================
+      "correctness": {
+        // 사용하지 않는 import 문 제거 - 오류로 처리하여 자동 삭제
+        // level: "error"는 자동으로 fix가 적용되어 unused import를 삭제함
+        "noUnusedImports": {
+          "level": "error",
+          "fix": "safe"
+        },
+
+        // 사용하지 않는 변수 감지 - 경고로 처리하여 자동 삭제하지 않음
+        // level: "warn"은 경고만 표시하고 자동 삭제하지 않음
+        // fix: "none"으로 설정하여 코드 수정 제안을 비활성화
+        "noUnusedVariables": {
+          "level": "warn",
+          "fix": "none"
+        },
+
+        // 사용하지 않는 함수 매개변수 감지 - 경고로 처리하여 자동 삭제하지 않음
+        // level: "warn"은 경고만 표시하고 자동 삭제하지 않음
+        // fix: "none"으로 설정하여 코드 수정 제안을 비활성화
+        "noUnusedFunctionParameters": {
+          "level": "warn",
+          "fix": "none"
+        },
+
+        // 선언되지 않은 변수 사용 감지 - 경고처리
+        "noUndeclaredVariables": "warn",
+
+        // React Hook 의존성 검사
+        // - React 19.2의 useEffectEvent를 stable hook으로 설정
+        // - useEffectEvent 반환값은 안정적인 참조를 가지므로 의존성 배열에서 제외 가능
+        "useExhaustiveDependencies": {
+          "level": "error",
+          "options": {
+            "hooks": [
+              {
+                "name": "useEffectEvent",
+                "stableResult": true
+              }
+            ]
+          }
+        },
+
+        // 동일한 ID 사용 검사 - 동적 컴포넌트에서 빈번하게 발생하므로 경고로 완화
+        "useUniqueElementIds": "warn"
+      },
+
+      // ======================
+      // 의심스러운 코드 관련 규칙 그룹 - 잘못될 가능성이 있는 코드를 탐지
+      // ======================
+      "suspicious": {
+        // debugger 문 사용 금지 - 오류로 처리
+        "noDebugger": "error",
+
+        // console 사용 감지 - 경고로 처리하되 특정 메서드는 허용
+        // options.allow 배열을 통해 디버깅/로깅용 console 메서드들을 허용
+        // 이렇게 하면 console.log, console.info, console.warn, console.error는 허용되고
+        // 다른 console 메서드들(console.dir, console.table 등)만 경고 표시
+        "noConsole": {
+          "level": "warn",
+          "fix": "none",
+          "options": {
+            "allow": ["log", "info", "warn", "error"]
+          }
+        },
+
+        // var 키워드 사용 금지 - 오류로 처리
+        "noVar": "error",
+
+        // any 타입 사용 — 경고 (shared.md 컨벤션과 정렬: any 금지)
+        "noExplicitAny": "warn",
+
+        // 배열 인덱스를 key로 사용 가능하도록 허용
+        "noArrayIndexKey": "off"
+      },
+
+      // ======================
+      // 코드 스타일 관련 규칙 그룹 - 일관된 코딩 스타일을 강제
+      // ======================
+      "style": {
+        // const 키워드 사용 강제 - 재할당되지 않는 변수는 const로 선언
+        "useConst": "error",
+
+        // Non-null assertion (!) 사용 허용 - 명확하게 존재하는 값에 대해서만 신중하게 사용할것
+        "noNonNullAssertion": "off"
+      },
+
+      // ======================
+      // 접근성(a11y) 관련 규칙 그룹 - 웹 접근성 검사
+      // ======================
+      "a11y": {
+        // 정적 요소에 인터랙션 핸들러 사용 - div/span 등에 onClick 허용
+        // 모달 백드롭, 사이드바 오버레이 등 UI 패턴에서 빈번히 사용됨
+        // div 등이 이벤트 핸들러를 가지고 있는 경우 경고 방지
+        "noStaticElementInteractions": "off",
+
+        // 클릭 이벤트에 키보드 이벤트 동반 요구 - 경고로 완화
+        // 마우스 전용 인터랙션(드래그, 호버 메뉴 등)에서 불필요한 경고 방지
+        "useKeyWithClickEvents": "off",
+
+        // SVG에 title 요소 요구 - 장식용 아이콘에서 빈번히 발생
+        // 의미있는 SVG에만 aria-label 또는 title 사용 권장
+        "noSvgWithoutTitle": "off"
+      }
+    }
+  },
+
+  // ======================
+  // Assist 설정 (Import 정리 기능)
+  // ======================
+  "assist": {
+    // Assist 기능 활성화 - 코드 리팩토링 지원 기능 사용 여부
+    "enabled": true,
+    // 실행할 액션 설정
+    "actions": {
+      // 소스 코드 관련 액션
+      "source": {
+        // Import 문 자동 정리 - 저장 시 import 문을 자동으로 정렬하고 정리
+        "organizeImports": "on"
+      }
+    }
+  },
+
+  // ======================
+  // JavaScript 언어별 특화 설정
+  // ======================
+  "javascript": {
+    // 전역 변수 선언 - auto-import로 주입되는 전역 변수
+    "globals": ["dev"],
+    // JavaScript 포매터 설정
+    "formatter": {
+      // 문자열 따옴표 스타일 - "single"(작은따옴표) 또는 "double"(큰따옴표) 중 선택
+      "quoteStyle": "double",
+      // JSX 속성 따옴표 스타일 - JSX 요소의 속성값에 사용할 따옴표 스타일
+      "jsxQuoteStyle": "double",
+      // 객체 속성 따옴표 규칙 - "asNeeded"(필요시만) 또는 "preserve"(보존) 중 선택
+      "quoteProperties": "asNeeded",
+      // 후행 쉼표 규칙 - "all"(모든 곳), "es5"(ES5 지원), "none"(사용 안 함) 중 선택
+      "trailingCommas": "all",
+      // 세미콜론 사용 규칙 - "always"(항상) 또는 "asNeeded"(필요시만) 중 선택
+      "semicolons": "always",
+      // 화살표 함수 괄호 규칙 - "always"(항상) 또는 "asNeeded"(필요시만) 중 선택
+      "arrowParentheses": "always",
+      // JSX 요소 닫는 괄호 위치 - 같은 줄에 배치할지 여부
+      "bracketSameLine": false,
+      // 중괄호 내부 공백 여부 - JavaScript 객체와 배열의 중괄호 내부 공백 처리
+      "bracketSpacing": true,
+      // JSX 속성 위치 스타일 - "auto"(자동) 또는 "multiline"(다중 라인) 중 선택
+      "attributePosition": "auto",
+      // 배열/객체 확장 스타일 - JavaScript 리터럴의 다중 라인 포맷팅 규칙
+      "expand": "auto"
+    },
+    // JavaScript 린터 설정
+    "linter": {
+      // JavaScript 린터 기능 활성화 - JavaScript 파일에 대한 린팅 기능 사용 여부
+      "enabled": true
+    },
+    // JavaScript Assist 설정
+    "assist": {
+      // JavaScript Assist 기능 활성화 - JavaScript 파일에 대한 리팩토링 지원 기능 사용 여부
+      "enabled": true
+    }
+  },
+
+  // ======================
+  // JSON 설정 (주석과 후행 쉼표 허용)
+  // ======================
+  "json": {
+    // JSON 파서 설정
+    "parser": {
+      // JSON 파일 내 주석 허용 여부 - 표준 JSON은 주석을 지원하지 않지만 JSONC는 지원
+      "allowComments": true,
+      // JSON 파일 내 후행 쉼표 허용 여부 - 배열이나 객체의 마지막 요소 뒤에 쉼표 허용
+      "allowTrailingCommas": true
+    }
+  }
+}
