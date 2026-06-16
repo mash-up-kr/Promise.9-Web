@@ -13,7 +13,7 @@
 - typed routes 사용 — 링크/네비게이션은 타입 안전하게.
 
 ## 스타일 (NativeWind)
-- `className` 으로 스타일링. 색상/간격 등 토큰은 tailwind config 에 정의해 재사용.
+- `className` 으로 스타일링. 색상/간격 등 토큰은 `src/global.css` 의 `@theme` 블록에 정의해 재사용 (Tailwind v4).
 - 플랫폼 분기: className 우선 → 불가피하면 `Platform.select` 또는 `*.web.tsx` / `*.native.tsx` 파일 분리.
 - 웹 전용/네이티브 전용 API 는 플랫폼 가드 필수.
 
@@ -28,6 +28,5 @@
 - 함수형 컴포넌트 + 훅. named export 선호(라우트 파일은 default).
 - 새 컴포넌트는 `/new-component`, 새 화면은 `/new-screen`.
 
-## ⚠️ 셋업 상태
-- **NativeWind 미설치**. 설치/설정(tailwind.config + metro/babel) 후 className 규칙 적용.
+## 셋업 상태
 - pnpm workspace 미사용 — 루트와 `extension/` 각각 `pnpm install`.

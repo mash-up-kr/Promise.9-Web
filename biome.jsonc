@@ -38,7 +38,6 @@
       "!**/pnpm-lock.yaml", // pnpm 잠금 파일 제외
       "!**/yarn.lock", // yarn 잠금 파일 제외
       "!**/package-lock.json", // npm 잠금 파일 제외
-      "!**/routeTree.gen.ts", // 자동 생성된 라우트 트리 파일 제외
       "!**/*.d.ts", // 타입 선언 파일 일괄 제외 (자동 생성·declaration 위주)
       "!**/public" // public 폴더와 그 하위 파일들은 제외
     ]
