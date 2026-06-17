@@ -44,3 +44,9 @@ example
 # generated native folders
 /ios
 /android
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
