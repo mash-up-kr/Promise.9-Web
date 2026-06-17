@@ -72,14 +72,14 @@ fetch(url, { signal: controller.signal });
 
 ## 주요 디버깅 도구
 
-| 상황             | 도구                                   |
-| ---------------- | -------------------------------------- |
-| 컴포넌트 상태    | React DevTools                         |
-| 서버 상태 / 캐싱 | React Query Devtools                   |
-| 라우팅 문제      | TanStack Router Devtools               |
-| 네트워크 요청    | 브라우저 Network 탭                    |
-| 번들/빌드 에러   | `pnpm --filter front build`            |
-| 타입 에러        | `pnpm --filter front build` (tsc 포함) |
+| 상황             | 도구                                                                    |
+| ---------------- | ----------------------------------------------------------------------- |
+| 컴포넌트 상태    | React DevTools (`npx react-devtools` / 브라우저 확장)                   |
+| 서버 상태 / 캐싱 | React Query Devtools (`@tanstack/react-query-devtools`, 별도 설치 필요) |
+| 라우팅 문제      | Expo dev menu (네이티브: Cmd+M / iOS: Cmd+D)                            |
+| 네트워크 요청    | 브라우저 Network 탭 (웹)                                                |
+| 번들 에러        | `pnpm start` (Metro 로그)                                               |
+| 타입 에러        | `npx tsc --noEmit`                                                      |
 
 ---
 

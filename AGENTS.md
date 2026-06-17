@@ -22,6 +22,7 @@ https://docs.expo.dev/versions/v56.0.0/
 - 크롬 익스텐션 상세: docs/conventions/extension.md
 - 폴더 구조(기능 기반 + 공유 코어): docs/conventions/structure.md
 - 테스트(TDD, unit·integration): docs/conventions/testing.md
+- Git 컨벤션(브랜치 · 커밋 · PR · 이슈): docs/conventions/git.md
 
 ## Skills
 
