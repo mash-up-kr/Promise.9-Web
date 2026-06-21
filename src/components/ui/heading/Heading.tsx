@@ -1,6 +1,8 @@
 import { H1, H2, H3, H4, H5, H6 } from "@expo/html-elements";
 import { tv, type VariantProps } from "tailwind-variants";
 
+import { SwitchCase } from "@/components/ui/switch-case/SwitchCase";
+
 const headingStyles = tv({
   base: "font-bold text-neutral-900",
   variants: {
@@ -88,22 +90,24 @@ export function Heading({
     highlight,
     class: className,
   });
+  const renderAs = (Tag: typeof H1) => () => (
+    <Tag aria-level={ariaLevel} {...props} className={styles} />
+  );
 
-  switch (resolvedSize) {
-    case "5xl":
-    case "4xl":
-    case "3xl":
-      return <H1 aria-level={ariaLevel} {...props} className={styles} />;
-    case "2xl":
-      return <H2 aria-level={ariaLevel} {...props} className={styles} />;
-    case "xl":
-      return <H3 aria-level={ariaLevel} {...props} className={styles} />;
-    case "lg":
-      return <H4 aria-level={ariaLevel} {...props} className={styles} />;
-    case "md":
-      return <H5 aria-level={ariaLevel} {...props} className={styles} />;
-    case "sm":
-    case "xs":
-      return <H6 aria-level={ariaLevel} {...props} className={styles} />;
-  }
+  return (
+    <SwitchCase
+      value={resolvedSize}
+      caseBy={{
+        "5xl": renderAs(H1),
+        "4xl": renderAs(H1),
+        "3xl": renderAs(H1),
+        "2xl": renderAs(H2),
+        xl: renderAs(H3),
+        lg: renderAs(H4),
+        md: renderAs(H5),
+        sm: renderAs(H6),
+        xs: renderAs(H6),
+      }}
+    />
+  );
 }
