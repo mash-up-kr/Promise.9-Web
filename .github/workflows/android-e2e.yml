@@ -1,7 +1,8 @@
 name: Android E2E (Maestro)
 
 # 네이티브 Android E2E. 웹(Playwright)은 web-e2e.yml, iOS 는 비용/시간 이슈로 제외.
-# 주의: 이 워크플로는 로컬 검증이 불가(에뮬레이터 빌드는 CI 에서만). 첫 실행에서 조정이 필요할 수 있다.
+# 방식: release APK(JS 번들 임베드)를 빌드해 Metro 없이 maestro 로 검증.
+#   → 디버그+Metro 방식의 dev-client 연결 취약점을 제거해 CI 안정성 확보.
 on:
   pull_request:
     paths-ignore: [ "**/*.md", "docs/**", "e2e/**", "playwright.config.ts" ]
@@ -30,8 +31,6 @@ jobs:
           cache: pnpm
 
       # Gradle·Maestro 둘 다 Java 17 필요 (setup-java 가 JAVA_HOME 설정)
-      # cache: gradle 은 쓰지 않는다 — android/ 가 prebuild 로 생성되기 전이라
-      # gradle 파일이 없어 캐시 키 산출에 실패한다.
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -52,9 +51,14 @@ jobs:
       - name: Prebuild (generate android/)
         run: pnpm expo prebuild --platform android
 
-      - name: Build debug APK
+      # release APK = JS 번들이 APK 에 임베드됨 → 런타임에 Metro 불필요.
+      # Expo 템플릿은 release 를 debug 키로 서명하므로 에뮬레이터 설치 가능.
+      # Hermes/R8 가 메모리를 많이 써 기본 heap(2g)에선 daemon OOM 이 나므로 상향 + --no-daemon.
+      - name: Build release APK (embedded JS bundle)
         working-directory: android
-        run: ./gradlew :app:assembleDebug
+        env:
+          GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=1g
+        run: ./gradlew :app:assembleRelease --no-daemon
 
       # 에뮬레이터 하드웨어 가속(KVM) 활성화
       - name: Enable KVM
@@ -71,15 +75,7 @@ jobs:
           profile: pixel_6
           script: |
             set -e
-            # debug 빌드는 Metro 에서 JS 번들을 받아온다 → Metro 백그라운드 기동
-            pnpm expo start --port 8081 &
-            npx -y wait-on -t 120000 tcp:127.0.0.1:8081
-            # 에뮬레이터의 localhost:8081 → 러너 호스트의 Metro 로 포워딩
-            adb reverse tcp:8081 tcp:8081
-            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-            # expo dev-client 딥링크로 실행해 Metro URL 주입(앱이 번들 로드)
-            # NOTE: emulator-runner 는 script 를 줄 단위로 실행하므로 반드시 한 줄로 둔다(\\ 연결 금지)
-            adb shell am start -a android.intent.action.VIEW -d "com.mashup.promise9://expo-development-client/?url=http://localhost:8081"
+            adb install -r android/app/build/outputs/apk/release/app-release.apk
             maestro test .maestro
 
       # 실패 시 Maestro 스크린샷/로그 보존
