@@ -1,0 +1,89 @@
+name: Android E2E (Maestro)
+
+# 네이티브 Android E2E. 웹(Playwright)은 web-e2e.yml, iOS 는 비용/시간 이슈로 제외.
+# 주의: 이 워크플로는 로컬 검증이 불가(에뮬레이터 빌드는 CI 에서만). 첫 실행에서 조정이 필요할 수 있다.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# 같은 ref 의 이전 실행은 취소(러너 점유 절약)
+concurrency:
+  group: android-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  maestro-android:
+    runs-on: ubuntu-latest # 표준 러너 → public 레포 무료
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      # package.json 의 packageManager(pnpm@11.7.0) 사용
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # Gradle·Maestro 둘 다 Java 17 필요 (setup-java 가 JAVA_HOME 설정)
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Maestro CLI
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      # 네이티브 모듈(reanimated/worklets) C++ 빌드용 NDK 등 라이선스 사전 동의
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+
+      # android/ 는 gitignore 라 CI 에서 생성
+      - name: Prebuild (generate android/)
+        run: pnpm expo prebuild --platform android
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew :app:assembleDebug
+
+      # 에뮬레이터 하드웨어 가속(KVM) 활성화
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run Maestro on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_6
+          script: |
+            set -e
+            # debug 빌드는 Metro 에서 JS 번들을 받아온다 → Metro 백그라운드 기동
+            pnpm expo start --port 8081 &
+            npx -y wait-on -t 120000 tcp:127.0.0.1:8081
+            # 에뮬레이터의 localhost:8081 → 러너 호스트의 Metro 로 포워딩
+            adb reverse tcp:8081 tcp:8081
+            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+            # expo dev-client 딥링크로 실행해 Metro URL 주입(앱이 번들 로드)
+            adb shell am start -a android.intent.action.VIEW \
+              -d "com.mashup.promise9://expo-development-client/?url=http://localhost:8081"
+            maestro test .maestro
+
+      # 실패 시 Maestro 스크린샷/로그 보존
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: maestro-android-artifacts
+          path: ~/.maestro/tests/
+          if-no-files-found: ignore
+          retention-days: 7
