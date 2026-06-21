@@ -15,8 +15,11 @@ description: |
    - 패턴 `<type>/<issue#>-<slug>` (예: `feat/2-init-setup`) 에서 첫 `/` 와 다음 `-` 사이의 숫자가 이슈 번호.
    - 숫자가 없으면(`chore/<slug>` 형태) **묻지 말고 이슈 번호 없이** 작성한다.
 2. `git log <base>...HEAD --oneline` 과 `git diff <base>...HEAD` 로 변경사항 전체를 파악한다.
-3. 아래 형식으로 제목/본문을 작성한다.
-4. push가 필요하면 먼저 push한 뒤 `gh pr create` 로 생성한다.
+3. **앱 E2E 사전 체크** — 네이티브 앱 E2E 는 CI 에 없으므로 PR 생성 전 로컬 통과를 확인한다.
+   - 변경이 **md·웹 전용**(`*.md` · `docs/**` · `e2e/**` · `playwright.config.ts` 등)뿐이면 생략.
+   - 네이티브 관련 변경(컴포넌트·라우팅·네이티브 모듈 등)이 있으면, `.maestro/README.md` 의 "PR 전 로컬 체크" 절차대로 **iOS·Android 둘 다 `pnpm test:e2e:app` 통과**를 사용자에게 확인한다(시뮬레이터/Metro 필요 — 자동 실행 불가 시 사용자에게 실행을 요청). **미통과·미확인이면 PR 을 만들지 않고 멈춘다.**
+4. 아래 형식으로 제목/본문을 작성한다.
+5. push가 필요하면 먼저 push한 뒤 `gh pr create` 로 생성한다.
 
 ## 제목 형식
 
