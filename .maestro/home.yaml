@@ -1,0 +1,6 @@
+# 홈 화면 E2E (네이티브 iOS/Android 공통)
+# RN 의 <Text> 는 네이티브에서도 동일하게 렌더되므로 웹 E2E 와 같은 문구를 검증한다.
+appId: com.mashup.promise9
+---
+- launchApp
+- assertVisible: "Edit src/app/index.tsx to edit this screen."
