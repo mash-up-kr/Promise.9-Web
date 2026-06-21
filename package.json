@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "packageManager": "pnpm@11.7.0",
   "dependencies": {
+    "@expo/html-elements": "^56.0.1",
     "@expo/ui": "~56.0.17",
     "@hookform/resolvers": "^5.4.0",
     "@tailwindcss/postcss": "^4.3.1",
