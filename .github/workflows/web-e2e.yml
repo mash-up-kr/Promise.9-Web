@@ -1,0 +1,44 @@
+name: Web E2E (Playwright)
+
+# 웹(RN Web) E2E. 네이티브(Maestro)는 별도.
+on:
+  pull_request:
+    paths-ignore: [ "**/*.md", "docs/**", ".maestro/**" ]
+  push:
+    branches: [main]
+    paths-ignore: [ "**/*.md", "docs/**", ".maestro/**" ]
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # package.json 의 packageManager(pnpm@11.7.0) 를 그대로 사용
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # webServer(playwright.config.ts)가 expo 웹을 자동 기동하므로 chromium 만 설치
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run web E2E
+        run: pnpm test:e2e
+
+      # 실패 시 trace/스크린샷 보존 (config 의 trace: on-first-retry)
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

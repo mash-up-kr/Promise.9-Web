@@ -20,5 +20,19 @@
       "Bash(git add:*)",
       "Bash(git show:*)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.json|*.jsonc|*.css) pnpm exec biome check --write \"$f\" ;; esac; } 2>/dev/null || true",
+            "statusMessage": "biome 포맷/린트 적용 중..."
+          }
+        ]
+      }
+    ]
   }
 }
