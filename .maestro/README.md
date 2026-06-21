@@ -5,15 +5,20 @@
 
 ## 사전 요건 (1회)
 
+> 아래는 **네이티브 E2E 를 로컬에서 돌리는 사람만** 해당. 웹 E2E(Playwright)·unit/integration(jest)만 한다면 Java·dev build·시뮬레이터 모두 불필요.
+
 1. **Maestro CLI** (시스템 설치, pnpm 아님):
    ```bash
    curl -fsSL "https://get.maestro.mobile.dev" | bash
    # 설치 후 PATH 추가: export PATH="$PATH:$HOME/.maestro/bin"
    ```
-   - **Java 17+ 필요.** 시스템 기본이 Java 11 이면 Android Studio 번들 JDK 를 쓴다:
-     ```bash
-     export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
-     ```
+   - **Java 17+ 필요** (Gradle·Maestro 공통). 확보 방법은 아무거나 — 목적은 "Java 17 을 JAVA_HOME 으로":
+     - 이미 기본 Java 가 17+ 면 **추가 설정 불필요**.
+     - macOS + Android Studio 사용 시 번들 JDK 재사용:
+       ```bash
+       export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+       ```
+     - 또는 직접 설치: `brew install openjdk@17` · sdkman(`sdk install java 17-tem`) 등.
 2. **dev build 설치된 시뮬레이터/에뮬레이터**:
    - iOS:   `pnpm expo run:ios`      (Xcode + CocoaPods 필요)
    - Android: `pnpm expo run:android`  (에뮬레이터 부팅 후)
