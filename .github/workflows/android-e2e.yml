@@ -4,8 +4,10 @@ name: Android E2E (Maestro)
 # 주의: 이 워크플로는 로컬 검증이 불가(에뮬레이터 빌드는 CI 에서만). 첫 실행에서 조정이 필요할 수 있다.
 on:
   pull_request:
+    paths-ignore: [ "**/*.md", "docs/**", "e2e/**", "playwright.config.ts" ]
   push:
     branches: [main]
+    paths-ignore: [ "**/*.md", "docs/**", "e2e/**", "playwright.config.ts" ]
 
 # 같은 ref 의 이전 실행은 취소(러너 점유 절약)
 concurrency:

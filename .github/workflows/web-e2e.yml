@@ -3,8 +3,10 @@ name: Web E2E (Playwright)
 # 웹(RN Web) E2E. 네이티브(Maestro)는 별도.
 on:
   pull_request:
+    paths-ignore: [ "**/*.md", "docs/**", ".maestro/**" ]
   push:
     branches: [main]
+    paths-ignore: [ "**/*.md", "docs/**", ".maestro/**" ]
 
 jobs:
   playwright:

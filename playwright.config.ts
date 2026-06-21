@@ -14,7 +14,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: process.env.CI ? "github" : "html",
+  // CI: PR 인라인 주석(github) + 실패 분석용 HTML 리포트(아티팩트로 업로드)
+  reporter: process.env.CI ? [["github"], ["html"]] : "html",
 
   use: {
     baseURL: BASE_URL,
