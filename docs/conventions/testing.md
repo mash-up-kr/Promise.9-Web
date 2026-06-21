@@ -78,10 +78,15 @@ test('링크 목록을 불러온다', async () => {
 
 > unit·integration 과 **별개**. 표면(surface)별로 도구가 다르다. jest 와 섞이지 않는다.
 
-| 표면 | 도구 | 실행 | 위치 |
-|------|------|------|------|
-| 웹 (RN Web) | **Playwright** | `pnpm test:e2e` (UI 모드 `pnpm test:e2e:ui`) | `e2e/*.spec.ts` · `playwright.config.ts` |
-| 네이티브 (iOS·Android) | **Maestro** | `pnpm test:e2e:app` | `.maestro/*.yaml` |
+| 표면 | 도구 | 실행 | CI | 위치 |
+|------|------|------|------|------|
+| 웹 (RN Web) | **Playwright** | `pnpm test:e2e` (UI 모드 `pnpm test:e2e:ui`) | ✅ GitHub Actions (`web-e2e.yml`) | `e2e/*.spec.ts` · `playwright.config.ts` |
+| 네이티브 (iOS·Android) | **Maestro** | `pnpm test:e2e:app` | ❌ CI 제외 → **PR 전 로컬 1회** | `.maestro/*.yaml` |
+
+## 네이티브 E2E 는 CI 에서 돌리지 않는다 (PR 전 로컬 실행)
+네이티브 앱 빌드는 GitHub Actions 에서 너무 오래 걸려 **앱 E2E CI 는 제거**했다. 대신 PR 올리기 전 **로컬에서 iOS·Android 둘 다 1회 통과**시키는 것을 컨벤션으로 한다.
+- 절차·사전요건(시뮬레이터/에뮬레이터 + Metro)은 **`.maestro/README.md`** 단일 출처.
+- 웹 E2E(Playwright)는 그대로 CI 에서 자동 검증된다.
 
 ## 도구 선택 근거
 - **웹 = Playwright**: RN Web 은 실제 DOM 으로 렌더되므로 일반 브라우저 E2E 가 가능. 정식(GA) 도구로 크로스브라우저·로케일·뷰포트를 지원.

@@ -32,6 +32,25 @@ maestro test .maestro/home.yaml   # 단일 플로우
 maestro studio              # 셀렉터 탐색용 인터랙티브 도구
 ```
 
+## PR 전 로컬 체크 (필수)
+
+네이티브 앱 E2E 는 CI 에서 돌리지 않는다(빌드 시간 과다 → 앱 CI 제거). 대신 **PR 올리기 전 로컬에서 iOS·Android 둘 다 1회 통과**시킨다. (웹 Playwright E2E 는 CI 가 자동 검증하므로 로컬 필수 아님.)
+
+```bash
+# 1) iOS
+pnpm expo run:ios     # 시뮬레이터에 dev build 설치
+pnpm start            # (디버그 빌드면 Metro 필요) — 별도 터미널
+pnpm test:e2e:app     # 시뮬레이터 떠 있는 상태에서 실행
+
+# 2) Android
+pnpm expo run:android # 에뮬레이터 부팅 후 dev build 설치
+pnpm start            # 별도 터미널
+pnpm test:e2e:app
+```
+
+- 네이티브 변경(컴포넌트·라우팅·네이티브 모듈)이 없고 **md·웹 전용 변경만** 이면 생략 가능.
+- 둘 중 한 쪽이라도 실패하면 PR 전에 고친다. 실패 로그/스크린샷은 `~/.maestro/tests/` 에 남는다.
+
 ## 플로우 작성 메모
 
 - `appId` 는 app.json 의 `ios.bundleIdentifier` / `android.package` 와 일치해야 한다 (현재 `com.mashup.promise9`).
