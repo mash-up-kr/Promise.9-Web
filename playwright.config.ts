@@ -4,7 +4,8 @@ import { defineConfig, devices } from "@playwright/test";
  * 웹(RN Web) E2E 설정 — 네이티브 앱 E2E(Maestro)와 분리.
  * 자세한 배경: docs/conventions/testing.md
  */
-const PORT = 8081; // expo start --web 의 Metro 웹 서버 기본 포트
+// 8081(Metro 기본)은 흔히 겹쳐 비대중 포트로 고정. 충돌 시 E2E_WEB_PORT 로 오버라이드.
+const PORT = Number(process.env.E2E_WEB_PORT ?? 22322);
 const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
@@ -26,7 +27,7 @@ export default defineConfig({
 
   // Playwright 가 직접 expo 웹 서버를 띄우고, 준비될 때까지 기다린다.
   webServer: {
-    command: "pnpm web",
+    command: `pnpm web --port ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     // RN Web 첫 번들링은 느릴 수 있어 넉넉히.
