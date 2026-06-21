@@ -30,11 +30,12 @@ jobs:
           cache: pnpm
 
       # Gradle·Maestro 둘 다 Java 17 필요 (setup-java 가 JAVA_HOME 설정)
+      # cache: gradle 은 쓰지 않는다 — android/ 가 prebuild 로 생성되기 전이라
+      # gradle 파일이 없어 캐시 키 산출에 실패한다.
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
 
       - run: pnpm install --frozen-lockfile
 
@@ -77,8 +78,8 @@ jobs:
             adb reverse tcp:8081 tcp:8081
             adb install -r android/app/build/outputs/apk/debug/app-debug.apk
             # expo dev-client 딥링크로 실행해 Metro URL 주입(앱이 번들 로드)
-            adb shell am start -a android.intent.action.VIEW \
-              -d "com.mashup.promise9://expo-development-client/?url=http://localhost:8081"
+            # NOTE: emulator-runner 는 script 를 줄 단위로 실행하므로 반드시 한 줄로 둔다(\\ 연결 금지)
+            adb shell am start -a android.intent.action.VIEW -d "com.mashup.promise9://expo-development-client/?url=http://localhost:8081"
             maestro test .maestro
 
       # 실패 시 Maestro 스크린샷/로그 보존
