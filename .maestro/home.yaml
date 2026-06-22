@@ -3,4 +3,4 @@
 appId: com.mashup.promise9
 ---
 - launchApp
-- assertVisible: "Edit src/app/index.tsx to edit this screen."
+- assertVisible: "홈 화면 placeholder"

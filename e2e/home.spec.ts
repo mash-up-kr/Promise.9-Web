@@ -7,7 +7,5 @@ import { expect, test } from "@playwright/test";
 test("홈 화면이 기본 안내 문구를 렌더한다", async ({ page }) => {
   await page.goto("/");
 
-  await expect(
-    page.getByText("Edit src/app/index.tsx to edit this screen."),
-  ).toBeVisible();
+  await expect(page.getByText("홈 화면 placeholder")).toBeVisible();
 });
