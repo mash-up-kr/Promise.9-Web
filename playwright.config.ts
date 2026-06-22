@@ -1,0 +1,36 @@
+import { defineConfig, devices } from "@playwright/test";
+
+/**
+ * 웹(RN Web) E2E 설정 — 네이티브 앱 E2E(Maestro)와 분리.
+ * 자세한 배경: docs/conventions/testing.md
+ */
+// 8081(Metro 기본)은 흔히 겹쳐 비대중 포트로 고정. 충돌 시 E2E_WEB_PORT 로 오버라이드.
+const PORT = Number(process.env.E2E_WEB_PORT ?? 22322);
+const BASE_URL = `http://localhost:${PORT}`;
+
+export default defineConfig({
+  testDir: "./e2e",
+  testMatch: "**/*.spec.ts",
+  // 단언 실패 시 깔끔하게 종료
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  // CI: PR 인라인 주석(github) + 실패 분석용 HTML 리포트(아티팩트로 업로드)
+  reporter: process.env.CI ? [["github"], ["html"]] : "html",
+
+  use: {
+    baseURL: BASE_URL,
+    trace: "on-first-retry",
+  },
+
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+
+  // Playwright 가 직접 expo 웹 서버를 띄우고, 준비될 때까지 기다린다.
+  webServer: {
+    command: `pnpm web --port ${PORT}`,
+    url: BASE_URL,
+    reuseExistingServer: !process.env.CI,
+    // RN Web 첫 번들링은 느릴 수 있어 넉넉히.
+    timeout: 180_000,
+  },
+});

@@ -53,3 +53,9 @@ example
 .dev.vars*
 !.dev.vars.example
 !.env.example
+
+# Playwright (web E2E)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
