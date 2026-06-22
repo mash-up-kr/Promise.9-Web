@@ -1,16 +1,29 @@
 import { H1, H2, H3, H4, H5, H6 } from "@expo/html-elements";
+import { styled } from "nativewind";
 import { tv, type VariantProps } from "tailwind-variants";
 
 import { SwitchCase } from "@/components/ui/switch-case/SwitchCase";
 
-const headingStyles = tv({
-  base: "font-bold text-neutral-900",
+// @expo/html-elements 의 H1~H6 은 fontWeight/fontSize 등 기본값을 inline `style` 로 주입한다.
+// 네이티브에선 inline style 이 className 보다 우선하므로, styled 로 className 을 `style` 슬롯에
+// 매핑해 H 내부의 `style={[기본값, props.style]}` 마지막 자리에서 기본값을 덮도록 한다.
+const styledHeadingMapping = { className: "style" } as const;
+const StyledH1 = styled(H1, styledHeadingMapping);
+const StyledH2 = styled(H2, styledHeadingMapping);
+const StyledH3 = styled(H3, styledHeadingMapping);
+const StyledH4 = styled(H4, styledHeadingMapping);
+const StyledH5 = styled(H5, styledHeadingMapping);
+const StyledH6 = styled(H6, styledHeadingMapping);
+
+export const headingStyles = tv({
+  base: "text-neutral-900",
   variants: {
     isTruncated: {
       true: "web:truncate",
     },
     bold: {
       true: "font-bold",
+      false: "font-normal",
     },
     underline: {
       true: "underline",
@@ -41,6 +54,7 @@ const headingStyles = tv({
   },
   defaultVariants: {
     size: "lg",
+    bold: true,
   },
 });
 
@@ -90,7 +104,7 @@ export function Heading({
     highlight,
     class: className,
   });
-  const renderAs = (Tag: typeof H1) => () => (
+  const renderAs = (Tag: React.ElementType) => () => (
     <Tag aria-level={ariaLevel} {...props} className={styles} />
   );
 
@@ -98,15 +112,15 @@ export function Heading({
     <SwitchCase
       value={resolvedSize}
       caseBy={{
-        "5xl": renderAs(H1),
-        "4xl": renderAs(H1),
-        "3xl": renderAs(H1),
-        "2xl": renderAs(H2),
-        xl: renderAs(H3),
-        lg: renderAs(H4),
-        md: renderAs(H5),
-        sm: renderAs(H6),
-        xs: renderAs(H6),
+        "5xl": renderAs(StyledH1),
+        "4xl": renderAs(StyledH1),
+        "3xl": renderAs(StyledH1),
+        "2xl": renderAs(StyledH2),
+        xl: renderAs(StyledH3),
+        lg: renderAs(StyledH4),
+        md: renderAs(StyledH5),
+        sm: renderAs(StyledH6),
+        xs: renderAs(StyledH6),
       }}
     />
   );
