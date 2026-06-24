@@ -2,6 +2,140 @@
 @import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css";
 
+/*
+ * Design System 토큰
+ * semantic 만 컴포넌트에서 사용한다. primitive 직접 사용 금지.
+ */
+@theme {
+  /* ── Primitive: 원시 팔레트 (semantic 에서만 참조) ── */
+  --color-ldd-gray-950: #0e0e13;
+  --color-ldd-gray-900: #121212;
+  --color-ldd-gray-850: #242426;
+  --color-ldd-gray-800: #292933;
+  --color-ldd-gray-700: #49494d;
+  --color-ldd-gray-600: #65656b;
+  --color-ldd-gray-500: #8a8a93;
+  --color-ldd-gray-400: #9e9ea5;
+  --color-ldd-gray-100: #e9e9eb;
+  --color-ldd-gray-50: #fafafa;
+  --color-ldd-blue-500: #0093ff;
+  --color-ldd-blue-400: #4da8ff;
+  --color-ldd-purple-400: #ab9ff1;
+
+  /* ── Semantic: Background ── */
+  --color-background-base: var(--color-ldd-gray-950);
+  --color-background-thumbnail: var(--color-ldd-gray-850);
+
+  /* ── Semantic: Border ── */
+  --color-border-divider: var(--color-ldd-gray-800);
+
+  /* ── Semantic: Text ── */
+  --color-text-strong: var(--color-ldd-gray-50);
+  --color-text-normal: var(--color-ldd-gray-100);
+  --color-text-neutral: var(--color-ldd-gray-400);
+  --color-text-alternative: var(--color-ldd-gray-500);
+  --color-text-assistive: var(--color-ldd-gray-600);
+  --color-text-inverse: var(--color-ldd-gray-900);
+
+  /* ── Semantic: Icon ── */
+  --color-icon-strong: var(--color-ldd-gray-50);
+  --color-icon-normal: var(--color-ldd-gray-100);
+  --color-icon-alternative: var(--color-ldd-gray-500);
+  --color-icon-assistive: var(--color-ldd-gray-600);
+  --color-icon-accent: var(--color-ldd-blue-500);
+  --color-icon-inverse: var(--color-ldd-gray-900);
+
+  /* ── Semantic: Action ── */
+  --color-action-primary: var(--color-ldd-blue-500);
+  --color-action-alternative: #0093ffb3; /* blue-500 @ 70% */
+  --color-action-inverse: var(--color-ldd-gray-50);
+
+  /* ── Semantic: Folder ── */
+  --color-folder-gray: var(--color-ldd-gray-700);
+  --color-folder-blue: var(--color-ldd-blue-400);
+  --color-folder-purple-solid: var(--color-ldd-purple-400);
+  --color-folder-purple-subtle: #ab9ff11a; /* purple-400 @ 10% */
+
+  /* ── Semantic: Overlay (Opacity White / Inverse) ── */
+  --color-overlay-white-80: #ffffffcc;
+  --color-overlay-white-70: #ffffffb3;
+  --color-overlay-white-60: #ffffff99;
+  --color-overlay-white-45: #ffffff73;
+  --color-overlay-white-35: #ffffff59;
+  --color-overlay-white-15: #ffffff26;
+  --color-overlay-white-7: #ffffff12;
+  --color-overlay-white-5: #ffffff0d;
+  --color-overlay-black-50: #00000080;
+  --color-overlay-black-30: #0000004d;
+  --color-overlay-black-20: #00000033;
+
+  /* ── Font family ──
+   * _layout.tsx 의 useFonts 로 로드한 가변(Variable) 폰트. weight 축을 지원해
+   * 프리셋의 font-weight(400/500/600)가 그대로 반영된다. */
+  --font-pretendard: "Pretendard";
+
+  /* ── Typography presets (Pretendard) ──
+   * size / line-height / font-weight / letter-spacing 를 한 토큰에 묶음.
+   * 사용처: text-title, text-body-1 … (Text/Heading variant 로 노출). */
+  --text-title: 22px;
+  --text-title--line-height: 28px;
+  --text-title--font-weight: 600;
+  --text-title--letter-spacing: -0.01em;
+
+  --text-heading-1: 20px;
+  --text-heading-1--line-height: 28px;
+  --text-heading-1--font-weight: 600;
+  --text-heading-1--letter-spacing: -0.01em;
+
+  --text-heading-2: 18px;
+  --text-heading-2--line-height: 26px;
+  --text-heading-2--font-weight: 600;
+  --text-heading-2--letter-spacing: -0.01em;
+
+  --text-heading-3: 16px;
+  --text-heading-3--line-height: 24px;
+  --text-heading-3--font-weight: 600;
+  --text-heading-3--letter-spacing: -0.01em;
+
+  --text-body-1: 15px;
+  --text-body-1--line-height: 22px;
+  --text-body-1--font-weight: 400;
+
+  --text-body-2: 14px;
+  --text-body-2--line-height: 22px;
+  --text-body-2--font-weight: 500;
+
+  --text-body-3: 13px;
+  --text-body-3--line-height: 18px;
+  --text-body-3--font-weight: 500;
+  --text-body-3--letter-spacing: 0.01em;
+
+  --text-body-4: 12px;
+  --text-body-4--line-height: 16px;
+  --text-body-4--font-weight: 500;
+
+  --text-label-1: 16px;
+  --text-label-1--line-height: 24px;
+  --text-label-1--font-weight: 600;
+
+  --text-label-2-medium: 13px;
+  --text-label-2-medium--line-height: 18px;
+  --text-label-2-medium--font-weight: 500;
+
+  --text-label-2-semibold: 13px;
+  --text-label-2-semibold--line-height: 16px;
+  --text-label-2-semibold--font-weight: 600;
+
+  --text-caption-1: 13px;
+  --text-caption-1--line-height: 18px;
+  --text-caption-1--font-weight: 400;
+  --text-caption-1--letter-spacing: 0.03em;
+
+  --text-caption-2: 12px;
+  --text-caption-2--line-height: 14px;
+  --text-caption-2--font-weight: 400;
+}
+
 /* Platform-specific font families */
 @media android {
   :root {
