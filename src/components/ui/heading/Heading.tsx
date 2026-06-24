@@ -16,7 +16,7 @@ const StyledH5 = styled(H5, styledHeadingMapping);
 const StyledH6 = styled(H6, styledHeadingMapping);
 
 export const headingStyles = tv({
-  base: "text-neutral-900",
+  base: "font-pretendard text-text-strong",
   variants: {
     isTruncated: {
       true: "web:truncate",

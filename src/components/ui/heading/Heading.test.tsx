@@ -40,6 +40,14 @@ describe("Heading", () => {
       expect(headingStyles({})).toContain("font-bold");
     });
 
+    test("기본 텍스트 색상으로 semantic 토큰(text-text-strong)을 적용한다", () => {
+      expect(headingStyles({})).toContain("text-text-strong");
+    });
+
+    test("기본 폰트로 Pretendard(font-pretendard)를 적용한다", () => {
+      expect(headingStyles({})).toContain("font-pretendard");
+    });
+
     test("bold={false} 면 font-normal 이 적용되고 font-bold 는 빠진다", () => {
       const result = headingStyles({ bold: false });
       expect(result).toContain("font-normal");
