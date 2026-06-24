@@ -71,6 +71,12 @@
   // CSS 설정
   // ======================
   "css": {
+    // CSS 파서 설정
+    "parser": {
+      // Tailwind CSS 4.0 지시어/함수(@theme, @apply, theme() 등) 파싱 허용
+      // - 미설정 시 포매터가 @theme 블록에서 파싱 에러를 낸다.
+      "tailwindDirectives": true
+    },
     // CSS 린터 설정
     "linter": {
       // CSS 린터 비활성화 - Tailwind CSS의 특수 지시어(@theme, @apply 등)와 충돌 방지
