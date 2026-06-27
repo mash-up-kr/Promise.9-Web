@@ -27,4 +27,37 @@ describe("Text", () => {
     await render(<Text>기본</Text>);
     expect(screen.getByText("기본").props.className).toContain("text-base");
   });
+
+  test("기본 텍스트 색상으로 semantic 토큰(text-text-normal)을 적용한다", async () => {
+    await render(<Text>기본</Text>);
+    expect(screen.getByText("기본").props.className).toContain(
+      "text-text-normal",
+    );
+  });
+
+  test("기본 폰트로 Pretendard(font-pretendard)를 적용한다", async () => {
+    await render(<Text>폰트</Text>);
+    expect(screen.getByText("폰트").props.className).toContain(
+      "font-pretendard",
+    );
+  });
+
+  test("variant 프리셋이 해당 타이포 유틸리티를 적용한다 (body-1 → text-body-1)", async () => {
+    await render(<Text variant="body-1">본문</Text>);
+    expect(screen.getByText("본문").props.className).toContain("text-body-1");
+  });
+
+  test("variant=caption-1 이 text-caption-1 을 적용한다", async () => {
+    await render(<Text variant="caption-1">캡션</Text>);
+    expect(screen.getByText("캡션").props.className).toContain(
+      "text-caption-1",
+    );
+  });
+
+  test("variant 사용 시 기본 size(text-base)가 새어 들어가지 않는다", async () => {
+    await render(<Text variant="body-1">본문</Text>);
+    const cls = screen.getByText("본문").props.className;
+    expect(cls).toContain("text-body-1");
+    expect(cls).not.toContain("text-base");
+  });
 });

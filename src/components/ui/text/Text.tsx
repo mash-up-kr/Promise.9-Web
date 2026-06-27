@@ -1,9 +1,26 @@
 import { Text as RNText } from "react-native";
 import { tv, type VariantProps } from "tailwind-variants";
 
+const variantPresets = {
+  title: "text-title",
+  "heading-1": "text-heading-1",
+  "heading-2": "text-heading-2",
+  "heading-3": "text-heading-3",
+  "body-1": "text-body-1",
+  "body-2": "text-body-2",
+  "body-3": "text-body-3",
+  "body-4": "text-body-4",
+  "label-1": "text-label-1",
+  "label-2-medium": "text-label-2-medium",
+  "label-2-semibold": "text-label-2-semibold",
+  "caption-1": "text-caption-1",
+  "caption-2": "text-caption-2",
+} as const;
+
 const textStyles = tv({
-  base: "text-neutral-700",
+  base: "font-pretendard text-text-normal",
   variants: {
+    variant: variantPresets,
     isTruncated: {
       true: "web:truncate",
     },
@@ -38,9 +55,6 @@ const textStyles = tv({
       true: "bg-yellow-500",
     },
   },
-  defaultVariants: {
-    size: "md",
-  },
 });
 
 type RNTextProps = React.ComponentProps<typeof RNText>;
@@ -53,6 +67,7 @@ export interface TextProps
 
 export function Text({
   className,
+  variant,
   isTruncated,
   bold,
   underline,
@@ -63,14 +78,16 @@ export function Text({
   highlight,
   ...props
 }: TextProps) {
+  const resolvedSize = size ?? (variant ? undefined : "md");
   return (
     <RNText
       className={textStyles({
+        variant,
         isTruncated,
         bold,
         underline,
         strikeThrough,
-        size,
+        size: resolvedSize,
         sub,
         italic,
         highlight,
