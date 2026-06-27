@@ -7,67 +7,119 @@
  * semantic 만 컴포넌트에서 사용한다. primitive 직접 사용 금지.
  */
 @theme {
-  /* ── Primitive: 원시 팔레트 (semantic 에서만 참조) ── */
-  --color-ldd-gray-950: #0e0e13;
-  --color-ldd-gray-900: #121212;
-  --color-ldd-gray-850: #242426;
-  --color-ldd-gray-800: #292933;
-  --color-ldd-gray-700: #49494d;
-  --color-ldd-gray-600: #65656b;
-  --color-ldd-gray-500: #8a8a93;
-  --color-ldd-gray-400: #9e9ea5;
-  --color-ldd-gray-100: #e9e9eb;
-  --color-ldd-gray-50: #fafafa;
-  --color-ldd-blue-500: #0093ff;
-  --color-ldd-blue-400: #4da8ff;
-  --color-ldd-purple-400: #ab9ff1;
+  /* ── Primitive: Gray (semantic 에서만 참조) ── */
+  --color-gray-50: #fafafa;
+  --color-gray-100: #e9e9eb;
+  --color-gray-200: #9e9ea5;
+  --color-gray-300: #8a8a93;
+  --color-gray-400: #65656b;
+  --color-gray-500: #4e4e55;
+  --color-gray-600: #3a3a40;
+  --color-gray-700: #2f2f33;
+  --color-gray-800: #242426;
+  --color-gray-900: #0e0e13;
+  --color-gray-950: #121212;
+
+  /* ── Primitive: Blue (★ blue-500 = accent/primary) ── */
+  --color-blue-50: #e6f3ff;
+  --color-blue-100: #b3d9ff;
+  --color-blue-200: #80bfff;
+  --color-blue-300: #4da8ff;
+  --color-blue-400: #1a92ff;
+  --color-blue-500: #0093ff;
+  --color-blue-600: #0079d9;
+  --color-blue-700: #005fb3;
+  --color-blue-800: #00458c;
+  --color-blue-900: #002b66;
+
+  /* ── Primitive: Opacity / White ── */
+  --color-opacity-white-05: #ffffff0d;
+  --color-opacity-white-10: #ffffff1a;
+  --color-opacity-white-20: #ffffff33;
+  --color-opacity-white-30: #ffffff4d;
+  --color-opacity-white-40: #ffffff66;
+  --color-opacity-white-50: #ffffff80;
+  --color-opacity-white-60: #ffffff99;
+  --color-opacity-white-70: #ffffffb2;
+  --color-opacity-white-80: #ffffffcc;
+  --color-opacity-white-90: #ffffffe5;
+  --color-opacity-white-100: #ffffff;
+
+  /* ── Primitive: Opacity / Black ── */
+  --color-opacity-black-05: #0000000d;
+  --color-opacity-black-10: #0000001a;
+  --color-opacity-black-20: #00000033;
+  --color-opacity-black-30: #0000004d;
+  --color-opacity-black-40: #00000066;
+  --color-opacity-black-50: #00000080;
+  --color-opacity-black-60: #00000099;
+  --color-opacity-black-70: #000000b2;
+  --color-opacity-black-80: #000000cc;
+  --color-opacity-black-90: #000000e5;
+  --color-opacity-black-100: #000000;
 
   /* ── Semantic: Background ── */
-  --color-background-base: var(--color-ldd-gray-950);
-  --color-background-thumbnail: var(--color-ldd-gray-850);
+  --color-background-base: var(--color-gray-900);
+  --color-background-list: var(--color-gray-800);
+  --color-background-thumbnail: var(--color-gray-800);
+  --color-background-list-selected: var(--color-gray-600);
 
   /* ── Semantic: Border ── */
-  --color-border-divider: var(--color-ldd-gray-800);
+  --color-border-divider: var(--color-gray-700);
 
   /* ── Semantic: Text ── */
-  --color-text-strong: var(--color-ldd-gray-50);
-  --color-text-normal: var(--color-ldd-gray-100);
-  --color-text-neutral: var(--color-ldd-gray-400);
-  --color-text-alternative: var(--color-ldd-gray-500);
-  --color-text-assistive: var(--color-ldd-gray-600);
-  --color-text-inverse: var(--color-ldd-gray-900);
+  --color-text-strong: var(--color-gray-50);
+  --color-text-normal: var(--color-gray-100);
+  --color-text-neutral: var(--color-gray-200);
+  --color-text-alternative: var(--color-gray-300);
+  --color-text-assistive: var(--color-gray-400);
+  --color-text-inverse: var(--color-gray-950);
 
   /* ── Semantic: Icon ── */
-  --color-icon-strong: var(--color-ldd-gray-50);
-  --color-icon-normal: var(--color-ldd-gray-100);
-  --color-icon-alternative: var(--color-ldd-gray-500);
-  --color-icon-assistive: var(--color-ldd-gray-600);
-  --color-icon-accent: var(--color-ldd-blue-500);
-  --color-icon-inverse: var(--color-ldd-gray-900);
+  --color-icon-strong: var(--color-gray-50);
+  --color-icon-normal: var(--color-gray-100);
+  --color-icon-alternative: var(--color-gray-300);
+  --color-icon-assistive: var(--color-gray-400);
+  --color-icon-inverse: var(--color-gray-950);
 
-  /* ── Semantic: Action ── */
-  --color-action-primary: var(--color-ldd-blue-500);
-  --color-action-alternative: #0093ffb3; /* blue-500 @ 70% */
-  --color-action-inverse: var(--color-ldd-gray-50);
-
-  /* ── Semantic: Folder ── */
-  --color-folder-gray: var(--color-ldd-gray-700);
-  --color-folder-blue: var(--color-ldd-blue-400);
-  --color-folder-purple-solid: var(--color-ldd-purple-400);
-  --color-folder-purple-subtle: #ab9ff11a; /* purple-400 @ 10% */
-
-  /* ── Semantic: Overlay (Opacity White / Inverse) ── */
-  --color-overlay-white-80: #ffffffcc;
-  --color-overlay-white-70: #ffffffb3;
-  --color-overlay-white-60: #ffffff99;
-  --color-overlay-white-45: #ffffff73;
-  --color-overlay-white-35: #ffffff59;
-  --color-overlay-white-15: #ffffff26;
-  --color-overlay-white-7: #ffffff12;
-  --color-overlay-white-5: #ffffff0d;
-  --color-overlay-black-50: #00000080;
-  --color-overlay-black-30: #0000004d;
-  --color-overlay-black-20: #00000033;
+  /* ── Semantic: Folder / Accent ── */
+  --color-folder-gray: var(--color-gray-400);
+  --color-folder-blue-solid: #61a8ef;
+  --color-folder-blue-subtle: #2a313a;
+  --color-folder-blue-subtle-active: #364c62;
+  --color-folder-slate-solid: #859fc1;
+  --color-folder-slate-subtle: #2e3036;
+  --color-folder-slate-subtle-active: #414954;
+  --color-folder-purple-solid: #b282cc;
+  --color-folder-purple-subtle: #322d37;
+  --color-folder-purple-subtle-active: #4f4058;
+  --color-folder-orange-red-solid: #ec5a29;
+  --color-folder-orange-red-subtle: #382926;
+  --color-folder-orange-red-subtle-active: #603427;
+  --color-folder-green-solid: #50b094;
+  --color-folder-green-subtle: #283231;
+  --color-folder-green-subtle-active: #314e47;
+  --color-folder-teal-solid: #81c7ba;
+  --color-folder-teal-subtle: #2d3435;
+  --color-folder-teal-subtle-active: #405552;
+  --color-folder-pink-solid: #ee97a4;
+  --color-folder-pink-subtle: #383033;
+  --color-folder-pink-subtle-active: #61464c;
+  --color-folder-red-solid: #e34647;
+  --color-folder-red-subtle: #372729;
+  --color-folder-red-subtle-active: #5d2e30;
+  --color-folder-lime-solid: #8bd35f;
+  --color-folder-lime-subtle: #2e362c;
+  --color-folder-lime-subtle-active: #435837;
+  --color-folder-yellow-green-solid: #d5d76a;
+  --color-folder-yellow-green-subtle: #36362d;
+  --color-folder-yellow-green-subtle-active: #595a3a;
+  --color-folder-yellow-solid: #f8d457;
+  --color-folder-yellow-subtle: #39362b;
+  --color-folder-yellow-subtle-active: #645935;
+  --color-folder-orange-solid: #f1a23f;
+  --color-folder-orange-subtle: #383128;
+  --color-folder-orange-subtle-active: #624a2e;
 
   /* ── Font family ──
    * _layout.tsx 의 useFonts 로 로드한 가변(Variable) 폰트. weight 축을 지원해
