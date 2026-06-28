@@ -4,7 +4,7 @@ import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
 
 const headerStyles = tv({
-  base: "h-14 flex-row items-center justify-between px-4",
+  base: "h-14 flex-row items-center justify-between bg-background-base px-4",
 });
 
 export interface HeaderProps {
