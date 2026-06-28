@@ -128,12 +128,7 @@
 
   /* ── Typography presets (Pretendard) ──
    * size / line-height / font-weight / letter-spacing 를 한 토큰에 묶음.
-   * 사용처: text-title, text-body-1 … (Text/Heading variant 로 노출).
-   *
-   * line-height 는 절대 px 가 아닌 unitless 비율(calc(lh / fs))로 둔다.
-   * NativeWind(react-native-css) 네이티브 런타임은 line-height 를 em 배수로
-   * 해석해 fontSize 와 곱하므로, px 절대값을 주면 곱셈으로 깨진다(웹만 정상).
-   * 비율로 주면 웹(비율×fs)·앱(비율×fs) 모두 동일한 px 가 나온다. */
+   * 사용처: text-title, text-body-1 … (Text/Heading variant 로 노출). */
   --text-title: 22px;
   --text-title--line-height: calc(28 / 22);
   --text-title--font-weight: 600;
