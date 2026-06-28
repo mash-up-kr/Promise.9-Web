@@ -37,7 +37,8 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-liquid-glass-native"
     ],
     "experiments": {
       "typedRoutes": true,
