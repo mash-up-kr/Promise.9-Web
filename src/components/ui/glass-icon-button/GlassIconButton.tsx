@@ -1,8 +1,7 @@
 import { Pressable, StyleSheet } from "react-native";
-import { tv } from "tailwind-variants";
-
 import { GlassSurface } from "@/components/ui/glass-surface/GlassSurface";
 import { Icon } from "@/components/ui/icon/Icon";
+import { tv } from "@/lib/tv";
 
 const glassIconButtonStyles = tv({
   base: "items-center justify-center rounded-full p-2",
