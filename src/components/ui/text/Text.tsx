@@ -1,5 +1,7 @@
 import { Text as RNText } from "react-native";
-import { tv, type VariantProps } from "tailwind-variants";
+import type { VariantProps } from "tailwind-variants";
+
+import { tv } from "@/lib/tv";
 
 const variantPresets = {
   title: "text-title",

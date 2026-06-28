@@ -1,5 +1,7 @@
 import { View } from "react-native";
-import { tv, type VariantProps } from "tailwind-variants";
+import type { VariantProps } from "tailwind-variants";
+
+import { tv } from "@/lib/tv";
 
 const hstackStyles = tv({
   base: "flex-row",

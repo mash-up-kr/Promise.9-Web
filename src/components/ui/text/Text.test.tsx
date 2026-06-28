@@ -60,4 +60,24 @@ describe("Text", () => {
     expect(cls).toContain("text-body-1");
     expect(cls).not.toContain("text-base");
   });
+
+  test("variant(크기)와 기본 색상(text-text-normal)이 함께 적용된다", async () => {
+    // text-body-1(폰트크기)·text-text-normal(색상)은 둘 다 text- 접두사라
+    // tailwind-merge 가 충돌로 보고 하나를 버리면 안 된다.
+    await render(<Text variant="body-1">본문</Text>);
+    const cls = screen.getByText("본문").props.className;
+    expect(cls).toContain("text-body-1");
+    expect(cls).toContain("text-text-normal");
+  });
+
+  test("variant(크기)와 색상 override 가 함께 적용된다", async () => {
+    await render(
+      <Text variant="title" className="text-text-assistive">
+        제목
+      </Text>,
+    );
+    const cls = screen.getByText("제목").props.className;
+    expect(cls).toContain("text-title");
+    expect(cls).toContain("text-text-assistive");
+  });
 });
