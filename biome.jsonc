@@ -71,6 +71,12 @@
   // CSS 설정
   // ======================
   "css": {
+    // CSS 파서 설정
+    "parser": {
+      // Tailwind CSS 4.0 지시어/함수(@theme, @apply, theme() 등) 파싱 허용
+      // - 미설정 시 포매터가 @theme 블록에서 파싱 에러를 낸다.
+      "tailwindDirectives": true
+    },
     // CSS 린터 설정
     "linter": {
       // CSS 린터 비활성화 - Tailwind CSS의 특수 지시어(@theme, @apply 등)와 충돌 방지
@@ -218,7 +224,22 @@
         "useConst": "error",
 
         // Non-null assertion (!) 사용 허용 - 명확하게 존재하는 값에 대해서만 신중하게 사용할것
-        "noNonNullAssertion": "off"
+        "noNonNullAssertion": "off",
+
+        // tv 는 반드시 @/lib/tv (커스텀 토큰 merge 설정 적용본)에서 import 한다.
+        // tailwind-variants 의 기본 tv 는 커스텀 text- 폰트크기/색상 토큰을 같은
+        // 그룹 충돌로 보고 하나를 버리므로 금지. createTV·VariantProps 등은 허용.
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "tailwind-variants": {
+                "importNames": ["tv"],
+                "message": "tv 는 @/lib/tv 에서 import 하세요. tailwind-variants 의 기본 tv 는 커스텀 text- 토큰(폰트크기↔색상)을 충돌로 보고 하나를 버립니다."
+              }
+            }
+          }
+        }
       },
 
       // ======================

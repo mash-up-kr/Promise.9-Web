@@ -1,8 +1,9 @@
 import { H1, H2, H3, H4, H5, H6 } from "@expo/html-elements";
 import { styled } from "nativewind";
-import { tv, type VariantProps } from "tailwind-variants";
+import type { VariantProps } from "tailwind-variants";
 
 import { SwitchCase } from "@/components/ui/switch-case/SwitchCase";
+import { tv } from "@/lib/tv";
 
 // @expo/html-elements 의 H1~H6 은 fontWeight/fontSize 등 기본값을 inline `style` 로 주입한다.
 // 네이티브에선 inline style 이 className 보다 우선하므로, styled 로 className 을 `style` 슬롯에
@@ -16,7 +17,7 @@ const StyledH5 = styled(H5, styledHeadingMapping);
 const StyledH6 = styled(H6, styledHeadingMapping);
 
 export const headingStyles = tv({
-  base: "text-neutral-900",
+  base: "font-pretendard text-text-strong",
   variants: {
     isTruncated: {
       true: "web:truncate",
