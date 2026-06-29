@@ -17,14 +17,10 @@ const StyledH5 = styled(H5, styledHeadingMapping);
 const StyledH6 = styled(H6, styledHeadingMapping);
 
 export const headingStyles = tv({
-  base: "font-pretendard text-text-strong",
+  base: "font-pretendard text-text-strong text-title",
   variants: {
     isTruncated: {
       true: "web:truncate",
-    },
-    bold: {
-      true: "font-bold",
-      false: "font-normal",
     },
     underline: {
       true: "underline",
@@ -53,10 +49,6 @@ export const headingStyles = tv({
       "5xl": "text-6xl",
     },
   },
-  defaultVariants: {
-    size: "lg",
-    bold: true,
-  },
 });
 
 type RNHeadingProps = React.ComponentProps<typeof H1>;
@@ -83,7 +75,6 @@ export interface HeadingProps
 export function Heading({
   className,
   isTruncated,
-  bold,
   underline,
   strikeThrough,
   size,
@@ -92,11 +83,10 @@ export function Heading({
   highlight,
   ...props
 }: HeadingProps) {
-  const resolvedSize: HeadingSize = size ?? "lg";
+  const resolvedSize: HeadingSize = size ?? "5xl";
   const ariaLevel = ariaLevelBySize[resolvedSize];
   const styles = headingStyles({
     isTruncated,
-    bold,
     underline,
     strikeThrough,
     size,
