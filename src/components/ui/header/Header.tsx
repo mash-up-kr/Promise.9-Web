@@ -1,10 +1,10 @@
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Text } from "@/components/ui/text/Text";
+import { Heading } from "@/components/ui/heading/Heading";
 import { tv } from "@/lib/tv";
 
 const headerStyles = tv({
-  base: "h-14 flex-row items-center justify-between bg-background-base px-4",
+  base: "flex-row items-center justify-between bg-background-base px-5 py-2.5",
 });
 
 export interface HeaderProps {
@@ -20,19 +20,12 @@ export function Header({ left, title, right, className }: HeaderProps) {
   return (
     <View style={{ paddingTop: insets.top }}>
       <View className={headerStyles({ class: className })}>
-        <View className="min-w-10 flex-row items-center">{left}</View>
-
-        <View className="flex-1 items-center">
-          {typeof title === "string" ? (
-            <Text variant="title" className="text-text-strong">
-              {title}
-            </Text>
-          ) : (
-            title
-          )}
+        <View className="flex-1 flex-row items-center gap-2">
+          {left}
+          {typeof title === "string" ? <Heading>{title}</Heading> : title}
         </View>
 
-        <View className="min-w-10 flex-row items-center justify-end gap-2">
+        <View className="flex-row items-center justify-end gap-2.5">
           {right}
         </View>
       </View>
