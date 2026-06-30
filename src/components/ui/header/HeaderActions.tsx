@@ -1,12 +1,25 @@
 import { Ellipsis, Search } from "lucide-react-native";
+import { Pressable } from "react-native";
 
-import { GlassIconButton } from "@/components/ui/glass-icon-button/GlassIconButton";
+import { Icon } from "@/components/ui/icon/Icon";
 
 export function HeaderActions() {
   return (
     <>
-      <GlassIconButton iconNode={Search} label="검색" />
-      <GlassIconButton iconNode={Ellipsis} label="더보기" />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="검색"
+        className="items-center justify-center rounded-full p-2"
+      >
+        <Icon iconNode={Search} />
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="더보기"
+        className="items-center justify-center rounded-full p-2"
+      >
+        <Icon iconNode={Ellipsis} />
+      </Pressable>
     </>
   );
 }
