@@ -17,4 +17,6 @@ export type Link = {
   memo: string;
   aiSummary: string;
   isFavorite: boolean;
+  /** 썸네일 대표색 — 백엔드가 내려주는 헥스 문자열 (#RRGGBB). 동적 배경에 사용. */
+  dominantColor?: string;
 };
