@@ -3,20 +3,22 @@ import type { VariantProps } from "tailwind-variants";
 
 import { tv } from "@/lib/tv";
 
+// 네이티브는 폰트의 weight 축을 지원하지 않아 각 프리셋의 font-weight 만으로는
+// 굵기가 반영되지 않는다. 프리셋별로 굵기에 맞는 static 폰트(font-pretendard-*)를 함께 지정한다.
 const variantPresets = {
-  title: "text-title",
-  "heading-1": "text-heading-1",
-  "heading-2": "text-heading-2",
-  "heading-3": "text-heading-3",
-  "body-1": "text-body-1",
-  "body-2": "text-body-2",
-  "body-3": "text-body-3",
-  "body-4": "text-body-4",
-  "label-1": "text-label-1",
-  "label-2-medium": "text-label-2-medium",
-  "label-2-semibold": "text-label-2-semibold",
-  "caption-1": "text-caption-1",
-  "caption-2": "text-caption-2",
+  title: "text-title font-pretendard-semibold",
+  "heading-1": "text-heading-1 font-pretendard-semibold",
+  "heading-2": "text-heading-2 font-pretendard-semibold",
+  "heading-3": "text-heading-3 font-pretendard-semibold",
+  "body-1": "text-body-1 font-pretendard",
+  "body-2": "text-body-2 font-pretendard-medium",
+  "body-3": "text-body-3 font-pretendard-medium",
+  "body-4": "text-body-4 font-pretendard-medium",
+  "label-1": "text-label-1 font-pretendard-semibold",
+  "label-2-medium": "text-label-2-medium font-pretendard-medium",
+  "label-2-semibold": "text-label-2-semibold font-pretendard-semibold",
+  "caption-1": "text-caption-1 font-pretendard",
+  "caption-2": "text-caption-2 font-pretendard",
 } as const;
 
 const textStyles = tv({
@@ -27,7 +29,7 @@ const textStyles = tv({
       true: "web:truncate",
     },
     bold: {
-      true: "font-bold",
+      true: "font-pretendard-bold",
     },
     underline: {
       true: "underline",
