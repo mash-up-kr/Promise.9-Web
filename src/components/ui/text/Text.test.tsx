@@ -13,9 +13,13 @@ describe("Text", () => {
     expect(screen.getByText("색깔").props.className).toContain("text-red-500");
   });
 
-  test("bold variant 가 font-bold 를 적용한다", async () => {
+  test("bold variant 가 font-pretendard-bold(실제 굵기 폰트)를 적용한다", async () => {
+    // 네이티브는 폰트의 weight 축을 지원하지 않아 font-weight 스타일만으로는
+    // 굵기가 바뀌지 않는다. 굵기별 static 폰트로 fontFamily 자체를 바꿔야 한다.
     await render(<Text bold>굵게</Text>);
-    expect(screen.getByText("굵게").props.className).toContain("font-bold");
+    expect(screen.getByText("굵게").props.className).toContain(
+      "font-pretendard-bold",
+    );
   });
 
   test("size variant 에 따라 사이즈 클래스가 적용된다", async () => {
@@ -68,6 +72,20 @@ describe("Text", () => {
     const cls = screen.getByText("본문").props.className;
     expect(cls).toContain("text-body-1");
     expect(cls).toContain("text-text-normal");
+  });
+
+  test("variant 프리셋이 지정된 굵기의 static 폰트(font-pretendard-semibold)를 함께 적용한다 (title → 600)", async () => {
+    await render(<Text variant="title">제목</Text>);
+    expect(screen.getByText("제목").props.className).toContain(
+      "font-pretendard-semibold",
+    );
+  });
+
+  test("variant 프리셋이 지정된 굵기의 static 폰트(font-pretendard-medium)를 함께 적용한다 (body-2 → 500)", async () => {
+    await render(<Text variant="body-2">본문</Text>);
+    expect(screen.getByText("본문").props.className).toContain(
+      "font-pretendard-medium",
+    );
   });
 
   test("variant(크기)와 색상 override 가 함께 적용된다", async () => {

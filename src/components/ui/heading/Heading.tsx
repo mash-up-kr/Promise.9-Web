@@ -23,8 +23,10 @@ export const headingStyles = tv({
       true: "web:truncate",
     },
     bold: {
-      true: "font-bold",
-      false: "font-normal",
+      // 네이티브는 폰트의 weight 축을 지원하지 않아 font-weight 스타일만으로는
+      // 굵기가 바뀌지 않는다. 굵기별 static 폰트로 fontFamily 자체를 바꾼다.
+      true: "font-pretendard-bold",
+      false: "font-pretendard",
     },
     underline: {
       true: "underline",
