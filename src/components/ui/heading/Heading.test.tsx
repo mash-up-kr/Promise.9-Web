@@ -36,8 +36,10 @@ describe("Heading", () => {
       );
     });
 
-    test("기본적으로 볼드(font-bold)가 적용된다", () => {
-      expect(headingStyles({})).toContain("font-bold");
+    test("기본적으로 볼드(font-pretendard-bold, 실제 굵기 폰트)가 적용된다", () => {
+      // 네이티브는 폰트의 weight 축을 지원하지 않아 font-weight 스타일만으로는
+      // 굵기가 바뀌지 않는다. 굵기별 static 폰트로 fontFamily 자체를 바꿔야 한다.
+      expect(headingStyles({})).toContain("font-pretendard-bold");
     });
 
     test("기본 텍스트 색상으로 semantic 토큰(text-text-strong)을 적용한다", () => {
@@ -48,10 +50,10 @@ describe("Heading", () => {
       expect(headingStyles({})).toContain("font-pretendard");
     });
 
-    test("bold={false} 면 font-normal 이 적용되고 font-bold 는 빠진다", () => {
+    test("bold={false} 면 font-pretendard(regular)가 적용되고 font-pretendard-bold 는 빠진다", () => {
       const result = headingStyles({ bold: false });
-      expect(result).toContain("font-normal");
-      expect(result).not.toContain("font-bold");
+      expect(result).toContain("font-pretendard");
+      expect(result).not.toContain("font-pretendard-bold");
     });
   });
 });
