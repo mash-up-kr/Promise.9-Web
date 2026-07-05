@@ -68,12 +68,12 @@
   --color-background-base: var(--color-gray-900);
   --color-background-list: var(--color-gray-800);
   --color-background-thumbnail: var(--color-gray-800);
-  --color-background-list-selected: var(--color-gray-600);
+  --color-background-list-selected: var(--color-gray-700);
   /* Figma 미토큰화 raw 값(SearchBar 배경) — 디자이너 확정 시 값 조정 */
   --color-background-input: #26262b;
 
   /* ── Semantic: Border ── */
-  --color-border-divider: var(--color-gray-700);
+  --color-border-divider: var(--color-gray-600);
 
   /* ── Semantic: Text ── */
   --color-text-strong: var(--color-gray-50);
@@ -88,6 +88,7 @@
   --color-icon-normal: var(--color-gray-100);
   --color-icon-alternative: var(--color-gray-300);
   --color-icon-assistive: var(--color-gray-400);
+  --color-icon-accent: var(--color-blue-500);
   --color-icon-inverse: var(--color-gray-950);
   --color-icon-accent: var(--color-blue-500);
 
