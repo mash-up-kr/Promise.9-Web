@@ -14,7 +14,7 @@ export function HeaderBackButton() {
       className="items-center justify-center rounded-full p-2"
       onPress={() => router.back()}
     >
-      <Icon iconNode={ChevronLeft} />
+      <Icon icon={ChevronLeft} />
     </Pressable>
   );
 }

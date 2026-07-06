@@ -50,8 +50,10 @@ describe("Heading", () => {
       expect(headingStyles({})).toContain("text-text-strong");
     });
 
-    test("기본 폰트로 Pretendard(font-pretendard)를 적용한다", () => {
-      expect(headingStyles({})).toContain("font-pretendard");
+    test("title 프리셋 weight(600)에 맞는 static 폰트(font-pretendard-semibold)를 적용한다", () => {
+      // 네이티브는 폰트의 weight 축을 지원하지 않아 font-weight 스타일만으로는
+      // 굵기가 바뀌지 않는다. 굵기별 static 폰트로 fontFamily 자체를 바꾼다.
+      expect(headingStyles({})).toContain("font-pretendard-semibold");
     });
 
     test("weight 유틸(font-bold/font-normal) 없이 title 프리셋 weight 를 따른다", () => {

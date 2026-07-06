@@ -122,9 +122,13 @@
   --color-folder-orange-subtle-active: #624a2e;
 
   /* ── Font family ──
-   * _layout.tsx 의 useFonts 로 로드한 가변(Variable) 폰트. weight 축을 지원해
-   * 프리셋의 font-weight(400/500/600)가 그대로 반영된다. */
+   * 네이티브는 커스텀 폰트의 weight 축을 지원하지 않아 font-weight 스타일만으로는
+   * 굵기가 바뀌지 않는다. _layout.tsx 의 useFonts 로 굵기별 static 폰트를 각각
+   * 로드해 fontFamily 자체를 바꾸는 방식으로 굵기를 표현한다. */
   --font-pretendard: "Pretendard";
+  --font-pretendard-medium: "Pretendard-Medium";
+  --font-pretendard-semibold: "Pretendard-SemiBold";
+  --font-pretendard-bold: "Pretendard-Bold";
 
   /* ── Typography presets (Pretendard) ──
    * size / line-height / font-weight / letter-spacing 를 한 토큰에 묶음.

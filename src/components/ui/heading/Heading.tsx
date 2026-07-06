@@ -17,7 +17,9 @@ const StyledH5 = styled(H5, styledHeadingMapping);
 const StyledH6 = styled(H6, styledHeadingMapping);
 
 export const headingStyles = tv({
-  base: "font-pretendard text-text-strong text-title",
+  // 네이티브는 폰트의 weight 축을 지원하지 않아 title 프리셋의 font-weight(600)만으로는
+  // 굵기가 바뀌지 않는다. weight 에 맞는 static 폰트(font-pretendard-semibold)를 함께 지정한다.
+  base: "font-pretendard-semibold text-text-strong text-title",
   variants: {
     isTruncated: {
       true: "web:truncate",
