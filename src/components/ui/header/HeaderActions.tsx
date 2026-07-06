@@ -11,14 +11,14 @@ export function HeaderActions() {
         accessibilityLabel="검색"
         className="items-center justify-center rounded-full p-2"
       >
-        <Icon icon={Search} />
+        <Icon iconNode={Search} />
       </Pressable>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="더보기"
         className="items-center justify-center rounded-full p-2"
       >
-        <Icon icon={Ellipsis} />
+        <Icon iconNode={Ellipsis} />
       </Pressable>
     </>
   );
