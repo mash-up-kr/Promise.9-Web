@@ -12,58 +12,9 @@ const tabBarStyles = tv({
   base: "h-15 flex-row items-center gap-2 rounded-full px-2 bg-[rgba(36,36,38,0.7)] shadow-[inset_1px_1px_0_0_var(--color-opacity-white-10)] web:backdrop-blur-[15px]",
 });
 
-const tabItemStyles = tv({
-  base: "size-11 items-center justify-center rounded-full",
-  variants: {
-    isActive: {
-      true: "bg-opacity-white-20",
-    },
-  },
-});
+export interface TabBarProps extends BottomTabBarProps {}
 
-type TabItemConfig = {
-  name: string;
-  label: string;
-  iconNode: IconComponent;
-};
-
-// 디자인상 탭은 홈·보관함 2개. 검색·세팅 라우트는 헤더 아이콘으로 진입한다.
-const HOME_TAB: TabItemConfig = { name: "index", label: "홈", iconNode: House };
-const ARCHIVE_TAB: TabItemConfig = {
-  name: "archive",
-  label: "보관함",
-  iconNode: Archive,
-};
-
-function TabBarItem({
-  item,
-  isActive,
-  onPress,
-}: {
-  item: TabItemConfig;
-  isActive: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="tab"
-      accessibilityLabel={item.label}
-      accessibilityState={{ selected: isActive }}
-      aria-selected={isActive}
-      onPress={onPress}
-      className={tabItemStyles({ isActive })}
-    >
-      <Icon
-        iconNode={item.iconNode}
-        size={24}
-        strokeWidth={1.5}
-        className={isActive ? "text-icon-strong" : "text-icon-alternative"}
-      />
-    </Pressable>
-  );
-}
-
-export function TabBar({ state, navigation }: BottomTabBarProps) {
+export function TabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const activeRouteName = state.routes[state.index]?.name;
 
@@ -114,5 +65,58 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
         />
       </View>
     </View>
+  );
+}
+
+// =============================================
+
+const tabItemStyles = tv({
+  base: "size-11 items-center justify-center rounded-full",
+  variants: {
+    isActive: {
+      true: "bg-opacity-white-20",
+    },
+  },
+});
+
+type TabItemConfig = {
+  name: string;
+  label: string;
+  iconNode: IconComponent;
+};
+
+// 디자인상 탭은 홈·보관함 2개. 검색·세팅 라우트는 헤더 아이콘으로 진입한다.
+const HOME_TAB: TabItemConfig = { name: "index", label: "홈", iconNode: House };
+const ARCHIVE_TAB: TabItemConfig = {
+  name: "archive",
+  label: "보관함",
+  iconNode: Archive,
+};
+
+function TabBarItem({
+  item,
+  isActive,
+  onPress,
+}: {
+  item: TabItemConfig;
+  isActive: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityLabel={item.label}
+      accessibilityState={{ selected: isActive }}
+      aria-selected={isActive}
+      onPress={onPress}
+      className={tabItemStyles({ isActive })}
+    >
+      <Icon
+        iconNode={item.iconNode}
+        size={24}
+        strokeWidth={1.5}
+        className={isActive ? "text-icon-strong" : "text-icon-alternative"}
+      />
+    </Pressable>
   );
 }
