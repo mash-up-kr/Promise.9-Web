@@ -20,7 +20,7 @@ export function Header({ left, title, right, className }: HeaderProps) {
   return (
     <View style={{ paddingTop: insets.top }}>
       <View className={headerStyles({ class: className })}>
-        <View className="flex-1 flex-row items-center gap-2">
+        <View className="flex-1 flex-row items-center gap-4">
           {left}
           {typeof title === "string" ? <Heading>{title}</Heading> : title}
         </View>
