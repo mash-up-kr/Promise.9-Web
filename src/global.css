@@ -2,6 +2,12 @@
 @import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css";
 
+/* 플랫폼 variant (nativewind/theme.css 발췌) */
+@custom-variant ios (@media ios);
+@custom-variant android (@media android);
+@custom-variant native (@media native);
+@custom-variant web (@supports selector(div > div));
+
 /*
  * Design System 토큰
  * semantic 만 컴포넌트에서 사용한다. primitive 직접 사용 금지.
