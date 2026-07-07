@@ -5,10 +5,12 @@ import { Header } from "@/components/ui/header/Header";
 import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { Heading } from "@/components/ui/heading/Heading";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
+import { TabBar } from "@/components/ui/tab-bar/TabBar";
 
 export default function TabsLayout() {
   return (
     <Tabs
+      tabBar={(props) => <TabBar {...props} />}
       screenOptions={{
         sceneStyle: { backgroundColor: "transparent" },
         header: ({ options }) => (

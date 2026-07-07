@@ -49,6 +49,7 @@ function TabBarItem({
       accessibilityRole="tab"
       accessibilityLabel={item.label}
       accessibilityState={{ selected: isActive }}
+      aria-selected={isActive}
       onPress={onPress}
       className={tabItemStyles({ isActive })}
     >
