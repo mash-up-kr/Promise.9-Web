@@ -13,9 +13,11 @@ const inputSlotStyles = tv({
   base: "items-center justify-center",
 });
 
-// 웹은 브라우저 기본 포커스 아웃라인이 pill 안에 그려져 제거한다 (포커스 표시는 디자인 확정 시 추가)
+// 웹은 브라우저 기본 포커스 아웃라인이 pill 안에 그려져 제거한다 (포커스 표시는 디자인 확정 시 추가).
+// iOS TextInput 은 lineHeight(text-base 의 24)가 폰트보다 크면 글리프를 라인박스
+// 하단에 정렬해 텍스트가 ~2pt 내려간다 — line-height 를 해제해 자연 중앙 정렬시킨다.
 const inputFieldStyles = tv({
-  base: "flex-1 font-pretendard-medium text-base text-text-strong web:outline-none",
+  base: "flex-1 font-pretendard-medium text-base text-text-strong web:outline-none ios:leading-[0px]",
 });
 
 // placeholder·커서 색은 RN 특성상 prop 으로만 지정 가능 — 토큰 값(text-assistive / white-100)
