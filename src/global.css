@@ -81,6 +81,7 @@
   --color-icon-alternative: var(--color-gray-300);
   --color-icon-assistive: var(--color-gray-400);
   --color-icon-inverse: var(--color-gray-950);
+  --color-icon-accent: var(--color-blue-500);
 
   /* ── Semantic: Folder / Accent ── */
   --color-folder-gray: var(--color-gray-400);

@@ -9,6 +9,8 @@ export const mockLinkDetail: Link = {
   source: "toss.tech",
   savedAt: "2026-06-19T00:00:00.000Z",
   folder: "디자인",
+  // 백엔드가 폴더 색을 내려주기 전 임시값 — TODO(backend): 폴더 색상 스펙 확정 시 교체
+  folderColor: "purple",
   tags: ["디자인", "IT", "실험 설계", "퍼널 분석", "가설 수립"],
   memo: "이 텍스트 필드는 쓰는 만큼 늘어납니다 그런데 사용자들이 과연 메모를 얼마나 쓸까요? 메모된 내용으로 검색에 도움을 받을 수 있다는 사실을 유저들이 알게 하려면 어떻게 해야 할까요?",
   aiSummary:
