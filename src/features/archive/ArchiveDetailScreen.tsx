@@ -4,7 +4,7 @@ import { View } from "react-native";
 import { Heading } from "@/components/ui/heading/Heading";
 import { Text } from "@/components/ui/text/Text";
 
-export function LibraryDetailScreen() {
+export function ArchiveDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   return (
     <View className="flex-1 items-center justify-center p-6">
