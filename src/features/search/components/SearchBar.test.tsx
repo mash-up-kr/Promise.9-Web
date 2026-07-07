@@ -20,6 +20,13 @@ describe("SearchBar", () => {
     expect(onChangeText).toHaveBeenCalledWith("링크딩동");
   });
 
+  test("검색 리턴 키(returnKeyType=search)를 기본값으로 가진다", async () => {
+    await render(<SearchBar />);
+    expect(screen.getByPlaceholderText("검색").props.returnKeyType).toBe(
+      "search",
+    );
+  });
+
   test("placeholder 를 덮어쓸 수 있다", async () => {
     await render(<SearchBar placeholder="폴더 검색" />);
     expect(screen.getByPlaceholderText("폴더 검색")).toBeOnTheScreen();

@@ -13,7 +13,11 @@ export function SearchScreen() {
       <Stack.Screen
         options={{
           header: () => (
-            <Header left={<HeaderBackButton />} title={<SearchBar />} />
+            <Header
+              left={<HeaderBackButton />}
+              // 검색 화면 진입 즉시 입력 가능하도록 자동 포커스
+              title={<SearchBar autoFocus />}
+            />
           ),
         }}
       />

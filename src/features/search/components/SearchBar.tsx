@@ -3,6 +3,11 @@ import type { TextInputProps } from "react-native";
 
 import { Icon } from "@/components/ui/icon/Icon";
 import { Input, InputField, InputSlot } from "@/components/ui/input/Input";
+import { tv } from "@/lib/tv";
+
+const searchBarStyles = tv({
+  base: "gap-2",
+});
 
 export interface SearchBarProps extends Omit<TextInputProps, "className"> {
   className?: string;
@@ -14,17 +19,18 @@ export function SearchBar({
   ...props
 }: SearchBarProps) {
   return (
-    <Input className={className}>
+    <Input className={searchBarStyles({ class: className })}>
       <InputSlot>
         <Icon
           iconNode={Search}
-          size={24}
+          size={16}
           strokeWidth={1.5}
           className="text-icon-assistive"
         />
       </InputSlot>
       <InputField
         accessibilityRole="search"
+        returnKeyType="search"
         placeholder={placeholder}
         {...props}
       />
