@@ -47,4 +47,9 @@ describe("IconButton", () => {
     await render(<IconButton iconNode={StubIcon} accessibilityLabel="검색" />);
     expect(stubProps?.color).toBe("#fafafa");
   });
+
+  test("아이콘 획 두께를 디자인 스펙(1.5)으로 렌더한다", async () => {
+    await render(<IconButton iconNode={StubIcon} accessibilityLabel="검색" />);
+    expect(stubProps?.strokeWidth).toBe(1.5);
+  });
 });
