@@ -28,6 +28,17 @@ describe("Input", () => {
     expect(onChangeText).toHaveBeenCalledWith("값");
   });
 
+  test("InputField 커서는 디자인 스펙(흰색)을 따른다", async () => {
+    await render(
+      <Input>
+        <InputField placeholder="입력" />
+      </Input>,
+    );
+    const field = screen.getByPlaceholderText("입력");
+    expect(field.props.cursorColor).toBe("#ffffff");
+    expect(field.props.selectionColor).toBe("#ffffff");
+  });
+
   test("InputField 는 placeholder 색 기본값(text-assistive)을 가진다", async () => {
     await render(
       <Input>

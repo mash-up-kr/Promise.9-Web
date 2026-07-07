@@ -1,5 +1,5 @@
 import type { PressableProps, TextInputProps, ViewProps } from "react-native";
-import { Pressable, TextInput, View } from "react-native";
+import { Platform, Pressable, TextInput, View } from "react-native";
 
 import { tv } from "@/lib/tv";
 
@@ -13,12 +13,17 @@ const inputSlotStyles = tv({
   base: "items-center justify-center",
 });
 
+// 웹은 브라우저 기본 포커스 아웃라인이 pill 안에 그려져 제거한다 (포커스 표시는 디자인 확정 시 추가)
 const inputFieldStyles = tv({
-  base: "flex-1 font-pretendard-medium text-base text-text-strong",
+  base: "flex-1 font-pretendard-medium text-base text-text-strong web:outline-none",
 });
 
-// placeholder 색은 RN 특성상 prop 으로만 지정 가능 — text-assistive(gray-400) 토큰 값
+// placeholder·커서 색은 RN 특성상 prop 으로만 지정 가능 — 토큰 값(text-assistive / white-100)
 const PLACEHOLDER_COLOR = "#65656b";
+const CURSOR_COLOR = "#ffffff";
+// Android 는 selectionColor 를 하이라이트에 불투명하게 그대로 써서 흰 텍스트가
+// 가려진다(실기 확인). iOS 는 시스템이 알파를 적용하므로 흰색 그대로 쓴다.
+const SELECTION_COLOR = Platform.OS === "android" ? "#ffffff4d" : "#ffffff";
 
 export interface InputProps extends Omit<ViewProps, "className"> {
   className?: string;
@@ -46,6 +51,8 @@ export function InputField({ className, ...props }: InputFieldProps) {
   return (
     <TextInput
       placeholderTextColor={PLACEHOLDER_COLOR}
+      cursorColor={CURSOR_COLOR}
+      selectionColor={SELECTION_COLOR}
       className={inputFieldStyles({ class: className })}
       {...props}
     />
