@@ -1,4 +1,4 @@
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import { Search, Settings } from "lucide-react-native";
 
 import { Header } from "@/components/ui/header/Header";
@@ -8,6 +8,8 @@ import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { TabBar } from "@/components/ui/tab-bar/TabBar";
 
 export default function TabsLayout() {
+  const router = useRouter();
+
   return (
     <Tabs
       tabBar={(props) => <TabBar {...props} />}
@@ -28,7 +30,11 @@ export default function TabsLayout() {
               left={<Heading>Link-dingdong</Heading>}
               right={
                 <>
-                  <IconButton iconNode={Search} accessibilityLabel="검색" />
+                  <IconButton
+                    iconNode={Search}
+                    accessibilityLabel="검색"
+                    onPress={() => router.navigate("/search")}
+                  />
                   <IconButton iconNode={Settings} accessibilityLabel="설정" />
                 </>
               }

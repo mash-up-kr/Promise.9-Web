@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
 import { View } from "react-native";
 
@@ -9,6 +9,8 @@ import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Text } from "@/components/ui/text/Text";
 
 export function CategoriesScreen() {
+  const router = useRouter();
+
   return (
     <>
       <Stack.Screen
@@ -17,7 +19,14 @@ export function CategoriesScreen() {
             <Header
               left={<HeaderBackButton />}
               title="카테고리"
-              right={<IconButton iconNode={Search} accessibilityLabel="검색" />}
+              right={
+                <IconButton
+                  iconNode={Search}
+                  accessibilityLabel="검색"
+                  // 검색에서 진입한 경우 스택 중복 없이 기존 검색 화면으로 복귀 (navigate)
+                  onPress={() => router.navigate("/search")}
+                />
+              }
             />
           ),
         }}
