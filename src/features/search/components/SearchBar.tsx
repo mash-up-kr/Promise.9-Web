@@ -25,7 +25,8 @@ export function SearchBar({
           iconNode={Search}
           size={16}
           strokeWidth={1.5}
-          className="text-icon-assistive"
+          // Figma 스펙: 아이콘 색은 white-100 변수 바인딩 (semantic 토큰 정리 시 교체)
+          className="text-opacity-white-100"
         />
       </InputSlot>
       <InputField
