@@ -35,7 +35,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen name="search" options={{ title: "검색" }} />
-      <Tabs.Screen name="library" options={{ title: "보관함" }} />
+      <Tabs.Screen name="archive" options={{ title: "보관함" }} />
       <Tabs.Screen name="settings" options={{ title: "세팅" }} />
     </Tabs>
   );
