@@ -69,6 +69,8 @@
   --color-background-list: var(--color-gray-800);
   --color-background-thumbnail: var(--color-gray-800);
   --color-background-list-selected: var(--color-gray-600);
+  /* Figma 미토큰화 raw 값(SearchBar 배경) — 디자이너 확정 시 값 조정 */
+  --color-background-input: #26262b;
 
   /* ── Semantic: Border ── */
   --color-border-divider: var(--color-gray-700);
