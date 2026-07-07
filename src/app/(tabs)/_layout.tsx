@@ -1,7 +1,10 @@
 import { Tabs } from "expo-router";
+import { Search, Settings } from "lucide-react-native";
 
 import { Header } from "@/components/ui/header/Header";
 import { HeaderActions } from "@/components/ui/header/HeaderActions";
+import { Heading } from "@/components/ui/heading/Heading";
+import { IconButton } from "@/components/ui/icon-button/IconButton";
 
 export default function TabsLayout() {
   return (
@@ -13,7 +16,24 @@ export default function TabsLayout() {
         ),
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "홈" }} />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "홈",
+          header: () => (
+            <Header
+              // 서비스 워드마크 로고(svg)가 확정되면 임시 텍스트를 로고로 교체 예정
+              left={<Heading>Link-dingdong</Heading>}
+              right={
+                <>
+                  <IconButton iconNode={Search} accessibilityLabel="검색" />
+                  <IconButton iconNode={Settings} accessibilityLabel="설정" />
+                </>
+              }
+            />
+          ),
+        }}
+      />
       <Tabs.Screen name="search" options={{ title: "검색" }} />
       <Tabs.Screen name="library" options={{ title: "보관함" }} />
       <Tabs.Screen name="settings" options={{ title: "세팅" }} />
