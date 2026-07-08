@@ -4,6 +4,7 @@ import { Platform, TextInput, View } from "react-native";
 import { Text } from "@/components/ui/text/Text";
 
 const PLACEHOLDER = "저장한 이유나 기억하고 싶은 점을 적어보세요";
+const MAX_MEMO_LENGTH = 300;
 
 export interface MemoFieldProps {
   memo: string;
@@ -27,13 +28,14 @@ export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
   return (
     <View className="gap-2">
       <Text variant="heading-3">메모</Text>
-      <View className="w-full rounded-[20px] bg-opacity-white-10 p-4">
+      <View className="w-full gap-3 rounded-[20px] bg-opacity-white-10 p-4">
         <TextInput
           ref={inputRef}
           multiline
           value={memo}
           onChangeText={onChangeMemo}
           placeholder={PLACEHOLDER}
+          maxLength={MAX_MEMO_LENGTH}
           // placeholderTextColor 는 className 으로 못 받아 리터럴로 지정 — #ffffff4d = --color-opacity-white-30
           placeholderTextColor="#ffffff4d"
           // TODO: 저장 트리거(디바운스/blur) 정책은 백엔드 연동 확정 후 결정 —
@@ -42,6 +44,15 @@ export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
           // iOS 상단 여백 이슈 우회
           style={{ verticalAlign: "top", padding: 0 }}
         />
+        {/* 카운터는 입력값이 있을 때만 노출한다(빈 상태=placeholder 만). */}
+        {memo.length > 0 && (
+          <Text
+            variant="caption-2"
+            className="w-full text-right text-text-alternative"
+          >
+            {memo.length}/{MAX_MEMO_LENGTH}
+          </Text>
+        )}
       </View>
     </View>
   );

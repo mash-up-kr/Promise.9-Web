@@ -36,4 +36,19 @@ describe("MemoField", () => {
     );
     expect(onChangeMemo).toHaveBeenCalledWith("첫 줄\n둘째 줄");
   });
+
+  test("memo 가 비어 있으면 글자 수 카운터를 노출하지 않는다", async () => {
+    await render(<MemoField memo="" onChangeMemo={jest.fn()} />);
+    expect(screen.queryByText(/\/300$/)).toBeNull();
+  });
+
+  test("memo 에 값이 있으면 '글자수/300' 카운터를 노출한다", async () => {
+    await render(<MemoField memo="가나다" onChangeMemo={jest.fn()} />);
+    expect(screen.getByText("3/300")).toBeOnTheScreen();
+  });
+
+  test("입력 필드에 300자 제한(maxLength)이 걸려 있다", async () => {
+    await render(<MemoField memo="" onChangeMemo={jest.fn()} />);
+    expect(screen.getByPlaceholderText(PLACEHOLDER).props.maxLength).toBe(300);
+  });
 });
