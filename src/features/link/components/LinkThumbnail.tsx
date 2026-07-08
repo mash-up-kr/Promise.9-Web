@@ -10,8 +10,8 @@ import {
 
 import { ExternalLinkIcon } from "@/components/ui/icon/ExternalLinkIcon";
 
-// 대표 이미지는 원본 비율을 따른다: 가로형은 화면 가로폭(335), 세로형은 240 고정.
-const LANDSCAPE_WIDTH = 335;
+// 대표 이미지는 원본 비율을 따른다: 가로형은 부모 컨테이너 가로폭 100%(좌우 패딩은
+// 상위에서 처리), 세로형은 240 고정.
 const PORTRAIT_WIDTH = 240;
 // 치수 측정 전 기본 비율(가로형 Figma 335×235 기준) — og-image 대부분 landscape.
 const DEFAULT_ASPECT_RATIO = 335 / 235;
@@ -44,7 +44,7 @@ export function LinkThumbnail({ thumbnailUrl, url }: LinkThumbnailProps) {
   }, [thumbnailUrl]);
 
   const isPortrait = size != null && size.height > size.width;
-  const boxWidth = isPortrait ? PORTRAIT_WIDTH : LANDSCAPE_WIDTH;
+  const boxWidth: number | `${number}%` = isPortrait ? PORTRAIT_WIDTH : "100%";
   const aspectRatio =
     size != null ? size.width / size.height : DEFAULT_ASPECT_RATIO;
 
