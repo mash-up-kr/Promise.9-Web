@@ -23,7 +23,7 @@ export function ArchiveDetailScreen() {
           ),
         }}
       />
-      <View className="flex-1 items-center justify-center p-6">
+      <View className="flex-1 items-center justify-center bg-background-base p-6">
         <Heading size="2xl">보관함 상세</Heading>
         <Text className="mt-2 text-neutral-500">id: {id}</Text>
       </View>
