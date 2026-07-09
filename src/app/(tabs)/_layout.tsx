@@ -42,11 +42,7 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* 보관함은 화면이 자체 Header(더보기 메뉴 포함)를 렌더하므로 탭 헤더는 끈다. */}
-      <Tabs.Screen
-        name="archive"
-        options={{ title: "보관함", headerShown: false }}
-      />
+      <Tabs.Screen name="archive" options={{ title: "보관함" }} />
       <Tabs.Screen name="settings" options={{ title: "세팅" }} />
     </Tabs>
   );
