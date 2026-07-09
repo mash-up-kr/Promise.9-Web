@@ -1,8 +1,8 @@
+import { Plus } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
 
 import { Icon } from "@/components/ui/icon/Icon";
-import { PlusIcon } from "@/components/ui/icon/icons";
 import { Text } from "@/components/ui/text/Text";
 
 export interface FolderSectionAction {
@@ -29,7 +29,7 @@ export function FolderSection({ title, action, children }: FolderSectionProps) {
             accessibilityLabel={action.label}
             onPress={action.onPress}
           >
-            <Icon iconNode={PlusIcon} size={24} className="text-icon-accent" />
+            <Icon iconNode={Plus} size={24} className="text-icon-accent" />
           </Pressable>
         ) : null}
       </View>

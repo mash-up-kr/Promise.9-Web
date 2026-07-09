@@ -1,13 +1,9 @@
 import type { LucideIcon, LucideProps } from "lucide-react-native";
 import { styled } from "nativewind";
-import type { ComponentType } from "react";
-
-import type { SvgIconProps } from "./icons";
 
 // 아이콘으로 쓸 수 있는 컴포넌트 타입.
-// lucide 아이콘 + Figma 기반 react-native-svg 아이콘(icons/) 을 함께 받는다.
-// 둘 다 className→color 매핑으로 color(=currentColor) 를 주입받는다.
-export type IconComponent = LucideIcon | ComponentType<SvgIconProps>;
+// className→color 매핑으로 color 를 주입받는 lucide 아이콘.
+export type IconComponent = LucideIcon;
 
 const iconStyleMapping = {
   className: { target: "style", nativeStyleMapping: { color: "color" } },
