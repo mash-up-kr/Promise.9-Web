@@ -30,6 +30,7 @@ https://docs.expo.dev/versions/v56.0.0/
 - `/new-test` — 테스트 스캐폴드 (TDD red 단계)
 - `/new-component` — NativeWind 컴포넌트 스캐폴드
 - `/new-screen` — expo-router 화면 추가
+- `/new-query` — TanStack Query 쿼리 정의·훅 스캐폴드
 - `good-code` — 코드 작성/리뷰 시 품질 4원칙 (자동 트리거)
 - `good-debug` — 버그/에러 대응 시 디버깅 절차 (자동 트리거)
 - `/commit` — 관심사별 atomic 커밋

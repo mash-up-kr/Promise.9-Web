@@ -25,5 +25,5 @@ description: expo-router 화면(라우트)을 팀 컨벤션대로 추가한다. 
      return <LibraryScreen />;
    }
    ```
-3. 데이터가 필요하면 `src/features/<기능>/api/` 에 react-query 훅을 추가한다.
+3. 데이터가 필요하면 `src/features/<기능>/api/` 에 react-query 훅을 추가한다 → `/new-query`.
 4. typedRoutes 타입 갱신을 위해 `pnpm start` 한 번 또는 타입체크.
