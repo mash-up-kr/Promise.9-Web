@@ -1,6 +1,11 @@
+import { Stack, useLocalSearchParams } from "expo-router";
+import { Ellipsis, Star } from "lucide-react-native";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
 
+import { Header } from "@/components/ui/header/Header";
+import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
+import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Text } from "@/components/ui/text/Text";
 
 import { AiSummarySection } from "./components/AiSummarySection";
@@ -12,6 +17,9 @@ import { RelatedLinksList } from "./components/RelatedLinksList";
 import { TagEditor } from "./components/TagEditor";
 import { mockLinkDetail, mockRelatedLinks } from "./mock/mockLinkDetail";
 
+// 백엔드 연동 전까지 상세 조회 가능한 목업 링크 전체(대표 링크 + 관련 링크).
+const mockLinks = [mockLinkDetail, ...mockRelatedLinks];
+
 // savedAt(ISO 8601)의 날짜 부분만 취해 "YYYY.MM.DD"로 바꾼다. Date 객체를 거치면
 // 로컬 타임존에 따라 날짜가 하루 밀릴 수 있어 문자열을 직접 자른다.
 function formatSavedDate(savedAt: string): string {
@@ -19,8 +27,11 @@ function formatSavedDate(savedAt: string): string {
 }
 
 export function LinkDetailScreen() {
-  const [tags, setTags] = useState<string[]>(mockLinkDetail.tags);
-  const [memo, setMemo] = useState<string>(mockLinkDetail.memo);
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const linkDetail = mockLinks.find((link) => link.id === id) ?? mockLinkDetail;
+
+  const [tags, setTags] = useState<string[]>(linkDetail.tags);
+  const [memo, setMemo] = useState<string>(linkDetail.memo);
 
   function handleAddTag(tag: string) {
     setTags((prev) => [...prev, tag]);
@@ -31,58 +42,75 @@ export function LinkDetailScreen() {
   }
 
   return (
-    <View className="flex-1">
-      <LinkBackground
-        thumbnailUrl={mockLinkDetail.thumbnailUrl}
-        dominantColor={mockLinkDetail.dominantColor}
+    <>
+      <Stack.Screen
+        options={{
+          header: () => (
+            <Header
+              left={<HeaderBackButton />}
+              right={
+                <>
+                  <IconButton iconNode={Star} accessibilityLabel="즐겨찾기" />
+                  <IconButton iconNode={Ellipsis} accessibilityLabel="더보기" />
+                </>
+              }
+            />
+          ),
+        }}
       />
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="gap-6 pt-4 pb-8"
-        contentInsetAdjustmentBehavior="automatic"
-      >
-        <View className="px-5">
-          <LinkThumbnail
-            thumbnailUrl={mockLinkDetail.thumbnailUrl}
-            url={mockLinkDetail.url}
-          />
-        </View>
+      <View className="flex-1">
+        <LinkBackground
+          thumbnailUrl={linkDetail.thumbnailUrl}
+          dominantColor={linkDetail.dominantColor}
+        />
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="gap-6 pt-4 pb-8"
+          contentInsetAdjustmentBehavior="automatic"
+        >
+          <View className="px-5">
+            <LinkThumbnail
+              thumbnailUrl={linkDetail.thumbnailUrl}
+              url={linkDetail.url}
+            />
+          </View>
 
-        <View className="gap-2 px-5">
-          <FolderBadge
-            folder={mockLinkDetail.folder}
-            folderColor={mockLinkDetail.folderColor}
-          />
-          <Text variant="heading-1">{mockLinkDetail.title}</Text>
-          <Text variant="caption-1" className="text-opacity-white-70">
-            {mockLinkDetail.source}
-            <Text variant="caption-1" className="text-opacity-white-40">
-              {" · "}
+          <View className="gap-2 px-5">
+            <FolderBadge
+              folder={linkDetail.folder}
+              folderColor={linkDetail.folderColor}
+            />
+            <Text variant="heading-1">{linkDetail.title}</Text>
+            <Text variant="caption-1" className="text-opacity-white-70">
+              {linkDetail.source}
+              <Text variant="caption-1" className="text-opacity-white-40">
+                {" · "}
+              </Text>
+              {formatSavedDate(linkDetail.savedAt)}
             </Text>
-            {formatSavedDate(mockLinkDetail.savedAt)}
-          </Text>
-        </View>
+          </View>
 
-        <View className="px-5">
-          <AiSummarySection summary={mockLinkDetail.aiSummary} />
-        </View>
+          <View className="px-5">
+            <AiSummarySection summary={linkDetail.aiSummary} />
+          </View>
 
-        <View className="px-5">
-          <TagEditor
-            tags={tags}
-            onAddTag={handleAddTag}
-            onRemoveTag={handleRemoveTag}
-          />
-        </View>
+          <View className="px-5">
+            <TagEditor
+              tags={tags}
+              onAddTag={handleAddTag}
+              onRemoveTag={handleRemoveTag}
+            />
+          </View>
 
-        <View className="px-5">
-          <MemoField memo={memo} onChangeMemo={setMemo} />
-        </View>
+          <View className="px-5">
+            <MemoField memo={memo} onChangeMemo={setMemo} />
+          </View>
 
-        <View className="mt-6">
-          <RelatedLinksList items={mockRelatedLinks} />
-        </View>
-      </ScrollView>
-    </View>
+          <View className="mt-6">
+            <RelatedLinksList items={mockRelatedLinks} />
+          </View>
+        </ScrollView>
+      </View>
+    </>
   );
 }

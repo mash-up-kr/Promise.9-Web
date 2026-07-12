@@ -282,7 +282,7 @@
   // JavaScript 언어별 특화 설정
   // ======================
   "javascript": {
-    // 전역 변수 선언 - auto-import로 주입되는 전역 변수
+    // 전역 변수 선언 - auto-import로 주입되는 전역 변수 + 테스트(jest) 전역
     "globals": ["dev", "jest"],
     // JavaScript 포매터 설정
     "formatter": {

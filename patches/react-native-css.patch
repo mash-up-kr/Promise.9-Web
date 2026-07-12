@@ -1,0 +1,26 @@
+diff --git a/dist/commonjs/metro/metro-transformer.js b/dist/commonjs/metro/metro-transformer.js
+index 7aa9d00f7033199efde3a6e38ddd098ace6a28a6..08a631ec31b11820f71580c5988dfdd0520748fd 100644
+--- a/dist/commonjs/metro/metro-transformer.js
++++ b/dist/commonjs/metro/metro-transformer.js
+@@ -21,7 +21,7 @@ async function transform(config, projectRoot, filePath, data, options) {
+   });
+   const css = cssFile.output[0].data.css.code.toString();
+   const productionJS = (0, _index.compile)(css, {
+-    ...options.reactNativeCSS,
++    ...(config.reactNativeCSS ?? options.reactNativeCSS),
+     filename: filePath,
+     projectRoot: projectRoot
+   }).stylesheet();
+diff --git a/dist/module/metro/metro-transformer.js b/dist/module/metro/metro-transformer.js
+index 7293ae17ef66005304e8740b9e1f9d097afcb79b..72da8e41e6f2e12d4336c1d6066a96982f13fb30 100644
+--- a/dist/module/metro/metro-transformer.js
++++ b/dist/module/metro/metro-transformer.js
+@@ -17,7 +17,7 @@ export async function transform(config, projectRoot, filePath, data, options) {
+   });
+   const css = cssFile.output[0].data.css.code.toString();
+   const productionJS = compile(css, {
+-    ...options.reactNativeCSS,
++    ...(config.reactNativeCSS ?? options.reactNativeCSS),
+     filename: filePath,
+     projectRoot: projectRoot
+   }).stylesheet();

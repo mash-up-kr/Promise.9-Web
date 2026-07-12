@@ -4,6 +4,11 @@ import { Image } from "react-native";
 import { LinkDetailScreen } from "./LinkDetailScreen";
 import { mockLinkDetail, mockRelatedLinks } from "./mock/mockLinkDetail";
 
+jest.mock("expo-router", () => ({
+  Stack: { Screen: () => null },
+  useLocalSearchParams: () => ({ id: mockLinkDetail.id }),
+}));
+
 describe("LinkDetailScreen", () => {
   beforeEach(() => {
     jest
