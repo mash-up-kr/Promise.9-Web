@@ -81,8 +81,8 @@ describe("Text", () => {
     );
   });
 
-  test("variant 프리셋이 지정된 굵기의 static 폰트(font-pretendard-medium)를 함께 적용한다 (body-2 → 500)", async () => {
-    await render(<Text variant="body-2">본문</Text>);
+  test("variant 프리셋이 지정된 굵기의 static 폰트(font-pretendard-medium)를 함께 적용한다 (body-2-normal → 500)", async () => {
+    await render(<Text variant="body-2-normal">본문</Text>);
     expect(screen.getByText("본문").props.className).toContain(
       "font-pretendard-medium",
     );

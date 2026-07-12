@@ -89,6 +89,7 @@
   --color-icon-alternative: var(--color-gray-300);
   --color-icon-assistive: var(--color-gray-400);
   --color-icon-inverse: var(--color-gray-950);
+  --color-icon-accent: var(--color-blue-500);
 
   /* ── Semantic: Folder / Accent ── */
   --color-folder-gray: var(--color-gray-400);
@@ -165,9 +166,13 @@
   --text-body-1--line-height: calc(22 / 15);
   --text-body-1--font-weight: 400;
 
-  --text-body-2: 14px;
-  --text-body-2--line-height: calc(22 / 14);
-  --text-body-2--font-weight: 500;
+  --text-body-2-normal: 14px;
+  --text-body-2-normal--line-height: calc(22 / 14);
+  --text-body-2-normal--font-weight: 500;
+
+  --text-body-2-reading: 14px;
+  --text-body-2-reading--line-height: calc(20 / 14);
+  --text-body-2-reading--font-weight: 400;
 
   --text-body-3: 13px;
   --text-body-3--line-height: calc(18 / 13);

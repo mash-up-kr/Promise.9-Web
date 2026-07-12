@@ -59,3 +59,6 @@ example
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Local planning docs (never committed)
+plan/
