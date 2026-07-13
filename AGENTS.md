@@ -31,6 +31,7 @@ https://docs.expo.dev/versions/v56.0.0/
 - `/new-component` — NativeWind 컴포넌트 스캐폴드
 - `/new-screen` — expo-router 화면 추가
 - `/new-query` — TanStack Query 쿼리 정의·훅 스캐폴드
+- `/new-form` — react-hook-form + zod 폼 스캐폴드
 - `good-code` — 코드 작성/리뷰 시 품질 4원칙 (자동 트리거)
 - `good-debug` — 버그/에러 대응 시 디버깅 절차 (자동 트리거)
 - `/commit` — 관심사별 atomic 커밋

@@ -1,6 +1,6 @@
 ---
 name: new-query
-description: TanStack Query 쿼리 정의·훅을 팀 컨벤션대로 스캐폴드한다. Use when connecting an API or creating useQuery/useMutation hooks (예:"API 연동해줘", "쿼리 훅 만들어줘", "서버 데이터 불러와줘"). 폼 상태(react-hook-form)·로컬 UI 상태(useState)·익스텐션 코드에는 사용하지 않는다.
+description: TanStack Query 쿼리 정의·훅을 팀 컨벤션대로 스캐폴드한다. Use when connecting an API or creating useQuery/useMutation hooks (예:"API 연동해줘", "쿼리 훅 만들어줘", "서버 데이터 불러와줘"). 폼 상태는 /new-form, 로컬 UI 상태(useState)·익스텐션 코드에는 사용하지 않는다.
 ---
 
 # new-query — 서버 상태 (앱/웹)
