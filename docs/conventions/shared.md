@@ -5,7 +5,9 @@
 ## TypeScript
 - `strict: true`. `any` 금지 — 불가피하면 `unknown` + 좁히기.
 - 컴포넌트 props·외부 노출 함수는 타입 명시. 내부 지역 변수는 추론 활용.
-- 타입은 `type` 우선, 선언 병합/확장이 필요할 때만 `interface`.
+- **객체 형태(컴포넌트 Props 등)는 `interface`**, `type` 이어야만 하는 것(유니온·유틸리티 조합·별칭·조건부 타입)만 `type`.
+  - 근거: TS 공식 핸드북의 휴리스틱 — *"use `interface` until you need to use features from `type`"*. 공식 성능 위키도 교집합(`&`) 대신 interface `extends` 를 권장한다 (타입 관계 캐시, 속성 충돌 감지, 에러 메시지에 원본 이름 유지).
+  - 참고: [Handbook — Type Aliases vs Interfaces](https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#differences-between-type-aliases-and-interfaces) · [Wiki — Preferring Interfaces Over Intersections](https://github.com/microsoft/TypeScript/wiki/Performance#preferring-interfaces-over-intersections)
 
 ## 네이밍
 - 컴포넌트 파일/이름: PascalCase (`LinkCard.tsx`).
