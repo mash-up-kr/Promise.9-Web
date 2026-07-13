@@ -14,6 +14,7 @@
 - 훅: `useXxx`. 일반 함수/변수: camelCase. 상수: `UPPER_SNAKE_CASE`.
 - 불리언: `is` / `has` / `should` 접두사.
 - 폴더: 도메인명 소문자 또는 kebab-case.
+- 타입·상수 등 모음 파일: `<도메인>.<역할>.ts` (`link.types.ts`, `link.constants.ts` — 상세: structure.md 공통 규칙).
 
 ## import
 - 절대경로 `@/`(앱/웹) · `@shared/`(공유 코어) 사용. 상대경로는 같은 기능 폴더 내부에서만.
