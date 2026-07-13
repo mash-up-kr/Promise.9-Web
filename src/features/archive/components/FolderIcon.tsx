@@ -6,11 +6,12 @@ import { Folder } from "lucide-react-native";
 // 여기서는 토큰 색을 raw 값으로 stroke·fill 에 직접 넣는다.
 // 색 출처: global.css --color-folder-gray / --color-folder-blue-solid (Figma 동기화 토큰).
 const GRAY_FILL = "#65656b";
+const BLUE_FILL = "#61a8ef";
 
 // 보관함 폴더 목록은 gray·blue 만 쓴다. 나머지 FolderColor variant 는 gray 로 폴백.
 const TONE_FILL: Partial<Record<FolderColor, string>> = {
   gray: GRAY_FILL,
-  blue: "#61a8ef",
+  blue: BLUE_FILL,
 };
 
 export interface FolderIconProps {
