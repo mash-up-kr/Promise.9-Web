@@ -43,12 +43,12 @@ export function FolderItem({
     >
       <View className="flex-row items-center gap-3">
         <FolderIcon tone={tone} size={28} />
-        <Text variant="body-2" className="text-text-normal">
+        <Text variant="body-2-normal" className="text-text-normal">
           {name}
         </Text>
       </View>
       <View className="flex-row items-center gap-1">
-        <Text variant="body-2" className="text-text-alternative">
+        <Text variant="body-2-normal" className="text-text-alternative">
           {count}
         </Text>
         <Icon
