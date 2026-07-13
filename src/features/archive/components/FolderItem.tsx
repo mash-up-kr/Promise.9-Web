@@ -1,11 +1,10 @@
+import type { FolderColor } from "@shared/types/link";
 import { ChevronRight } from "lucide-react-native";
 import { Pressable, View } from "react-native";
-
 import { Icon } from "@/components/ui/icon/Icon";
 import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
 
-import type { FolderTone } from "../types";
 import { FolderIcon } from "./FolderIcon";
 
 const folderItemStyles = tv({
@@ -24,7 +23,7 @@ const folderItemStyles = tv({
 export interface FolderItemProps {
   name: string;
   count: number;
-  tone?: FolderTone;
+  tone?: FolderColor;
   selected?: boolean;
   onPress?: () => void;
 }

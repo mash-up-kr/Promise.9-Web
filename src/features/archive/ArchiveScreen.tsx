@@ -1,11 +1,10 @@
+import type { Folder } from "@shared/types/folder";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
-
 import { FolderGroup } from "./components/FolderGroup";
 import { FolderItem } from "./components/FolderItem";
 import { FolderSection } from "./components/FolderSection";
-import type { Folder } from "./types";
 
 // 폴더 API 는 아직 없어 정적 데이터로 구성한다. react-query 연동은 후속 작업.
 const BASIC_FOLDERS: Folder[] = [
