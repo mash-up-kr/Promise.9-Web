@@ -3,6 +3,7 @@ import { useFonts } from "expo-font";
 import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
@@ -46,6 +47,25 @@ export default function RootLayout() {
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="create-link"
+                options={
+                  Platform.OS === "web"
+                    ? {
+                        presentation: "transparentModal",
+                        headerShown: false,
+                        animation: "none",
+                        contentStyle: { backgroundColor: "transparent" },
+                      }
+                    : {
+                        presentation: "formSheet",
+                        headerShown: false,
+                        sheetAllowedDetents: [0.9],
+                        sheetGrabberVisible: true,
+                        sheetCornerRadius: 24,
+                      }
+                }
+              />
             </Stack>
           </ThemeProvider>
         </KeyboardProvider>

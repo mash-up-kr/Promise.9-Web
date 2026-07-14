@@ -1,3 +1,6 @@
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush }) }));
+
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import type { BottomTabBarProps } from "expo-router/js-tabs";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
@@ -34,6 +37,7 @@ describe("TabBar", () => {
   beforeEach(() => {
     emit.mockClear();
     navigate.mockClear();
+    mockPush.mockClear();
   });
 
   test("홈·보관함 탭과 링크 추가 버튼을 렌더한다", async () => {
@@ -68,5 +72,11 @@ describe("TabBar", () => {
     await renderWithSafeArea(<TabBar {...makeProps(0)} />);
     fireEvent.press(screen.getByRole("tab", { name: "홈" }));
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  test("+ 버튼을 누르면 create-link 로 이동한다", async () => {
+    await renderWithSafeArea(<TabBar {...makeProps()} />);
+    fireEvent.press(screen.getByRole("button", { name: "링크 추가" }));
+    expect(mockPush).toHaveBeenCalledWith("/create-link");
   });
 });
