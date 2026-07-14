@@ -3,7 +3,8 @@ import { useFonts } from "expo-font";
 import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 
 import { queryClient } from "@/lib/queryClient";
 import "@/global.css";
@@ -35,16 +36,20 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <View className="flex-1 bg-background-base">
-        <ThemeProvider value={transparentBackgroundTheme}>
-          <Stack
-            screenOptions={{ contentStyle: { backgroundColor: "transparent" } }}
-          >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          </Stack>
-        </ThemeProvider>
-      </View>
+      <GestureHandlerRootView className="flex-1 bg-background-base">
+        <KeyboardProvider>
+          <ThemeProvider value={transparentBackgroundTheme}>
+            <Stack
+              screenOptions={{
+                contentStyle: { backgroundColor: "transparent" },
+              }}
+            >
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            </Stack>
+          </ThemeProvider>
+        </KeyboardProvider>
+      </GestureHandlerRootView>
     </QueryClientProvider>
   );
 }
