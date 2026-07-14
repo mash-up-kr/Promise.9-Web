@@ -18,6 +18,7 @@ module.exports = {
     progress: sharedValue(0),
   }),
   KeyboardProvider: ({ children }) => children,
+  KeyboardAwareScrollView: ({ children }) => children,
   KeyboardController: {
     setInputMode: NOOP,
     setDefaultMode: NOOP,
