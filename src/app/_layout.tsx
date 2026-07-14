@@ -36,14 +36,19 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <View className="flex-1 bg-background-base">
-        <ThemeProvider value={transparentBackgroundTheme}>
-          <Stack
-            screenOptions={{ contentStyle: { backgroundColor: "transparent" } }}
-          >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          </Stack>
-        </ThemeProvider>
+        {/* 웹에서 앱 폭을 768px 로 제한하고 중앙 정렬한다. 네이티브는 화면보다 넓어 영향 없음. */}
+        <View className="mx-auto w-full max-w-[768px] flex-1">
+          <ThemeProvider value={transparentBackgroundTheme}>
+            <Stack
+              screenOptions={{
+                contentStyle: { backgroundColor: "transparent" },
+              }}
+            >
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            </Stack>
+          </ThemeProvider>
+        </View>
       </View>
     </QueryClientProvider>
   );
