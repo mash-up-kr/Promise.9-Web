@@ -5,8 +5,14 @@ import { tv } from "@/lib/tv";
 
 // gluestack v2 Input 의 compound 구조(Input/InputSlot/InputField)를 차용해
 // 우리 스택(tv + 디자인 토큰)으로 작성. focus 상태 스타일은 디자인 확정 시 추가한다.
-const inputStyles = tv({
-  base: "h-10 flex-1 flex-row items-center rounded-full bg-background-input px-3",
+export const inputStyles = tv({
+  base: "flex-row items-center bg-background-input",
+  variants: {
+    variant: {
+      pill: "h-10 flex-1 rounded-full px-3",
+      field: "min-h-13 w-full rounded-2xl px-4 py-3",
+    },
+  },
 });
 
 const inputSlotStyles = tv({
@@ -29,10 +35,13 @@ const SELECTION_COLOR = Platform.OS === "android" ? "#ffffff4d" : "#ffffff";
 
 export interface InputProps extends Omit<ViewProps, "className"> {
   className?: string;
+  variant: "pill" | "field";
 }
 
-export function Input({ className, ...props }: InputProps) {
-  return <View className={inputStyles({ class: className })} {...props} />;
+export function Input({ className, variant, ...props }: InputProps) {
+  return (
+    <View className={inputStyles({ variant, class: className })} {...props} />
+  );
 }
 
 export interface InputSlotProps extends Omit<PressableProps, "className"> {
