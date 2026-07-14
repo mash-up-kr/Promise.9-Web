@@ -4,8 +4,8 @@ import { ChevronIcon } from "@/components/ui/icon/ChevronIcon";
 import { FolderIcon } from "@/components/ui/icon/FolderIcon";
 import { Text } from "@/components/ui/text/Text";
 
-// 미분류 folder 아이콘 색 = icon-alternative(#8a8a93). 아이콘은 hex color prop 만 받아 리터럴로 둔다.
-const UNCLASSIFIED_ICON_COLOR = "#8A8A93";
+// 미분류 folder 아이콘 색 = folder/gray(#65656b), Figma 기준. 아이콘은 hex color prop 만 받아 리터럴로 둔다.
+const UNCLASSIFIED_ICON_COLOR = "#65656B";
 // "폴더선택" chevron accent 색 = icon-accent(#0093ff).
 const ACCENT_ICON_COLOR = "#0093FF";
 
