@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const REMIND_TYPES = ["soon", "later", "reference"] as const;
+import { REMIND_TYPES } from "./link.constants";
 
 export const MEMO_MAX_LENGTH = 300;
 
