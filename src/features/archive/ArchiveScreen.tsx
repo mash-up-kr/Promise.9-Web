@@ -1,4 +1,4 @@
-import type { Folder } from "@shared/types/folder";
+import type { Folder } from "@shared/types/folder.types";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";

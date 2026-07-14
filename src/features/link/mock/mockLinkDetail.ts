@@ -1,4 +1,4 @@
-import type { Link } from "@shared/types/link";
+import type { Link } from "@shared/types/link.types";
 
 /** Figma `link-detail` 4컷(node 5:887, 펼침/메모 입력 상태) 기준 목업 */
 export const mockLinkDetail: Link = {

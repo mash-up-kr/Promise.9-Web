@@ -1,4 +1,4 @@
-import type { FolderColor } from "@shared/types/link";
+import type { FolderColor } from "@shared/types/link.types";
 import { ChevronRight } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 import { Icon } from "@/components/ui/icon/Icon";

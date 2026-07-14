@@ -1,4 +1,4 @@
-import type { FolderColor } from "./link";
+import type { FolderColor } from "./link.types";
 
 /**
  * 보관함 폴더 도메인 타입 (폴더 목록 화면 기준).

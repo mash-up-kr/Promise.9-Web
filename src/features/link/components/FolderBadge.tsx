@@ -1,4 +1,4 @@
-import type { FolderColor } from "@shared/types/link";
+import type { FolderColor } from "@shared/types/link.types";
 import { Pressable, View } from "react-native";
 import { ChevronIcon } from "@/components/ui/icon/ChevronIcon";
 import { FolderIcon } from "@/components/ui/icon/FolderIcon";

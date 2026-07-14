@@ -1,6 +1,6 @@
 import type { AxiosResponse } from "axios";
 
-import type { ErrorResponse } from "./types";
+import type { ErrorResponse } from "./api.types";
 
 export abstract class HttpError extends Error {}
 
