@@ -87,6 +87,7 @@ test('링크 목록을 불러온다', async () => {
 네이티브 앱 빌드는 GitHub Actions 에서 너무 오래 걸려 **앱 E2E CI 는 제거**했다. 대신 PR 올리기 전 **로컬에서 iOS·Android 둘 다 1회 통과**시키는 것을 컨벤션으로 한다.
 - 절차·사전요건(시뮬레이터/에뮬레이터 + Metro)은 **`.maestro/README.md`** 단일 출처.
 - 웹 E2E(Playwright)는 그대로 CI 에서 자동 검증된다.
+- 대안으로 **EAS Workflows 의 Maestro 잡**(클라우드 에뮬/시뮬 실행, https://docs.expo.dev/eas/workflows/examples/e2e-tests/)이 있으나 빌드 크레딧 비용이 들어 보류 — 플로우가 쌓여 로컬 게이트가 부담되면 재검토 (2026-07 검토).
 
 ## 도구 선택 근거
 - **웹 = Playwright**: RN Web 은 실제 DOM 으로 렌더되므로 일반 브라우저 E2E 가 가능. 정식(GA) 도구로 크로스브라우저·로케일·뷰포트를 지원.
@@ -104,3 +105,19 @@ unit·integration(RNTL)과 동일하게 **접근성·사용자 관점 우선**. 
 
 ## jest 와의 분리
 Playwright 스펙은 `e2e/` 에 두고, jest 는 `jest.config.js` 의 `testPathIgnorePatterns` 로 `/e2e/` 를 제외한다(`*.test.*` = jest, `e2e/*.spec.ts` = Playwright).
+
+## agent 탐색 검증과의 관계 (검증 사다리)
+개발 중 agent 가 브라우저/디바이스를 직접 조작해 동작을 확인하는 것(웹: Chrome DevTools·Playwright MCP / 네이티브: agent-device)은 **탐색적 검증**이며, E2E 테스트가 아니다 — 스크립트로 버전 관리되지 않고, 반복 가능하지 않고, 게이트로 실행되지 않는다. 둘은 대체가 아니라 역할 분담이다:
+
+| 층 | 도구 | 시점 | 성격 |
+|---|---|---|---|
+| unit·integration | jest | TDD 루프 | 회귀 자산 |
+| agent 탐색 검증 | MCP (브라우저·디바이스) | 변경 직후 "지금 동작하는가" | 일회성 확인 |
+| 웹 E2E | Playwright | CI, "여전히 동작하는가" | 회귀 자산 |
+| 네이티브 E2E | Maestro | PR 전 로컬 | 회귀 자산 |
+
+**승격 기준** — agent 로 확인하던 플로우는 다음 중 하나에 해당하면 스크립트 E2E 로 승격한다:
+1. **크리티컬 유저 저니가 완성됐을 때** (로그인, 링크 저장 등) — 즉시 승격.
+2. **같은 플로우를 agent 로 반복 확인하게 될 때** — 반복되는 수동 확인은 스크립트화 신호.
+
+승격 시 agent 가 탐색한 그 세션에서 Playwright spec / Maestro flow 초안을 바로 작성하는 것이 처음부터 스펙을 상상해서 쓰는 것보다 정확하다 (record → refine).

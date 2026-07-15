@@ -56,7 +56,7 @@
 
 ## src/ (앱+웹, Expo/RN)
 - `app/` 는 **라우팅 껍데기만**. 화면 로직은 `src/features/<기능>/<Name>Screen.tsx`.
-- `src/features/<기능>/` 안: `components/` `hooks/` `api/`(react-query 훅) `types.ts` + 화면.
+- `src/features/<기능>/` 안: `components/` `hooks/` `api/`(react-query 훅·zod 스키마) + 화면. 기능 공용 타입·상수는 `<도메인>.types.ts` · `<도메인>.constants.ts`.
 - 기능 무관 공용 UI 는 `src/components/ui/`.
 - alias: `@/*` → `./src/*`
 
@@ -65,6 +65,9 @@
 - `background/`(service worker) · `popup/`(저장 UI) · `content/`.
 
 ## 공통 규칙
+- **모음 파일은 `<도메인>.<역할>.ts`** — `link.types.ts` · `link.constants.ts` · `link.queries.ts` · `link.contracts.ts`. 전 구역 공통(features·shared 모두): 폴더가 도메인이든 카테고리든 파일명만으로 도메인+역할이 읽히게 한다 (에디터 탭·검색에서 `types.ts` 5개가 열려도 구분되도록).
+  - **co-locate 우선**: 한 파일에서만 쓰는 타입·상수·컴포넌트 Props 는 그 파일 안에 둔다. 모음 파일은 여러 파일이 공유할 때만 만든다.
+  - API 요청/응답 타입은 `<도메인>.contracts.ts` 의 `z.infer` 가 단일 출처 — `*.types.ts` 에 중복 정의하지 않는다.
 - import 는 절대경로 `@/`(앱/웹) · `@shared/`(공유 코어). 상대경로는 **같은 기능 폴더 내부**에서만.
 - 플랫폼 분기: 같은 폴더에 `Button.tsx` / `Button.web.tsx` co-location. (리마인드 발송처럼 표면별로 다른 로직)
 - **빈 폴더 미리 만들지 않기** — 필요할 때 생성.

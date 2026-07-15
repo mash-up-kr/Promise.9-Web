@@ -6,7 +6,7 @@ import { mockLinkDetail, mockRelatedLinks } from "./mock/mockLinkDetail";
 
 jest.mock("expo-router", () => ({
   Stack: { Screen: () => null },
-  useLocalSearchParams: () => ({ id: mockLinkDetail.id }),
+  useLocalSearchParams: () => ({ id: String(mockLinkDetail.linkId) }),
 }));
 
 describe("LinkDetailScreen", () => {
