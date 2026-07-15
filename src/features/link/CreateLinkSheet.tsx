@@ -103,6 +103,7 @@ export function CreateLinkSheet() {
   if (Platform.OS === "web") {
     return <BottomSheet onClose={() => router.back()}>{content}</BottomSheet>;
   }
+
   return (
     <View
       className="flex-1 bg-background-base px-5"

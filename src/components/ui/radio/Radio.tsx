@@ -55,6 +55,7 @@ export interface RadioProps {
 export function Radio({ value, children }: RadioProps) {
   const group = useRadioGroup();
   const checked = group.value === value;
+
   return (
     <RadioContext.Provider value={{ checked }}>
       <Pressable
@@ -82,6 +83,7 @@ export interface RadioIndicatorProps {
 
 export function RadioIndicator({ children }: RadioIndicatorProps) {
   const { checked } = useRadio();
+
   return <View className={indicatorStyles({ checked })}>{children}</View>;
 }
 
