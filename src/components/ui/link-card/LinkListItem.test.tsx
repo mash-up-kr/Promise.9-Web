@@ -1,4 +1,4 @@
-import type { Link } from "@shared/types/link.type";
+import type { Link } from "@shared/types/link.types";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { LinkListItem } from "./LinkListItem";

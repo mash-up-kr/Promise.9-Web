@@ -1,5 +1,5 @@
-import type { Folder } from "@shared/types/folder.type";
-import type { Link } from "@shared/types/link.type";
+import type { Folder } from "@shared/types/folder.types";
+import type { Link } from "@shared/types/link.types";
 import { render, screen } from "@testing-library/react-native";
 
 import { FolderSection } from "./FolderSection";

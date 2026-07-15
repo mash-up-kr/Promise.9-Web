@@ -1,5 +1,5 @@
-import type { Folder } from "@shared/types/folder.type";
-import type { Link } from "@shared/types/link.type";
+import type { Folder } from "@shared/types/folder.types";
+import type { Link } from "@shared/types/link.types";
 
 // API 연동 전 홈 화면 구성용 mock. 내용은 Figma 시안 예시를 따른다.
 // savedAt 은 상대시간 표기 확인을 위해 조회 시점 기준으로 생성한다.

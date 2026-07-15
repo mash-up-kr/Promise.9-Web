@@ -1,4 +1,4 @@
-import type { Link } from "@shared/types/link.type";
+import type { Link } from "@shared/types/link.types";
 import { chunk } from "es-toolkit";
 import { ChevronRight } from "lucide-react-native";
 import { ScrollView } from "react-native";

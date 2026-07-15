@@ -1,5 +1,5 @@
-import type { Folder } from "@shared/types/folder.type";
-import type { Link } from "@shared/types/link.type";
+import type { Folder } from "@shared/types/folder.types";
+import type { Link } from "@shared/types/link.types";
 import { ChevronRight } from "lucide-react-native";
 import { ScrollView } from "react-native";
 

@@ -1,4 +1,4 @@
-import type { Link } from "@shared/types/link.type";
+import type { Link } from "@shared/types/link.types";
 import { Image } from "expo-image";
 import { createContext, useContext } from "react";
 import type { PressableProps } from "react-native";

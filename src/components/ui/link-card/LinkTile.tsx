@@ -1,4 +1,4 @@
-import type { Link } from "@shared/types/link.type";
+import type { Link } from "@shared/types/link.types";
 import type { PressableProps } from "react-native";
 
 import { VStack } from "@/components/ui/vstack/VStack";
