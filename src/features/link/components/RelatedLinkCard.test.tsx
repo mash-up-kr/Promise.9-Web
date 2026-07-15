@@ -1,20 +1,13 @@
-import type { Link } from "@shared/types/link.types";
+import type { RelatedLink } from "@shared/types/link.types";
 import { render, screen } from "@testing-library/react-native";
 import { Image } from "react-native";
 
 import { RelatedLinkCard } from "./RelatedLinkCard";
 
-const baseLink: Link = {
-  id: "link-1",
+const baseLink: RelatedLink = {
+  linkId: 1,
   title: "테스트 링크 제목",
-  url: "https://example.com",
   thumbnailUrl: "https://picsum.photos/seed/test/120/150",
-  source: "example.com",
-  savedAt: "2026-01-01T00:00:00.000Z",
-  tags: [],
-  memo: "",
-  aiSummary: "",
-  isFavorite: false,
 };
 
 function mockGetSize(width: number, height: number) {

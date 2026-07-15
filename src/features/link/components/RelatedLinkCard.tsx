@@ -1,4 +1,4 @@
-import type { Link } from "@shared/types/link.types";
+import type { RelatedLink } from "@shared/types/link.types";
 import { useEffect, useState } from "react";
 import { Image, Platform, View } from "react-native";
 import { Text } from "@/components/ui/text/Text";
@@ -7,7 +7,7 @@ import { Text } from "@/components/ui/text/Text";
 const BLUR_RADIUS = 12;
 
 export interface RelatedLinkCardProps {
-  link: Link;
+  link: RelatedLink;
 }
 
 export function RelatedLinkCard({ link }: RelatedLinkCardProps) {

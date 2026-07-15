@@ -1,11 +1,11 @@
-import type { Link } from "@shared/types/link.types";
+import type { RelatedLink } from "@shared/types/link.types";
 import { ScrollView, View } from "react-native";
 import { Text } from "@/components/ui/text/Text";
 
 import { RelatedLinkCard } from "./RelatedLinkCard";
 
 export interface RelatedLinksListProps {
-  items: Link[];
+  items: RelatedLink[];
 }
 
 export function RelatedLinksList({ items }: RelatedLinksListProps) {
@@ -48,7 +48,7 @@ export function RelatedLinksList({ items }: RelatedLinksListProps) {
           contentContainerClassName="gap-3 pl-5"
         >
           {items.map((item) => (
-            <RelatedLinkCard key={item.id} link={item} />
+            <RelatedLinkCard key={item.linkId} link={item} />
           ))}
         </ScrollView>
       )}

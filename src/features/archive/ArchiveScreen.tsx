@@ -1,19 +1,19 @@
-import type { Folder } from "@shared/types/folder.types";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
+import type { ArchiveFolder } from "./archive.types";
 import { FolderGroup } from "./components/FolderGroup";
 import { FolderItem } from "./components/FolderItem";
 import { FolderSection } from "./components/FolderSection";
 
 // 폴더 API 는 아직 없어 정적 데이터로 구성한다. react-query 연동은 후속 작업.
-const BASIC_FOLDERS: Folder[] = [
+const BASIC_FOLDERS: ArchiveFolder[] = [
   { id: "all", name: "전체", count: 370, tone: "gray" },
   { id: "uncategorized", name: "미분류", count: 370, tone: "gray" },
   { id: "favorites", name: "즐겨찾기", count: 370, tone: "gray" },
 ];
 
-const MY_FOLDERS: Folder[] = [
+const MY_FOLDERS: ArchiveFolder[] = [
   { id: "design", name: "디자인", count: 370, tone: "blue" },
   { id: "ai", name: "AI", count: 370, tone: "blue" },
   { id: "dev", name: "개발", count: 370, tone: "blue" },

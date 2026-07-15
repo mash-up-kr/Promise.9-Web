@@ -3,4 +3,4 @@
 appId: com.mashup.promise9
 ---
 - launchApp
-- assertVisible: "홈 화면 placeholder"
+- assertVisible: "최근 저장"

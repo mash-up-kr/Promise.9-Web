@@ -1,8 +1,8 @@
-import type { Link } from "@shared/types/link.types";
+import type { LinkDetail, RelatedLink } from "@shared/types/link.types";
 
 /** Figma `link-detail` 4컷(node 5:887, 펼침/메모 입력 상태) 기준 목업 */
-export const mockLinkDetail: Link = {
-  id: "link-1",
+export const mockLinkDetail: LinkDetail = {
+  linkId: 1,
   title: "신입 디자이너가 알아야 할 실험 설계 팁",
   url: "https://toss.tech/article/experiment-design-tips",
   thumbnailUrl: "https://picsum.photos/seed/link-detail-mock/335/235",
@@ -20,30 +20,27 @@ export const mockLinkDetail: Link = {
 };
 
 /** 폴더 미지정(`folder` undefined) 상태 — `FolderBadge` "미분류" fallback 검증용 */
-export const mockLinkDetailUnclassified: Link = {
+export const mockLinkDetailUnclassified: LinkDetail = {
   ...mockLinkDetail,
-  id: "link-1-unclassified",
+  linkId: 101,
   folder: undefined,
   dominantColor: "#ca8db5",
 };
 
 /** "함께 다시 볼 링크" 캐러셀 카드 (node 5:558, 5:561, 5:564) */
-export const mockRelatedLinks: Link[] = [
+export const mockRelatedLinks: RelatedLink[] = [
   {
-    ...mockLinkDetail,
-    id: "link-2",
+    linkId: 2,
     title: "신입 디자이너가 꼭 알아야 할 실험 설계 팁",
     thumbnailUrl: "https://picsum.photos/seed/related-1/120/150",
   },
   {
-    ...mockLinkDetail,
-    id: "link-3",
+    linkId: 3,
     title: "Figma Variables 정리",
     thumbnailUrl: "https://picsum.photos/seed/related-2/120/150",
   },
   {
-    ...mockLinkDetail,
-    id: "link-4",
+    linkId: 4,
     title: "사용자 인터뷰 결과를 디자인에 반영하는 방법",
     thumbnailUrl: "https://picsum.photos/seed/related-3/120/150",
   },
