@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import type { BottomTabBarProps } from "expo-router/js-tabs";
 import { Archive, House, Plus } from "lucide-react-native";
 import { Pressable, View } from "react-native";
@@ -16,6 +17,7 @@ export interface TabBarProps extends BottomTabBarProps {}
 
 export function TabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const activeRouteName = state.routes[state.index]?.name;
 
   const handleTabPress = (name: string) => {
@@ -45,10 +47,10 @@ export function TabBar({ state, navigation }: TabBarProps) {
           isActive={activeRouteName === HOME_TAB.name}
           onPress={() => handleTabPress(HOME_TAB.name)}
         />
-        {/* 링크 추가 화면이 생기면 onPress 를 연결한다 */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="링크 추가"
+          onPress={() => router.push("/create-link")}
           className={tabItemStyles()}
         >
           <Icon

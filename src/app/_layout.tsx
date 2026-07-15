@@ -3,7 +3,9 @@ import { useFonts } from "expo-font";
 import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 
 import { queryClient } from "@/lib/queryClient";
 import "@/global.css";
@@ -35,21 +37,42 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <View className="flex-1 bg-background-base">
-        {/* 웹에서 앱 폭을 768px 로 제한하고 중앙 정렬한다. 네이티브는 화면보다 넓어 영향 없음. */}
-        <View className="mx-auto w-full max-w-[768px] flex-1">
-          <ThemeProvider value={transparentBackgroundTheme}>
-            <Stack
-              screenOptions={{
-                contentStyle: { backgroundColor: "transparent" },
-              }}
-            >
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            </Stack>
-          </ThemeProvider>
-        </View>
-      </View>
+      <GestureHandlerRootView className="flex-1 bg-background-base">
+        <KeyboardProvider>
+          {/* 웹에서 앱 폭을 768px 로 제한하고 중앙 정렬한다. 네이티브는 화면보다 넓어 영향 없음. */}
+          <View className="mx-auto w-full max-w-[768px] flex-1">
+            <ThemeProvider value={transparentBackgroundTheme}>
+              <Stack
+                screenOptions={{
+                  contentStyle: { backgroundColor: "transparent" },
+                }}
+              >
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="create-link"
+                  options={
+                    Platform.OS === "web"
+                      ? {
+                          presentation: "transparentModal",
+                          headerShown: false,
+                          animation: "none",
+                          contentStyle: { backgroundColor: "transparent" },
+                        }
+                      : {
+                          presentation: "formSheet",
+                          headerShown: false,
+                          sheetAllowedDetents: [0.9],
+                          sheetGrabberVisible: true,
+                          sheetCornerRadius: 24,
+                        }
+                  }
+                />
+              </Stack>
+            </ThemeProvider>
+          </View>
+        </KeyboardProvider>
+      </GestureHandlerRootView>
     </QueryClientProvider>
   );
 }

@@ -19,7 +19,7 @@ export function SearchBar({
   ...props
 }: SearchBarProps) {
   return (
-    <Input className={searchBarStyles({ class: className })}>
+    <Input variant="pill" className={searchBarStyles({ class: className })}>
       <InputSlot>
         <Icon
           iconNode={Search}
