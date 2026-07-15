@@ -31,7 +31,7 @@ export function CategoriesScreen() {
           ),
         }}
       />
-      <View className="flex-1 items-center justify-center p-6">
+      <View className="flex-1 items-center justify-center bg-background-base p-6">
         <Heading size="2xl">카테고리 둘러보기</Heading>
         <Text className="mt-2 text-neutral-500">
           카테고리 그리드 placeholder

@@ -1,12 +1,11 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
-
+import type { ErrorResponse } from "./api.types";
 import {
   ApiError,
   NetworkError,
   TimeoutError,
   UnauthorizedError,
 } from "./errors";
-import type { ErrorResponse } from "./types";
 
 const setRequestDefaultHeaders = async (
   config: InternalAxiosRequestConfig,

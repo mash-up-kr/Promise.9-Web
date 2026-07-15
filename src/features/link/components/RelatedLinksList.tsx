@@ -1,4 +1,4 @@
-import type { Link } from "@shared/types/link";
+import type { Link } from "@shared/types/link.types";
 import { ScrollView, View } from "react-native";
 import { Text } from "@/components/ui/text/Text";
 

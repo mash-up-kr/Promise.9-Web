@@ -1,4 +1,4 @@
-import type { Link } from "@shared/types/link";
+import type { Link } from "@shared/types/link.types";
 import { render, screen } from "@testing-library/react-native";
 import { Image } from "react-native";
 

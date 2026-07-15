@@ -1,17 +1,13 @@
-import Svg, { Path } from "react-native-svg";
+import { Folder } from "lucide-react-native";
 
 export interface FolderIconProps {
   size?: number;
   color?: string;
 }
 
+// lucide Folder 를 "채움(fill)" 스타일로 쓰기 위한 전용 래퍼.
+// 공통 Icon 래퍼는 className(디자인 토큰) 색을 stroke 로만 주입해 fill 이 안 먹으므로,
+// 여기서는 색을 raw hex 로 stroke·fill 에 직접 넣는다.
 export function FolderIcon({ size = 14, color = "#8A8A93" }: FolderIconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 14 14" fill="none">
-      <Path
-        d="M12.8333 11.0833C12.8333 11.3928 12.7104 11.6895 12.4916 11.9083C12.2728 12.1271 11.9761 12.25 11.6667 12.25H2.33333C2.02391 12.25 1.72717 12.1271 1.50838 11.9083C1.28958 11.6895 1.16667 11.3928 1.16667 11.0833V2.91667C1.16667 2.60725 1.28958 2.3105 1.50838 2.09171C1.72717 1.87292 2.02391 1.75 2.33333 1.75H4.19838C4.85537 1.75 5.4689 2.07835 5.83333 2.625C6.19777 3.17165 6.81129 3.5 7.46829 3.5H11.6667C11.9761 3.5 12.2728 3.62292 12.4916 3.84171C12.7104 4.0605 12.8333 4.35725 12.8333 4.66667V11.0833Z"
-        fill={color}
-      />
-    </Svg>
-  );
+  return <Folder size={size} color={color} fill={color} />;
 }
