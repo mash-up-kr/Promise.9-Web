@@ -5,7 +5,7 @@ import { RecentSaveSection } from "./RecentSaveSection";
 
 function makeLinks(count: number): Link[] {
   return Array.from({ length: count }, (_, i) => ({
-    id: i,
+    linkId: i,
     title: `링크 ${i}`,
     source: "example.com",
     representativeTag: null,

@@ -31,9 +31,9 @@ export function RecentSaveSection({ links }: RecentSaveSectionProps) {
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <HStack className="gap-3 px-5">
           {pages.map((page) => (
-            <VStack key={page[0].id} className="gap-2">
+            <VStack key={page[0].linkId} className="gap-2">
               {page.map((link) => (
-                <LinkListItem key={link.id} link={link} />
+                <LinkListItem key={link.linkId} link={link} />
               ))}
             </VStack>
           ))}

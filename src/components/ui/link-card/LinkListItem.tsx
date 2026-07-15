@@ -19,7 +19,7 @@ export function LinkListItem({ link, ...props }: LinkListItemProps) {
         <LinkCard.Thumbnail className="size-24 rounded-2xl" />
         <VStack className="w-48 justify-center gap-1">
           <LinkCard.Meta />
-          <LinkCard.Title variant="body-2" />
+          <LinkCard.Title variant="body-2-normal" />
         </VStack>
       </HStack>
       <Box className="ml-[108px] h-px w-[200px] rounded-xl bg-border-divider" />

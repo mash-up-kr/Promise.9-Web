@@ -19,13 +19,13 @@ export function FolderSection({ folder, links }: FolderSectionProps) {
   return (
     <VStack className="gap-4">
       <HStack className="items-center gap-1 pl-5">
-        <Text variant="heading-2">{folder.name}</Text>
+        <Text variant="heading-2">{folder.folderName}</Text>
         <Icon iconNode={ChevronRight} size={16} className="text-text-normal" />
       </HStack>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <HStack className="gap-3 pl-5">
           {links.map((link) => (
-            <LinkTile key={link.id} link={link} />
+            <LinkTile key={link.linkId} link={link} />
           ))}
         </HStack>
       </ScrollView>

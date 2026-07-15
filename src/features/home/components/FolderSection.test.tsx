@@ -5,15 +5,15 @@ import { render, screen } from "@testing-library/react-native";
 import { FolderSection } from "./FolderSection";
 
 const folder: Folder = {
-  id: 1,
-  name: "매쉬업 활동",
+  folderId: 1,
+  folderName: "매쉬업 활동",
   linkCount: 2,
   lastSavedAt: new Date().toISOString(),
 };
 
 const links: Link[] = [
   {
-    id: 1,
+    linkId: 1,
     title: "링크 A",
     source: "example.com",
     representativeTag: null,
@@ -21,7 +21,7 @@ const links: Link[] = [
     savedAt: new Date().toISOString(),
   },
   {
-    id: 2,
+    linkId: 2,
     title: "링크 B",
     source: "example.com",
     representativeTag: null,

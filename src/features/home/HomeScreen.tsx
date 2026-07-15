@@ -18,7 +18,11 @@ export function HomeScreen() {
           </Text>
           <VStack className="gap-10">
             {HOME_FOLDER_SECTIONS.map(({ folder, links }) => (
-              <FolderSection key={folder.id} folder={folder} links={links} />
+              <FolderSection
+                key={folder.folderId}
+                folder={folder}
+                links={links}
+              />
             ))}
           </VStack>
         </VStack>

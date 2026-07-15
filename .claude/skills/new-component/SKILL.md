@@ -17,7 +17,7 @@ description: NativeWind 기반 React Native 컴포넌트를 팀 컨벤션대로 
 
 ## 규칙
 - 함수형 + **named export**. PascalCase 파일/이름.
-- props 는 명시적 `type Props = {...}`.
+- props 는 명시적 `export interface XxxProps {...}` (객체=interface 규칙, shared.md).
 - 스타일은 NativeWind `className`. 동적 스타일만 예외.
 - 플랫폼 분기는 className 우선, 불가피하면 `*.web.tsx` / `*.native.tsx`.
 
@@ -25,11 +25,11 @@ description: NativeWind 기반 React Native 컴포넌트를 팀 컨벤션대로 
 ```tsx
 import { View, Text } from 'react-native';
 
-type Props = {
+export interface ComponentNameProps {
   // ...
-};
+}
 
-export function ComponentName({}: Props) {
+export function ComponentName({}: ComponentNameProps) {
   return (
     <View className="">
       <Text className=""></Text>

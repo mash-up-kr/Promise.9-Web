@@ -6,11 +6,11 @@ import { LinkListItem } from "./LinkListItem";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const link: Link = {
-  id: 2,
+  linkId: 2,
   title: "면접 가기 전 준비해야 할 질문 3가지",
   source: "example.com",
   representativeTag: {
-    id: 9,
+    tagId: 9,
     name: "커리어",
     sourceType: "user",
     sortOrder: null,

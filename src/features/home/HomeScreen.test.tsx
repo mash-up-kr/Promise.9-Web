@@ -15,7 +15,7 @@ describe("HomeScreen", () => {
     await render(<HomeScreen />);
 
     for (const { folder } of HOME_FOLDER_SECTIONS) {
-      expect(screen.getByText(folder.name)).toBeOnTheScreen();
+      expect(screen.getByText(folder.folderName)).toBeOnTheScreen();
     }
   });
 });

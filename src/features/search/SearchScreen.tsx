@@ -21,7 +21,7 @@ export function SearchScreen() {
           ),
         }}
       />
-      <View className="flex-1 items-center justify-center p-6">
+      <View className="flex-1 items-center justify-center bg-background-base p-6">
         <Heading size="2xl">검색</Heading>
         <Text className="mt-2 text-neutral-500">링크 검색 placeholder</Text>
       </View>

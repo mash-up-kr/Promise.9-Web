@@ -6,10 +6,15 @@ import { LinkTile } from "./LinkTile";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const link: Link = {
-  id: 1,
+  linkId: 1,
   title: "Obsidian CEO가 직접 만든 옵시디언 스킬",
   source: "example.com",
-  representativeTag: { id: 3, name: "개발", sourceType: "ai", sortOrder: null },
+  representativeTag: {
+    tagId: 3,
+    name: "개발",
+    sourceType: "ai",
+    sortOrder: null,
+  },
   thumbnailUrl: null,
   savedAt: new Date(Date.now() - 3 * DAY_MS).toISOString(),
 };

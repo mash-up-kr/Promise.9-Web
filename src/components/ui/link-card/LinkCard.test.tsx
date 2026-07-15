@@ -6,10 +6,15 @@ import { LinkCard } from "./LinkCard";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const link: Link = {
-  id: 1,
+  linkId: 1,
   title: "바이브 코딩 결과물이 다 평범해 보이는 진짜 이유",
   source: "toss.tech",
-  representativeTag: { id: 7, name: "AI", sourceType: "ai", sortOrder: null },
+  representativeTag: {
+    tagId: 7,
+    name: "AI",
+    sourceType: "ai",
+    sortOrder: null,
+  },
   thumbnailUrl: null,
   savedAt: new Date(Date.now() - 3 * DAY_MS).toISOString(),
 };
