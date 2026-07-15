@@ -29,7 +29,7 @@ export function CreateLinkSheet() {
     });
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: 최초 진입 시 1회만 클립보드를 검사한다. setValue 는 react-hook-form 이 보장하는 안정 참조.
-  useEffect(() => {
+  useEffect(function prefillUrlFromClipboard() {
     let active = true;
     Clipboard.getStringAsync().then((text) => {
       if (
