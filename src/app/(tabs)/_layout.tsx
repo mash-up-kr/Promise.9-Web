@@ -6,7 +6,6 @@ import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { Heading } from "@/components/ui/heading/Heading";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { TabBar } from "@/components/ui/tab-bar/TabBar";
-import { ArchiveHeaderActions } from "@/features/archive/components/ArchiveHeaderActions";
 
 export default function TabsLayout() {
   const router = useRouter();
@@ -43,14 +42,10 @@ export default function TabsLayout() {
           ),
         }}
       />
+      {/* 보관함은 정렬 편집 모드 상태를 헤더↔리스트가 공유하므로 화면이 자체 헤더를 렌더한다. */}
       <Tabs.Screen
         name="archive"
-        options={{
-          title: "보관함",
-          header: () => (
-            <Header title="보관함" right={<ArchiveHeaderActions />} />
-          ),
-        }}
+        options={{ title: "보관함", headerShown: false }}
       />
       <Tabs.Screen name="settings" options={{ title: "세팅" }} />
     </Tabs>
