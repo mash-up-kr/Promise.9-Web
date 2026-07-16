@@ -5,12 +5,15 @@ import type { ArchiveFolder } from "./archive.types";
 import { FolderGroup } from "./components/FolderGroup";
 import { FolderItem } from "./components/FolderItem";
 import { FolderSection } from "./components/FolderSection";
+import { NewFolderButton } from "./components/NewFolderButton";
 
 // 폴더 API 는 아직 없어 정적 데이터로 구성한다. react-query 연동은 후속 작업.
+// 최근 삭제된 링크는 Figma 상 "기본 폴더" 섹션에 속한다.
 const BASIC_FOLDERS: ArchiveFolder[] = [
   { id: "all", name: "전체", count: 370, tone: "gray" },
   { id: "uncategorized", name: "미분류", count: 370, tone: "gray" },
   { id: "favorites", name: "즐겨찾기", count: 370, tone: "gray" },
+  { id: "trash", name: "최근 삭제된 링크", count: 370, tone: "gray" },
 ];
 
 const MY_FOLDERS: ArchiveFolder[] = [
@@ -18,7 +21,6 @@ const MY_FOLDERS: ArchiveFolder[] = [
   { id: "ai", name: "AI", count: 370, tone: "blue" },
   { id: "dev", name: "개발", count: 370, tone: "blue" },
   { id: "later", name: "나중에 갈 곳", count: 370, tone: "blue" },
-  { id: "trash", name: "최근 삭제된 링크", count: 370, tone: "gray" },
 ];
 
 export function ArchiveScreen() {
@@ -31,7 +33,7 @@ export function ArchiveScreen() {
   };
 
   const handleAddFolder = () => {
-    // TODO: 폴더 추가 플로우 (후속 작업)
+    router.push("/create-folder");
   };
 
   return (
@@ -55,20 +57,28 @@ export function ArchiveScreen() {
 
           <FolderSection
             title="내 폴더"
-            action={{ label: "폴더 추가", onPress: handleAddFolder }}
+            action={
+              MY_FOLDERS.length > 0
+                ? { label: "폴더 추가", onPress: handleAddFolder }
+                : undefined
+            }
           >
-            <FolderGroup>
-              {MY_FOLDERS.map((folder) => (
-                <FolderItem
-                  key={folder.id}
-                  name={folder.name}
-                  count={folder.count}
-                  tone={folder.tone}
-                  selected={selectedId === folder.id}
-                  onPress={() => handleOpenFolder(folder.id)}
-                />
-              ))}
-            </FolderGroup>
+            {MY_FOLDERS.length > 0 ? (
+              <FolderGroup>
+                {MY_FOLDERS.map((folder) => (
+                  <FolderItem
+                    key={folder.id}
+                    name={folder.name}
+                    count={folder.count}
+                    tone={folder.tone}
+                    selected={selectedId === folder.id}
+                    onPress={() => handleOpenFolder(folder.id)}
+                  />
+                ))}
+              </FolderGroup>
+            ) : (
+              <NewFolderButton onPress={handleAddFolder} />
+            )}
           </FolderSection>
         </View>
       </ScrollView>
