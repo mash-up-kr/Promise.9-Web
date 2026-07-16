@@ -5,11 +5,41 @@ import { CloseIcon } from "@/components/ui/icon/CloseIcon";
 import { PlusIcon } from "@/components/ui/icon/PlusIcon";
 import { TooltipArrowIcon } from "@/components/ui/icon/TooltipArrowIcon";
 import { Text } from "@/components/ui/text/Text";
+import { tv } from "@/lib/tv";
 
 const MAX_TAGS = 10;
 const PLACEHOLDER = "태그를 입력해 주세요";
 const HELPER_TEXT = "태그는 최대 10개까지 추가할 수 있어요";
 const TOOLTIP_TEXT = "태그를 추가하면 링크를 더 쉽게 찾을 수 있어요";
+
+const inputContainerStyles = tv({
+  base: "h-12 w-full flex-row items-center gap-1 rounded-[16px] border-[0.5px] border-opacity-white-20 px-3",
+  variants: {
+    empty: {
+      true: "bg-opacity-black-20",
+      false: "bg-opacity-white-10",
+    },
+  },
+});
+
+const addButtonStyles = tv({
+  base: "h-8 items-center justify-center rounded-[12px] px-3",
+  variants: {
+    disabled: {
+      true: "bg-blue-700",
+      false: "bg-blue-500",
+    },
+  },
+});
+
+const addButtonLabelStyles = tv({
+  variants: {
+    disabled: {
+      true: "text-gray-200",
+      false: "text-gray-50",
+    },
+  },
+});
 
 export interface TagEditorProps {
   tags: string[];
@@ -108,11 +138,7 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
 
           <View className="w-full gap-2">
             <View
-              className={`h-12 w-full flex-row items-center gap-1 rounded-[16px] border-[0.5px] border-opacity-white-20 px-3 ${
-                draftValue === ""
-                  ? "bg-opacity-black-20"
-                  : "bg-opacity-white-10"
-              }`}
+              className={inputContainerStyles({ empty: draftValue === "" })}
             >
               <Text variant="body-2-normal" className="text-opacity-white-80">
                 #
@@ -134,13 +160,11 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
                 accessibilityState={{ disabled: isAddDisabled }}
                 onPress={handleAdd}
                 disabled={isAddDisabled}
-                className={`h-8 items-center justify-center rounded-[12px] px-3 ${
-                  isAddDisabled ? "bg-blue-700" : "bg-blue-500"
-                }`}
+                className={addButtonStyles({ disabled: isAddDisabled })}
               >
                 <Text
                   variant="label-2-semibold"
-                  className={isAddDisabled ? "text-gray-200" : "text-gray-50"}
+                  className={addButtonLabelStyles({ disabled: isAddDisabled })}
                 >
                   추가
                 </Text>

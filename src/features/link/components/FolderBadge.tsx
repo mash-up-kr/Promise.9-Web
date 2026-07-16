@@ -3,6 +3,11 @@ import { Pressable, View } from "react-native";
 import { ChevronIcon } from "@/components/ui/icon/ChevronIcon";
 import { FolderIcon } from "@/components/ui/icon/FolderIcon";
 import { Text } from "@/components/ui/text/Text";
+import { tv } from "@/lib/tv";
+
+const badgeStyles = tv({
+  base: "flex-row items-center gap-1.5 rounded-lg px-2 py-1",
+});
 
 // 미분류 folder 아이콘 색 = folder/gray(#65656b), Figma 기준. 아이콘은 hex color prop 만 받아 리터럴로 둔다.
 const UNCLASSIFIED_ICON_COLOR = "#65656B";
@@ -65,9 +70,7 @@ export function FolderBadge({
     (folderColor && FOLDER_STYLE[folderColor]) ?? DEFAULT_FOLDER_STYLE;
   return (
     <View className="w-full flex-row items-center">
-      <View
-        className={`flex-row items-center gap-1.5 rounded-lg px-2 py-1 ${style.badge}`}
-      >
+      <View className={badgeStyles({ class: style.badge })}>
         <FolderIcon color={style.iconColor} />
         <Text variant="label-2-semibold" className={style.label}>
           {folder}
