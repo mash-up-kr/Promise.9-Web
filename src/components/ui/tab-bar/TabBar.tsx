@@ -4,14 +4,16 @@ import { Archive, House, Plus } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { GlassView } from "@/components/ui/glass-view/GlassView";
 import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
 import { ROUTES } from "@/constants/routes.constants";
 import { tv } from "@/lib/tv";
 
 // 디자인 시스템 Tab Bar: 화면 하단 중앙에 뜨는 pill.
-// backdrop blur(15)는 네이티브 미지원이라 70% 불투명 배경으로 근사하고 웹에서만 적용한다.
+// Figma: rgba(36,36,38,0.7) + blur(15) 유리 + inset 하이라이트. blur+bg 와 하이라이트를
+// 분리 레이어로 쌓는다(하이라이트가 blur 위에 보이게).
 const tabBarStyles = tv({
-  base: "h-15 flex-row items-center gap-2 rounded-full px-2 bg-[rgba(36,36,38,0.7)] shadow-[inset_1px_1px_0_0_var(--color-opacity-white-10)] web:backdrop-blur-[15px]",
+  base: "h-15 flex-row items-center gap-2 overflow-hidden rounded-full px-2",
 });
 
 export interface TabBarProps extends BottomTabBarProps {}
@@ -43,6 +45,11 @@ export function TabBar({ state, navigation }: TabBarProps) {
       style={{ paddingBottom: Math.max(insets.bottom, 20) }}
     >
       <View className={tabBarStyles()}>
+        <GlassView intensity={80} className="absolute inset-0" />
+        <View
+          pointerEvents="none"
+          className="absolute inset-0 rounded-full shadow-[inset_1px_1px_0_0_var(--color-opacity-white-10)]"
+        />
         <TabBarItem
           item={HOME_TAB}
           isActive={activeRouteName === HOME_TAB.name}
@@ -51,7 +58,8 @@ export function TabBar({ state, navigation }: TabBarProps) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="링크 추가"
-          onPress={() => router.push(ROUTES.CREATE_LINK)}
+          // push 는 연타 시 시트가 중복으로 쌓여 navigate 로 멱등하게 이동한다.
+          onPress={() => router.navigate(ROUTES.CREATE_LINK)}
           className={tabItemStyles()}
         >
           <Icon

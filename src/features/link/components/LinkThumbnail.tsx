@@ -7,7 +7,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-
+import { GlassView } from "@/components/ui/glass-view/GlassView";
 import { ExternalLinkIcon } from "@/components/ui/icon/ExternalLinkIcon";
 
 // 대표 이미지는 원본 비율을 따른다: 가로형은 부모 컨테이너 가로폭 100%(좌우 패딩은
@@ -91,8 +91,9 @@ export function LinkThumbnail({ thumbnailUrl, url }: LinkThumbnailProps) {
         accessibilityRole="button"
         accessibilityLabel="링크 열기"
         onPress={handleOpen}
-        className="absolute right-4 bottom-4 size-9 items-center justify-center rounded-full bg-opacity-black-50 web:backdrop-blur"
+        className="absolute right-4 bottom-4 size-9 items-center justify-center overflow-hidden rounded-full"
       >
+        <GlassView intensity={55} className="absolute inset-0" />
         <ExternalLinkIcon />
       </Pressable>
     </View>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
-
+import { GlassView } from "@/components/ui/glass-view/GlassView";
 import { CloseIcon } from "@/components/ui/icon/CloseIcon";
 import { PlusIcon } from "@/components/ui/icon/PlusIcon";
 import { TooltipArrowIcon } from "@/components/ui/icon/TooltipArrowIcon";
@@ -88,11 +88,15 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
           pointerEvents="none"
           className="absolute top-0 left-4 z-10 -translate-y-full items-center"
         >
-          <View className="rounded-[10px] bg-opacity-white-60 px-3 py-2 web:backdrop-blur">
+          <GlassView
+            intensity={77}
+            tint="light"
+            className="rounded-[10px] px-3 py-2"
+          >
             <Text variant="caption-2" className="text-icon-inverse">
               {TOOLTIP_TEXT}
             </Text>
-          </View>
+          </GlassView>
           <TooltipArrowIcon />
         </View>
       )}
