@@ -1,6 +1,8 @@
-import { Stack, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { ScrollView } from "react-native";
+import { useDebounce } from "react-simplikit";
 
 import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
@@ -16,35 +18,39 @@ import {
   RECENT_VIEWED_LINKS,
   SEARCH_RESULT_LINKS,
 } from "./mocks";
-import type { Category } from "./search.constants";
+import { type Category, SEARCH_DEBOUNCE_MS } from "./search.constants";
+
+interface SearchFormValues {
+  keyword: string;
+}
 
 export function SearchScreen() {
   const router = useRouter();
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  // 커밋된 검색어는 URL 이 단일 진실원 — 새로고침·딥링크에도 결과 상태가 복원된다
+  const submittedQuery = typeof q === "string" ? q : "";
   const [recentKeywords, setRecentKeywords] = useState(RECENT_SEARCH_KEYWORDS);
-  const [query, setQuery] = useState("");
-  const [submittedQuery, setSubmittedQuery] = useState("");
 
-  const isSearching = submittedQuery !== "";
+  const { control, setValue } = useForm<SearchFormValues>({
+    defaultValues: { keyword: submittedQuery },
+  });
 
-  function handleChangeQuery(text: string) {
-    setQuery(text);
-    // 검색어를 모두 지우면 결과를 닫고 초기 화면으로 돌아간다
-    if (text.trim() === "") {
-      setSubmittedQuery("");
-    }
+  function commitSearch(value: string) {
+    const trimmed = value.trim();
+    router.setParams({ q: trimmed === "" ? undefined : trimmed });
   }
 
-  function handleSubmit() {
-    const trimmed = query.trim();
-    if (trimmed === "") {
-      return;
-    }
-    setSubmittedQuery(trimmed);
+  // 타이핑이 멈추면 자동 검색. 즉시 커밋(제출·칩)은 cancel 로 예약된 커밋을 걷어낸다.
+  const debouncedCommit = useDebounce(commitSearch, SEARCH_DEBOUNCE_MS);
+
+  function commitSearchNow(value: string) {
+    debouncedCommit.cancel();
+    commitSearch(value);
   }
 
-  function searchKeyword(keyword: string) {
-    setQuery(keyword);
-    setSubmittedQuery(keyword);
+  function searchKeyword(value: string) {
+    setValue("keyword", value);
+    commitSearchNow(value);
   }
 
   function moveToCategories(category?: Category) {
@@ -63,12 +69,21 @@ export function SearchScreen() {
             <Header
               left={<HeaderBackButton />}
               title={
-                <SearchBar
-                  // 검색 화면 진입 즉시 입력 가능하도록 자동 포커스
-                  autoFocus
-                  value={query}
-                  onChangeText={handleChangeQuery}
-                  onSubmitEditing={handleSubmit}
+                <Controller
+                  control={control}
+                  name="keyword"
+                  render={({ field: { value, onChange } }) => (
+                    <SearchBar
+                      // 검색 화면 진입 즉시 입력 가능하도록 자동 포커스
+                      autoFocus
+                      value={value}
+                      onChangeText={(text) => {
+                        onChange(text);
+                        debouncedCommit(text);
+                      }}
+                      onSubmitEditing={() => commitSearchNow(value)}
+                    />
+                  )}
                 />
               }
             />
@@ -80,7 +95,7 @@ export function SearchScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {isSearching ? (
+        {submittedQuery !== "" ? (
           <VStack className="px-5 pt-3.5 pb-8">
             <LinkGrid links={SEARCH_RESULT_LINKS} />
           </VStack>
