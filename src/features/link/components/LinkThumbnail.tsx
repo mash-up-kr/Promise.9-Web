@@ -1,8 +1,9 @@
 import { Image, type ImageLoadEventData } from "expo-image";
+import { ExternalLink } from "lucide-react-native";
 import { useState } from "react";
 import { Linking, Pressable, StyleSheet, View } from "react-native";
 
-import { ExternalLinkIcon } from "@/components/ui/icon/ExternalLinkIcon";
+import { Icon } from "@/components/ui/icon/Icon";
 
 // 대표 이미지는 원본 비율을 따른다: 가로형은 부모 컨테이너 가로폭 100%(좌우 패딩은
 // 상위에서 처리), 세로형은 240 고정.
@@ -71,7 +72,12 @@ export function LinkThumbnail({ thumbnailUrl, url }: LinkThumbnailProps) {
         onPress={handleOpen}
         className="absolute right-4 bottom-4 size-9 items-center justify-center rounded-full bg-opacity-black-50 web:backdrop-blur"
       >
-        <ExternalLinkIcon />
+        <Icon
+          iconNode={ExternalLink}
+          size={16}
+          className="text-icon-normal"
+          strokeWidth={1.3}
+        />
       </Pressable>
     </View>
   );

@@ -1,9 +1,9 @@
 import type { LinkTag } from "@shared/types/link.types";
+import { Plus, X } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
 
-import { CloseIcon } from "@/components/ui/icon/CloseIcon";
-import { PlusIcon } from "@/components/ui/icon/PlusIcon";
+import { Icon } from "@/components/ui/icon/Icon";
 import { TooltipArrowIcon } from "@/components/ui/icon/TooltipArrowIcon";
 import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
@@ -94,7 +94,12 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
           onPress={enterEditMode}
           className="h-9 flex-row items-center gap-1 rounded-full bg-gray-50 px-3"
         >
-          <PlusIcon />
+          <Icon
+            iconNode={Plus}
+            size={12}
+            className="text-icon-inverse"
+            strokeWidth={1.3}
+          />
           <Text variant="label-2-semibold" className="text-icon-inverse">
             태그 추가
           </Text>
@@ -196,7 +201,13 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
                 onPress={() => onRemoveTag(tag.tagId)}
                 className="h-5 w-5 items-center justify-center rounded-full bg-opacity-black-30"
               >
-                <CloseIcon />
+                <Icon
+                  iconNode={X}
+                  size={10}
+                  className="text-opacity-white-100"
+                  strokeWidth={2}
+                  strokeOpacity={0.6}
+                />
               </Pressable>
             </View>
           ))}
