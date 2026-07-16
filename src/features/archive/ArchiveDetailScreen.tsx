@@ -8,7 +8,7 @@ import { Heading } from "@/components/ui/heading/Heading";
 import { Text } from "@/components/ui/text/Text";
 
 export function ArchiveDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id } = useLocalSearchParams<"/archive/[id]">();
   return (
     <>
       <Stack.Screen

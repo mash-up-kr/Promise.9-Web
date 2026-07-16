@@ -31,7 +31,7 @@ function formatSavedDate(savedAt: string): string {
 }
 
 export function LinkDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id } = useLocalSearchParams<"/link/[id]">();
   const linkDetail =
     mockLinks.find((link) => link.linkId === Number(id)) ?? mockLinkDetail;
 
