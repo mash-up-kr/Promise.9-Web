@@ -20,6 +20,7 @@
 │   │   ├─ reminders/
 │   │   └─ auth/
 │   ├─ components/ui/      # 기능 무관 공용 UI (Button 등)
+│   ├─ constants/          # 앱/웹 전역 상수 (라우트 경로 등)
 │   ├─ hooks/              # 공용 훅
 │   ├─ lib/                # queryClient 등 인프라 (이미 존재)
 │   ├─ utils/              # 순수 함수

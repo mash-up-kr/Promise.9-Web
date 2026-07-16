@@ -5,6 +5,7 @@ import { Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
+import { ROUTES } from "@/constants/routes.constants";
 import { tv } from "@/lib/tv";
 
 // 디자인 시스템 Tab Bar: 화면 하단 중앙에 뜨는 pill.
@@ -50,7 +51,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="링크 추가"
-          onPress={() => router.push("/create-link")}
+          onPress={() => router.push(ROUTES.CREATE_LINK)}
           className={tabItemStyles()}
         >
           <Icon

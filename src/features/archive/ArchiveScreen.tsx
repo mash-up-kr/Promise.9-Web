@@ -1,6 +1,8 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
+import { archiveDetailHref } from "@/constants/routes.constants";
+
 import type { ArchiveFolder } from "./archive.types";
 import { FolderGroup } from "./components/FolderGroup";
 import { FolderItem } from "./components/FolderItem";
@@ -27,7 +29,7 @@ export function ArchiveScreen() {
 
   const handleOpenFolder = (id: string) => {
     setSelectedId(id);
-    router.push({ pathname: "/archive/[id]", params: { id } });
+    router.push(archiveDetailHref(id));
   };
 
   const handleAddFolder = () => {

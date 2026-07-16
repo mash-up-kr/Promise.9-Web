@@ -7,6 +7,7 @@ import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { Heading } from "@/components/ui/heading/Heading";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Text } from "@/components/ui/text/Text";
+import { ROUTES } from "@/constants/routes.constants";
 
 export function CategoriesScreen() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export function CategoriesScreen() {
                   iconNode={Search}
                   accessibilityLabel="검색"
                   // 검색에서 진입한 경우 스택 중복 없이 기존 검색 화면으로 복귀 (navigate)
-                  onPress={() => router.navigate("/search")}
+                  onPress={() => router.navigate(ROUTES.SEARCH)}
                 />
               }
             />

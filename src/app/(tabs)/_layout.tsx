@@ -6,6 +6,7 @@ import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { Heading } from "@/components/ui/heading/Heading";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { TabBar } from "@/components/ui/tab-bar/TabBar";
+import { ROUTES } from "@/constants/routes.constants";
 
 export default function TabsLayout() {
   const router = useRouter();
@@ -33,7 +34,7 @@ export default function TabsLayout() {
                   <IconButton
                     iconNode={Search}
                     accessibilityLabel="검색"
-                    onPress={() => router.navigate("/search")}
+                    onPress={() => router.navigate(ROUTES.SEARCH)}
                   />
                   <IconButton iconNode={Settings} accessibilityLabel="설정" />
                 </>
