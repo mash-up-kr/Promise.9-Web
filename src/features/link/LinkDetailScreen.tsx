@@ -27,6 +27,19 @@ import {
 // 백엔드 연동 전까지 상세 조회 가능한 목업 링크.
 const mockLinks = [mockLinkDetail, mockLinkDetailUnclassified];
 
+// TODO(#33): 태그 추가/삭제가 서버 호출(POST/DELETE /links/{linkId}/tags)로 바뀌면
+//  아래 두 함수는 사라진다 — tagId 를 서버가 내려주므로 임시 id 생성도 함께 없어진다.
+function appendTag(tags: LinkTag[], name: string): LinkTag[] {
+  return [
+    ...tags,
+    { tagId: Date.now(), name, sourceType: "user", sortOrder: tags.length },
+  ];
+}
+
+function removeTagById(tags: LinkTag[], tagId: number): LinkTag[] {
+  return tags.filter((tag) => tag.tagId !== tagId);
+}
+
 export function LinkDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const linkDetail =
@@ -126,20 +139,11 @@ export function LinkDetailScreen() {
               render={({ field }) => (
                 <TagEditor
                   tags={field.value}
-                  onAddTag={(name) => {
-                    // 로컬 폼 상태 전용 임시 id — 실제 연동(#33) 시 서버가 내려주는 tagId 로 대체.
-                    const newTag: LinkTag = {
-                      tagId: Date.now(),
-                      name,
-                      sourceType: "user",
-                      sortOrder: field.value.length,
-                    };
-                    field.onChange([...field.value, newTag]);
-                  }}
+                  onAddTag={(name) =>
+                    field.onChange(appendTag(field.value, name))
+                  }
                   onRemoveTag={(tagId) =>
-                    field.onChange(
-                      field.value.filter((tag) => tag.tagId !== tagId),
-                    )
+                    field.onChange(removeTagById(field.value, tagId))
                   }
                 />
               )}
