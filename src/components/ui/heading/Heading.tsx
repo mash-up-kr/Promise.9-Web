@@ -1,8 +1,8 @@
 import { H1, H2, H3, H4, H5, H6 } from "@expo/html-elements";
 import { styled } from "nativewind";
+import { SwitchCase } from "react-simplikit";
 import type { VariantProps } from "tailwind-variants";
 
-import { SwitchCase } from "@/components/ui/switch-case/SwitchCase";
 import { tv } from "@/lib/tv";
 
 // @expo/html-elements 의 H1~H6 은 fontWeight/fontSize 등 기본값을 inline `style` 로 주입한다.
