@@ -6,6 +6,7 @@ import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { Heading } from "@/components/ui/heading/Heading";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { TabBar } from "@/components/ui/tab-bar/TabBar";
+import { ArchiveHeaderActions } from "@/features/archive/components/ArchiveHeaderActions";
 
 export default function TabsLayout() {
   const router = useRouter();
@@ -42,7 +43,15 @@ export default function TabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="archive" options={{ title: "보관함" }} />
+      <Tabs.Screen
+        name="archive"
+        options={{
+          title: "보관함",
+          header: () => (
+            <Header title="보관함" right={<ArchiveHeaderActions />} />
+          ),
+        }}
+      />
       <Tabs.Screen name="settings" options={{ title: "세팅" }} />
     </Tabs>
   );
