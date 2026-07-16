@@ -1,7 +1,8 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import type { LinkTag } from "@shared/types/link.types";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Ellipsis, Star } from "lucide-react-native";
-import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { ScrollView, View } from "react-native";
 
 import { Header } from "@/components/ui/header/Header";
@@ -17,6 +18,7 @@ import { LinkThumbnail } from "./components/LinkThumbnail";
 import { MemoField } from "./components/MemoField";
 import { RelatedLinksList } from "./components/RelatedLinksList";
 import { TagEditor } from "./components/TagEditor";
+import { type LinkDetailForm, linkDetailFormSchema } from "./link.contracts";
 import {
   mockLinkDetail,
   mockLinkDetailUnclassified,
@@ -30,23 +32,19 @@ export function LinkDetailScreen() {
   const linkDetail =
     mockLinks.find((link) => link.linkId === Number(id)) ?? mockLinkDetail;
 
-  const [tags, setTags] = useState<LinkTag[]>(linkDetail.tags ?? []);
-  const [memo, setMemo] = useState<string>(linkDetail.memo ?? "");
-
-  function handleAddTag(name: string) {
-    // 로컬 mock state 전용 임시 id — 실제 API 연동 시 서버가 내려주는 tagId로 대체.
-    const newTag: LinkTag = {
-      tagId: Date.now(),
-      name,
-      sourceType: "user",
-      sortOrder: tags.length,
-    };
-    setTags((prev) => [...prev, newTag]);
-  }
-
-  function handleRemoveTag(tagId: number) {
-    setTags((prev) => prev.filter((tag) => tag.tagId !== tagId));
-  }
+  // 이 화면은 링크 하나를 편집하는 단일 폼이다. 서버로 나가는 값(폴더·태그·메모·즐겨찾기)만
+  // 폼이 소유하고, 편집 모드·요약 펼침 같은 화면 조작 상태는 각 컴포넌트가 그대로 가진다.
+  // TODO(#33): 저장 연동. 필드 변경 감지(watch) → PATCH /links/{linkId}(folder·memo·isFavorite)
+  //  + POST/DELETE /links/{linkId}/tags(태그). 비동기 조회로 바뀌면 defaultValues 대신 reset 필요.
+  const { control } = useForm<LinkDetailForm>({
+    resolver: zodResolver(linkDetailFormSchema),
+    defaultValues: {
+      folder: linkDetail.folder,
+      tags: linkDetail.tags ?? [],
+      memo: linkDetail.memo ?? "",
+      isFavorite: linkDetail.isFavorite,
+    },
+  });
 
   return (
     <>
@@ -57,7 +55,20 @@ export function LinkDetailScreen() {
               left={<HeaderBackButton />}
               right={
                 <>
-                  <IconButton iconNode={Star} accessibilityLabel="즐겨찾기" />
+                  <Controller
+                    control={control}
+                    name="isFavorite"
+                    render={({ field }) => (
+                      <IconButton
+                        iconNode={Star}
+                        accessibilityLabel="즐겨찾기"
+                        accessibilityState={{ selected: field.value }}
+                        // 켜짐은 채운 별로 구분한다. 색은 IconButton 의 icon-strong 을 따른다.
+                        iconFill={field.value ? "currentColor" : "none"}
+                        onPress={() => field.onChange(!field.value)}
+                      />
+                    )}
+                  />
                   <IconButton iconNode={Ellipsis} accessibilityLabel="더보기" />
                 </>
               }
@@ -83,9 +94,16 @@ export function LinkDetailScreen() {
           </View>
 
           <View className="gap-2 px-5">
-            <FolderBadge
-              folder={linkDetail.folder}
-              folderColor={linkDetail.folderColor}
+            {/* TODO(#33): onPress → 폴더 선택 플로우(별도 이슈) 연결 */}
+            <Controller
+              control={control}
+              name="folder"
+              render={({ field }) => (
+                <FolderBadge
+                  folder={field.value}
+                  folderColor={linkDetail.folderColor}
+                />
+              )}
             />
             <Text variant="heading-1">{linkDetail.title}</Text>
             <Text variant="caption-1" className="text-opacity-white-70">
@@ -102,15 +120,40 @@ export function LinkDetailScreen() {
           </View>
 
           <View className="px-5">
-            <TagEditor
-              tags={tags}
-              onAddTag={handleAddTag}
-              onRemoveTag={handleRemoveTag}
+            <Controller
+              control={control}
+              name="tags"
+              render={({ field }) => (
+                <TagEditor
+                  tags={field.value}
+                  onAddTag={(name) => {
+                    // 로컬 폼 상태 전용 임시 id — 실제 연동(#33) 시 서버가 내려주는 tagId 로 대체.
+                    const newTag: LinkTag = {
+                      tagId: Date.now(),
+                      name,
+                      sourceType: "user",
+                      sortOrder: field.value.length,
+                    };
+                    field.onChange([...field.value, newTag]);
+                  }}
+                  onRemoveTag={(tagId) =>
+                    field.onChange(
+                      field.value.filter((tag) => tag.tagId !== tagId),
+                    )
+                  }
+                />
+              )}
             />
           </View>
 
           <View className="px-5">
-            <MemoField memo={memo} onChangeMemo={setMemo} />
+            <Controller
+              control={control}
+              name="memo"
+              render={({ field }) => (
+                <MemoField memo={field.value} onChangeMemo={field.onChange} />
+              )}
+            />
           </View>
 
           <View className="mt-6">
