@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import Animated, {
   useAnimatedRef,
@@ -60,9 +60,11 @@ export function ArchiveScreen() {
     router.push("/create-folder");
   };
 
-  const handleReorder = (next: ArchiveFolder[]) => {
+  // 드래그 제스처가 매 렌더마다 재생성되지 않도록 안정된 참조로 유지한다
+  // (SortableFolderItem 의 gesture useMemo 가 이 콜백에 의존한다).
+  const handleReorder = useCallback((next: ArchiveFolder[]) => {
     setMyFolders(next);
-  };
+  }, []);
 
   // 기본 폴더 섹션 — 편집 모드에선 읽기 전용(탭 비활성)으로 헤더에 재사용한다.
   const basicSection = (
