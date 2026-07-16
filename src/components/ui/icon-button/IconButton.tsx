@@ -14,9 +14,16 @@ export interface IconButtonProps extends Omit<PressableProps, "children"> {
   iconNode: IconComponent;
   accessibilityLabel: string;
   className?: string;
+  /** 아이콘 내부 채움. 즐겨찾기 별처럼 on/off 를 채움으로 구분할 때만 쓴다(기본: 채우지 않음). */
+  iconFill?: string;
 }
 
-export function IconButton({ iconNode, className, ...props }: IconButtonProps) {
+export function IconButton({
+  iconNode,
+  className,
+  iconFill = "none",
+  ...props
+}: IconButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -27,6 +34,7 @@ export function IconButton({ iconNode, className, ...props }: IconButtonProps) {
         iconNode={iconNode}
         size={24}
         strokeWidth={1.5}
+        fill={iconFill}
         className="text-icon-strong"
       />
     </Pressable>
