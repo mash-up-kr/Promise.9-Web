@@ -40,7 +40,7 @@ export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
           placeholderTextColor="#ffffff4d"
           // TODO: 저장 트리거(디바운스/blur) 정책은 백엔드 연동 확정 후 결정 —
           // 지금은 상위 계획 스코프(mock + 로컬 state)에 따라 키 입력마다 즉시 반영한다.
-          className="min-h-5 w-full font-pretendard text-body-2-reading text-text-normal"
+          className="min-h-5 w-full font-pretendard text-body-2-reading text-text-normal web:outline-none"
           // iOS 상단 여백 이슈 우회
           style={{ verticalAlign: "top", padding: 0 }}
         />
