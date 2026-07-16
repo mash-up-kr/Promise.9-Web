@@ -1,4 +1,4 @@
-import type { FolderColor } from "@shared/types/link.types";
+import type { FolderColor, LinkFolderRef } from "@shared/types/link.types";
 import { Pressable, View } from "react-native";
 import { ChevronIcon } from "@/components/ui/icon/ChevronIcon";
 import { FolderIcon } from "@/components/ui/icon/FolderIcon";
@@ -30,7 +30,7 @@ const FOLDER_STYLE: Partial<Record<FolderColor, FolderStyle>> = {
 };
 
 export interface FolderBadgeProps {
-  folder?: string;
+  folder?: LinkFolderRef | null;
   folderColor?: FolderColor;
   /** "폴더선택"(미분류) 탭 시 폴더 선택 진입. 실제 플로우는 별도 이슈. */
   onPress?: () => void;
@@ -73,7 +73,7 @@ export function FolderBadge({
       <View className={badgeStyles({ class: style.badge })}>
         <FolderIcon color={style.iconColor} />
         <Text variant="label-2-semibold" className={style.label}>
-          {folder}
+          {folder.folderName}
         </Text>
       </View>
     </View>

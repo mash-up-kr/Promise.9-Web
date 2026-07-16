@@ -1,10 +1,13 @@
+import type { LinkFolderRef } from "@shared/types/link.types";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { FolderBadge } from "./FolderBadge";
 
+const FOLDER: LinkFolderRef = { folderId: 1, folderName: "디자인" };
+
 describe("FolderBadge", () => {
   test("폴더가 지정되면 폴더명을 렌더하고 '폴더선택'은 노출하지 않는다", async () => {
-    await render(<FolderBadge folder="디자인" folderColor="purple" />);
+    await render(<FolderBadge folder={FOLDER} folderColor="purple" />);
     expect(screen.getByText("디자인")).toBeOnTheScreen();
     expect(screen.queryByText("폴더선택")).toBeNull();
   });

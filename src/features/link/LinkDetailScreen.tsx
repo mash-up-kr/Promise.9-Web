@@ -1,3 +1,4 @@
+import type { LinkTag } from "@shared/types/link.types";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Ellipsis, Star } from "lucide-react-native";
 import { useState } from "react";
@@ -19,7 +20,6 @@ import { TagEditor } from "./components/TagEditor";
 import {
   mockLinkDetail,
   mockLinkDetailUnclassified,
-  mockRelatedLinks,
 } from "./mock/mockLinkDetail";
 
 // 백엔드 연동 전까지 상세 조회 가능한 목업 링크.
@@ -30,15 +30,22 @@ export function LinkDetailScreen() {
   const linkDetail =
     mockLinks.find((link) => link.linkId === Number(id)) ?? mockLinkDetail;
 
-  const [tags, setTags] = useState<string[]>(linkDetail.tags);
-  const [memo, setMemo] = useState<string>(linkDetail.memo);
+  const [tags, setTags] = useState<LinkTag[]>(linkDetail.tags ?? []);
+  const [memo, setMemo] = useState<string>(linkDetail.memo ?? "");
 
-  function handleAddTag(tag: string) {
-    setTags((prev) => [...prev, tag]);
+  function handleAddTag(name: string) {
+    // 로컬 mock state 전용 임시 id — 실제 API 연동 시 서버가 내려주는 tagId로 대체.
+    const newTag: LinkTag = {
+      tagId: Date.now(),
+      name,
+      sourceType: "user",
+      sortOrder: tags.length,
+    };
+    setTags((prev) => [...prev, newTag]);
   }
 
-  function handleRemoveTag(tag: string) {
-    setTags((prev) => prev.filter((t) => t !== tag));
+  function handleRemoveTag(tagId: number) {
+    setTags((prev) => prev.filter((tag) => tag.tagId !== tagId));
   }
 
   return (
@@ -60,7 +67,7 @@ export function LinkDetailScreen() {
       />
       <View className="flex-1">
         <LinkBackground
-          thumbnailUrl={linkDetail.thumbnailUrl}
+          thumbnailUrl={linkDetail.thumbnailUrl ?? ""}
           dominantColor={linkDetail.dominantColor}
         />
         <ScrollView
@@ -70,7 +77,7 @@ export function LinkDetailScreen() {
         >
           <View className="px-5">
             <LinkThumbnail
-              thumbnailUrl={linkDetail.thumbnailUrl}
+              thumbnailUrl={linkDetail.thumbnailUrl ?? ""}
               url={linkDetail.url}
             />
           </View>
@@ -91,7 +98,7 @@ export function LinkDetailScreen() {
           </View>
 
           <View className="px-5">
-            <AiSummarySection summary={linkDetail.aiSummary} />
+            <AiSummarySection summary={linkDetail.aiSummary ?? ""} />
           </View>
 
           <View className="px-5">
@@ -107,7 +114,7 @@ export function LinkDetailScreen() {
           </View>
 
           <View className="mt-6">
-            <RelatedLinksList items={mockRelatedLinks} />
+            <RelatedLinksList items={linkDetail.relatedLinks ?? []} />
           </View>
         </ScrollView>
       </View>

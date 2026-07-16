@@ -1,3 +1,4 @@
+import type { LinkTag } from "@shared/types/link.types";
 import { useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
 
@@ -42,9 +43,9 @@ const addButtonLabelStyles = tv({
 });
 
 export interface TagEditorProps {
-  tags: string[];
-  onAddTag: (tag: string) => void;
-  onRemoveTag: (tag: string) => void;
+  tags: LinkTag[];
+  onAddTag: (name: string) => void;
+  onRemoveTag: (tagId: number) => void;
 }
 
 export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
@@ -75,7 +76,7 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
   function handleAdd() {
     const value = draftValue.trim();
     if (value === "" || isFull) return;
-    if (tags.includes(value)) {
+    if (tags.some((tag) => tag.name === value)) {
       setDuplicateTag(value);
       return;
     }
@@ -99,11 +100,11 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
         </Pressable>
         {tags.map((tag) => (
           <View
-            key={tag}
+            key={tag.tagId}
             className="h-9 items-center justify-center rounded-full bg-opacity-white-20 px-3"
           >
             <Text variant="label-2-medium" className="text-opacity-white-80">
-              #{tag}
+              #{tag.name}
             </Text>
           </View>
         ))}
@@ -181,16 +182,16 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
         <View className="w-full flex-row flex-wrap items-start gap-2">
           {tags.map((tag) => (
             <View
-              key={tag}
+              key={tag.tagId}
               className="h-9 flex-row items-center gap-2 rounded-full bg-opacity-white-10 px-3"
             >
               <Text variant="label-2-medium" className="text-opacity-white-80">
-                #{tag}
+                #{tag.name}
               </Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`${tag} 삭제`}
-                onPress={() => onRemoveTag(tag)}
+                accessibilityLabel={`${tag.name} 삭제`}
+                onPress={() => onRemoveTag(tag.tagId)}
                 className="h-5 w-5 items-center justify-center rounded-full bg-opacity-black-30"
               >
                 <CloseIcon />

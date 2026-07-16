@@ -1,3 +1,4 @@
+import type { LinkTag } from "@shared/types/link.types";
 import {
   fireEvent,
   render,
@@ -7,7 +8,11 @@ import {
 
 import { TagEditor } from "./TagEditor";
 
-const TAGS = ["디자인", "IT", "실험 설계"];
+const TAGS: LinkTag[] = [
+  { tagId: 1, name: "디자인", sourceType: "ai", sortOrder: 0 },
+  { tagId: 2, name: "IT", sourceType: "ai", sortOrder: 1 },
+  { tagId: 3, name: "실험 설계", sourceType: "ai", sortOrder: 2 },
+];
 const PLACEHOLDER = "태그를 입력해 주세요";
 const TOOLTIP = "태그를 추가하면 링크를 더 쉽게 찾을 수 있어요";
 
@@ -67,7 +72,7 @@ describe("TagEditor", () => {
     );
     await user.press(screen.getByRole("button", { name: "태그 추가" }));
     await user.press(screen.getByLabelText("IT 삭제"));
-    expect(onRemoveTag).toHaveBeenCalledWith("IT");
+    expect(onRemoveTag).toHaveBeenCalledWith(2);
   });
 
   test("공백만 입력 후 '추가' → onAddTag 가 호출되지 않는다", async () => {
@@ -112,7 +117,12 @@ describe("TagEditor", () => {
   test("태그 10개면 입력 필드가 비활성화되고 '추가'가 disabled 이며 툴팁이 없다", async () => {
     const user = userEvent.setup();
     const onAddTag = jest.fn();
-    const tenTags = Array.from({ length: 10 }, (_, i) => `태그${i}`);
+    const tenTags: LinkTag[] = Array.from({ length: 10 }, (_, i) => ({
+      tagId: i + 1,
+      name: `태그${i}`,
+      sourceType: "user",
+      sortOrder: i,
+    }));
     await render(
       <TagEditor tags={tenTags} onAddTag={onAddTag} onRemoveTag={jest.fn()} />,
     );
