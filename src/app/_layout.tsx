@@ -1,6 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
-import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
+import { DarkTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { Platform, View } from "react-native";
@@ -12,9 +12,15 @@ import "@/global.css";
 
 SplashScreen.preventAutoHideAsync();
 
-const transparentBackgroundTheme = {
-  ...DefaultTheme,
-  colors: { ...DefaultTheme.colors, background: "transparent" },
+// 디자인 토큰이 다크 전용이라 시스템 테마와 무관하게 다크로 고정한다.
+// 시스템 라이트 모드의 Android 는 투명 씬 아래로 밝은 네이티브 배경이 비쳐서
+// (--color-background-base) 씬 배경을 명시적으로 칠한다. app.json 의
+// userInterfaceStyle: "dark" 와 세트.
+const BACKGROUND_BASE = "#0e0e13";
+
+const darkFixedTheme = {
+  ...DarkTheme,
+  colors: { ...DarkTheme.colors, background: BACKGROUND_BASE },
 };
 
 export default function RootLayout() {
@@ -41,10 +47,10 @@ export default function RootLayout() {
         <KeyboardProvider>
           {/* 웹에서 앱 폭을 768px 로 제한하고 중앙 정렬한다. 네이티브는 화면보다 넓어 영향 없음. */}
           <View className="mx-auto w-full max-w-[768px] flex-1">
-            <ThemeProvider value={transparentBackgroundTheme}>
+            <ThemeProvider value={darkFixedTheme}>
               <Stack
                 screenOptions={{
-                  contentStyle: { backgroundColor: "transparent" },
+                  contentStyle: { backgroundColor: BACKGROUND_BASE },
                 }}
               >
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -62,7 +68,8 @@ export default function RootLayout() {
                       : {
                           presentation: "formSheet",
                           headerShown: false,
-                          sheetAllowedDetents: [0.9],
+                          // Figma 기본 시트 높이(≈65%)로 열고, 그래버로 확장 가능하게 둔다.
+                          sheetAllowedDetents: [0.65, 0.9],
                           sheetGrabberVisible: true,
                           sheetCornerRadius: 24,
                         }

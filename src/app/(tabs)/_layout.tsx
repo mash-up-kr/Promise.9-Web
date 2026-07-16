@@ -15,7 +15,8 @@ export default function TabsLayout() {
     <Tabs
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{
-        sceneStyle: { backgroundColor: "transparent" },
+        // 시스템 라이트 모드에서 투명 씬 아래 밝은 배경이 비치지 않게 다크로 칠한다.
+        sceneStyle: { backgroundColor: "#0e0e13" },
         header: ({ options }) => (
           <Header title={options.title} right={<HeaderActions />} />
         ),
