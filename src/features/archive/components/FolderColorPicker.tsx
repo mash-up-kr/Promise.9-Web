@@ -52,7 +52,7 @@ function Swatch({ color, selected, onPress }: SwatchProps) {
           </View>
         </View>
       ) : (
-        <View className={`h-8 w-8 rounded-full ${solid}`} />
+        <View className={`h-11 w-11 rounded-full ${solid}`} />
       )}
     </Pressable>
   );

@@ -40,8 +40,8 @@ export function CreateFolderSheet() {
           saveDisabled={!formState.isValid}
         />
 
-        <View className="gap-3">
-          <Text variant="heading-3" className="text-text-normal">
+        <View className="gap-2">
+          <Text variant="label-1" className="text-text-normal">
             이름
           </Text>
           <Controller
@@ -59,8 +59,8 @@ export function CreateFolderSheet() {
           />
         </View>
 
-        <View className="gap-3">
-          <Text variant="heading-3" className="text-text-normal">
+        <View className="gap-4">
+          <Text variant="label-1" className="text-text-normal">
             색상
           </Text>
           <Controller
