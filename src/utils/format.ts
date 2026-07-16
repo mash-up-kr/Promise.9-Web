@@ -28,3 +28,15 @@ export function formatRelativeDate(
   if (days <= 29) return "3주 전";
   return dayjs(date).format("YYYY.MM.DD");
 }
+
+/**
+ * 링크 상세 상단의 저장일 표시 — 항상 절대 날짜(`YYYY.MM.DD`), 상대 표현 없음.
+ * 로컬 타임존 변환으로 날짜가 하루 밀리는 것을 막기 위해 UTC 기준으로 파싱한다
+ * (savedAt 은 캘린더 날짜 의미의 ISO 8601 문자열).
+ *
+ * @example
+ * formatSavedDate("2026-06-19T00:00:00.000Z"); // "2026.06.19"
+ */
+export function formatSavedDate(savedAt: string): string {
+  return dayjs.utc(savedAt).format("YYYY.MM.DD");
+}

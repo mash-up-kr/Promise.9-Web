@@ -7,6 +7,7 @@ import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Text } from "@/components/ui/text/Text";
+import { formatSavedDate } from "@/utils/format";
 
 import { AiSummarySection } from "./components/AiSummarySection";
 import { FolderBadge } from "./components/FolderBadge";
@@ -23,12 +24,6 @@ import {
 
 // 백엔드 연동 전까지 상세 조회 가능한 목업 링크.
 const mockLinks = [mockLinkDetail, mockLinkDetailUnclassified];
-
-// savedAt(ISO 8601)의 날짜 부분만 취해 "YYYY.MM.DD"로 바꾼다. Date 객체를 거치면
-// 로컬 타임존에 따라 날짜가 하루 밀릴 수 있어 문자열을 직접 자른다.
-function formatSavedDate(savedAt: string): string {
-  return savedAt.slice(0, 10).replaceAll("-", ".");
-}
 
 export function LinkDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
