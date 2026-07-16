@@ -1,4 +1,4 @@
-import Svg, { Path } from "react-native-svg";
+import { ChevronUp } from "lucide-react-native";
 
 const ROTATION_BY_DIRECTION = {
   up: "0deg",
@@ -28,20 +28,11 @@ export function ChevronIcon({
       ? "180deg"
       : "0deg";
   return (
-    <Svg
-      width={size}
-      height={size}
-      viewBox="0 0 16 16"
-      fill="none"
+    <ChevronUp
+      size={size}
+      color={color}
+      strokeWidth={1.5}
       style={angle !== "0deg" ? { transform: [{ rotate: angle }] } : undefined}
-    >
-      <Path
-        d="M12 10L8 6L4 10"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
+    />
   );
 }
