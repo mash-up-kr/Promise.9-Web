@@ -4,7 +4,8 @@ module.exports = {
   // 테스트가 아직 없는 초기 상태에서 `pnpm test` 가 실패하지 않도록.
   passWithNoTests: true,
   // E2E(Playwright, e2e/*.spec.ts)는 jest 가 아니라 playwright 가 실행한다.
-  testPathIgnorePatterns: ["/node_modules/", "/e2e/"],
+  // .claude/ 는 에이전트 worktree(.claude/worktrees/)가 생겨 테스트가 중복 실행되므로 제외한다.
+  testPathIgnorePatterns: ["/node_modules/", "/e2e/", "/.claude/"],
   moduleNameMapper: {
     // reanimated 4.x 는 react-native-worklets 네이티브 초기화를 필요로 하므로
     // jest 환경에서는 자체 stub 으로 대체한다.
