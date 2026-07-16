@@ -3,8 +3,9 @@ import { Platform, TextInput, View } from "react-native";
 
 import { Text } from "@/components/ui/text/Text";
 
+import { MEMO_MAX_LENGTH } from "../link.contracts";
+
 const PLACEHOLDER = "저장한 이유나 기억하고 싶은 점을 적어보세요";
-const MAX_MEMO_LENGTH = 300;
 
 export interface MemoFieldProps {
   memo: string;
@@ -35,7 +36,7 @@ export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
           value={memo}
           onChangeText={onChangeMemo}
           placeholder={PLACEHOLDER}
-          maxLength={MAX_MEMO_LENGTH}
+          maxLength={MEMO_MAX_LENGTH}
           // placeholderTextColor 는 className 으로 못 받아 리터럴로 지정 — #ffffff4d = --color-opacity-white-30
           placeholderTextColor="#ffffff4d"
           // TODO: 저장 트리거(디바운스/blur) 정책은 백엔드 연동 확정 후 결정 —
@@ -50,7 +51,7 @@ export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
             variant="caption-2"
             className="w-full text-right text-text-alternative"
           >
-            {memo.length}/{MAX_MEMO_LENGTH}
+            {memo.length}/{MEMO_MAX_LENGTH}
           </Text>
         )}
       </View>

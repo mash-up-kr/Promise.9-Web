@@ -8,7 +8,8 @@ import { TooltipArrowIcon } from "@/components/ui/icon/TooltipArrowIcon";
 import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
 
-const MAX_TAGS = 10;
+import { MAX_TAGS, TAG_NAME_MAX_LENGTH } from "../link.contracts";
+
 const PLACEHOLDER = "태그를 입력해 주세요";
 const HELPER_TEXT = "태그는 최대 10개까지 추가할 수 있어요";
 const TOOLTIP_TEXT = "태그를 추가하면 링크를 더 쉽게 찾을 수 있어요";
@@ -150,6 +151,7 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
                 onChangeText={handleChangeText}
                 onSubmitEditing={handleAdd}
                 placeholder={PLACEHOLDER}
+                maxLength={TAG_NAME_MAX_LENGTH}
                 // placeholderTextColor 는 className 으로 못 받아 리터럴로 지정 — #ffffff4d = --color-opacity-white-30
                 placeholderTextColor="#ffffff4d"
                 returnKeyType="done"
