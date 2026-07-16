@@ -1,6 +1,7 @@
 import type { RelatedLink } from "@shared/types/link.types";
-import { useEffect, useState } from "react";
-import { Image, Platform, View } from "react-native";
+import { Image, type ImageLoadEventData } from "expo-image";
+import { useState } from "react";
+import { View } from "react-native";
 import { Text } from "@/components/ui/text/Text";
 
 // landscape 예시가 Figma 에 없어 임시로 잡은 반경 — dev-preview 실측 후 조정.
@@ -14,21 +15,9 @@ export function RelatedLinkCard({ link }: RelatedLinkCardProps) {
   // 원본 이미지의 실제 치수를 알아야 landscape 여부를 판정할 수 있다(URL만으론 알 수 없음).
   const [isLandscape, setIsLandscape] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    Image.getSize(
-      link.thumbnailUrl,
-      (width, height) => {
-        if (!cancelled) setIsLandscape(width > height);
-      },
-      () => {
-        // 측정 실패 시 기본값(세로형, false)을 유지한다.
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [link.thumbnailUrl]);
+  function handleLoad({ source }: ImageLoadEventData) {
+    setIsLandscape(source.width > source.height);
+  }
 
   return (
     <View className="w-[120px] shrink-0 gap-2">
@@ -38,27 +27,24 @@ export function RelatedLinkCard({ link }: RelatedLinkCardProps) {
           <Image
             testID="related-thumb-blur"
             source={{ uri: link.thumbnailUrl }}
-            resizeMode="cover"
-            style={[
-              {
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                transform: [{ scale: 1.1 }],
-              },
-              Platform.OS === "web"
-                ? { filter: `blur(${BLUR_RADIUS}px)` }
-                : { filter: [{ blur: BLUR_RADIUS }] },
-            ]}
+            contentFit="cover"
+            blurRadius={BLUR_RADIUS}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              transform: [{ scale: 1.1 }],
+            }}
           />
         )}
         <Image
           testID="related-thumb-image"
           source={{ uri: link.thumbnailUrl }}
-          resizeMode={isLandscape ? "contain" : "cover"}
+          contentFit={isLandscape ? "contain" : "cover"}
           style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+          onLoad={handleLoad}
         />
       </View>
       <Text variant="body-4" className="w-[120px]">

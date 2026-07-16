@@ -1,4 +1,7 @@
-import { Image, Platform, View } from "react-native";
+import { Image } from "expo-image";
+import { View } from "react-native";
+
+const BLUR_RADIUS = 20;
 
 export interface LinkBackgroundProps {
   thumbnailUrl: string;
@@ -27,21 +30,17 @@ export function LinkBackground({
       {/* Layer 2: 블러 썸네일 */}
       <Image
         source={{ uri: thumbnailUrl }}
-        style={[
-          {
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            opacity: 0.1,
-            transform: [{ scale: 1.1 }],
-          },
-          Platform.OS === "web"
-            ? { filter: "blur(20px)" }
-            : { filter: [{ blur: 20 }] },
-        ]}
-        resizeMode="cover"
+        contentFit="cover"
+        blurRadius={BLUR_RADIUS}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          opacity: 0.1,
+          transform: [{ scale: 1.1 }],
+        }}
       />
 
       {/* Layer 3: 대표색 틴트 5% */}

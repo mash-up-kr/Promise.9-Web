@@ -1,5 +1,4 @@
 import { render, screen, userEvent } from "@testing-library/react-native";
-import { Image } from "react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { LinkDetailScreen } from "./LinkDetailScreen";
@@ -32,16 +31,6 @@ const renderScreen = () =>
   );
 
 describe("LinkDetailScreen", () => {
-  beforeEach(() => {
-    jest
-      .spyOn(Image, "getSize")
-      .mockImplementation((_uri, success) => success(335, 235));
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
   test("제목·폴더·출처/저장일을 렌더한다", async () => {
     await renderScreen();
     expect(screen.getByText(mockLinkDetail.title)).toBeOnTheScreen();
