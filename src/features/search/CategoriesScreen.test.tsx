@@ -5,6 +5,7 @@ import { CategoriesScreen } from "./CategoriesScreen";
 import { CATEGORY_LINKS } from "./mocks";
 
 const mockNavigate = jest.fn();
+const mockSetParams = jest.fn();
 let mockParams: Record<string, string> = {};
 jest.mock("expo-router", () => ({
   // 검색 아이콘이 헤더에 있어, 헤더를 실제로 렌더해 통합 검증한다.
@@ -12,7 +13,11 @@ jest.mock("expo-router", () => ({
     Screen: ({ options }: { options?: { header?: () => React.ReactNode } }) =>
       options?.header ? options.header() : null,
   },
-  useRouter: () => ({ navigate: mockNavigate, back: jest.fn() }),
+  useRouter: () => ({
+    navigate: mockNavigate,
+    setParams: mockSetParams,
+    back: jest.fn(),
+  }),
   useLocalSearchParams: () => mockParams,
 }));
 
@@ -31,6 +36,7 @@ const renderScreen = () =>
 describe("CategoriesScreen", () => {
   beforeEach(() => {
     mockNavigate.mockClear();
+    mockSetParams.mockClear();
     mockParams = {};
   });
 
@@ -43,18 +49,11 @@ describe("CategoriesScreen", () => {
     }
   });
 
-  test("category 파라미터로 진입하면 해당 탭이 선택된다", async () => {
+  test("category 파라미터로 진입하면 해당 탭이 선택되고 그 카테고리 링크만 보여준다", async () => {
     mockParams = { category: "디자인" };
     await renderScreen();
 
     expect(screen.getByRole("button", { name: "디자인" })).toBeSelected();
-  });
-
-  test("탭을 누르면 해당 카테고리의 링크만 보여준다", async () => {
-    await renderScreen();
-
-    const user = userEvent.setup();
-    await user.press(screen.getByRole("button", { name: "디자인" }));
 
     const designLinks = CATEGORY_LINKS.filter(
       (link) => link.representativeTag?.name === "디자인",
@@ -68,6 +67,25 @@ describe("CategoriesScreen", () => {
     for (const link of otherLinks) {
       expect(screen.queryByText(link.title)).not.toBeOnTheScreen();
     }
+  });
+
+  test("탭을 누르면 선택한 카테고리를 URL 파라미터에 반영한다", async () => {
+    await renderScreen();
+
+    const user = userEvent.setup();
+    await user.press(screen.getByRole("button", { name: "디자인" }));
+
+    expect(mockSetParams).toHaveBeenCalledWith({ category: "디자인" });
+  });
+
+  test("'전체' 탭을 누르면 category 파라미터를 비운다", async () => {
+    mockParams = { category: "디자인" };
+    await renderScreen();
+
+    const user = userEvent.setup();
+    await user.press(screen.getByRole("button", { name: "전체" }));
+
+    expect(mockSetParams).toHaveBeenCalledWith({ category: undefined });
   });
 
   test("헤더 검색 아이콘을 누르면 검색 화면으로 이동한다", async () => {

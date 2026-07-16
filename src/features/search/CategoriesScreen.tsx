@@ -1,6 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
-import { useState } from "react";
 import { ScrollView } from "react-native";
 
 import { Header } from "@/components/ui/header/Header";
@@ -20,9 +19,12 @@ function isCategoryTab(value: string | undefined): value is CategoryTab {
 export function CategoriesScreen() {
   const router = useRouter();
   const { category } = useLocalSearchParams<{ category?: string }>();
-  const [selected, setSelected] = useState<CategoryTab>(
-    isCategoryTab(category) ? category : "전체",
-  );
+  const selected: CategoryTab = isCategoryTab(category) ? category : "전체";
+
+  // 선택 탭을 URL 에 반영해 새로고침·딥링크 시에도 유지한다. '전체' 는 기본값이라 param 을 비운다.
+  const handleSelectTab = (tab: CategoryTab) => {
+    router.setParams({ category: tab === "전체" ? undefined : tab });
+  };
 
   const links =
     selected === "전체"
@@ -52,7 +54,7 @@ export function CategoriesScreen() {
         }}
       />
       <VStack className="flex-1 bg-background-base">
-        <CategoryTabBar selected={selected} onSelect={setSelected} />
+        <CategoryTabBar selected={selected} onSelect={handleSelectTab} />
         <ScrollView showsVerticalScrollIndicator={false}>
           <VStack className="px-5 pt-3 pb-8">
             <LinkGrid links={links} />
