@@ -14,5 +14,7 @@ module.exports = {
     // keyboard-controller 는 네이티브 바인딩을 직접 참조하므로 jest 용 stub 으로 대체한다.
     "^react-native-keyboard-controller$":
       "<rootDir>/src/__mocks__/react-native-keyboard-controller.js",
+    // expo-blur 의 NativeBlurView 는 네이티브 뷰라 jest 에서 못 그린다 → stub 으로 대체.
+    "^expo-blur$": "<rootDir>/src/__mocks__/expo-blur.js",
   },
 };
