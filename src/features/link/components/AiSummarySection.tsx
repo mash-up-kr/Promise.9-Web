@@ -1,10 +1,9 @@
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
+import { ChevronDown, ChevronUp, Sparkle } from "lucide-react-native";
 import { useState } from "react";
 import { Platform, Pressable, View } from "react-native";
-
-import { ChevronIcon } from "@/components/ui/icon/ChevronIcon";
-import { SparkleIcon } from "@/components/ui/icon/SparkleIcon";
+import { Icon } from "@/components/ui/icon/Icon";
 import { Text } from "@/components/ui/text/Text";
 
 const COLLAPSED_HEIGHT = 116;
@@ -34,10 +33,21 @@ export function AiSummarySection({ summary }: AiSummarySectionProps) {
         className="flex-row items-center justify-between"
       >
         <View className="flex-row items-center gap-1.5">
-          <SparkleIcon />
+          {/* fill 은 Icon 의 className→color 매핑 대상이 아니라 토큰 값을 리터럴로 맞춰준다 */}
+          <Icon
+            iconNode={Sparkle}
+            size={14}
+            className="text-icon-accent"
+            fill="#0093FF"
+          />
           <Text variant="heading-3">AI 요약으로 미리보기</Text>
         </View>
-        <ChevronIcon rotated={!isExpanded} />
+        <Icon
+          iconNode={isExpanded ? ChevronUp : ChevronDown}
+          size={16}
+          strokeWidth={1.5}
+          className="text-icon-alternative"
+        />
       </Pressable>
       {isExpanded ? (
         <Text variant="body-2-reading">{summary}</Text>

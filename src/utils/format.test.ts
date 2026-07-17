@@ -1,4 +1,4 @@
-import { formatRelativeDate } from "./format";
+import { formatCalendarDate, formatRelativeDate } from "./format";
 
 // 링크 저장일 표시 정책 (홈·검색 공통). base 는 조회 시각.
 describe("formatRelativeDate", () => {
@@ -37,5 +37,17 @@ describe("formatRelativeDate", () => {
   test("저장 후 30일 이상이면 YYYY.MM.DD 절대 날짜", () => {
     expect(formatRelativeDate("2026-06-14T10:00:00", base)).toBe("2026.06.14");
     expect(formatRelativeDate("2026-05-28T10:00:00", base)).toBe("2026.05.28");
+  });
+});
+
+// link-detail 상단의 "출처 · 저장일" 표시 — 항상 절대 날짜(YYYY.MM.DD), 상대 표현 없음.
+describe("formatCalendarDate", () => {
+  test("ISO 8601 문자열을 YYYY.MM.DD 로 바꾼다", () => {
+    expect(formatCalendarDate("2026-06-19T00:00:00.000Z")).toBe("2026.06.19");
+  });
+
+  test("UTC 자정 시각도 로컬 타임존에 따라 날짜가 밀리지 않는다", () => {
+    expect(formatCalendarDate("2026-01-01T00:00:00.000Z")).toBe("2026.01.01");
+    expect(formatCalendarDate("2026-12-31T23:59:59.999Z")).toBe("2026.12.31");
   });
 });

@@ -52,4 +52,21 @@ describe("IconButton", () => {
     await render(<IconButton iconNode={StubIcon} accessibilityLabel="검색" />);
     expect(stubProps?.strokeWidth).toBe(1.5);
   });
+
+  // 즐겨찾기 별처럼 on/off 를 채움으로 구분하는 토글 버튼에 필요하다.
+  test("iconFill 을 아이콘의 fill 로 전달한다", async () => {
+    await render(
+      <IconButton
+        iconNode={StubIcon}
+        accessibilityLabel="즐겨찾기"
+        iconFill="currentColor"
+      />,
+    );
+    expect(stubProps?.fill).toBe("currentColor");
+  });
+
+  test("iconFill 을 주지 않으면 채우지 않는다(기존 호출부 영향 없음)", async () => {
+    await render(<IconButton iconNode={StubIcon} accessibilityLabel="검색" />);
+    expect(stubProps?.fill).toBe("none");
+  });
 });

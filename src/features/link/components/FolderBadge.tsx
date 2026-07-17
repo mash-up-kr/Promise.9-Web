@@ -1,13 +1,17 @@
-import type { FolderColor } from "@shared/types/link.types";
+import type { FolderColor, LinkFolderRef } from "@shared/types/link.types";
+import { ChevronRight } from "lucide-react-native";
 import { Pressable, View } from "react-native";
-import { ChevronIcon } from "@/components/ui/icon/ChevronIcon";
 import { FolderIcon } from "@/components/ui/icon/FolderIcon";
+import { Icon } from "@/components/ui/icon/Icon";
 import { Text } from "@/components/ui/text/Text";
+import { tv } from "@/lib/tv";
+
+const badgeStyles = tv({
+  base: "flex-row items-center gap-1.5 rounded-lg px-2 py-1",
+});
 
 // 미분류 folder 아이콘 색 = folder/gray(#65656b), Figma 기준. 아이콘은 hex color prop 만 받아 리터럴로 둔다.
 const UNCLASSIFIED_ICON_COLOR = "#65656B";
-// "폴더선택" chevron accent 색 = icon-accent(#0093ff).
-const ACCENT_ICON_COLOR = "#0093FF";
 
 type FolderStyle = { badge: string; label: string; iconColor: string };
 
@@ -25,7 +29,8 @@ const FOLDER_STYLE: Partial<Record<FolderColor, FolderStyle>> = {
 };
 
 export interface FolderBadgeProps {
-  folder?: string;
+  /** 소속 폴더. null 이면 "미분류" fallback 을 그린다. */
+  folder: LinkFolderRef | null;
   folderColor?: FolderColor;
   /** "폴더선택"(미분류) 탭 시 폴더 선택 진입. 실제 플로우는 별도 이슈. */
   onPress?: () => void;
@@ -54,7 +59,12 @@ export function FolderBadge({
           <Text variant="label-2-semibold" className="text-icon-accent">
             폴더선택
           </Text>
-          <ChevronIcon direction="right" color={ACCENT_ICON_COLOR} />
+          <Icon
+            iconNode={ChevronRight}
+            size={16}
+            strokeWidth={1.5}
+            className="text-icon-accent"
+          />
         </Pressable>
       </View>
     );
@@ -65,12 +75,10 @@ export function FolderBadge({
     (folderColor && FOLDER_STYLE[folderColor]) ?? DEFAULT_FOLDER_STYLE;
   return (
     <View className="w-full flex-row items-center">
-      <View
-        className={`flex-row items-center gap-1.5 rounded-lg px-2 py-1 ${style.badge}`}
-      >
+      <View className={badgeStyles({ class: style.badge })}>
         <FolderIcon color={style.iconColor} />
         <Text variant="label-2-semibold" className={style.label}>
-          {folder}
+          {folder.folderName}
         </Text>
       </View>
     </View>
