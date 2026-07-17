@@ -1,3 +1,4 @@
+import { installMocks } from "@mocks/setup";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { DarkTheme, Stack, ThemeProvider } from "expo-router";
@@ -10,6 +11,9 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { isWeb } from "@/constants/platform.constants";
 import { queryClient } from "@/lib/queryClient";
 import "@/global.css";
+
+// UT: EXPO_PUBLIC_USE_MOCK=true 면 apiClient 를 mock 으로 가로챈다(실서버 무연동).
+installMocks();
 
 SplashScreen.preventAutoHideAsync();
 

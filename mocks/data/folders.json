@@ -1,0 +1,20 @@
+[
+  {
+    "folderId": 1,
+    "folderName": "매쉬업 활동",
+    "folderColor": "blue",
+    "sortOrder": 0
+  },
+  {
+    "folderId": 2,
+    "folderName": "제주도 여행",
+    "folderColor": "blue",
+    "sortOrder": 1
+  },
+  {
+    "folderId": 3,
+    "folderName": "위시리스트",
+    "folderColor": "blue",
+    "sortOrder": 2
+  }
+]

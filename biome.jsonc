@@ -39,7 +39,8 @@
       "!**/yarn.lock", // yarn 잠금 파일 제외
       "!**/package-lock.json", // npm 잠금 파일 제외
       "!**/*.d.ts", // 타입 선언 파일 일괄 제외 (자동 생성·declaration 위주)
-      "!**/public" // public 폴더와 그 하위 파일들은 제외
+      "!**/public", // public 폴더와 그 하위 파일들은 제외
+      "!**/mocks/data" // UT mock 시드·원본 데이터(정규화 생성물·대용량 원본) 제외
     ]
   },
 

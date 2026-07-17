@@ -3,6 +3,8 @@ module.exports = {
   preset: "jest-expo",
   // 테스트가 아직 없는 초기 상태에서 `pnpm test` 가 실패하지 않도록.
   passWithNoTests: true,
+  // client.ts 가 로드 시 EXPO_PUBLIC_API_BASE_URL 없어 throw 하지 않도록 기본값 주입.
+  setupFiles: ["<rootDir>/jest.setup.env.js"],
   // E2E(Playwright, e2e/*.spec.ts)는 jest 가 아니라 playwright 가 실행한다.
   // .claude/ 는 에이전트 worktree(.claude/worktrees/)가 생겨 테스트가 중복 실행되므로 제외한다.
   testPathIgnorePatterns: ["/node_modules/", "/e2e/", "/.claude/"],
