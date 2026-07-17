@@ -11,6 +11,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { isWeb } from "@/constants/platform.constants";
+import { PaywallBoundary } from "@/features/paywall/PaywallBoundary";
 import { queryClient } from "@/lib/queryClient";
 import "@/global.css";
 
@@ -74,33 +75,36 @@ export default function RootLayout() {
             <View className="mx-auto w-full max-w-[768px] flex-1">
               <SnackbarProvider>
                 <ThemeProvider value={darkFixedTheme}>
-                  <Stack
-                    screenOptions={{
-                      contentStyle: { backgroundColor: BACKGROUND_BASE },
-                    }}
-                  >
-                    <Stack.Screen
-                      name="(tabs)"
-                      options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                      name="(auth)"
-                      options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                      name="create-link"
-                      options={sheetScreenOptions}
-                    />
-                    <Stack.Screen
-                      name="create-folder"
-                      options={sheetScreenOptions}
-                    />
-                    {/* 허용되지 않은 경로 → 홈 리다이렉트. 헤더 플래시 없이 넘긴다. */}
-                    <Stack.Screen
-                      name="+not-found"
-                      options={{ headerShown: false }}
-                    />
-                  </Stack>
+                  {/* 의도치 않은 에러 → 오류 화면 대신 Pro 결제 유도 시트(이스터에그) */}
+                  <PaywallBoundary>
+                    <Stack
+                      screenOptions={{
+                        contentStyle: { backgroundColor: BACKGROUND_BASE },
+                      }}
+                    >
+                      <Stack.Screen
+                        name="(tabs)"
+                        options={{ headerShown: false }}
+                      />
+                      <Stack.Screen
+                        name="(auth)"
+                        options={{ headerShown: false }}
+                      />
+                      <Stack.Screen
+                        name="create-link"
+                        options={sheetScreenOptions}
+                      />
+                      <Stack.Screen
+                        name="create-folder"
+                        options={sheetScreenOptions}
+                      />
+                      {/* 허용되지 않은 경로 → 홈 리다이렉트. 헤더 플래시 없이 넘긴다. */}
+                      <Stack.Screen
+                        name="+not-found"
+                        options={{ headerShown: false }}
+                      />
+                    </Stack>
+                  </PaywallBoundary>
                 </ThemeProvider>
               </SnackbarProvider>
             </View>
