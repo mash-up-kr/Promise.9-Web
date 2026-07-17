@@ -15,6 +15,8 @@ export default function TabsLayout() {
     <Tabs
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{
+        // 헤더는 투명 프로스트라 콘텐츠가 그 아래로 스크롤되게 한다(화면별 paddingTop=useHeaderHeight).
+        headerTransparent: true,
         // 시스템 라이트 모드에서 투명 씬 아래 밝은 배경이 비치지 않게 다크로 칠한다.
         sceneStyle: { backgroundColor: "#0e0e13" },
         header: ({ options }) => (

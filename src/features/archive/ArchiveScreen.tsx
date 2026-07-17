@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
+import { useHeaderHeight } from "@/components/ui/header/Header";
 import { archiveDetailHref } from "@/constants/routes.constants";
 
 import type { ArchiveFolder } from "./archive.types";
@@ -25,6 +26,7 @@ const MY_FOLDERS: ArchiveFolder[] = [
 
 export function ArchiveScreen() {
   const router = useRouter();
+  const headerHeight = useHeaderHeight();
   const [selectedId, setSelectedId] = useState<string>("ai");
 
   const handleOpenFolder = (id: string) => {
@@ -38,7 +40,10 @@ export function ArchiveScreen() {
 
   return (
     <View className="flex-1 bg-background-base">
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ paddingTop: headerHeight }}
+        showsVerticalScrollIndicator={false}
+      >
         <View className="gap-12 pt-5 pb-6">
           <FolderSection title="기본 폴더">
             <FolderGroup>
