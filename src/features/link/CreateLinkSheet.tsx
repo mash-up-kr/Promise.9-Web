@@ -3,7 +3,7 @@ import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -11,6 +11,7 @@ import { BottomSheet } from "@/components/ui/bottom-sheet/BottomSheet";
 import { Input, InputField, InputSlot } from "@/components/ui/input/Input";
 import { Text } from "@/components/ui/text/Text";
 import { VStack } from "@/components/ui/vstack/VStack";
+import { isWeb } from "@/constants/platform.constants";
 import { CreateLinkHeader } from "@/features/link/components/CreateLinkHeader";
 import { MemoField } from "@/features/link/components/MemoField";
 import { RemindQuestionSection } from "@/features/link/components/RemindQuestionSection";
@@ -33,10 +34,10 @@ export function CreateLinkSheet() {
   // 존재 확인(hasStringAsync)은 팝업이 없으므로 버튼 노출만 결정하고, 실제 읽기는
   // 사용자가 붙여넣기를 눌렀을 때만 한다. 웹은 존재 확인조차 권한 프롬프트를
   // 유발해 버튼을 항상 노출한다.
-  const [canPaste, setCanPaste] = useState(Platform.OS === "web");
+  const [canPaste, setCanPaste] = useState(isWeb);
 
   useEffect(function checkClipboardHasText() {
-    if (Platform.OS === "web") return;
+    if (isWeb) return;
     let active = true;
     Clipboard.hasStringAsync()
       .then((hasString) => {
@@ -125,7 +126,7 @@ export function CreateLinkSheet() {
     </KeyboardAwareScrollView>
   );
 
-  if (Platform.OS === "web") {
+  if (isWeb) {
     return <BottomSheet onClose={() => router.back()}>{content}</BottomSheet>;
   }
 

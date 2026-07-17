@@ -1,14 +1,8 @@
 import { useEffect, useState } from "react";
-import {
-  Image,
-  Linking,
-  Platform,
-  Pressable,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Image, Linking, Pressable, StyleSheet, View } from "react-native";
 import { GlassView } from "@/components/ui/glass-view/GlassView";
 import { ExternalLinkIcon } from "@/components/ui/icon/ExternalLinkIcon";
+import { isWeb } from "@/constants/platform.constants";
 
 // 대표 이미지는 원본 비율을 따른다: 가로형은 부모 컨테이너 가로폭 100%(좌우 패딩은
 // 상위에서 처리), 세로형은 240 고정.
@@ -71,9 +65,7 @@ export function LinkThumbnail({ thumbnailUrl, url }: LinkThumbnailProps) {
           style={[
             StyleSheet.absoluteFill,
             { opacity: 0.5 },
-            Platform.OS === "web"
-              ? { filter: "blur(2.4px)" }
-              : { filter: [{ blur: 2.4 }] },
+            isWeb ? { filter: "blur(2.4px)" } : { filter: [{ blur: 2.4 }] },
           ]}
         />
       )}

@@ -1,4 +1,6 @@
-import { Image, Platform, View } from "react-native";
+import { Image, View } from "react-native";
+
+import { isWeb } from "@/constants/platform.constants";
 
 export interface LinkBackgroundProps {
   thumbnailUrl: string;
@@ -37,9 +39,7 @@ export function LinkBackground({
             opacity: 0.1,
             transform: [{ scale: 1.1 }],
           },
-          Platform.OS === "web"
-            ? { filter: "blur(20px)" }
-            : { filter: [{ blur: 20 }] },
+          isWeb ? { filter: "blur(20px)" } : { filter: [{ blur: 20 }] },
         ]}
         resizeMode="cover"
       />

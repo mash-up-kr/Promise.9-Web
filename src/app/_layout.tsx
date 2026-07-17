@@ -3,10 +3,11 @@ import { useFonts } from "expo-font";
 import { DarkTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
+import { isWeb } from "@/constants/platform.constants";
 import { queryClient } from "@/lib/queryClient";
 import "@/global.css";
 
@@ -58,7 +59,7 @@ export default function RootLayout() {
                 <Stack.Screen
                   name="create-link"
                   options={
-                    Platform.OS === "web"
+                    isWeb
                       ? {
                           presentation: "transparentModal",
                           headerShown: false,

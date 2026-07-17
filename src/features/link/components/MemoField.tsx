@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
-import { Platform, TextInput, View } from "react-native";
-
+import { TextInput, View } from "react-native";
 import { Text } from "@/components/ui/text/Text";
+import { isWeb } from "@/constants/platform.constants";
 
 const PLACEHOLDER = "저장한 이유나 기억하고 싶은 점을 적어보세요";
 const MAX_MEMO_LENGTH = 300;
@@ -18,7 +18,7 @@ export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
   // 리사이즈한다.
   // biome-ignore lint/correctness/useExhaustiveDependencies: memo 를 직접 읽지 않고 ref 로 DOM 을 재측정하는 트리거로만 쓴다 — 값이 바뀔 때마다 다시 실행돼야 한다.
   useLayoutEffect(() => {
-    if (Platform.OS !== "web") return;
+    if (!isWeb) return;
     const node = inputRef.current as unknown as HTMLTextAreaElement | null;
     if (!node) return;
     node.style.height = "auto";

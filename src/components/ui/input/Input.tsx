@@ -1,6 +1,7 @@
 import type { PressableProps, TextInputProps, ViewProps } from "react-native";
-import { Platform, Pressable, TextInput, View } from "react-native";
+import { Pressable, TextInput, View } from "react-native";
 
+import { isAndroid } from "@/constants/platform.constants";
 import { tv } from "@/lib/tv";
 
 // gluestack v2 Input 의 compound 구조(Input/InputSlot/InputField)를 차용해
@@ -31,7 +32,7 @@ const PLACEHOLDER_COLOR = "#65656b";
 const CURSOR_COLOR = "#ffffff";
 // Android 는 selectionColor 를 하이라이트에 불투명하게 그대로 써서 흰 텍스트가
 // 가려진다(실기 확인). iOS 는 시스템이 알파를 적용하므로 흰색 그대로 쓴다.
-const SELECTION_COLOR = Platform.OS === "android" ? "#ffffff4d" : "#ffffff";
+const SELECTION_COLOR = isAndroid ? "#ffffff4d" : "#ffffff";
 
 export interface InputProps extends Omit<ViewProps, "className"> {
   className?: string;

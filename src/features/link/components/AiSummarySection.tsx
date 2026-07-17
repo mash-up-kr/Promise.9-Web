@@ -1,11 +1,12 @@
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
-import { Platform, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import { ChevronIcon } from "@/components/ui/icon/ChevronIcon";
 import { SparkleIcon } from "@/components/ui/icon/SparkleIcon";
 import { Text } from "@/components/ui/text/Text";
+import { isWeb } from "@/constants/platform.constants";
 
 const COLLAPSED_HEIGHT = 116;
 const FADE_HEIGHT = 40;
@@ -41,7 +42,7 @@ export function AiSummarySection({ summary }: AiSummarySectionProps) {
       </Pressable>
       {isExpanded ? (
         <Text variant="body-2-reading">{summary}</Text>
-      ) : Platform.OS === "web" ? (
+      ) : isWeb ? (
         <Text
           variant="body-2-reading"
           className="bg-linear-to-b from-[#e9e9eb] to-transparent bg-clip-text text-transparent"

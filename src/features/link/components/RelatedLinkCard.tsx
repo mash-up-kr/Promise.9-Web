@@ -1,7 +1,8 @@
 import type { RelatedLink } from "@shared/types/link.types";
 import { useEffect, useState } from "react";
-import { Image, Platform, View } from "react-native";
+import { Image, View } from "react-native";
 import { Text } from "@/components/ui/text/Text";
+import { isWeb } from "@/constants/platform.constants";
 
 // landscape 예시가 Figma 에 없어 임시로 잡은 반경 — dev-preview 실측 후 조정.
 const BLUR_RADIUS = 12;
@@ -48,7 +49,7 @@ export function RelatedLinkCard({ link }: RelatedLinkCardProps) {
                 bottom: 0,
                 transform: [{ scale: 1.1 }],
               },
-              Platform.OS === "web"
+              isWeb
                 ? { filter: `blur(${BLUR_RADIUS}px)` }
                 : { filter: [{ blur: BLUR_RADIUS }] },
             ]}
