@@ -3,7 +3,7 @@ import { Ellipsis, Star } from "lucide-react-native";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
 
-import { Header } from "@/components/ui/header/Header";
+import { Header, useHeaderHeight } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Text } from "@/components/ui/text/Text";
@@ -31,6 +31,7 @@ function formatSavedDate(savedAt: string): string {
 }
 
 export function LinkDetailScreen() {
+  const headerHeight = useHeaderHeight();
   const { id } = useLocalSearchParams<"/link/[id]">();
   const linkDetail =
     mockLinks.find((link) => link.linkId === Number(id)) ?? mockLinkDetail;
@@ -72,7 +73,8 @@ export function LinkDetailScreen() {
         />
         <ScrollView
           className="flex-1"
-          contentContainerClassName="gap-6 pt-4 pb-8"
+          contentContainerClassName="gap-6 pb-8"
+          contentContainerStyle={{ paddingTop: headerHeight + 16 }}
           contentInsetAdjustmentBehavior="automatic"
         >
           <View className="px-5">
