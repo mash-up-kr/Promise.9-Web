@@ -17,6 +17,23 @@ const transparentBackgroundTheme = {
   colors: { ...DefaultTheme.colors, background: "transparent" },
 };
 
+// 바텀시트 형태로 띄우는 라우트 공통 옵션 (create-link · create-folder).
+const sheetScreenOptions =
+  Platform.OS === "web"
+    ? {
+        presentation: "transparentModal" as const,
+        headerShown: false,
+        animation: "none" as const,
+        contentStyle: { backgroundColor: "transparent" },
+      }
+    : {
+        presentation: "formSheet" as const,
+        headerShown: false,
+        sheetAllowedDetents: [0.9],
+        sheetGrabberVisible: true,
+        sheetCornerRadius: 24,
+      };
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Pretendard: require("../../assets/fonts/Pretendard-Regular.ttf"),
@@ -49,24 +66,10 @@ export default function RootLayout() {
               >
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="create-link" options={sheetScreenOptions} />
                 <Stack.Screen
-                  name="create-link"
-                  options={
-                    Platform.OS === "web"
-                      ? {
-                          presentation: "transparentModal",
-                          headerShown: false,
-                          animation: "none",
-                          contentStyle: { backgroundColor: "transparent" },
-                        }
-                      : {
-                          presentation: "formSheet",
-                          headerShown: false,
-                          sheetAllowedDetents: [0.9],
-                          sheetGrabberVisible: true,
-                          sheetCornerRadius: 24,
-                        }
-                  }
+                  name="create-folder"
+                  options={sheetScreenOptions}
                 />
               </Stack>
             </ThemeProvider>

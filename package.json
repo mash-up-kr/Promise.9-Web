@@ -15,6 +15,7 @@
     "dayjs": "^1.11.21",
     "es-toolkit": "^1.47.1",
     "expo": "~56.0.11",
+    "expo-blur": "~56.0.4",
     "expo-clipboard": "~56.0.4",
     "expo-constants": "~56.0.18",
     "expo-device": "~56.0.4",

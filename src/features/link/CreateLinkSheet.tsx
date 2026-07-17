@@ -3,13 +3,9 @@ import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Platform, View } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BottomSheet } from "@/components/ui/bottom-sheet/BottomSheet";
 import { Input, InputField } from "@/components/ui/input/Input";
-import { VStack } from "@/components/ui/vstack/VStack";
+import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
 import { CreateLinkHeader } from "@/features/link/components/CreateLinkHeader";
 import { MemoField } from "@/features/link/components/MemoField";
 import { RemindQuestionSection } from "@/features/link/components/RemindQuestionSection";
@@ -20,7 +16,6 @@ import {
 
 export function CreateLinkSheet() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { control, handleSubmit, setValue, formState } =
     useForm<CreateLinkForm>({
       resolver: zodResolver(createLinkSchema),
@@ -50,66 +45,48 @@ export function CreateLinkSheet() {
     router.back();
   });
 
-  const content = (
-    <KeyboardAwareScrollView
-      bottomOffset={24}
-      keyboardShouldPersistTaps="handled"
-    >
-      <VStack space="2xl" className="pt-1">
-        <CreateLinkHeader
-          onCancel={() => router.back()}
-          onSave={onSave}
-          saveDisabled={!formState.isValid}
-        />
-
-        <Controller
-          control={control}
-          name="url"
-          render={({ field }) => (
-            <Input variant="field">
-              <InputField
-                placeholder="URL"
-                autoCapitalize="none"
-                keyboardType="url"
-                value={field.value}
-                onChangeText={field.onChange}
-              />
-            </Input>
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="remindType"
-          render={({ field }) => (
-            <RemindQuestionSection
-              value={field.value ?? null}
-              onChange={field.onChange}
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="memo"
-          render={({ field }) => (
-            <MemoField memo={field.value ?? ""} onChangeMemo={field.onChange} />
-          )}
-        />
-      </VStack>
-    </KeyboardAwareScrollView>
-  );
-
-  if (Platform.OS === "web") {
-    return <BottomSheet onClose={() => router.back()}>{content}</BottomSheet>;
-  }
-
   return (
-    <View
-      className="flex-1 bg-background-base px-5"
-      style={{ paddingBottom: insets.bottom + 16 }}
-    >
-      {content}
-    </View>
+    <SheetScreen>
+      <CreateLinkHeader
+        onCancel={() => router.back()}
+        onSave={onSave}
+        saveDisabled={!formState.isValid}
+      />
+
+      <Controller
+        control={control}
+        name="url"
+        render={({ field }) => (
+          <Input variant="field">
+            <InputField
+              placeholder="URL"
+              autoCapitalize="none"
+              keyboardType="url"
+              value={field.value}
+              onChangeText={field.onChange}
+            />
+          </Input>
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="remindType"
+        render={({ field }) => (
+          <RemindQuestionSection
+            value={field.value ?? null}
+            onChange={field.onChange}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="memo"
+        render={({ field }) => (
+          <MemoField memo={field.value ?? ""} onChangeMemo={field.onChange} />
+        )}
+      />
+    </SheetScreen>
   );
 }
