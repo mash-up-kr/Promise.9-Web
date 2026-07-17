@@ -13,14 +13,14 @@ describe("FolderBadge", () => {
   });
 
   test("폴더가 없으면(미분류) '미분류'와 '폴더선택'을 함께 노출한다", async () => {
-    await render(<FolderBadge />);
+    await render(<FolderBadge folder={null} />);
     expect(screen.getByText("미분류")).toBeOnTheScreen();
     expect(screen.getByText("폴더선택")).toBeOnTheScreen();
   });
 
   test("미분류 상태에서 '폴더선택'을 누르면 onPress 가 호출된다", async () => {
     const onPress = jest.fn();
-    await render(<FolderBadge onPress={onPress} />);
+    await render(<FolderBadge folder={null} onPress={onPress} />);
     fireEvent.press(screen.getByText("폴더선택"));
     expect(onPress).toHaveBeenCalledTimes(1);
   });

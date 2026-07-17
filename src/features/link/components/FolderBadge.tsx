@@ -30,7 +30,8 @@ const FOLDER_STYLE: Partial<Record<FolderColor, FolderStyle>> = {
 };
 
 export interface FolderBadgeProps {
-  folder?: LinkFolderRef | null;
+  /** 소속 폴더. null 이면 "미분류" fallback 을 그린다. */
+  folder: LinkFolderRef | null;
   folderColor?: FolderColor;
   /** "폴더선택"(미분류) 탭 시 폴더 선택 진입. 실제 플로우는 별도 이슈. */
   onPress?: () => void;
