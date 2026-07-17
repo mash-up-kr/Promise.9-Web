@@ -7,9 +7,12 @@ import {
   useRef,
   useState,
 } from "react";
+import { View } from "react-native";
 import Animated, { SlideInDown, SlideOutDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTimeout } from "react-simplikit";
+
+import { isWeb } from "@/constants/platform.constants";
 
 import { Snackbar, type SnackbarAction } from "./Snackbar";
 
@@ -87,6 +90,37 @@ function SnackbarHost({
 }) {
   useTimeout(onDismiss, options.duration ?? DEFAULT_DURATION);
 
+  const snackbar = (
+    <Snackbar
+      message={options.message}
+      action={
+        options.action
+          ? {
+              label: options.action.label,
+              onPress: () => {
+                options.action?.onPress();
+                onDismiss();
+              },
+            }
+          : undefined
+      }
+    />
+  );
+
+  // reanimated 4 의 layout 애니메이션(entering/exiting)이 웹에서 요소를 렌더하지 못해
+  // 스낵바가 보이지 않는다 → 웹은 애니메이션 없이 그린다. 네이티브는 슬라이드 유지.
+  if (isWeb) {
+    return (
+      <View
+        pointerEvents="box-none"
+        className="absolute inset-x-0 px-4"
+        style={{ bottom: insetBottom + 16 }}
+      >
+        {snackbar}
+      </View>
+    );
+  }
+
   return (
     <Animated.View
       entering={SlideInDown.duration(250)}
@@ -95,20 +129,7 @@ function SnackbarHost({
       className="absolute inset-x-0 px-4"
       style={{ bottom: insetBottom + 16 }}
     >
-      <Snackbar
-        message={options.message}
-        action={
-          options.action
-            ? {
-                label: options.action.label,
-                onPress: () => {
-                  options.action?.onPress();
-                  onDismiss();
-                },
-              }
-            : undefined
-        }
-      />
+      {snackbar}
     </Animated.View>
   );
 }

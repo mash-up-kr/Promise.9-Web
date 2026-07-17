@@ -98,16 +98,19 @@ export function CreateLinkSheet() {
       },
       {
         onSuccess: (created) => {
-          // 저장이 실제로 됐다는 피드백 — 스낵바 + 방금 저장한 링크로 바로 이동.
-          show({
-            message: "링크를 저장했어요",
-            action: {
-              label: "보기",
-              onPress: () =>
-                router.push(linkDetailHref(String(created.linkId))),
-            },
-          });
+          // 저장 성공 피드백. 시트를 먼저 닫고, 네비게이션이 정착한 다음 프레임에 스낵바를 띄운다
+          // — 닫기와 같은 틱에 show 하면 웹에서 스낵바가 렌더되지 않는다.
           closeSheet();
+          requestAnimationFrame(() => {
+            show({
+              message: "링크를 저장했어요",
+              action: {
+                label: "보기",
+                onPress: () =>
+                  router.push(linkDetailHref(String(created.linkId))),
+              },
+            });
+          });
         },
       },
     );
