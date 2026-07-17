@@ -8,7 +8,15 @@ import {
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 const mockBack = jest.fn();
-jest.mock("expo-router", () => ({ useRouter: () => ({ back: mockBack }) }));
+const mockReplace = jest.fn();
+const mockCanGoBack = jest.fn(() => true);
+jest.mock("expo-router", () => ({
+  useRouter: () => ({
+    back: mockBack,
+    replace: mockReplace,
+    canGoBack: mockCanGoBack,
+  }),
+}));
 jest.mock("expo-clipboard", () => ({
   hasStringAsync: jest.fn().mockResolvedValue(false),
   getStringAsync: jest.fn().mockResolvedValue(""),
@@ -43,6 +51,9 @@ const renderSheet = () =>
 describe("CreateLinkSheet", () => {
   beforeEach(() => {
     mockBack.mockClear();
+    mockReplace.mockClear();
+    mockCanGoBack.mockClear();
+    mockCanGoBack.mockReturnValue(true);
     apiClient.get.mockReset();
     apiClient.get.mockResolvedValue({
       data: {
@@ -79,6 +90,14 @@ describe("CreateLinkSheet", () => {
     await renderSheet();
     await fireEvent.press(screen.getByText("취소"));
     expect(mockBack).toHaveBeenCalled();
+  });
+
+  test("뒤로 갈 수 없으면 닫기 시 홈으로 이동한다", async () => {
+    mockCanGoBack.mockReturnValue(false);
+    await renderSheet();
+    await fireEvent.press(screen.getByText("취소"));
+    expect(mockReplace).toHaveBeenCalledWith("/");
+    expect(mockBack).not.toHaveBeenCalled();
   });
 
   test("클립보드에 문자열이 있으면 붙여넣기 버튼을 노출한다", async () => {

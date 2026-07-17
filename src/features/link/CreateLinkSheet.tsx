@@ -24,6 +24,16 @@ import {
 export function CreateLinkSheet() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  const closeSheet = () => {
+    // 웹에서 히스토리가 없으면(직접 진입 등) back 이 실패하므로 홈으로 대체한다.
+    if (router.canGoBack()) {
+      router.back();
+
+      return;
+    }
+    router.replace("/");
+  };
   const { control, handleSubmit, setValue, watch, formState } =
     useForm<CreateLinkForm>({
       resolver: zodResolver(createLinkSchema),
@@ -76,7 +86,7 @@ export function CreateLinkSheet() {
 
   const onSave = handleSubmit(() => {
     // TODO(#33): 실제 저장 API 연동 지점. 지금은 mock — 폼 유효 시 시트만 닫는다.
-    router.back();
+    closeSheet();
   });
 
   const content = (
@@ -86,7 +96,7 @@ export function CreateLinkSheet() {
     >
       <VStack space="2xl" className="pt-1">
         <CreateLinkHeader
-          onCancel={() => router.back()}
+          onCancel={closeSheet}
           onSave={onSave}
           saveDisabled={!formState.isValid}
         />
@@ -147,7 +157,7 @@ export function CreateLinkSheet() {
   );
 
   if (isWeb) {
-    return <BottomSheet onClose={() => router.back()}>{content}</BottomSheet>;
+    return <BottomSheet onClose={closeSheet}>{content}</BottomSheet>;
   }
 
   return (
