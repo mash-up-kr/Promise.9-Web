@@ -1,6 +1,6 @@
 ---
 name: new-form
-description: react-hook-form + zod 폼을 팀 컨벤션대로 스캐폴드한다. Use when creating a form or adding input validation (예:"폼 만들어줘", "입력 검증 추가해줘", "로그인 폼 구현"). 서버 상태 조회는 /new-query, 검색어 하나 같은 단순 로컬 입력(useState 1개)·익스텐션 코드에는 사용하지 않는다.
+description: react-hook-form + zod 폼을 팀 컨벤션대로 스캐폴드한다. Use when creating a form or adding input validation (예:"폼 만들어줘", "입력 검증 추가해줘", "로그인 폼 구현", "검색 입력 구현"). 검색어 같은 단일 입력도 폼 상태(RHF)로 구성한다. 서버 상태 조회는 /new-query, 익스텐션 코드에는 사용하지 않는다.
 ---
 
 # new-form — 폼 (앱/웹)
@@ -14,12 +14,13 @@ description: react-hook-form + zod 폼을 팀 컨벤션대로 스캐폴드한다
 - 폼 컴포넌트: `src/features/<기능>/components/` (컴포넌트 규칙은 `/new-component`).
 
 ## 규칙
-1. **검증은 zod 스키마 + `zodResolver`** 로 폼 단위 정의가 기본. 필드 간 의존성 없는 단발 검증만 개별 validate — 기준은 good-code "폼 응집도" 절.
+1. **검증은 zod 스키마 + `zodResolver`** 로 폼 단위 정의가 기본. 필드 간 의존성 없는 단발 검증만 개별 validate — 기준은 good-code "폼 응집도" 절. 검증 규칙이 없는 폼(예: 검색어)은 스키마·resolver 없이 `useForm` 만 쓴다.
 2. **타입은 `z.infer`** 로 스키마에서 도출한다. 스키마와 별도로 폼 타입을 손으로 다시 쓰지 않는다.
 3. **입력 연결은 `Controller`** 로 한다. RN 의 `TextInput` 은 DOM ref 가 없어 `register()` 가 동작하지 않는다.
 4. **`defaultValues` 를 항상 명시**한다. RN 은 uncontrolled 입력이 없어 값이 `undefined` 로 시작하면 controlled 전환 경고가 난다.
 5. **제출은 mutation 훅**(`/new-query` 의 `useXxxMutation`)으로 보내고, `isPending` 동안 제출 버튼을 비활성화한다.
 6. **에러는 두 층으로 구분**한다: 필드 에러(`formState.errors.<필드>`)는 해당 입력 아래, 서버 에러(mutation `error`)는 폼 상단/토스트 — 섞지 않는다.
+7. **검색·필터처럼 입력이 곧 실행인 폼**은 커밋 콜백을 react-simplikit `useDebounce` 로 감싸 타이핑 정지 후 실행하고, 제출·칩 같은 즉시 실행 경로는 `.cancel()` 후 직접 커밋한다. 커밋된 값은 URL 파라미터를 단일 진실원으로 둔다. 적용례: `src/features/search/SearchScreen.tsx`.
 
 ## 템플릿
 
