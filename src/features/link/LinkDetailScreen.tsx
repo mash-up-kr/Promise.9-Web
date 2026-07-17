@@ -9,7 +9,7 @@ import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Text } from "@/components/ui/text/Text";
-import { formatSavedDate } from "@/utils/format";
+import { formatCalendarDate } from "@/utils/format";
 
 import { AiSummarySection } from "./components/AiSummarySection";
 import { FolderBadge } from "./components/FolderBadge";
@@ -124,7 +124,7 @@ export function LinkDetailScreen() {
               <Text variant="caption-1" className="text-opacity-white-40">
                 {" · "}
               </Text>
-              {formatSavedDate(linkDetail.savedAt)}
+              {formatCalendarDate(linkDetail.savedAt)}
             </Text>
           </View>
 
