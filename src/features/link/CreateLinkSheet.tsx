@@ -8,6 +8,7 @@ import { Input, InputField, InputSlot } from "@/components/ui/input/Input";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
 import { Text } from "@/components/ui/text/Text";
 import { isWeb } from "@/constants/platform.constants";
+import { useCreateLinkMutation } from "@/features/link/api/link.queries";
 import { CreateLinkHeader } from "@/features/link/components/CreateLinkHeader";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { MemoField } from "@/features/link/components/MemoField";
@@ -41,6 +42,8 @@ export function CreateLinkSheet() {
         previewUrl: "",
       },
     });
+
+  const createLinkMutation = useCreateLinkMutation();
 
   // 클립보드를 자동으로 읽으면 iOS 가 시트를 열 때마다 붙여넣기 권한 팝업을 띄운다.
   // 존재 확인(hasStringAsync)은 팝업이 없으므로 버튼 노출만 결정하고, 실제 읽기는
@@ -80,9 +83,18 @@ export function CreateLinkSheet() {
       .catch(console.error);
   };
 
-  const onSave = handleSubmit(() => {
-    // TODO(#33): 실제 저장 API 연동 지점. 지금은 mock — 폼 유효 시 시트만 닫는다.
-    closeSheet();
+  const onSave = handleSubmit((values) => {
+    // 저장 시트엔 폴더 선택이 없어 folderId 는 항상 null. 실패 시 시트를 열어둔 채
+    // 재시도할 수 있게 성공했을 때만 닫는다.
+    createLinkMutation.mutate(
+      {
+        url: values.url,
+        folderId: null,
+        memo: values.memo?.trim() ? values.memo : null,
+        remindType: values.remindType,
+      },
+      { onSuccess: () => closeSheet() },
+    );
   });
 
   return (
@@ -90,7 +102,7 @@ export function CreateLinkSheet() {
       <CreateLinkHeader
         onCancel={closeSheet}
         onSave={onSave}
-        saveDisabled={!formState.isValid}
+        saveDisabled={!formState.isValid || createLinkMutation.isPending}
       />
 
       <LinkPreviewCard url={previewUrl} />

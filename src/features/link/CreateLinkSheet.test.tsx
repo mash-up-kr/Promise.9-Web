@@ -22,12 +22,14 @@ jest.mock("expo-clipboard", () => ({
   getStringAsync: jest.fn().mockResolvedValue(""),
 }));
 // LinkPreviewCard → useLinkPreview → apiClient 로드 시 client.ts throw → 통째로 목.
-jest.mock("@shared/api", () => ({ apiClient: { get: jest.fn() } }));
+jest.mock("@shared/api", () => ({
+  apiClient: { get: jest.fn(), post: jest.fn() },
+}));
 
 import { CreateLinkSheet } from "./CreateLinkSheet";
 
 const { apiClient } = jest.requireMock("@shared/api") as {
-  apiClient: { get: jest.Mock };
+  apiClient: { get: jest.Mock; post: jest.Mock };
 };
 
 const metrics: Metrics = {
@@ -35,6 +37,8 @@ const metrics: Metrics = {
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
 };
 
+// renderSheet 은 render() 결과를 그대로 반환한다 — 이 스택(RNTL14 · test-renderer 1.2.0 · React19)에서
+// 결과를 버리고 다른 값을 반환하면 전역 screen 바인딩이 깨진다. 무효화 검증은 QueryClient.prototype 스파이로.
 const renderSheet = () =>
   render(
     <QueryClientProvider
@@ -61,6 +65,17 @@ describe("CreateLinkSheet", () => {
         data: { title: "기본", source: "example.com", thumbnailUrl: null },
       },
     });
+    apiClient.post.mockReset();
+    apiClient.post.mockResolvedValue({
+      data: {
+        success: true,
+        data: {
+          linkId: 1,
+          url: "https://example.com",
+          savedAt: "2026-07-17T00:00:00.000Z",
+        },
+      },
+    });
   });
 
   test("URL·리마인드 미충족이면 저장 버튼이 비활성이다", async () => {
@@ -84,6 +99,52 @@ describe("CreateLinkSheet", () => {
     );
     await fireEvent.press(screen.getByLabelText("저장"));
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
+  });
+
+  test("저장하면 POST /links 로 폼 값을 전송한다", async () => {
+    await renderSheet();
+    await fireEvent.changeText(
+      screen.getByPlaceholderText("URL"),
+      "https://example.com",
+    );
+    await fireEvent.press(screen.getByText("곧 활용할게요"));
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText("저장").props.accessibilityState.disabled,
+      ).toBe(false),
+    );
+    await fireEvent.press(screen.getByLabelText("저장"));
+    await waitFor(() =>
+      expect(apiClient.post).toHaveBeenCalledWith("/links", {
+        url: "https://example.com",
+        folderId: null,
+        memo: null,
+        remindType: "soon",
+      }),
+    );
+  });
+
+  test("저장 성공 시 링크 쿼리를 무효화한다", async () => {
+    const invalidateSpy = jest.spyOn(
+      QueryClient.prototype,
+      "invalidateQueries",
+    );
+    await renderSheet();
+    await fireEvent.changeText(
+      screen.getByPlaceholderText("URL"),
+      "https://example.com",
+    );
+    await fireEvent.press(screen.getByText("곧 활용할게요"));
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText("저장").props.accessibilityState.disabled,
+      ).toBe(false),
+    );
+    await fireEvent.press(screen.getByLabelText("저장"));
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["link"] }),
+    );
+    invalidateSpy.mockRestore();
   });
 
   test("취소하면 시트를 닫는다", async () => {
