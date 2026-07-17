@@ -1,7 +1,13 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { Text } from "react-native";
 
-import { Input, InputField, InputSlot, inputStyles } from "./Input";
+import {
+  Input,
+  InputField,
+  InputSlot,
+  inputFieldStyles,
+  inputStyles,
+} from "./Input";
 
 describe("Input", () => {
   test("슬롯과 필드를 함께 렌더한다", async () => {
@@ -39,7 +45,7 @@ describe("Input", () => {
     expect(field.props.selectionColor).toBe("#ffffff");
   });
 
-  test("InputField 는 placeholder 색 기본값(text-assistive)을 가진다", async () => {
+  test("pill(Search) placeholder 는 gray-400(text-assistive)", async () => {
     await render(
       <Input variant="pill">
         <InputField placeholder="입력" />
@@ -47,6 +53,17 @@ describe("Input", () => {
     );
     expect(screen.getByPlaceholderText("입력").props.placeholderTextColor).toBe(
       "#65656b",
+    );
+  });
+
+  test("field(Default) placeholder 는 white-30", async () => {
+    await render(
+      <Input variant="field">
+        <InputField placeholder="폴더" />
+      </Input>,
+    );
+    expect(screen.getByPlaceholderText("폴더").props.placeholderTextColor).toBe(
+      "#ffffff4d",
     );
   });
 
@@ -66,15 +83,87 @@ describe("Input", () => {
 });
 
 describe("Input variant", () => {
-  test("pill 변형은 완전 둥근 pill 형태다", () => {
+  test("pill(Search) 변형은 완전 둥근 pill · #26262b 배경이다", () => {
     const cls = inputStyles({ variant: "pill" });
     expect(cls).toContain("rounded-full");
     expect(cls).toContain("h-10");
+    expect(cls).toContain("bg-background-input");
   });
 
-  test("field 변형은 저장시트용 라운드 사각형이다", () => {
+  test("field(Default) 변형은 radius 20 · white-10 배경이다", () => {
     const cls = inputStyles({ variant: "field" });
-    expect(cls).toContain("rounded-2xl");
+    expect(cls).toContain("rounded-[20px]");
+    expect(cls).toContain("bg-opacity-white-10");
     expect(cls).not.toContain("rounded-full");
+  });
+});
+
+describe("InputField 타입별 폰트 스펙", () => {
+  test("field(Default) 는 Pretendard Regular 14(body-2-reading)", () => {
+    const cls = inputFieldStyles({ variant: "field" });
+    expect(cls).toContain("font-pretendard");
+    expect(cls).not.toContain("font-pretendard-medium");
+    expect(cls).toContain("text-body-2-reading");
+    expect(cls).toContain("text-text-normal");
+  });
+
+  test("pill(Search) 는 Pretendard Medium 16(heading-3)", () => {
+    const cls = inputFieldStyles({ variant: "pill" });
+    expect(cls).toContain("font-pretendard-medium");
+    expect(cls).toContain("text-heading-3");
+    expect(cls).toContain("text-text-normal");
+  });
+});
+
+describe("InputField clear 버튼", () => {
+  test("값이 있으면 clear(X) 버튼이 나타난다", async () => {
+    await render(
+      <Input variant="field">
+        <InputField
+          placeholder="폴더"
+          value="디자인"
+          onChangeText={jest.fn()}
+        />
+      </Input>,
+    );
+    expect(screen.getByLabelText("입력 지우기")).toBeOnTheScreen();
+  });
+
+  test("clear 버튼을 누르면 값이 지워진다(onChangeText 빈 문자열)", async () => {
+    const onChangeText = jest.fn();
+    await render(
+      <Input variant="field">
+        <InputField
+          placeholder="폴더"
+          value="디자인"
+          onChangeText={onChangeText}
+        />
+      </Input>,
+    );
+    fireEvent.press(screen.getByLabelText("입력 지우기"));
+    expect(onChangeText).toHaveBeenCalledWith("");
+  });
+
+  test("값이 비어 있으면 clear 버튼이 없다", async () => {
+    await render(
+      <Input variant="field">
+        <InputField placeholder="폴더" value="" onChangeText={jest.fn()} />
+      </Input>,
+    );
+    expect(screen.queryByLabelText("입력 지우기")).toBeNull();
+  });
+
+  test("clearable=false 면 값이 있어도 clear 버튼이 없다", async () => {
+    await render(
+      <Input variant="field">
+        <InputField
+          placeholder="폴더"
+          value="디자인"
+          clearable={false}
+          onChangeText={jest.fn()}
+        />
+      </Input>,
+    );
+    expect(screen.queryByLabelText("입력 지우기")).toBeNull();
   });
 });
