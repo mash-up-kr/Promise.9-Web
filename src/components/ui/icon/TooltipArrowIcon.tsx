@@ -1,5 +1,7 @@
 import Svg, { Path } from "react-native-svg";
 
+// lucide 로 대체하지 않음 — 툴팁 말풍선 꼬리(삼각형 폴리곤)는 아이콘이 아니라
+// 디자인 커스텀 장식 셰이프라 lucide 아이콘 셋에 대응하는 항목이 없다.
 export interface TooltipArrowIconProps {
   width?: number;
   height?: number;

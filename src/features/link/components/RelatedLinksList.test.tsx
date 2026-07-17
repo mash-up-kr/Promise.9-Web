@@ -1,22 +1,10 @@
 import { render, screen } from "@testing-library/react-native";
-import { Image } from "react-native";
 
 import { mockRelatedLinks } from "../mock/mockLinkDetail";
 import { RelatedLinksList } from "./RelatedLinksList";
 
 describe("RelatedLinksList", () => {
-  // 카드 내부 landscape 판정(Image.getSize)은 RelatedLinkCard.test.tsx 에서 별도 검증한다.
-  // 이 목은 jest-expo 의 네이티브 Image.getSize 목이 New Architecture TurboModule 과
-  // 맞지 않아 깨지는 것을 우회하기 위한 테스트 격리용이다.
-  beforeEach(() => {
-    jest
-      .spyOn(Image, "getSize")
-      .mockImplementation((_uri, success) => success(120, 150));
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
+  // 카드 내부 landscape 판정(expo-image onLoad)은 RelatedLinkCard.test.tsx 에서 별도 검증한다.
 
   test("섹션 타이틀 '함께 다시 볼 링크'를 렌더한다", async () => {
     await render(<RelatedLinksList items={mockRelatedLinks} />);

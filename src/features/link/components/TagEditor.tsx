@@ -1,20 +1,53 @@
+import type { LinkTag } from "@shared/types/link.types";
+import { Plus, X } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
+
 import { GlassView } from "@/components/ui/glass-view/GlassView";
-import { CloseIcon } from "@/components/ui/icon/CloseIcon";
-import { PlusIcon } from "@/components/ui/icon/PlusIcon";
+import { Icon } from "@/components/ui/icon/Icon";
 import { TooltipArrowIcon } from "@/components/ui/icon/TooltipArrowIcon";
 import { Text } from "@/components/ui/text/Text";
+import { tv } from "@/lib/tv";
 
-const MAX_TAGS = 10;
+import { MAX_TAGS, TAG_NAME_MAX_LENGTH } from "../link.contracts";
+
 const PLACEHOLDER = "태그를 입력해 주세요";
 const HELPER_TEXT = "태그는 최대 10개까지 추가할 수 있어요";
 const TOOLTIP_TEXT = "태그를 추가하면 링크를 더 쉽게 찾을 수 있어요";
 
+const inputContainerStyles = tv({
+  base: "h-12 w-full flex-row items-center gap-1 rounded-[16px] border-[0.5px] border-opacity-white-20 px-3",
+  variants: {
+    empty: {
+      true: "bg-opacity-black-20",
+      false: "bg-opacity-white-10",
+    },
+  },
+});
+
+const addButtonStyles = tv({
+  base: "h-8 items-center justify-center rounded-[12px] px-3",
+  variants: {
+    disabled: {
+      true: "bg-blue-700",
+      false: "bg-blue-500",
+    },
+  },
+});
+
+const addButtonLabelStyles = tv({
+  variants: {
+    disabled: {
+      true: "text-gray-200",
+      false: "text-gray-50",
+    },
+  },
+});
+
 export interface TagEditorProps {
-  tags: string[];
-  onAddTag: (tag: string) => void;
-  onRemoveTag: (tag: string) => void;
+  tags: LinkTag[];
+  onAddTag: (name: string) => void;
+  onRemoveTag: (tagId: number) => void;
 }
 
 export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
@@ -45,7 +78,7 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
   function handleAdd() {
     const value = draftValue.trim();
     if (value === "" || isFull) return;
-    if (tags.includes(value)) {
+    if (tags.some((tag) => tag.name === value)) {
       setDuplicateTag(value);
       return;
     }
@@ -62,18 +95,23 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
           onPress={enterEditMode}
           className="h-9 flex-row items-center gap-1 rounded-full bg-gray-50 px-3"
         >
-          <PlusIcon />
+          <Icon
+            iconNode={Plus}
+            size={12}
+            className="text-icon-inverse"
+            strokeWidth={1.3}
+          />
           <Text variant="label-2-semibold" className="text-icon-inverse">
             태그 추가
           </Text>
         </Pressable>
         {tags.map((tag) => (
           <View
-            key={tag}
+            key={tag.tagId}
             className="h-9 items-center justify-center rounded-full bg-opacity-white-20 px-3"
           >
             <Text variant="label-2-medium" className="text-opacity-white-80">
-              #{tag}
+              #{tag.name}
             </Text>
           </View>
         ))}
@@ -112,11 +150,7 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
 
           <View className="w-full gap-2">
             <View
-              className={`h-12 w-full flex-row items-center gap-1 rounded-[16px] border-[0.5px] border-opacity-white-20 px-3 ${
-                draftValue === ""
-                  ? "bg-opacity-black-20"
-                  : "bg-opacity-white-10"
-              }`}
+              className={inputContainerStyles({ empty: draftValue === "" })}
             >
               <Text variant="body-2-normal" className="text-opacity-white-80">
                 #
@@ -127,6 +161,7 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
                 onChangeText={handleChangeText}
                 onSubmitEditing={handleAdd}
                 placeholder={PLACEHOLDER}
+                maxLength={TAG_NAME_MAX_LENGTH}
                 // placeholderTextColor 는 className 으로 못 받아 리터럴로 지정 — #ffffff4d = --color-opacity-white-30
                 placeholderTextColor="#ffffff4d"
                 returnKeyType="done"
@@ -138,13 +173,11 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
                 accessibilityState={{ disabled: isAddDisabled }}
                 onPress={handleAdd}
                 disabled={isAddDisabled}
-                className={`h-8 items-center justify-center rounded-[12px] px-3 ${
-                  isAddDisabled ? "bg-blue-700" : "bg-blue-500"
-                }`}
+                className={addButtonStyles({ disabled: isAddDisabled })}
               >
                 <Text
                   variant="label-2-semibold"
-                  className={isAddDisabled ? "text-gray-200" : "text-gray-50"}
+                  className={addButtonLabelStyles({ disabled: isAddDisabled })}
                 >
                   추가
                 </Text>
@@ -161,19 +194,25 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
         <View className="w-full flex-row flex-wrap items-start gap-2">
           {tags.map((tag) => (
             <View
-              key={tag}
+              key={tag.tagId}
               className="h-9 flex-row items-center gap-2 rounded-full bg-opacity-white-10 px-3"
             >
               <Text variant="label-2-medium" className="text-opacity-white-80">
-                #{tag}
+                #{tag.name}
               </Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`${tag} 삭제`}
-                onPress={() => onRemoveTag(tag)}
+                accessibilityLabel={`${tag.name} 삭제`}
+                onPress={() => onRemoveTag(tag.tagId)}
                 className="h-5 w-5 items-center justify-center rounded-full bg-opacity-black-30"
               >
-                <CloseIcon />
+                <Icon
+                  iconNode={X}
+                  size={10}
+                  className="text-opacity-white-100"
+                  strokeWidth={2}
+                  strokeOpacity={0.6}
+                />
               </Pressable>
             </View>
           ))}

@@ -46,7 +46,11 @@ export default function TabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="archive" options={{ title: "보관함" }} />
+      {/* 보관함은 정렬 편집 모드 상태를 헤더↔리스트가 공유하므로 화면이 자체 헤더를 렌더한다. */}
+      <Tabs.Screen
+        name="archive"
+        options={{ title: "보관함", headerShown: false }}
+      />
       <Tabs.Screen name="settings" options={{ title: "세팅" }} />
     </Tabs>
   );

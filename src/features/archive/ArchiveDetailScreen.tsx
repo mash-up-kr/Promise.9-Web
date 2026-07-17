@@ -1,14 +1,16 @@
-import { Stack, useLocalSearchParams } from "expo-router";
-import { View } from "react-native";
+import { Stack, useRouter } from "expo-router";
+import { ScrollView, View } from "react-native";
 
 import { Header } from "@/components/ui/header/Header";
 import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
-import { Heading } from "@/components/ui/heading/Heading";
-import { Text } from "@/components/ui/text/Text";
+import { LinkTile } from "@/components/ui/link-card/LinkTile";
+
+import { FOLDER_LINKS } from "./archive.mocks";
 
 export function ArchiveDetailScreen() {
-  const { id } = useLocalSearchParams<"/archive/[id]">();
+  const router = useRouter();
+
   return (
     <>
       <Stack.Screen
@@ -23,10 +25,25 @@ export function ArchiveDetailScreen() {
           ),
         }}
       />
-      <View className="flex-1 items-center justify-center bg-background-base p-6">
-        <Heading size="2xl">보관함 상세</Heading>
-        <Text className="mt-2 text-neutral-500">id: {id}</Text>
-      </View>
+      <ScrollView
+        className="flex-1 bg-background-base"
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="flex-row flex-wrap justify-between gap-y-5 px-5 pt-2 pb-6">
+          {FOLDER_LINKS.map((link) => (
+            <LinkTile
+              key={link.linkId}
+              link={link}
+              onPress={() =>
+                router.push({
+                  pathname: "/link/[id]",
+                  params: { id: String(link.linkId) },
+                })
+              }
+            />
+          ))}
+        </View>
+      </ScrollView>
     </>
   );
 }

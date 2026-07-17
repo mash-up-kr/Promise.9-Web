@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
-import { Image, Linking, Pressable, StyleSheet, View } from "react-native";
+import { Image, type ImageLoadEventData } from "expo-image";
+import { ExternalLink } from "lucide-react-native";
+import { useState } from "react";
+import { Linking, Pressable, StyleSheet, View } from "react-native";
+
 import { GlassView } from "@/components/ui/glass-view/GlassView";
-import { ExternalLinkIcon } from "@/components/ui/icon/ExternalLinkIcon";
-import { isWeb } from "@/constants/platform.constants";
+import { Icon } from "@/components/ui/icon/Icon";
 
 // 대표 이미지는 원본 비율을 따른다: 가로형은 부모 컨테이너 가로폭 100%(좌우 패딩은
 // 상위에서 처리), 세로형은 240 고정.
 const PORTRAIT_WIDTH = 240;
-// 치수 측정 전 기본 비율(가로형 Figma 335×235 기준) — og-image 대부분 landscape.
+// 로드 전 기본 비율(가로형 Figma 335×235 기준) — og-image 대부분 landscape.
 const DEFAULT_ASPECT_RATIO = 335 / 235;
+const BLUR_RADIUS = 2.4;
 
 export interface LinkThumbnailProps {
   thumbnailUrl: string;
@@ -20,22 +23,9 @@ export function LinkThumbnail({ thumbnailUrl, url }: LinkThumbnailProps) {
     null,
   );
 
-  useEffect(() => {
-    let cancelled = false;
-    Image.getSize(
-      thumbnailUrl,
-      (width, height) => {
-        if (!cancelled) setSize({ width, height });
-      },
-      () => {
-        // 측정 실패 시 가로형 fallback 유지 — 사용자 노출 메시지는 불필요.
-        if (!cancelled) setSize(null);
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [thumbnailUrl]);
+  function handleLoad({ source }: ImageLoadEventData) {
+    setSize({ width: source.width, height: source.height });
+  }
 
   const isPortrait = size != null && size.height > size.width;
   const boxWidth: number | `${number}%` = isPortrait ? PORTRAIT_WIDTH : "100%";
@@ -61,21 +51,19 @@ export function LinkThumbnail({ thumbnailUrl, url }: LinkThumbnailProps) {
         <Image
           testID="thumb-blur"
           source={{ uri: thumbnailUrl }}
-          resizeMode="cover"
-          style={[
-            StyleSheet.absoluteFill,
-            { opacity: 0.5 },
-            isWeb ? { filter: "blur(2.4px)" } : { filter: [{ blur: 2.4 }] },
-          ]}
+          contentFit="cover"
+          blurRadius={BLUR_RADIUS}
+          style={[StyleSheet.absoluteFill, { opacity: 0.5 }]}
         />
       )}
 
-      {/* 전경: 원본 이미지 */}
+      {/* 전경: 원본 이미지. 로드 완료 시 실제 치수를 받아 세로/가로 판정에 쓴다. */}
       <Image
         testID="thumb-image"
         source={{ uri: thumbnailUrl }}
-        resizeMode="cover"
+        contentFit="cover"
         style={StyleSheet.absoluteFill}
+        onLoad={handleLoad}
       />
 
       {/* 우하단 원문 이동 버튼 (이미지 크기와 무관하게 항상 16px inset) */}
@@ -90,7 +78,12 @@ export function LinkThumbnail({ thumbnailUrl, url }: LinkThumbnailProps) {
           intensity={55}
           className="size-full items-center justify-center"
         >
-          <ExternalLinkIcon />
+          <Icon
+            iconNode={ExternalLink}
+            size={16}
+            className="text-icon-normal"
+            strokeWidth={1.3}
+          />
         </GlassView>
       </Pressable>
     </View>

@@ -1,12 +1,15 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { LinkTag } from "@shared/types/link.types";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Ellipsis, Star } from "lucide-react-native";
-import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { ScrollView, View } from "react-native";
 
 import { Header, useHeaderHeight } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Text } from "@/components/ui/text/Text";
+import { formatCalendarDate } from "@/utils/format";
 
 import { AiSummarySection } from "./components/AiSummarySection";
 import { FolderBadge } from "./components/FolderBadge";
@@ -15,19 +18,26 @@ import { LinkThumbnail } from "./components/LinkThumbnail";
 import { MemoField } from "./components/MemoField";
 import { RelatedLinksList } from "./components/RelatedLinksList";
 import { TagEditor } from "./components/TagEditor";
+import { type LinkDetailForm, linkDetailFormSchema } from "./link.contracts";
 import {
   mockLinkDetail,
   mockLinkDetailUnclassified,
-  mockRelatedLinks,
 } from "./mock/mockLinkDetail";
 
 // 백엔드 연동 전까지 상세 조회 가능한 목업 링크.
 const mockLinks = [mockLinkDetail, mockLinkDetailUnclassified];
 
-// savedAt(ISO 8601)의 날짜 부분만 취해 "YYYY.MM.DD"로 바꾼다. Date 객체를 거치면
-// 로컬 타임존에 따라 날짜가 하루 밀릴 수 있어 문자열을 직접 자른다.
-function formatSavedDate(savedAt: string): string {
-  return savedAt.slice(0, 10).replaceAll("-", ".");
+// TODO(#33): 태그 추가/삭제가 서버 호출(POST/DELETE /links/{linkId}/tags)로 바뀌면
+//  아래 두 함수는 사라진다 — tagId 를 서버가 내려주므로 임시 id 생성도 함께 없어진다.
+function appendTag(tags: LinkTag[], name: string): LinkTag[] {
+  return [
+    ...tags,
+    { tagId: Date.now(), name, sourceType: "user", sortOrder: tags.length },
+  ];
+}
+
+function removeTagById(tags: LinkTag[], tagId: number): LinkTag[] {
+  return tags.filter((tag) => tag.tagId !== tagId);
 }
 
 export function LinkDetailScreen() {
@@ -36,16 +46,19 @@ export function LinkDetailScreen() {
   const linkDetail =
     mockLinks.find((link) => link.linkId === Number(id)) ?? mockLinkDetail;
 
-  const [tags, setTags] = useState<string[]>(linkDetail.tags);
-  const [memo, setMemo] = useState<string>(linkDetail.memo);
-
-  function handleAddTag(tag: string) {
-    setTags((prev) => [...prev, tag]);
-  }
-
-  function handleRemoveTag(tag: string) {
-    setTags((prev) => prev.filter((t) => t !== tag));
-  }
+  // 이 화면은 링크 하나를 편집하는 단일 폼이다. 서버로 나가는 값(폴더·태그·메모·즐겨찾기)만
+  // 폼이 소유하고, 편집 모드·요약 펼침 같은 화면 조작 상태는 각 컴포넌트가 그대로 가진다.
+  // TODO(#33): 저장 연동. 필드 변경 감지(watch) → PATCH /links/{linkId}(folder·memo·isFavorite)
+  //  + POST/DELETE /links/{linkId}/tags(태그). 비동기 조회로 바뀌면 defaultValues 대신 reset 필요.
+  const { control } = useForm<LinkDetailForm>({
+    resolver: zodResolver(linkDetailFormSchema),
+    defaultValues: {
+      folder: linkDetail.folder,
+      tags: linkDetail.tags ?? [],
+      memo: linkDetail.memo ?? "",
+      isFavorite: linkDetail.isFavorite,
+    },
+  });
 
   return (
     <>
@@ -58,7 +71,20 @@ export function LinkDetailScreen() {
               left={<HeaderBackButton />}
               right={
                 <>
-                  <IconButton iconNode={Star} accessibilityLabel="즐겨찾기" />
+                  <Controller
+                    control={control}
+                    name="isFavorite"
+                    render={({ field }) => (
+                      <IconButton
+                        iconNode={Star}
+                        accessibilityLabel="즐겨찾기"
+                        accessibilityState={{ selected: field.value }}
+                        // 켜짐은 채운 별로 구분한다. 색은 IconButton 의 icon-strong 을 따른다.
+                        iconFill={field.value ? "currentColor" : "none"}
+                        onPress={() => field.onChange(!field.value)}
+                      />
+                    )}
+                  />
                   <IconButton iconNode={Ellipsis} accessibilityLabel="더보기" />
                 </>
               }
@@ -68,7 +94,7 @@ export function LinkDetailScreen() {
       />
       <View className="flex-1">
         <LinkBackground
-          thumbnailUrl={linkDetail.thumbnailUrl}
+          thumbnailUrl={linkDetail.thumbnailUrl ?? ""}
           dominantColor={linkDetail.dominantColor}
         />
         <ScrollView
@@ -79,15 +105,22 @@ export function LinkDetailScreen() {
         >
           <View className="px-5">
             <LinkThumbnail
-              thumbnailUrl={linkDetail.thumbnailUrl}
+              thumbnailUrl={linkDetail.thumbnailUrl ?? ""}
               url={linkDetail.url}
             />
           </View>
 
           <View className="gap-2 px-5">
-            <FolderBadge
-              folder={linkDetail.folder}
-              folderColor={linkDetail.folderColor}
+            {/* TODO(#33): onPress → 폴더 선택 플로우(별도 이슈) 연결 */}
+            <Controller
+              control={control}
+              name="folder"
+              render={({ field }) => (
+                <FolderBadge
+                  folder={field.value}
+                  folderColor={linkDetail.folderColor}
+                />
+              )}
             />
             <Text variant="heading-1">{linkDetail.title}</Text>
             <Text variant="caption-1" className="text-opacity-white-70">
@@ -95,28 +128,44 @@ export function LinkDetailScreen() {
               <Text variant="caption-1" className="text-opacity-white-40">
                 {" · "}
               </Text>
-              {formatSavedDate(linkDetail.savedAt)}
+              {formatCalendarDate(linkDetail.savedAt)}
             </Text>
           </View>
 
           <View className="px-5">
-            <AiSummarySection summary={linkDetail.aiSummary} />
+            <AiSummarySection summary={linkDetail.aiSummary ?? ""} />
           </View>
 
           <View className="px-5">
-            <TagEditor
-              tags={tags}
-              onAddTag={handleAddTag}
-              onRemoveTag={handleRemoveTag}
+            <Controller
+              control={control}
+              name="tags"
+              render={({ field }) => (
+                <TagEditor
+                  tags={field.value}
+                  onAddTag={(name) =>
+                    field.onChange(appendTag(field.value, name))
+                  }
+                  onRemoveTag={(tagId) =>
+                    field.onChange(removeTagById(field.value, tagId))
+                  }
+                />
+              )}
             />
           </View>
 
           <View className="px-5">
-            <MemoField memo={memo} onChangeMemo={setMemo} />
+            <Controller
+              control={control}
+              name="memo"
+              render={({ field }) => (
+                <MemoField memo={field.value} onChangeMemo={field.onChange} />
+              )}
+            />
           </View>
 
           <View className="mt-6">
-            <RelatedLinksList items={mockRelatedLinks} />
+            <RelatedLinksList items={linkDetail.relatedLinks ?? []} />
           </View>
         </ScrollView>
       </View>

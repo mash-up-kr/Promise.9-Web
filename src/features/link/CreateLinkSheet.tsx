@@ -3,14 +3,10 @@ import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { View } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { BottomSheet } from "@/components/ui/bottom-sheet/BottomSheet";
 import { Input, InputField, InputSlot } from "@/components/ui/input/Input";
+import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
 import { Text } from "@/components/ui/text/Text";
-import { VStack } from "@/components/ui/vstack/VStack";
 import { isWeb } from "@/constants/platform.constants";
 import { CreateLinkHeader } from "@/features/link/components/CreateLinkHeader";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
@@ -23,7 +19,6 @@ import {
 
 export function CreateLinkSheet() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
 
   const closeSheet = () => {
     // 웹에서 히스토리가 없으면(직접 진입 등) back 이 실패하므로 홈으로 대체한다.
@@ -34,6 +29,7 @@ export function CreateLinkSheet() {
     }
     router.replace("/");
   };
+
   const { control, handleSubmit, setValue, watch, formState } =
     useForm<CreateLinkForm>({
       resolver: zodResolver(createLinkSchema),
@@ -89,83 +85,65 @@ export function CreateLinkSheet() {
     closeSheet();
   });
 
-  const content = (
-    <KeyboardAwareScrollView
-      bottomOffset={24}
-      keyboardShouldPersistTaps="handled"
-    >
-      <VStack space="2xl" className="pt-1">
-        <CreateLinkHeader
-          onCancel={closeSheet}
-          onSave={onSave}
-          saveDisabled={!formState.isValid}
-        />
-
-        <LinkPreviewCard url={previewUrl} />
-
-        <Controller
-          control={control}
-          name="url"
-          render={({ field }) => (
-            <Input variant="field">
-              <InputField
-                placeholder="URL"
-                autoCapitalize="none"
-                keyboardType="url"
-                value={field.value}
-                onChangeText={field.onChange}
-                onBlur={() => {
-                  field.onBlur();
-                  commitPreview(field.value);
-                }}
-              />
-              {canPaste && !field.value && (
-                <InputSlot
-                  accessibilityRole="button"
-                  onPress={handlePasteUrl}
-                  className="pl-3"
-                >
-                  <Text variant="body-2-normal" className="text-icon-accent">
-                    붙여넣기
-                  </Text>
-                </InputSlot>
-              )}
-            </Input>
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="remindType"
-          render={({ field }) => (
-            <RemindQuestionSection
-              value={field.value ?? null}
-              onChange={field.onChange}
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="memo"
-          render={({ field }) => (
-            <MemoField memo={field.value ?? ""} onChangeMemo={field.onChange} />
-          )}
-        />
-      </VStack>
-    </KeyboardAwareScrollView>
-  );
-
-  if (isWeb) {
-    return <BottomSheet onClose={closeSheet}>{content}</BottomSheet>;
-  }
-
   return (
-    <View
-      className="flex-1 bg-background-base px-5"
-      style={{ paddingBottom: insets.bottom + 16 }}
-    >
-      {content}
-    </View>
+    <SheetScreen onClose={closeSheet}>
+      <CreateLinkHeader
+        onCancel={closeSheet}
+        onSave={onSave}
+        saveDisabled={!formState.isValid}
+      />
+
+      <LinkPreviewCard url={previewUrl} />
+
+      <Controller
+        control={control}
+        name="url"
+        render={({ field }) => (
+          <Input variant="field">
+            <InputField
+              placeholder="URL"
+              autoCapitalize="none"
+              keyboardType="url"
+              value={field.value}
+              onChangeText={field.onChange}
+              onBlur={() => {
+                field.onBlur();
+                commitPreview(field.value);
+              }}
+            />
+            {canPaste && !field.value && (
+              <InputSlot
+                accessibilityRole="button"
+                onPress={handlePasteUrl}
+                className="pl-3"
+              >
+                <Text variant="body-2-normal" className="text-icon-accent">
+                  붙여넣기
+                </Text>
+              </InputSlot>
+            )}
+          </Input>
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="remindType"
+        render={({ field }) => (
+          <RemindQuestionSection
+            value={field.value ?? null}
+            onChange={field.onChange}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="memo"
+        render={({ field }) => (
+          <MemoField memo={field.value ?? ""} onChangeMemo={field.onChange} />
+        )}
+      />
+    </SheetScreen>
   );
 }

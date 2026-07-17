@@ -16,5 +16,8 @@ module.exports = {
       "<rootDir>/src/__mocks__/react-native-keyboard-controller.js",
     // expo-blur 의 NativeBlurView 는 네이티브 뷰라 jest 에서 못 그린다 → stub 으로 대체.
     "^expo-blur$": "<rootDir>/src/__mocks__/expo-blur.js",
+    // gesture-handler 는 네이티브 바인딩에 의존하므로 렌더 stub 으로 대체한다.
+    "^react-native-gesture-handler$":
+      "<rootDir>/src/__mocks__/react-native-gesture-handler.js",
   },
 };

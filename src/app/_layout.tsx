@@ -24,6 +24,23 @@ const darkFixedTheme = {
   colors: { ...DarkTheme.colors, background: BACKGROUND_BASE },
 };
 
+// 바텀시트 형태로 띄우는 라우트 공통 옵션 (create-link · create-folder).
+const sheetScreenOptions = isWeb
+  ? {
+      presentation: "transparentModal" as const,
+      headerShown: false,
+      animation: "none" as const,
+      contentStyle: { backgroundColor: "transparent" },
+    }
+  : {
+      presentation: "formSheet" as const,
+      headerShown: false,
+      // Figma 기본 시트 높이(≈65%)로 열고, 그래버로 확장 가능하게 둔다.
+      sheetAllowedDetents: [0.65, 0.9],
+      sheetGrabberVisible: true,
+      sheetCornerRadius: 24,
+    };
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Pretendard: require("../../assets/fonts/Pretendard-Regular.ttf"),
@@ -56,25 +73,10 @@ export default function RootLayout() {
               >
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen name="create-link" options={sheetScreenOptions} />
                 <Stack.Screen
-                  name="create-link"
-                  options={
-                    isWeb
-                      ? {
-                          presentation: "transparentModal",
-                          headerShown: false,
-                          animation: "none",
-                          contentStyle: { backgroundColor: "transparent" },
-                        }
-                      : {
-                          presentation: "formSheet",
-                          headerShown: false,
-                          // Figma 기본 시트 높이(≈65%)로 열고, 그래버로 확장 가능하게 둔다.
-                          sheetAllowedDetents: [0.65, 0.9],
-                          sheetGrabberVisible: true,
-                          sheetCornerRadius: 24,
-                        }
-                  }
+                  name="create-folder"
+                  options={sheetScreenOptions}
                 />
               </Stack>
             </ThemeProvider>
