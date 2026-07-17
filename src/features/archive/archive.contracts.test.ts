@@ -1,4 +1,7 @@
-import { createFolderSchema } from "./archive.contracts";
+import {
+  createFolderSchema,
+  FOLDER_NAME_MAX_LENGTH,
+} from "./archive.contracts";
 
 describe("createFolderSchema", () => {
   test("유효한 이름·색상을 통과시킨다", () => {
@@ -16,6 +19,22 @@ describe("createFolderSchema", () => {
 
   test("공백만 있는 이름을 거부한다", () => {
     const result = createFolderSchema.safeParse({ name: "   ", color: "blue" });
+    expect(result.success).toBe(false);
+  });
+
+  test("최대 길이 이름을 통과시킨다", () => {
+    const result = createFolderSchema.safeParse({
+      name: "가".repeat(FOLDER_NAME_MAX_LENGTH),
+      color: "blue",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("최대 길이를 초과한 이름을 거부한다", () => {
+    const result = createFolderSchema.safeParse({
+      name: "가".repeat(FOLDER_NAME_MAX_LENGTH + 1),
+      color: "blue",
+    });
     expect(result.success).toBe(false);
   });
 
