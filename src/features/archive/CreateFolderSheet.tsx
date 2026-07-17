@@ -7,21 +7,25 @@ import { Input, InputField } from "@/components/ui/input/Input";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
 import { Text } from "@/components/ui/text/Text";
 
+import { useCreateFolderMutation } from "./api/archive.queries";
 import { type CreateFolderForm, createFolderSchema } from "./archive.contracts";
 import { CreateFolderHeader } from "./components/CreateFolderHeader";
 import { FolderColorPicker } from "./components/FolderColorPicker";
 
 export function CreateFolderSheet() {
   const router = useRouter();
+  const { mutate, isPending } = useCreateFolderMutation();
   const { control, handleSubmit, formState } = useForm<CreateFolderForm>({
     resolver: zodResolver(createFolderSchema),
     mode: "onChange",
     defaultValues: { name: "", color: "blue" },
   });
 
-  const onSave = handleSubmit(() => {
-    // TODO(#37): 폴더 생성 API 연동 지점. 지금은 mock — 유효 시 시트만 닫는다.
-    router.back();
+  const onSave = handleSubmit((values) => {
+    mutate(
+      { folderName: values.name, folderColor: values.color },
+      { onSuccess: () => router.back() },
+    );
   });
 
   return (
@@ -29,7 +33,7 @@ export function CreateFolderSheet() {
       <CreateFolderHeader
         onCancel={() => router.back()}
         onSave={onSave}
-        saveDisabled={!formState.isValid}
+        saveDisabled={!formState.isValid || isPending}
       />
 
       <View className="gap-2">

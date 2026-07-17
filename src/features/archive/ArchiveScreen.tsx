@@ -1,6 +1,7 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import Animated, {
   useAnimatedRef,
@@ -13,6 +14,7 @@ import { Header } from "@/components/ui/header/Header";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Text } from "@/components/ui/text/Text";
 
+import { archiveQueries } from "./api/archive.queries";
 import type { ArchiveFolder } from "./archive.types";
 import { ArchiveMoreMenu } from "./components/ArchiveMoreMenu";
 import { FolderGroup } from "./components/FolderGroup";
@@ -21,29 +23,55 @@ import { FolderSection } from "./components/FolderSection";
 import { NewFolderButton } from "./components/NewFolderButton";
 import { SortableFolderList } from "./components/SortableFolderList";
 
-// 폴더 API 는 아직 없어 정적 데이터로 구성한다. react-query 연동은 후속 작업.
-// 최근 삭제된 링크는 Figma 상 "기본 폴더" 섹션에 속한다.
-const BASIC_FOLDERS: ArchiveFolder[] = [
-  { id: "all", name: "전체", count: 370, tone: "gray" },
-  { id: "uncategorized", name: "미분류", count: 370, tone: "gray" },
-  { id: "favorites", name: "즐겨찾기", count: 370, tone: "gray" },
-  { id: "trash", name: "최근 삭제된 링크", count: 370, tone: "gray" },
-];
-
-const MY_FOLDERS: ArchiveFolder[] = [
-  { id: "design", name: "디자인", count: 370, tone: "blue" },
-  { id: "ai", name: "AI", count: 370, tone: "blue" },
-  { id: "dev", name: "개발", count: 370, tone: "blue" },
-  { id: "later-1", name: "나중에 갈 곳", count: 370, tone: "blue" },
-];
-
 export function ArchiveScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   // 하단 플로팅 탭바(pill 높이 60 + safe-area 여백)에 가리지 않도록 스크롤 하단 여백을 준다.
   const listBottomPadding = Math.max(insets.bottom, 20) + 60 + 16;
-  const [selectedId, setSelectedId] = useState<string>("ai");
-  const [myFolders, setMyFolders] = useState<ArchiveFolder[]>(MY_FOLDERS);
+
+  const { data } = useSuspenseQuery(archiveQueries.overview());
+  // 기본 폴더 — 파생 카운트. 최근 삭제된 링크는 Figma 상 "기본 폴더" 섹션에 속한다.
+  const basicFolders = useMemo<ArchiveFolder[]>(
+    () => [
+      { id: "all", name: "전체", count: data.counts.all, tone: "gray" },
+      {
+        id: "uncategorized",
+        name: "미분류",
+        count: data.counts.uncategorized,
+        tone: "gray",
+      },
+      {
+        id: "favorites",
+        name: "즐겨찾기",
+        count: data.counts.favorites,
+        tone: "gray",
+      },
+      {
+        id: "trash",
+        name: "최근 삭제된 링크",
+        count: data.counts.trash,
+        tone: "gray",
+      },
+    ],
+    [data.counts],
+  );
+  const serverFolders = useMemo<ArchiveFolder[]>(
+    () =>
+      data.folders.map((folder) => ({
+        id: String(folder.folderId),
+        name: folder.folderName,
+        count: folder.linkCount,
+        tone: "blue",
+      })),
+    [data.folders],
+  );
+
+  const [selectedId, setSelectedId] = useState<string>("all");
+  const [myFolders, setMyFolders] = useState<ArchiveFolder[]>(serverFolders);
+  // 폴더 생성 등으로 목록이 바뀌면 정렬 상태를 최신 데이터로 재시드한다.
+  useEffect(() => {
+    setMyFolders(serverFolders);
+  }, [serverFolders]);
   const [isReordering, setIsReordering] = useState(false);
   // 드래그 중에는 바깥 ScrollView 스크롤을 끄고, 자동 스크롤(scrollTo)만 동작시킨다.
   const [isDragging, setIsDragging] = useState(false);
@@ -70,7 +98,7 @@ export function ArchiveScreen() {
   const basicSection = (
     <FolderSection title="기본 폴더">
       <FolderGroup>
-        {BASIC_FOLDERS.map((folder) => (
+        {basicFolders.map((folder) => (
           <FolderItem
             key={folder.id}
             name={folder.name}

@@ -1,4 +1,5 @@
-import { Stack, useRouter } from "expo-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { ScrollView, View } from "react-native";
 
 import { Header } from "@/components/ui/header/Header";
@@ -7,10 +8,12 @@ import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { LinkTile } from "@/components/ui/link-card/LinkTile";
 import { linkDetailHref } from "@/constants/routes.constants";
 
-import { FOLDER_LINKS } from "./archive.mocks";
+import { archiveQueries } from "./api/archive.queries";
 
 export function ArchiveDetailScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { data } = useSuspenseQuery(archiveQueries.folderDetail(id ?? "all"));
 
   return (
     <>
@@ -19,8 +22,7 @@ export function ArchiveDetailScreen() {
           header: () => (
             <Header
               left={<HeaderBackButton />}
-              // 타이틀은 보관함(폴더) 명칭 — 데이터 연동 전까지 기본 폴더명 표시
-              title="전체"
+              title={data.title}
               right={<HeaderActions />}
             />
           ),
@@ -31,7 +33,7 @@ export function ArchiveDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View className="flex-row flex-wrap justify-between gap-y-5 px-5 pt-2 pb-6">
-          {FOLDER_LINKS.map((link) => (
+          {data.links.map((link) => (
             <LinkTile
               key={link.linkId}
               link={link}

@@ -1,3 +1,5 @@
+import { setupMockApi } from "@mocks/testing";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
   render,
@@ -16,16 +18,25 @@ const metrics: Metrics = {
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
 };
 
-const renderSheet = () =>
-  render(
-    <SafeAreaProvider initialMetrics={metrics}>
-      <CreateFolderSheet />
-    </SafeAreaProvider>,
+beforeEach(() => {
+  mockBack.mockClear();
+  setupMockApi();
+});
+
+const renderSheet = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider initialMetrics={metrics}>
+        <CreateFolderSheet />
+      </SafeAreaProvider>
+    </QueryClientProvider>,
   );
+};
 
 describe("CreateFolderSheet", () => {
-  beforeEach(() => mockBack.mockClear());
-
   test("헤더 타이틀을 렌더한다", async () => {
     await renderSheet();
     expect(screen.getByText("새 폴더 만들기")).toBeOnTheScreen();
