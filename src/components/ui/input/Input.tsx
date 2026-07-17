@@ -1,7 +1,9 @@
+import { X } from "lucide-react-native";
 import { createContext, useContext } from "react";
 import type { PressableProps, TextInputProps, ViewProps } from "react-native";
 import { Platform, Pressable, TextInput, View } from "react-native";
 
+import { Icon } from "@/components/ui/icon/Icon";
 import { tv } from "@/lib/tv";
 
 type InputVariant = "pill" | "field";
@@ -77,17 +79,46 @@ export function InputSlot({ className, ...props }: InputSlotProps) {
 
 export interface InputFieldProps extends Omit<TextInputProps, "className"> {
   className?: string;
+  // 값이 있을 때 우측 clear(X) 노출 여부 (Figma Filled 상태). 기본 노출.
+  clearable?: boolean;
 }
 
-export function InputField({ className, ...props }: InputFieldProps) {
+export function InputField({
+  className,
+  clearable = true,
+  value,
+  onChangeText,
+  ...props
+}: InputFieldProps) {
   const variant = useContext(InputVariantContext);
+  const showClear = clearable && !!value && !!onChangeText;
   return (
-    <TextInput
-      placeholderTextColor={PLACEHOLDER_COLOR[variant]}
-      cursorColor={CURSOR_COLOR}
-      selectionColor={SELECTION_COLOR}
-      className={inputFieldStyles({ variant, class: className })}
-      {...props}
-    />
+    <>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholderTextColor={PLACEHOLDER_COLOR[variant]}
+        cursorColor={CURSOR_COLOR}
+        selectionColor={SELECTION_COLOR}
+        className={inputFieldStyles({ variant, class: className })}
+        {...props}
+      />
+      {showClear && (
+        <InputSlot
+          accessibilityRole="button"
+          accessibilityLabel="입력 지우기"
+          onPress={() => onChangeText?.("")}
+          // Figma clear icon: white-50 원 + 배경색(#26262b) X
+          className="size-4 rounded-full bg-opacity-white-50"
+        >
+          <Icon
+            iconNode={X}
+            size={10}
+            strokeWidth={1.5}
+            className="text-background-input"
+          />
+        </InputSlot>
+      )}
+    </>
   );
 }

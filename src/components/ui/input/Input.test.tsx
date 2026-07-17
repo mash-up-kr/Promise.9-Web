@@ -114,3 +114,56 @@ describe("InputField 타입별 폰트 스펙", () => {
     expect(cls).toContain("text-text-normal");
   });
 });
+
+describe("InputField clear 버튼", () => {
+  test("값이 있으면 clear(X) 버튼이 나타난다", async () => {
+    await render(
+      <Input variant="field">
+        <InputField
+          placeholder="폴더"
+          value="디자인"
+          onChangeText={jest.fn()}
+        />
+      </Input>,
+    );
+    expect(screen.getByLabelText("입력 지우기")).toBeOnTheScreen();
+  });
+
+  test("clear 버튼을 누르면 값이 지워진다(onChangeText 빈 문자열)", async () => {
+    const onChangeText = jest.fn();
+    await render(
+      <Input variant="field">
+        <InputField
+          placeholder="폴더"
+          value="디자인"
+          onChangeText={onChangeText}
+        />
+      </Input>,
+    );
+    fireEvent.press(screen.getByLabelText("입력 지우기"));
+    expect(onChangeText).toHaveBeenCalledWith("");
+  });
+
+  test("값이 비어 있으면 clear 버튼이 없다", async () => {
+    await render(
+      <Input variant="field">
+        <InputField placeholder="폴더" value="" onChangeText={jest.fn()} />
+      </Input>,
+    );
+    expect(screen.queryByLabelText("입력 지우기")).toBeNull();
+  });
+
+  test("clearable=false 면 값이 있어도 clear 버튼이 없다", async () => {
+    await render(
+      <Input variant="field">
+        <InputField
+          placeholder="폴더"
+          value="디자인"
+          clearable={false}
+          onChangeText={jest.fn()}
+        />
+      </Input>,
+    );
+    expect(screen.queryByLabelText("입력 지우기")).toBeNull();
+  });
+});
