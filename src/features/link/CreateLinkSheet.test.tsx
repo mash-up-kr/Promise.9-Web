@@ -7,6 +7,8 @@ import {
 } from "@testing-library/react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
+import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
+
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
 const mockCanGoBack = jest.fn(() => true);
@@ -47,7 +49,9 @@ const renderSheet = () =>
       }
     >
       <SafeAreaProvider initialMetrics={metrics}>
-        <CreateLinkSheet />
+        <SnackbarProvider>
+          <CreateLinkSheet />
+        </SnackbarProvider>
       </SafeAreaProvider>
     </QueryClientProvider>,
   );

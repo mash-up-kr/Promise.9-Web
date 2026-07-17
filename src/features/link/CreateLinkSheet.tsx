@@ -6,8 +6,10 @@ import { Controller, useForm } from "react-hook-form";
 
 import { Input, InputField, InputSlot } from "@/components/ui/input/Input";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
+import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { Text } from "@/components/ui/text/Text";
 import { isWeb } from "@/constants/platform.constants";
+import { linkDetailHref } from "@/constants/routes.constants";
 import { useCreateLinkMutation } from "@/features/link/api/link.queries";
 import { CreateLinkHeader } from "@/features/link/components/CreateLinkHeader";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
@@ -20,6 +22,7 @@ import {
 
 export function CreateLinkSheet() {
   const router = useRouter();
+  const { show } = useSnackbar();
 
   const closeSheet = () => {
     // 웹에서 히스토리가 없으면(직접 진입 등) back 이 실패하므로 홈으로 대체한다.
@@ -93,7 +96,20 @@ export function CreateLinkSheet() {
         memo: values.memo?.trim() ? values.memo : null,
         remindType: values.remindType,
       },
-      { onSuccess: () => closeSheet() },
+      {
+        onSuccess: (created) => {
+          // 저장이 실제로 됐다는 피드백 — 스낵바 + 방금 저장한 링크로 바로 이동.
+          show({
+            message: "링크를 저장했어요",
+            action: {
+              label: "보기",
+              onPress: () =>
+                router.push(linkDetailHref(String(created.linkId))),
+            },
+          });
+          closeSheet();
+        },
+      },
     );
   });
 
