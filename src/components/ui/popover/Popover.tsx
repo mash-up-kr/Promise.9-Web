@@ -56,31 +56,36 @@ export function Popover({
           onPress={close}
           className="flex-1"
         >
-          {/* 리퀴드 글래스 (Figma 레이어 순서): ①블러 → ②반투명 틴트 → ③내용 → ④inset 하이라이트.
-              blur 는 expo-blur BlurView 로 처리 — iOS(UIVisualEffectView)·웹(backdrop-filter) 실블러. */}
-          <View
-            style={[position, width != null ? { width } : null]}
-            className="absolute flex-col overflow-hidden rounded-[36px] py-5"
-          >
-            <BlurView
-              intensity={30}
-              tint="dark"
-              pointerEvents="none"
-              style={StyleSheet.absoluteFill}
-            />
-            {/* Figma fill: 블러 위에 얹는 반투명 회색 틴트. */}
+          {/* 웹에서 앱 셸(max-w-768 중앙정렬)과 같은 폭 안에서 위치를 잡는다 — 그래야 화면
+              가장자리 기준(right/left)이 트리거가 있는 콘텐츠 우측과 어긋나지 않는다.
+              네이티브는 화면폭이 768 보다 좁아 영향 없다(_layout 의 셸과 동일 규칙). */}
+          <View className="mx-auto w-full max-w-[768px] flex-1">
+            {/* 리퀴드 글래스 (Figma 레이어 순서): ①블러 → ②반투명 틴트 → ③내용 → ④inset 하이라이트.
+                blur 는 expo-blur BlurView 로 처리 — iOS(UIVisualEffectView)·웹(backdrop-filter) 실블러. */}
             <View
-              pointerEvents="none"
-              style={StyleSheet.absoluteFill}
-              className="bg-[rgba(101,101,107,0.1)]"
-            />
-            {children(close)}
-            {/* Figma inset 하이라이트 — 내용 위 최상단 오버레이. */}
-            <View
-              pointerEvents="none"
-              style={StyleSheet.absoluteFill}
-              className="rounded-[36px] shadow-[inset_1px_1px_1px_0_var(--color-opacity-white-10),inset_3px_3px_38px_0_rgba(0,0,0,0.31),inset_0px_0px_2px_0_var(--color-opacity-white-40)]"
-            />
+              style={[position, width != null ? { width } : null]}
+              className="absolute flex-col overflow-hidden rounded-[36px] py-5"
+            >
+              <BlurView
+                intensity={30}
+                tint="dark"
+                pointerEvents="none"
+                style={StyleSheet.absoluteFill}
+              />
+              {/* Figma fill: 블러 위에 얹는 반투명 회색 틴트. */}
+              <View
+                pointerEvents="none"
+                style={StyleSheet.absoluteFill}
+                className="bg-[rgba(101,101,107,0.1)]"
+              />
+              {children(close)}
+              {/* Figma inset 하이라이트 — 내용 위 최상단 오버레이. */}
+              <View
+                pointerEvents="none"
+                style={StyleSheet.absoluteFill}
+                className="rounded-[36px] shadow-[inset_1px_1px_1px_0_var(--color-opacity-white-10),inset_3px_3px_38px_0_rgba(0,0,0,0.31),inset_0px_0px_2px_0_var(--color-opacity-white-40)]"
+              />
+            </View>
           </View>
         </Pressable>
       </Modal>
