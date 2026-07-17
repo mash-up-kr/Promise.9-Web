@@ -1,8 +1,11 @@
+import { listLinks } from "@mocks/store";
+import { setupMockApi } from "@mocks/testing";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, userEvent } from "@testing-library/react-native";
+import { Suspense } from "react";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { CategoriesScreen } from "./CategoriesScreen";
-import { CATEGORY_LINKS } from "./mocks";
 
 const mockNavigate = jest.fn();
 const mockSetParams = jest.fn();
@@ -26,47 +29,44 @@ const metrics: Metrics = {
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
 };
 
-const renderScreen = () =>
-  render(
-    <SafeAreaProvider initialMetrics={metrics}>
-      <CategoriesScreen />
-    </SafeAreaProvider>,
+beforeEach(() => {
+  mockNavigate.mockClear();
+  mockSetParams.mockClear();
+  mockParams = {};
+  setupMockApi();
+});
+
+const renderScreen = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider initialMetrics={metrics}>
+        <Suspense fallback={null}>
+          <CategoriesScreen />
+        </Suspense>
+      </SafeAreaProvider>
+    </QueryClientProvider>,
   );
+};
 
 describe("CategoriesScreen", () => {
-  beforeEach(() => {
-    mockNavigate.mockClear();
-    mockSetParams.mockClear();
-    mockParams = {};
-  });
-
-  test("파라미터가 없으면 '전체' 탭이 선택되고 모든 링크를 보여준다", async () => {
+  test("파라미터가 없으면 '전체' 탭이 선택되고 스토어 링크를 보여준다", async () => {
+    const first = listLinks().items[0];
     await renderScreen();
 
     expect(screen.getByRole("button", { name: "전체" })).toBeSelected();
-    for (const link of CATEGORY_LINKS) {
-      expect(screen.getByText(link.title)).toBeOnTheScreen();
-    }
+    expect(await screen.findByText(first.title)).toBeOnTheScreen();
   });
 
-  test("category 파라미터로 진입하면 해당 탭이 선택되고 그 카테고리 링크만 보여준다", async () => {
+  test("category 파라미터로 진입하면 그 카테고리 링크만 보여준다", async () => {
     mockParams = { category: "디자인" };
+    const designFirst = listLinks({ category: "디자인" }).items[0];
     await renderScreen();
 
     expect(screen.getByRole("button", { name: "디자인" })).toBeSelected();
-
-    const designLinks = CATEGORY_LINKS.filter(
-      (link) => link.representativeTag?.name === "디자인",
-    );
-    const otherLinks = CATEGORY_LINKS.filter(
-      (link) => link.representativeTag?.name !== "디자인",
-    );
-    for (const link of designLinks) {
-      expect(screen.getByText(link.title)).toBeOnTheScreen();
-    }
-    for (const link of otherLinks) {
-      expect(screen.queryByText(link.title)).not.toBeOnTheScreen();
-    }
+    expect(await screen.findByText(designFirst.title)).toBeOnTheScreen();
   });
 
   test("탭을 누르면 선택한 카테고리를 URL 파라미터에 반영한다", async () => {

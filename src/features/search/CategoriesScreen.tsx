@@ -1,20 +1,34 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
+import { Suspense } from "react";
 import { ScrollView } from "react-native";
 
+import { ErrorBoundary } from "@/components/ui/error-boundary/ErrorBoundary";
 import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { VStack } from "@/components/ui/vstack/VStack";
 import { ROUTES } from "@/constants/routes.constants";
 
+import { searchQueries } from "./api/search.queries";
 import { CategoryTabBar } from "./components/CategoryTabBar";
 import { LinkGrid } from "./components/LinkGrid";
-import { CATEGORY_LINKS } from "./mocks";
 import { CATEGORY_TABS, type CategoryTab } from "./search.constants";
 
 function isCategoryTab(value: string | undefined): value is CategoryTab {
   return CATEGORY_TABS.includes(value as CategoryTab);
+}
+
+function CategoryLinks({ category }: { category: CategoryTab }) {
+  const { data } = useSuspenseQuery(searchQueries.categoryLinks(category));
+  return (
+    <ScrollView showsVerticalScrollIndicator={false}>
+      <VStack className="px-5 pt-3 pb-8">
+        <LinkGrid links={data} />
+      </VStack>
+    </ScrollView>
+  );
 }
 
 export function CategoriesScreen() {
@@ -26,13 +40,6 @@ export function CategoriesScreen() {
   const handleSelectTab = (tab: CategoryTab) => {
     router.setParams({ category: tab === "전체" ? undefined : tab });
   };
-
-  const links =
-    selected === "전체"
-      ? CATEGORY_LINKS
-      : CATEGORY_LINKS.filter(
-          (link) => link.representativeTag?.name === selected,
-        );
 
   return (
     <>
@@ -57,11 +64,11 @@ export function CategoriesScreen() {
       />
       <VStack className="flex-1 bg-background-base">
         <CategoryTabBar selected={selected} onSelect={handleSelectTab} />
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <VStack className="px-5 pt-3 pb-8">
-            <LinkGrid links={links} />
-          </VStack>
-        </ScrollView>
+        <ErrorBoundary resetKeys={[selected]} fallback={null}>
+          <Suspense fallback={null}>
+            <CategoryLinks category={selected} />
+          </Suspense>
+        </ErrorBoundary>
       </VStack>
     </>
   );
