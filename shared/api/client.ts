@@ -45,12 +45,11 @@ const handleResponseError = (error: unknown): never => {
   throw new ApiError(error.response, { cause: error });
 };
 
-const baseURL = process.env.EXPO_PUBLIC_API_BASE_URL;
-if (!baseURL) {
-  throw new Error(
-    "EXPO_PUBLIC_API_BASE_URL is not set. Define it in your .env file.",
-  );
-}
+// UT 전용 브랜치(chore/ut): mock 어댑터가 모든 요청을 가로채므로 baseURL 은 형식상 필요할 뿐이다.
+// 배포 CI 에 EXPO_PUBLIC_API_BASE_URL 이 없어도 부팅되도록 폴백을 둔다.
+// 실서버 연동으로 되돌릴 때 미설정 throw 로 복구할 것.
+const baseURL =
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? "https://mock.local/api/v1";
 
 export const apiClient = axios.create({
   baseURL,
