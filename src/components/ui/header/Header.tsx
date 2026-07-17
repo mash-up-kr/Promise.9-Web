@@ -19,19 +19,34 @@ const headerStyles = tv({
   base: "h-15 flex-row items-center justify-between px-5",
 });
 
+// Figma: 표준 헤더는 Blur/8, dim(검색·상세) 헤더는 HeaderBackground = blur30 + rgba(14,14,19,0.88)
+// 88% 다크딤. expo-blur intensity 로 근사한다(blur = intensity×0.2, 웹 상한 20px, 색은 tint).
+const HEADER_BLUR_INTENSITY = { standard: 40, dim: 100 } as const;
+
 export interface HeaderProps {
   left?: React.ReactNode;
   title?: React.ReactNode;
   right?: React.ReactNode;
   className?: string;
+  /** dim: 검색·상세 헤더의 강한 다크딤. 기본은 표준 프로스트. */
+  variant?: keyof typeof HEADER_BLUR_INTENSITY;
 }
 
-export function Header({ left, title, right, className }: HeaderProps) {
+export function Header({
+  left,
+  title,
+  right,
+  className,
+  variant = "standard",
+}: HeaderProps) {
   const insets = useSafeAreaInsets();
 
   return (
     <View style={{ paddingTop: insets.top }}>
-      <GlassView intensity={40} className="absolute inset-0" />
+      <GlassView
+        intensity={HEADER_BLUR_INTENSITY[variant]}
+        className="absolute inset-0"
+      />
       <View className={headerStyles({ class: className })}>
         <View className="flex-1 flex-row items-center gap-4">
           {left}

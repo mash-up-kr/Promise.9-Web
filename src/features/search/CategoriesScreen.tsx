@@ -40,6 +40,7 @@ export function CategoriesScreen() {
         options={{
           header: () => (
             <Header
+              variant="dim"
               left={<HeaderBackButton />}
               title="카테고리"
               right={
