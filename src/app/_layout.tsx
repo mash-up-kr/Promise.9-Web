@@ -12,7 +12,7 @@ import { isWeb } from "@/constants/platform.constants";
 import { queryClient } from "@/lib/queryClient";
 import "@/global.css";
 
-// UT: EXPO_PUBLIC_USE_MOCK=true 면 apiClient 를 mock 으로 가로챈다(실서버 무연동).
+// UT 전용 브랜치: apiClient 를 항상 mock 으로 가로챈다(실서버 무연동).
 installMocks();
 
 SplashScreen.preventAutoHideAsync();
