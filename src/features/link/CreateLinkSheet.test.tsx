@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
   render,
@@ -12,8 +13,14 @@ jest.mock("expo-clipboard", () => ({
   hasStringAsync: jest.fn().mockResolvedValue(false),
   getStringAsync: jest.fn().mockResolvedValue(""),
 }));
+// LinkPreviewCard → useLinkPreview → apiClient 로드 시 client.ts throw → 통째로 목.
+jest.mock("@shared/api", () => ({ apiClient: { get: jest.fn() } }));
 
 import { CreateLinkSheet } from "./CreateLinkSheet";
+
+const { apiClient } = jest.requireMock("@shared/api") as {
+  apiClient: { get: jest.Mock };
+};
 
 const metrics: Metrics = {
   frame: { x: 0, y: 0, width: 375, height: 812 },
@@ -22,13 +29,28 @@ const metrics: Metrics = {
 
 const renderSheet = () =>
   render(
-    <SafeAreaProvider initialMetrics={metrics}>
-      <CreateLinkSheet />
-    </SafeAreaProvider>,
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      <SafeAreaProvider initialMetrics={metrics}>
+        <CreateLinkSheet />
+      </SafeAreaProvider>
+    </QueryClientProvider>,
   );
 
 describe("CreateLinkSheet", () => {
-  beforeEach(() => mockBack.mockClear());
+  beforeEach(() => {
+    mockBack.mockClear();
+    apiClient.get.mockReset();
+    apiClient.get.mockResolvedValue({
+      data: {
+        success: true,
+        data: { title: "기본", source: "example.com", thumbnailUrl: null },
+      },
+    });
+  });
 
   test("URL·리마인드 미충족이면 저장 버튼이 비활성이다", async () => {
     await renderSheet();
@@ -103,5 +125,44 @@ describe("CreateLinkSheet", () => {
     expect(screen.getByPlaceholderText("URL")).toBeTruthy();
 
     consoleError.mockRestore();
+  });
+
+  test("유효 URL 입력 후 blur 하면 프리뷰 카드가 뜬다", async () => {
+    apiClient.get.mockResolvedValueOnce({
+      data: {
+        success: true,
+        data: {
+          title: "프리뷰 제목",
+          source: "toss.tech",
+          thumbnailUrl: "https://img.test/og.png",
+        },
+      },
+    });
+    await renderSheet();
+    const input = screen.getByPlaceholderText("URL");
+    await fireEvent.changeText(input, "https://toss.tech/x");
+    await fireEvent(input, "blur");
+    expect(await screen.findByText("프리뷰 제목")).toBeOnTheScreen();
+  });
+
+  test("추출 실패 시 실패 안내 카드를 보여준다", async () => {
+    const spy = jest.spyOn(console, "error").mockImplementation(() => {});
+    apiClient.get.mockRejectedValueOnce(new Error("500"));
+    await renderSheet();
+    const input = screen.getByPlaceholderText("URL");
+    await fireEvent.changeText(input, "https://toss.tech/x");
+    await fireEvent(input, "blur");
+    expect(
+      await screen.findByText("링크 정보를 가져오지 못했어요."),
+    ).toBeOnTheScreen();
+    spy.mockRestore();
+  });
+
+  test("무효 URL 로 blur 하면 프리뷰를 요청하지 않는다", async () => {
+    await renderSheet();
+    const input = screen.getByPlaceholderText("URL");
+    await fireEvent.changeText(input, "not-a-url");
+    await fireEvent(input, "blur");
+    expect(apiClient.get).not.toHaveBeenCalled();
   });
 });

@@ -13,6 +13,7 @@ import { Text } from "@/components/ui/text/Text";
 import { VStack } from "@/components/ui/vstack/VStack";
 import { isWeb } from "@/constants/platform.constants";
 import { CreateLinkHeader } from "@/features/link/components/CreateLinkHeader";
+import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { MemoField } from "@/features/link/components/MemoField";
 import { RemindQuestionSection } from "@/features/link/components/RemindQuestionSection";
 import {
@@ -23,11 +24,16 @@ import {
 export function CreateLinkSheet() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { control, handleSubmit, setValue, formState } =
+  const { control, handleSubmit, setValue, watch, formState } =
     useForm<CreateLinkForm>({
       resolver: zodResolver(createLinkSchema),
       mode: "onChange",
-      defaultValues: { url: "", remindType: undefined, memo: "" },
+      defaultValues: {
+        url: "",
+        remindType: undefined,
+        memo: "",
+        previewUrl: "",
+      },
     });
 
   // 클립보드를 자동으로 읽으면 iOS 가 시트를 열 때마다 붙여넣기 권한 팝업을 띄운다.
@@ -35,6 +41,13 @@ export function CreateLinkSheet() {
   // 사용자가 붙여넣기를 눌렀을 때만 한다. 웹은 존재 확인조차 권한 프롬프트를
   // 유발해 버튼을 항상 노출한다.
   const [canPaste, setCanPaste] = useState(isWeb);
+  // 프리뷰는 blur/붙여넣기로 확정된 유효 URL 에 대해서만 조회한다(입력 중엔 idle). previewUrl 은 폼 상태.
+  const previewUrl = watch("previewUrl") ?? "";
+
+  const commitPreview = (value: string) => {
+    const isValid = createLinkSchema.shape.url.safeParse(value).success;
+    setValue("previewUrl", isValid ? value : "");
+  };
 
   useEffect(function checkClipboardHasText() {
     if (isWeb) return;
@@ -54,6 +67,7 @@ export function CreateLinkSheet() {
       .then((text) => {
         if (text && createLinkSchema.shape.url.safeParse(text).success) {
           setValue("url", text, { shouldValidate: true });
+          commitPreview(text);
         }
       })
       // 에러 처리 정책 미확정 — 붙여넣기는 부가 기능이라 실패 시 로깅만 하고 넘어간다.
@@ -77,6 +91,8 @@ export function CreateLinkSheet() {
           saveDisabled={!formState.isValid}
         />
 
+        <LinkPreviewCard url={previewUrl} />
+
         <Controller
           control={control}
           name="url"
@@ -88,6 +104,10 @@ export function CreateLinkSheet() {
                 keyboardType="url"
                 value={field.value}
                 onChangeText={field.onChange}
+                onBlur={() => {
+                  field.onBlur();
+                  commitPreview(field.value);
+                }}
               />
               {canPaste && !field.value && (
                 <InputSlot
