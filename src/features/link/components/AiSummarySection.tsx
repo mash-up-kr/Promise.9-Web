@@ -1,10 +1,8 @@
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
-import { Sparkle } from "lucide-react-native";
+import { ChevronDown, ChevronUp, Sparkle } from "lucide-react-native";
 import { useState } from "react";
 import { Platform, Pressable, View } from "react-native";
-
-import { ChevronIcon } from "@/components/ui/icon/ChevronIcon";
 import { Icon } from "@/components/ui/icon/Icon";
 import { Text } from "@/components/ui/text/Text";
 
@@ -44,7 +42,12 @@ export function AiSummarySection({ summary }: AiSummarySectionProps) {
           />
           <Text variant="heading-3">AI 요약으로 미리보기</Text>
         </View>
-        <ChevronIcon rotated={!isExpanded} />
+        <Icon
+          iconNode={isExpanded ? ChevronUp : ChevronDown}
+          size={16}
+          strokeWidth={1.5}
+          className="text-icon-alternative"
+        />
       </Pressable>
       {isExpanded ? (
         <Text variant="body-2-reading">{summary}</Text>
