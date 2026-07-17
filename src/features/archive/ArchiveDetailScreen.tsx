@@ -5,6 +5,7 @@ import { Header } from "@/components/ui/header/Header";
 import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { LinkTile } from "@/components/ui/link-card/LinkTile";
+import { linkDetailHref } from "@/constants/routes.constants";
 
 import { FOLDER_LINKS } from "./archive.mocks";
 
@@ -34,12 +35,7 @@ export function ArchiveDetailScreen() {
             <LinkTile
               key={link.linkId}
               link={link}
-              onPress={() =>
-                router.push({
-                  pathname: "/link/[id]",
-                  params: { id: String(link.linkId) },
-                })
-              }
+              onPress={() => router.push(linkDetailHref(String(link.linkId)))}
             />
           ))}
         </View>
