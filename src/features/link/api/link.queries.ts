@@ -1,5 +1,5 @@
 import { apiClient, type SuccessResponse } from "@shared/api";
-import type { LinkPreview } from "@shared/types/link.types";
+import type { LinkDetail, LinkPreview } from "@shared/types/link.types";
 import {
   queryOptions,
   useMutation,
@@ -11,6 +11,7 @@ import type { RemindType } from "../link.constants";
 const linkKeys = {
   root: () => ["link"] as const,
   preview: (url: string) => [...linkKeys.root(), "preview", url] as const,
+  detail: (id: number) => [...linkKeys.root(), "detail", id] as const,
 };
 
 export const linkQueries = {
@@ -23,6 +24,19 @@ export const linkQueries = {
         const { data } = await apiClient.get<SuccessResponse<LinkPreview>>(
           "/links/preview",
           { params: { url }, signal },
+        );
+
+        return data.data;
+      },
+    }),
+  // 링크 상세 — 조회 시 서버가 최근 본(viewedAt)에 반영한다.
+  detail: (id: number) =>
+    queryOptions({
+      queryKey: linkKeys.detail(id),
+      queryFn: async ({ signal }) => {
+        const { data } = await apiClient.get<SuccessResponse<LinkDetail>>(
+          `/links/${id}`,
+          { signal },
         );
 
         return data.data;
@@ -58,6 +72,34 @@ export function useCreateLinkMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: linkKeys.root() });
+    },
+  });
+}
+
+export interface UpdateLinkVariables {
+  linkId: number;
+  patch: {
+    isFavorite?: boolean;
+    memo?: string | null;
+    folderId?: number | null;
+    tags?: string[];
+  };
+}
+
+// PATCH /links/{id} — 즐겨찾기 등 편집. 홈·보관함 카운트에도 반영되도록 전체 무효화(UT).
+export function useUpdateLinkMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ linkId, patch }: UpdateLinkVariables) => {
+      const { data } = await apiClient.patch<SuccessResponse<LinkDetail>>(
+        `/links/${linkId}`,
+        patch,
+      );
+
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries();
     },
   });
 }

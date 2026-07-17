@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { LinkTag } from "@shared/types/link.types";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Ellipsis, Star } from "lucide-react-native";
 import { Controller, useForm } from "react-hook-form";
@@ -11,6 +12,7 @@ import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Text } from "@/components/ui/text/Text";
 import { formatCalendarDate } from "@/utils/format";
 
+import { linkQueries, useUpdateLinkMutation } from "./api/link.queries";
 import { AiSummarySection } from "./components/AiSummarySection";
 import { FolderBadge } from "./components/FolderBadge";
 import { LinkBackground } from "./components/LinkBackground";
@@ -19,13 +21,6 @@ import { MemoField } from "./components/MemoField";
 import { RelatedLinksList } from "./components/RelatedLinksList";
 import { TagEditor } from "./components/TagEditor";
 import { type LinkDetailForm, linkDetailFormSchema } from "./link.contracts";
-import {
-  mockLinkDetail,
-  mockLinkDetailUnclassified,
-} from "./mock/mockLinkDetail";
-
-// 백엔드 연동 전까지 상세 조회 가능한 목업 링크.
-const mockLinks = [mockLinkDetail, mockLinkDetailUnclassified];
 
 // TODO(#33): 태그 추가/삭제가 서버 호출(POST/DELETE /links/{linkId}/tags)로 바뀌면
 //  아래 두 함수는 사라진다 — tagId 를 서버가 내려주므로 임시 id 생성도 함께 없어진다.
@@ -43,13 +38,11 @@ function removeTagById(tags: LinkTag[], tagId: number): LinkTag[] {
 export function LinkDetailScreen() {
   const headerHeight = useHeaderHeight();
   const { id } = useLocalSearchParams<"/link/[id]">();
-  const linkDetail =
-    mockLinks.find((link) => link.linkId === Number(id)) ?? mockLinkDetail;
+  const { data: linkDetail } = useSuspenseQuery(linkQueries.detail(Number(id)));
+  const updateLink = useUpdateLinkMutation();
 
-  // 이 화면은 링크 하나를 편집하는 단일 폼이다. 서버로 나가는 값(폴더·태그·메모·즐겨찾기)만
-  // 폼이 소유하고, 편집 모드·요약 펼침 같은 화면 조작 상태는 각 컴포넌트가 그대로 가진다.
-  // TODO(#33): 저장 연동. 필드 변경 감지(watch) → PATCH /links/{linkId}(folder·memo·isFavorite)
-  //  + POST/DELETE /links/{linkId}/tags(태그). 비동기 조회로 바뀌면 defaultValues 대신 reset 필요.
+  // 이 화면은 링크 하나를 편집하는 단일 폼이다. 즐겨찾기는 즉시 PATCH 로 영속하고(보관함 카운트 반영),
+  // 폴더·태그·메모는 화면 폼 상태로만 둔다(서버 편집 연동은 #33).
   const { control } = useForm<LinkDetailForm>({
     resolver: zodResolver(linkDetailFormSchema),
     defaultValues: {
@@ -81,7 +74,14 @@ export function LinkDetailScreen() {
                         accessibilityState={{ selected: field.value }}
                         // 켜짐은 채운 별로 구분한다. 색은 IconButton 의 icon-strong 을 따른다.
                         iconFill={field.value ? "currentColor" : "none"}
-                        onPress={() => field.onChange(!field.value)}
+                        onPress={() => {
+                          const next = !field.value;
+                          field.onChange(next);
+                          updateLink.mutate({
+                            linkId: linkDetail.linkId,
+                            patch: { isFavorite: next },
+                          });
+                        }}
                       />
                     )}
                   />
