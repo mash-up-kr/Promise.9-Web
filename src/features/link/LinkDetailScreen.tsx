@@ -50,8 +50,10 @@ export function LinkDetailScreen() {
     <>
       <Stack.Screen
         options={{
+          headerTransparent: true,
           header: () => (
             <Header
+              variant="plain"
               left={<HeaderBackButton />}
               right={
                 <>
