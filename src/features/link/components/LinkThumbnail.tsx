@@ -91,10 +91,15 @@ export function LinkThumbnail({ thumbnailUrl, url }: LinkThumbnailProps) {
         accessibilityRole="button"
         accessibilityLabel="링크 열기"
         onPress={handleOpen}
-        className="absolute right-4 bottom-4 size-9 items-center justify-center overflow-hidden rounded-full"
+        className="absolute right-4 bottom-4 size-9 overflow-hidden rounded-full"
       >
-        <GlassView intensity={55} className="absolute inset-0" />
-        <ExternalLinkIcon />
+        {/* 아이콘은 GlassView 의 자식으로 — 웹에서 svg 가 유리 레이어에 가리지 않게. */}
+        <GlassView
+          intensity={55}
+          className="size-full items-center justify-center"
+        >
+          <ExternalLinkIcon />
+        </GlassView>
       </Pressable>
     </View>
   );
