@@ -5,6 +5,7 @@ import { Image, View } from "react-native";
 
 import { ErrorBoundary } from "@/components/ui/error-boundary/ErrorBoundary";
 import { Icon } from "@/components/ui/icon/Icon";
+import { Skeleton } from "@/components/ui/skeleton/Skeleton";
 import { Text } from "@/components/ui/text/Text";
 import { linkQueries } from "@/features/link/api/link.queries";
 
@@ -55,13 +56,10 @@ function PreviewFailed() {
 function PreviewSkeleton() {
   return (
     <PreviewShell>
-      <View
-        testID="link-preview-skeleton"
-        className="size-16 rounded-xl bg-background-thumbnail"
-      />
+      <Skeleton testID="link-preview-skeleton" className="size-16 rounded-xl" />
       <View className="flex-1 gap-2">
-        <View className="h-4 w-3/4 rounded bg-background-thumbnail" />
-        <View className="h-3 w-1/2 rounded bg-background-thumbnail" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-3 w-1/2" />
       </View>
     </PreviewShell>
   );
