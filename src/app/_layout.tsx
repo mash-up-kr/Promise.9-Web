@@ -95,6 +95,11 @@ export default function RootLayout() {
                       name="create-folder"
                       options={sheetScreenOptions}
                     />
+                    {/* 허용되지 않은 경로 → 홈 리다이렉트. 헤더 플래시 없이 넘긴다. */}
+                    <Stack.Screen
+                      name="+not-found"
+                      options={{ headerShown: false }}
+                    />
                   </Stack>
                 </ThemeProvider>
               </SnackbarProvider>

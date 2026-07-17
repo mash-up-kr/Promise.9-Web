@@ -84,8 +84,12 @@ export const archiveQueries = {
         const folder = foldersRes.data.data.folders.find(
           (f) => String(f.folderId) === id,
         );
+        if (!folder) {
+          // 존재하지 않는 폴더 → 라우트 ErrorBoundary 가 홈으로 리다이렉트하도록 던진다.
+          throw new Error(`폴더를 찾을 수 없습니다: ${id}`);
+        }
         return {
-          title: folder?.folderName ?? "폴더",
+          title: folder.folderName,
           links: linksRes.data.data.items,
         };
       },
