@@ -5,6 +5,7 @@ import { Linking, Pressable, StyleSheet, View } from "react-native";
 
 import { GlassView } from "@/components/ui/glass-view/GlassView";
 import { Icon } from "@/components/ui/icon/Icon";
+import { ThumbnailFallback } from "@/components/ui/thumbnail/ThumbnailFallback";
 
 // 대표 이미지는 원본 비율을 따른다: 가로형은 부모 컨테이너 가로폭 100%(좌우 패딩은
 // 상위에서 처리), 세로형은 240 고정.
@@ -22,11 +23,14 @@ export function LinkThumbnail({ thumbnailUrl, url }: LinkThumbnailProps) {
   const [size, setSize] = useState<{ width: number; height: number } | null>(
     null,
   );
+  const [failed, setFailed] = useState(false);
 
   function handleLoad({ source }: ImageLoadEventData) {
     setSize({ width: source.width, height: source.height });
   }
 
+  // 썸네일이 없거나(빈 문자열·null) 로드에 실패하면 Link 아이콘 폴백을 보여준다.
+  const showFallback = failed || !thumbnailUrl;
   const isPortrait = size != null && size.height > size.width;
   const boxWidth: number | `${number}%` = isPortrait ? PORTRAIT_WIDTH : "100%";
   const aspectRatio =
@@ -46,25 +50,36 @@ export function LinkThumbnail({ thumbnailUrl, url }: LinkThumbnailProps) {
       className="self-center overflow-hidden rounded-[20px] bg-background-thumbnail"
       style={{ width: boxWidth, aspectRatio }}
     >
-      {/* 세로형: 같은 이미지를 흐리게 깔아 배경을 메운다 (Figma 30:899, blur 2.4 · opacity 0.5) */}
-      {isPortrait && (
-        <Image
-          testID="thumb-blur"
-          source={{ uri: thumbnailUrl }}
-          contentFit="cover"
-          blurRadius={BLUR_RADIUS}
-          style={[StyleSheet.absoluteFill, { opacity: 0.5 }]}
+      {showFallback ? (
+        <ThumbnailFallback
+          testID="thumb-fallback"
+          className="absolute inset-0"
+          iconSize={40}
         />
-      )}
+      ) : (
+        <>
+          {/* 세로형: 같은 이미지를 흐리게 깔아 배경을 메운다 (Figma 30:899, blur 2.4 · opacity 0.5) */}
+          {isPortrait && (
+            <Image
+              testID="thumb-blur"
+              source={{ uri: thumbnailUrl }}
+              contentFit="cover"
+              blurRadius={BLUR_RADIUS}
+              style={[StyleSheet.absoluteFill, { opacity: 0.5 }]}
+            />
+          )}
 
-      {/* 전경: 원본 이미지. 로드 완료 시 실제 치수를 받아 세로/가로 판정에 쓴다. */}
-      <Image
-        testID="thumb-image"
-        source={{ uri: thumbnailUrl }}
-        contentFit="cover"
-        style={StyleSheet.absoluteFill}
-        onLoad={handleLoad}
-      />
+          {/* 전경: 원본 이미지. 로드 완료 시 실제 치수를 받아 세로/가로 판정에 쓴다. */}
+          <Image
+            testID="thumb-image"
+            source={{ uri: thumbnailUrl }}
+            contentFit="cover"
+            style={StyleSheet.absoluteFill}
+            onLoad={handleLoad}
+            onError={() => setFailed(true)}
+          />
+        </>
+      )}
 
       {/* 우하단 원문 이동 버튼 (이미지 크기와 무관하게 항상 16px inset) */}
       <Pressable

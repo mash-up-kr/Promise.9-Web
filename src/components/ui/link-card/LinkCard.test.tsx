@@ -66,4 +66,15 @@ describe("LinkCard", () => {
     await renderCard({ thumbnailUrl: "https://static.example.com/t.png" });
     expect(screen.getByTestId("link-card-thumbnail-image")).toBeOnTheScreen();
   });
+
+  test("썸네일 로드에 실패하면 placeholder 로 대체한다", async () => {
+    await renderCard({ thumbnailUrl: "https://static.example.com/t.png" });
+    await fireEvent(screen.getByTestId("link-card-thumbnail-image"), "error", {
+      nativeEvent: { error: "load failed" },
+    });
+    expect(
+      screen.getByTestId("link-card-thumbnail-placeholder"),
+    ).toBeOnTheScreen();
+    expect(screen.queryByTestId("link-card-thumbnail-image")).toBeNull();
+  });
 });

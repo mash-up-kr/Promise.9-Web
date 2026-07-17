@@ -37,6 +37,24 @@ describe("mock store — 시드 하이드레이트", () => {
   });
 });
 
+describe("이미지 없는 링크는 리스트 뒤로 정렬", () => {
+  test("썸네일 있는 링크가 모두 썸네일 없는 링크보다 앞에 온다", () => {
+    const items = listLinks().items;
+    const firstNull = items.findIndex((l) => !l.thumbnailUrl);
+    // 시드에 썸네일 없는 링크가 존재해야 의미 있는 검증이 된다.
+    expect(firstNull).toBeGreaterThan(-1);
+    // 첫 번째 null 이후로는 모두 null 이어야 한다(썸네일 있는 게 뒤에 끼면 실패).
+    expect(items.slice(firstNull).every((l) => !l.thumbnailUrl)).toBe(true);
+  });
+
+  test("썸네일 없는 링크끼리는 최신 저장 순을 유지한다", () => {
+    const noThumb = listLinks().items.filter((l) => !l.thumbnailUrl);
+    for (let i = 1; i < noThumb.length; i++) {
+      expect(noThumb[i - 1].savedAt >= noThumb[i].savedAt).toBe(true);
+    }
+  });
+});
+
 describe("완전 상태형 — 쓰기가 읽기에 반영", () => {
   test("createLink → 목록·전체 카운트에 등장", () => {
     const before = basicCounts().all;

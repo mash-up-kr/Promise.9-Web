@@ -1,12 +1,12 @@
 import type { Link } from "@shared/types/link.types";
 import { Image } from "expo-image";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import type { PressableProps } from "react-native";
 import { Pressable } from "react-native";
 
-import { Box } from "@/components/ui/box/Box";
 import { HStack } from "@/components/ui/hstack/HStack";
 import { Text, type TextProps } from "@/components/ui/text/Text";
+import { ThumbnailFallback } from "@/components/ui/thumbnail/ThumbnailFallback";
 import { tv } from "@/lib/tv";
 import { formatRelativeDate } from "@/utils/format";
 
@@ -50,15 +50,16 @@ interface ThumbnailProps {
   className?: string;
 }
 
-/** 링크 썸네일. URL 이 없으면 placeholder 를 렌더한다. 크기·모서리는 className 으로 지정한다. */
+/** 링크 썸네일. URL 이 없거나 로드에 실패하면 Link 아이콘 폴백을 렌더한다. 크기·모서리는 className 으로 지정한다. */
 function Thumbnail({ className }: ThumbnailProps) {
   const { thumbnailUrl } = useLinkCard();
+  const [failed, setFailed] = useState(false);
 
-  if (!thumbnailUrl) {
+  if (!thumbnailUrl || failed) {
     return (
-      <Box
+      <ThumbnailFallback
         testID="link-card-thumbnail-placeholder"
-        className={thumbnailStyles({ class: className })}
+        className={className}
       />
     );
   }
@@ -67,6 +68,7 @@ function Thumbnail({ className }: ThumbnailProps) {
       testID="link-card-thumbnail-image"
       source={{ uri: thumbnailUrl }}
       contentFit="cover"
+      onError={() => setFailed(true)}
       className={thumbnailStyles({ class: className })}
     />
   );

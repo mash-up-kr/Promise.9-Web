@@ -128,6 +128,17 @@ const links = [...byTitle.values()].map((rec) => {
   };
 });
 
+// 5-1) 웹에서 CORP/403 등으로 <img> 로드가 막히는 원본 CDN(instagram·kakao·toss·nexon 등).
+// 브라우저에서 실제 Image() 로드로 2회 동일하게 확인한 linkId — 썸네일을 비워 상세·카드에서
+// Link 아이콘 폴백을 보여주고, 리스트에선 뒤로 모은다(런타임 onError 폴백도 안전망으로 존재).
+const BROKEN_THUMBNAIL_IDS = new Set([
+  7, 8, 9, 10, 11, 13, 14, 15, 16, 19, 21, 24, 25, 32, 33, 37, 43, 49, 53, 56,
+  66, 67, 68,
+]);
+for (const l of links) {
+  if (BROKEN_THUMBNAIL_IDS.has(l.linkId)) l.thumbnailUrl = null;
+}
+
 // 6) 보강 — 즐겨찾기 / 연관링크 / 최근 검색어
 const catNames = new Set(Object.keys(byCategory));
 

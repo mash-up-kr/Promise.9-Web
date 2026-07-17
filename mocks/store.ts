@@ -146,6 +146,13 @@ function activeLinks(): LinkRecord[] {
 const bySavedAtDesc = (a: LinkRecord, b: LinkRecord): number =>
   a.savedAt < b.savedAt ? 1 : a.savedAt > b.savedAt ? -1 : 0;
 
+// 썸네일 있는 링크를 앞으로 — 이미지 없이 아이콘 폴백만 뜨는 카드는 리스트 뒤로 모은다.
+// 동순위(둘 다 있음/둘 다 없음)는 최신 저장 순을 유지한다.
+const byThumbnailThenRecent = (a: LinkRecord, b: LinkRecord): number => {
+  const rank = (l: LinkRecord) => (l.thumbnailUrl ? 0 : 1);
+  return rank(a) - rank(b) || bySavedAtDesc(a, b);
+};
+
 function hostOf(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -210,7 +217,7 @@ export function listLinks(options: ListLinksOptions = {}): LinkListResult {
     );
   }
 
-  rows.sort(bySavedAtDesc);
+  rows.sort(byThumbnailThenRecent);
 
   const limit = options.limit ?? rows.length;
   const start = options.cursor ? Number(options.cursor) : 0;

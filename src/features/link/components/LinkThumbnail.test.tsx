@@ -58,4 +58,19 @@ describe("LinkThumbnail", () => {
     expect(screen.getByTestId("thumb-image")).toBeOnTheScreen();
     expect(screen.queryByTestId("thumb-blur")).toBeNull();
   });
+
+  test("이미지 로드에 실패하면 Link 아이콘 폴백으로 대체한다", async () => {
+    await render(<LinkThumbnail thumbnailUrl={THUMB} url={URL} />);
+    await fireEvent(screen.getByTestId("thumb-image"), "error", {
+      nativeEvent: { error: "load failed" },
+    });
+    expect(screen.getByTestId("thumb-fallback")).toBeOnTheScreen();
+    expect(screen.queryByTestId("thumb-image")).toBeNull();
+  });
+
+  test("썸네일이 비어 있으면 처음부터 Link 아이콘 폴백을 렌더한다", async () => {
+    await render(<LinkThumbnail thumbnailUrl="" url={URL} />);
+    expect(screen.getByTestId("thumb-fallback")).toBeOnTheScreen();
+    expect(screen.queryByTestId("thumb-image")).toBeNull();
+  });
 });

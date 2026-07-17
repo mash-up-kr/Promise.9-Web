@@ -52,4 +52,13 @@ describe("RelatedLinkCard", () => {
     expect(screen.getByTestId("related-thumb-image")).toBeOnTheScreen();
     expect(screen.queryByTestId("related-thumb-blur")).toBeNull();
   });
+
+  test("이미지 로드에 실패하면 Link 아이콘 폴백으로 대체한다", async () => {
+    await render(<RelatedLinkCard link={baseLink} />);
+    await fireEvent(screen.getByTestId("related-thumb-image"), "error", {
+      nativeEvent: { error: "load failed" },
+    });
+    expect(screen.getByTestId("related-thumb-fallback")).toBeOnTheScreen();
+    expect(screen.queryByTestId("related-thumb-image")).toBeNull();
+  });
 });
