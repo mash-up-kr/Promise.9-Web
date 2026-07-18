@@ -71,7 +71,8 @@ export function useCreateLinkMutation() {
       return data.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: linkKeys.root() });
+      // 저장은 홈 최근저장·홈 폴더·보관함·검색 등 여러 목록에 반영돼야 하므로 전체 무효화한다.
+      queryClient.invalidateQueries();
     },
   });
 }

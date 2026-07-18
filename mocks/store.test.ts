@@ -53,6 +53,29 @@ describe("이미지 없는 링크는 리스트 뒤로 정렬", () => {
       expect(noThumb[i - 1].savedAt >= noThumb[i].savedAt).toBe(true);
     }
   });
+
+  test("sort:'recent' 는 썸네일 유무와 무관하게 최신 저장 순 — 새로 저장한(썸네일 없는) 링크가 맨 앞", () => {
+    const created = createLink({
+      url: "https://example.com/newest-recent",
+      folderId: null,
+      memo: null,
+      remindType: null,
+    });
+    const recent = listLinks({ sort: "recent" }).items;
+    expect(recent[0].linkId).toBe(created.linkId);
+  });
+
+  test("기본(thumbnail) 정렬에선 썸네일 없는 새 링크가 맨 앞이 아니다", () => {
+    const created = createLink({
+      url: "https://example.com/newest-thumb",
+      folderId: null,
+      memo: null,
+      remindType: null,
+    });
+    const items = listLinks().items;
+    expect(items[0].linkId).not.toBe(created.linkId);
+    expect(items.map((l) => l.linkId)).toContain(created.linkId);
+  });
 });
 
 describe("완전 상태형 — 쓰기가 읽기에 반영", () => {

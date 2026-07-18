@@ -185,6 +185,8 @@ export interface ListLinksOptions {
   category?: string;
   limit?: number;
   cursor?: string | null;
+  /** 기본 "thumbnail"(이미지 우선). "recent" 는 썸네일 무관 최신 저장 순(홈 최근저장 등). */
+  sort?: "recent" | "thumbnail";
 }
 
 export interface LinkListResult {
@@ -217,7 +219,7 @@ export function listLinks(options: ListLinksOptions = {}): LinkListResult {
     );
   }
 
-  rows.sort(byThumbnailThenRecent);
+  rows.sort(options.sort === "recent" ? bySavedAtDesc : byThumbnailThenRecent);
 
   const limit = options.limit ?? rows.length;
   const start = options.cursor ? Number(options.cursor) : 0;

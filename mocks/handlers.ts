@@ -72,6 +72,7 @@ export function registerHandlers(mock: MockAdapter): void {
     if (p.search) opts.search = String(p.search);
     if (p.limit) opts.limit = Number(p.limit);
     if (p.cursor) opts.cursor = String(p.cursor);
+    if (p.sort === "recent") opts.sort = "recent";
     return ok(listLinks(opts));
   });
 

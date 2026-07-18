@@ -145,9 +145,7 @@ describe("CreateLinkSheet", () => {
       ).toBe(false),
     );
     await fireEvent.press(screen.getByLabelText("저장"));
-    await waitFor(() =>
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["link"] }),
-    );
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalled());
     invalidateSpy.mockRestore();
   });
 

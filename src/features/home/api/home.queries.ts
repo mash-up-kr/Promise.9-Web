@@ -30,9 +30,10 @@ export const homeQueries = {
     queryOptions({
       queryKey: homeKeys.recent(),
       queryFn: async ({ signal }) => {
+        // 최근저장은 이미지 유무와 무관하게 최신순 — 방금 저장한(썸네일 없는) 링크도 상위에 노출.
         const { data } = await apiClient.get<SuccessResponse<LinkListData>>(
           "/links",
-          { params: { limit: 9 }, signal },
+          { params: { limit: 9, sort: "recent" }, signal },
         );
         return data.data.items;
       },
