@@ -1,26 +1,21 @@
-/** 성공 응답 envelope — 서버 공통 래퍼(success + data). */
-export interface SuccessResponse<T> {
-  success: true;
-  data: T;
-}
-
-/** 에러 본문 — 서버 ErrorDataDto. */
-export interface ErrorData {
-  code: number;
-  errorCode: number;
-  message: string;
-  timestamp: string;
-}
-
-/** 에러 응답 envelope — 서버 ErrorResponseDto(success:false + error). */
+/** NestJS HttpException 의 기본 에러 응답 envelope */
 export interface ErrorResponse {
-  success: false;
-  error: ErrorData;
+  statusCode: number;
+  message: string;
+  error?: string;
 }
 
-/** 커서 페이지네이션 메타 — 서버 CursorPaginationResponseDto. 목록 DTO 가 items 와 함께 임베드한다. */
-export interface CursorPagination {
-  nextCursor: string | null;
-  hasNext: boolean;
-  limit: number;
+/**
+ * 페이지네이션 응답 (초안 · 백엔드 spec 미정 → flat 컨벤션, 확정 시 조정)
+ *
+ * @example
+ * apiClient.get<PaginatedResponse<Link>>('/links?page=1')
+ * // → AxiosResponse<PaginatedResponse<Link>>
+ */
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
 }

@@ -5,7 +5,7 @@ import { Ellipsis, Star } from "lucide-react-native";
 import { Controller, useForm } from "react-hook-form";
 import { ScrollView, View } from "react-native";
 
-import { Header, useHeaderHeight } from "@/components/ui/header/Header";
+import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Text } from "@/components/ui/text/Text";
@@ -41,8 +41,7 @@ function removeTagById(tags: LinkTag[], tagId: number): LinkTag[] {
 }
 
 export function LinkDetailScreen() {
-  const headerHeight = useHeaderHeight();
-  const { id } = useLocalSearchParams<"/link/[id]">();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const linkDetail =
     mockLinks.find((link) => link.linkId === Number(id)) ?? mockLinkDetail;
 
@@ -64,10 +63,8 @@ export function LinkDetailScreen() {
     <>
       <Stack.Screen
         options={{
-          headerTransparent: true,
           header: () => (
             <Header
-              variant="plain"
               left={<HeaderBackButton />}
               right={
                 <>
@@ -99,8 +96,7 @@ export function LinkDetailScreen() {
         />
         <ScrollView
           className="flex-1"
-          contentContainerClassName="gap-6 pb-8"
-          contentContainerStyle={{ paddingTop: headerHeight + 16 }}
+          contentContainerClassName="gap-6 pt-4 pb-8"
           contentInsetAdjustmentBehavior="automatic"
         >
           <View className="px-5">

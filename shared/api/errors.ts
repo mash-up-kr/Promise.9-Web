@@ -16,7 +16,7 @@ export class ApiError extends HttpError {
     response: AxiosResponse<ErrorResponse>,
     options?: { cause?: unknown },
   ) {
-    const message = response.data?.error?.message ?? `HTTP ${response.status}`;
+    const message = response.data?.message ?? `HTTP ${response.status}`;
     super(message, options);
     this.statusCode = response.status;
     this.serverMessage = message;

@@ -1,4 +1,3 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
   render,
@@ -8,75 +7,27 @@ import {
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 const mockBack = jest.fn();
-const mockReplace = jest.fn();
-const mockCanGoBack = jest.fn(() => true);
-jest.mock("expo-router", () => ({
-  useRouter: () => ({
-    back: mockBack,
-    replace: mockReplace,
-    canGoBack: mockCanGoBack,
-  }),
-}));
+jest.mock("expo-router", () => ({ useRouter: () => ({ back: mockBack }) }));
 jest.mock("expo-clipboard", () => ({
-  hasStringAsync: jest.fn().mockResolvedValue(false),
   getStringAsync: jest.fn().mockResolvedValue(""),
-}));
-// LinkPreviewCard → useLinkPreview → apiClient 로드 시 client.ts throw → 통째로 목.
-jest.mock("@shared/api", () => ({
-  apiClient: { get: jest.fn(), post: jest.fn() },
 }));
 
 import { CreateLinkSheet } from "./CreateLinkSheet";
-
-const { apiClient } = jest.requireMock("@shared/api") as {
-  apiClient: { get: jest.Mock; post: jest.Mock };
-};
 
 const metrics: Metrics = {
   frame: { x: 0, y: 0, width: 375, height: 812 },
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
 };
 
-// renderSheet 은 render() 결과를 그대로 반환한다 — 이 스택(RNTL14 · test-renderer 1.2.0 · React19)에서
-// 결과를 버리고 다른 값을 반환하면 전역 screen 바인딩이 깨진다. 무효화 검증은 QueryClient.prototype 스파이로.
 const renderSheet = () =>
   render(
-    <QueryClientProvider
-      client={
-        new QueryClient({ defaultOptions: { queries: { retry: false } } })
-      }
-    >
-      <SafeAreaProvider initialMetrics={metrics}>
-        <CreateLinkSheet />
-      </SafeAreaProvider>
-    </QueryClientProvider>,
+    <SafeAreaProvider initialMetrics={metrics}>
+      <CreateLinkSheet />
+    </SafeAreaProvider>,
   );
 
 describe("CreateLinkSheet", () => {
-  beforeEach(() => {
-    mockBack.mockClear();
-    mockReplace.mockClear();
-    mockCanGoBack.mockClear();
-    mockCanGoBack.mockReturnValue(true);
-    apiClient.get.mockReset();
-    apiClient.get.mockResolvedValue({
-      data: {
-        success: true,
-        data: { title: "기본", source: "example.com", thumbnailUrl: null },
-      },
-    });
-    apiClient.post.mockReset();
-    apiClient.post.mockResolvedValue({
-      data: {
-        success: true,
-        data: {
-          linkId: 1,
-          url: "https://example.com",
-          savedAt: "2026-07-17T00:00:00.000Z",
-        },
-      },
-    });
-  });
+  beforeEach(() => mockBack.mockClear());
 
   test("URL·리마인드 미충족이면 저장 버튼이 비활성이다", async () => {
     await renderSheet();
@@ -101,148 +52,9 @@ describe("CreateLinkSheet", () => {
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
   });
 
-  test("저장하면 POST /links 로 폼 값을 전송한다", async () => {
-    await renderSheet();
-    await fireEvent.changeText(
-      screen.getByPlaceholderText("URL"),
-      "https://example.com",
-    );
-    await fireEvent.press(screen.getByText("곧 활용할게요"));
-    await waitFor(() =>
-      expect(
-        screen.getByLabelText("저장").props.accessibilityState.disabled,
-      ).toBe(false),
-    );
-    await fireEvent.press(screen.getByLabelText("저장"));
-    await waitFor(() =>
-      expect(apiClient.post).toHaveBeenCalledWith("/links", {
-        url: "https://example.com",
-        folderId: null,
-        memo: null,
-        remindType: "soon",
-      }),
-    );
-  });
-
-  test("저장 성공 시 링크 쿼리를 무효화한다", async () => {
-    const invalidateSpy = jest.spyOn(
-      QueryClient.prototype,
-      "invalidateQueries",
-    );
-    await renderSheet();
-    await fireEvent.changeText(
-      screen.getByPlaceholderText("URL"),
-      "https://example.com",
-    );
-    await fireEvent.press(screen.getByText("곧 활용할게요"));
-    await waitFor(() =>
-      expect(
-        screen.getByLabelText("저장").props.accessibilityState.disabled,
-      ).toBe(false),
-    );
-    await fireEvent.press(screen.getByLabelText("저장"));
-    await waitFor(() =>
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["link"] }),
-    );
-    invalidateSpy.mockRestore();
-  });
-
   test("취소하면 시트를 닫는다", async () => {
     await renderSheet();
     await fireEvent.press(screen.getByText("취소"));
     expect(mockBack).toHaveBeenCalled();
-  });
-
-  test("뒤로 갈 수 없으면 닫기 시 홈으로 이동한다", async () => {
-    mockCanGoBack.mockReturnValue(false);
-    await renderSheet();
-    await fireEvent.press(screen.getByText("취소"));
-    expect(mockReplace).toHaveBeenCalledWith("/");
-    expect(mockBack).not.toHaveBeenCalled();
-  });
-
-  test("클립보드에 문자열이 있으면 붙여넣기 버튼을 노출한다", async () => {
-    const Clipboard = jest.requireMock("expo-clipboard");
-    Clipboard.hasStringAsync.mockResolvedValueOnce(true);
-
-    await renderSheet();
-    await waitFor(() => expect(screen.getByText("붙여넣기")).toBeTruthy());
-  });
-
-  test("클립보드가 비어 있으면 붙여넣기 버튼을 숨긴다", async () => {
-    await renderSheet();
-    expect(screen.queryByText("붙여넣기")).toBeNull();
-  });
-
-  test("붙여넣기를 누르면 클립보드의 URL 이 입력된다", async () => {
-    const Clipboard = jest.requireMock("expo-clipboard");
-    Clipboard.hasStringAsync.mockResolvedValueOnce(true);
-    Clipboard.getStringAsync.mockResolvedValueOnce("https://example.com");
-
-    await renderSheet();
-    await waitFor(() => expect(screen.getByText("붙여넣기")).toBeTruthy());
-    await fireEvent.press(screen.getByText("붙여넣기"));
-    await waitFor(() =>
-      expect(screen.getByPlaceholderText("URL").props.value).toBe(
-        "https://example.com",
-      ),
-    );
-  });
-
-  test("클립보드 읽기가 실패해도 크래시 없이 console.error 로만 남긴다", async () => {
-    const Clipboard = jest.requireMock("expo-clipboard");
-    const error = new Error("clipboard denied");
-    Clipboard.hasStringAsync.mockResolvedValueOnce(true);
-    Clipboard.getStringAsync.mockRejectedValueOnce(error);
-    const consoleError = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-
-    await renderSheet();
-    await waitFor(() => expect(screen.getByText("붙여넣기")).toBeTruthy());
-    await fireEvent.press(screen.getByText("붙여넣기"));
-    await waitFor(() => expect(consoleError).toHaveBeenCalledWith(error));
-    expect(screen.getByPlaceholderText("URL")).toBeTruthy();
-
-    consoleError.mockRestore();
-  });
-
-  test("유효 URL 입력 후 blur 하면 프리뷰 카드가 뜬다", async () => {
-    apiClient.get.mockResolvedValueOnce({
-      data: {
-        success: true,
-        data: {
-          title: "프리뷰 제목",
-          source: "toss.tech",
-          thumbnailUrl: "https://img.test/og.png",
-        },
-      },
-    });
-    await renderSheet();
-    const input = screen.getByPlaceholderText("URL");
-    await fireEvent.changeText(input, "https://toss.tech/x");
-    await fireEvent(input, "blur");
-    expect(await screen.findByText("프리뷰 제목")).toBeOnTheScreen();
-  });
-
-  test("추출 실패 시 실패 안내 카드를 보여준다", async () => {
-    const spy = jest.spyOn(console, "error").mockImplementation(() => {});
-    apiClient.get.mockRejectedValueOnce(new Error("500"));
-    await renderSheet();
-    const input = screen.getByPlaceholderText("URL");
-    await fireEvent.changeText(input, "https://toss.tech/x");
-    await fireEvent(input, "blur");
-    expect(
-      await screen.findByText("링크 정보를 가져오지 못했어요."),
-    ).toBeOnTheScreen();
-    spy.mockRestore();
-  });
-
-  test("무효 URL 로 blur 하면 프리뷰를 요청하지 않는다", async () => {
-    await renderSheet();
-    const input = screen.getByPlaceholderText("URL");
-    await fireEvent.changeText(input, "not-a-url");
-    await fireEvent(input, "blur");
-    expect(apiClient.get).not.toHaveBeenCalled();
   });
 });

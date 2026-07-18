@@ -3,7 +3,6 @@ import { ExternalLink } from "lucide-react-native";
 import { useState } from "react";
 import { Linking, Pressable, StyleSheet, View } from "react-native";
 
-import { GlassView } from "@/components/ui/glass-view/GlassView";
 import { Icon } from "@/components/ui/icon/Icon";
 
 // 대표 이미지는 원본 비율을 따른다: 가로형은 부모 컨테이너 가로폭 100%(좌우 패딩은
@@ -71,20 +70,14 @@ export function LinkThumbnail({ thumbnailUrl, url }: LinkThumbnailProps) {
         accessibilityRole="button"
         accessibilityLabel="링크 열기"
         onPress={handleOpen}
-        className="absolute right-4 bottom-4 size-9 overflow-hidden rounded-full"
+        className="absolute right-4 bottom-4 size-9 items-center justify-center rounded-full bg-opacity-black-50 web:backdrop-blur"
       >
-        {/* 아이콘은 GlassView 의 자식으로 — 웹에서 svg 가 유리 레이어에 가리지 않게. */}
-        <GlassView
-          intensity={55}
-          className="size-full items-center justify-center"
-        >
-          <Icon
-            iconNode={ExternalLink}
-            size={16}
-            className="text-icon-normal"
-            strokeWidth={1.3}
-          />
-        </GlassView>
+        <Icon
+          iconNode={ExternalLink}
+          size={16}
+          className="text-icon-normal"
+          strokeWidth={1.3}
+        />
       </Pressable>
     </View>
   );
