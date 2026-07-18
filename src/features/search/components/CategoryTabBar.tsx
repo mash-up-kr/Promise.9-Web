@@ -36,7 +36,8 @@ export function CategoryTabBar({ selected, onSelect }: CategoryTabBarProps) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      className="grow-0"
+      // 웹에서 가로 ScrollView 높이가 0 으로 붕괴해 칩이 잘리므로 콘텐츠 높이만큼 고정한다.
+      className="h-14 shrink-0 grow-0"
     >
       <HStack className="gap-1 px-5 pt-1 pb-3">
         {CATEGORY_TABS.map((tab) => {
