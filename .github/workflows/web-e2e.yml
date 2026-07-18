@@ -31,6 +31,10 @@ jobs:
 
       - name: Run web E2E
         run: pnpm test:e2e
+        env:
+          # E2E 는 API 를 호출하지 않지만 shared/api/client.ts 가 모듈 로드 시
+          # 이 값을 요구한다(미설정 시 throw → 앱 크래시). 리포지토리 secret 으로 주입.
+          EXPO_PUBLIC_API_BASE_URL: ${{ secrets.EXPO_PUBLIC_API_BASE_URL }}
 
       # 실패 시 trace/스크린샷 보존 (config 의 trace: on-first-retry)
       - uses: actions/upload-artifact@v4
