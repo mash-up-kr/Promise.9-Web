@@ -1,6 +1,8 @@
 import type { RelatedLink } from "@shared/types/link.types";
+import { useRouter } from "expo-router";
 import { ScrollView, View } from "react-native";
 import { Text } from "@/components/ui/text/Text";
+import { linkDetailHref } from "@/constants/routes.constants";
 
 import { RelatedLinkCard } from "./RelatedLinkCard";
 
@@ -9,6 +11,8 @@ export interface RelatedLinksListProps {
 }
 
 export function RelatedLinksList({ items }: RelatedLinksListProps) {
+  const router = useRouter();
+
   return (
     <View className="w-full gap-4">
       <Text variant="heading-2" className="px-5">
@@ -48,7 +52,11 @@ export function RelatedLinksList({ items }: RelatedLinksListProps) {
           contentContainerClassName="gap-3 pl-5"
         >
           {items.map((item) => (
-            <RelatedLinkCard key={item.linkId} link={item} />
+            <RelatedLinkCard
+              key={item.linkId}
+              link={item}
+              onPress={() => router.push(linkDetailHref(String(item.linkId)))}
+            />
           ))}
         </ScrollView>
       )}

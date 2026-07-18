@@ -1,7 +1,7 @@
 import type { RelatedLink } from "@shared/types/link.types";
 import { Image, type ImageLoadEventData } from "expo-image";
 import { useState } from "react";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Text } from "@/components/ui/text/Text";
 import { ThumbnailFallback } from "@/components/ui/thumbnail/ThumbnailFallback";
 
@@ -10,9 +10,10 @@ const BLUR_RADIUS = 12;
 
 export interface RelatedLinkCardProps {
   link: RelatedLink;
+  onPress?: () => void;
 }
 
-export function RelatedLinkCard({ link }: RelatedLinkCardProps) {
+export function RelatedLinkCard({ link, onPress }: RelatedLinkCardProps) {
   // 원본 이미지의 실제 치수를 알아야 landscape 여부를 판정할 수 있다(URL만으론 알 수 없음).
   const [isLandscape, setIsLandscape] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -22,8 +23,12 @@ export function RelatedLinkCard({ link }: RelatedLinkCardProps) {
   }
 
   return (
-    <View className="w-[120px] shrink-0 gap-2">
-      {/* TODO: 카드 탭 시 해당 링크 상세(/link/[id])로 이동 — 백엔드/네비게이션 연동 후속 이슈에서 처리 */}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={link.title}
+      onPress={onPress}
+      className="w-[120px] shrink-0 gap-2"
+    >
       <View className="h-[150px] w-[120px] shrink-0 overflow-hidden rounded-[12px] bg-background-thumbnail">
         {failed ? (
           <ThumbnailFallback
@@ -68,6 +73,6 @@ export function RelatedLinkCard({ link }: RelatedLinkCardProps) {
       <Text variant="body-4" className="w-[120px]">
         {link.title}
       </Text>
-    </View>
+    </Pressable>
   );
 }

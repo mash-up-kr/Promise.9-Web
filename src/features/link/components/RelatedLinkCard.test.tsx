@@ -61,4 +61,11 @@ describe("RelatedLinkCard", () => {
     expect(screen.getByTestId("related-thumb-fallback")).toBeOnTheScreen();
     expect(screen.queryByTestId("related-thumb-image")).toBeNull();
   });
+
+  test("카드를 누르면 onPress 를 호출한다", async () => {
+    const onPress = jest.fn();
+    await render(<RelatedLinkCard link={baseLink} onPress={onPress} />);
+    fireEvent.press(screen.getByRole("button", { name: baseLink.title }));
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
 });
