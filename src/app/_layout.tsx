@@ -6,7 +6,9 @@ import { useEffect } from "react";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { isWeb } from "@/constants/platform.constants";
 import { queryClient } from "@/lib/queryClient";
 import "@/global.css";
@@ -62,26 +64,39 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView className="flex-1 bg-background-base">
-        <KeyboardProvider>
-          {/* 웹에서 앱 폭을 768px 로 제한하고 중앙 정렬한다. 네이티브는 화면보다 넓어 영향 없음. */}
-          <View className="mx-auto w-full max-w-[768px] flex-1">
-            <ThemeProvider value={darkFixedTheme}>
-              <Stack
-                screenOptions={{
-                  contentStyle: { backgroundColor: BACKGROUND_BASE },
-                }}
-              >
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="create-link" options={sheetScreenOptions} />
-                <Stack.Screen
-                  name="create-folder"
-                  options={sheetScreenOptions}
-                />
-              </Stack>
-            </ThemeProvider>
-          </View>
-        </KeyboardProvider>
+        <SafeAreaProvider>
+          <KeyboardProvider>
+            {/* 웹에서 앱 폭을 768px 로 제한하고 중앙 정렬한다. 네이티브는 화면보다 넓어 영향 없음. */}
+            <View className="mx-auto w-full max-w-[768px] flex-1">
+              <SnackbarProvider>
+                <ThemeProvider value={darkFixedTheme}>
+                  <Stack
+                    screenOptions={{
+                      contentStyle: { backgroundColor: BACKGROUND_BASE },
+                    }}
+                  >
+                    <Stack.Screen
+                      name="(tabs)"
+                      options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                      name="(auth)"
+                      options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                      name="create-link"
+                      options={sheetScreenOptions}
+                    />
+                    <Stack.Screen
+                      name="create-folder"
+                      options={sheetScreenOptions}
+                    />
+                  </Stack>
+                </ThemeProvider>
+              </SnackbarProvider>
+            </View>
+          </KeyboardProvider>
+        </SafeAreaProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>
   );
