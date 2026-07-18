@@ -66,7 +66,6 @@ export function ArchiveScreen() {
     [data.folders],
   );
 
-  const [selectedId, setSelectedId] = useState<string>("all");
   const [myFolders, setMyFolders] = useState<ArchiveFolder[]>(serverFolders);
   // 폴더 생성 등으로 목록이 바뀌면 정렬 상태를 최신 데이터로 재시드한다.
   useEffect(() => {
@@ -80,7 +79,6 @@ export function ArchiveScreen() {
   const scrollContentHeight = useSharedValue(0);
 
   const handleOpenFolder = (id: string) => {
-    setSelectedId(id);
     router.push({ pathname: "/archive/[id]", params: { id } });
   };
 
@@ -104,7 +102,6 @@ export function ArchiveScreen() {
             name={folder.name}
             count={folder.count}
             tone={folder.tone}
-            selected={selectedId === folder.id}
             onPress={
               isReordering ? undefined : () => handleOpenFolder(folder.id)
             }
@@ -195,7 +192,6 @@ export function ArchiveScreen() {
                       name={folder.name}
                       count={folder.count}
                       tone={folder.tone}
-                      selected={selectedId === folder.id}
                       onPress={() => handleOpenFolder(folder.id)}
                     />
                   ))}

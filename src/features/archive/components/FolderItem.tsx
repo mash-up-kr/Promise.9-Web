@@ -15,24 +15,15 @@ const TONE_FILL: Partial<Record<FolderColor, string>> = {
   blue: BLUE_FILL,
 };
 
+// 지속되는 선택 상태는 두지 않고, 탭하는 순간에만 잠깐 selected 색으로 바뀌는 press 피드백만 준다.
 const folderItemStyles = tv({
-  base: "h-[52px] flex-row items-center justify-between px-4 py-3",
-  variants: {
-    selected: {
-      true: "bg-background-list-selected",
-      false: "bg-background-thumbnail",
-    },
-  },
-  defaultVariants: {
-    selected: false,
-  },
+  base: "h-[52px] flex-row items-center justify-between bg-background-thumbnail px-4 py-3 active:bg-background-list-selected",
 });
 
 export interface FolderItemProps {
   name: string;
   count: number;
   tone?: FolderColor;
-  selected?: boolean;
   onPress?: () => void;
 }
 
@@ -40,14 +31,13 @@ export function FolderItem({
   name,
   count,
   tone = "gray",
-  selected = false,
   onPress,
 }: FolderItemProps) {
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      className={folderItemStyles({ selected })}
+      className={folderItemStyles()}
     >
       <View className="flex-row items-center gap-3">
         <FolderIcon color={TONE_FILL[tone] ?? GRAY_FILL} size={28} />
