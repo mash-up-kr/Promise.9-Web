@@ -41,6 +41,11 @@ describe("LinkThumbnail", () => {
     expect(Linking.openURL).toHaveBeenCalledWith(URL);
   });
 
+  test("원문 url 이 없으면 링크 열기 버튼을 렌더하지 않는다", async () => {
+    await render(<LinkThumbnail thumbnailUrl={THUMB} url={null} />);
+    expect(screen.queryByLabelText("링크 열기")).toBeNull();
+  });
+
   test("가로형 이미지는 blur-fill 배경을 렌더하지 않는다", async () => {
     await render(<LinkThumbnail thumbnailUrl={THUMB} url={URL} />);
     await fireLoad(400, 200);

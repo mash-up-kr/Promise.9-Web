@@ -16,7 +16,8 @@ const BLUR_RADIUS = 2.4;
 
 export interface LinkThumbnailProps {
   thumbnailUrl: string;
-  url: string;
+  // 원문 url 이 없는 링크(시드 일부)도 있어 nullable — 없으면 열기 버튼을 숨긴다.
+  url: string | null;
 }
 
 export function LinkThumbnail({ thumbnailUrl, url }: LinkThumbnailProps) {
@@ -37,6 +38,7 @@ export function LinkThumbnail({ thumbnailUrl, url }: LinkThumbnailProps) {
     size != null ? size.width / size.height : DEFAULT_ASPECT_RATIO;
 
   async function handleOpen() {
+    if (!url) return;
     try {
       await Linking.openURL(url);
     } catch (error) {
@@ -81,26 +83,28 @@ export function LinkThumbnail({ thumbnailUrl, url }: LinkThumbnailProps) {
         </>
       )}
 
-      {/* 우하단 원문 이동 버튼 (이미지 크기와 무관하게 항상 16px inset) */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="링크 열기"
-        onPress={handleOpen}
-        className="absolute right-4 bottom-4 size-9 overflow-hidden rounded-full"
-      >
-        {/* 아이콘은 GlassView 의 자식으로 — 웹에서 svg 가 유리 레이어에 가리지 않게. */}
-        <GlassView
-          intensity={55}
-          className="size-full items-center justify-center"
+      {/* 우하단 원문 이동 버튼 — 원문 url 이 있을 때만 (없으면 열 대상이 없어 숨긴다) */}
+      {url ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="링크 열기"
+          onPress={handleOpen}
+          className="absolute right-4 bottom-4 size-9 overflow-hidden rounded-full"
         >
-          <Icon
-            iconNode={ExternalLink}
-            size={16}
-            className="text-icon-normal"
-            strokeWidth={1.3}
-          />
-        </GlassView>
-      </Pressable>
+          {/* 아이콘은 GlassView 의 자식으로 — 웹에서 svg 가 유리 레이어에 가리지 않게. */}
+          <GlassView
+            intensity={55}
+            className="size-full items-center justify-center"
+          >
+            <Icon
+              iconNode={ExternalLink}
+              size={16}
+              className="text-icon-normal"
+              strokeWidth={1.3}
+            />
+          </GlassView>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
