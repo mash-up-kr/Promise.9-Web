@@ -1,7 +1,5 @@
-const mockRouterNavigate = jest.fn();
-jest.mock("expo-router", () => ({
-  useRouter: () => ({ navigate: mockRouterNavigate }),
-}));
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush }) }));
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import type { BottomTabBarProps } from "expo-router/js-tabs";
@@ -39,7 +37,7 @@ describe("TabBar", () => {
   beforeEach(() => {
     emit.mockClear();
     navigate.mockClear();
-    mockRouterNavigate.mockClear();
+    mockPush.mockClear();
   });
 
   test("홈·보관함 탭과 링크 추가 버튼을 렌더한다", async () => {
@@ -76,9 +74,9 @@ describe("TabBar", () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  test("+ 버튼은 navigate 로 이동한다 — 연타해도 시트가 중복 push 되지 않게", async () => {
+  test("+ 버튼을 누르면 create-link 로 이동한다", async () => {
     await renderWithSafeArea(<TabBar {...makeProps()} />);
     fireEvent.press(screen.getByRole("button", { name: "링크 추가" }));
-    expect(mockRouterNavigate).toHaveBeenCalledWith("/create-link");
+    expect(mockPush).toHaveBeenCalledWith("/create-link");
   });
 });

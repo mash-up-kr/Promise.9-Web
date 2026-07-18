@@ -1,15 +1,13 @@
 import type { PressableProps } from "react-native";
-import { Pressable, View } from "react-native";
+import { Pressable } from "react-native";
 
-import { GlassView } from "@/components/ui/glass-view/GlassView";
 import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
 import { tv } from "@/lib/tv";
 
-// Figma 헤더 아이콘 버튼: rgba(18,18,18,0.5) + blur(4) 유리 + inset 하이라이트.
-// 아이콘·하이라이트는 GlassView 의 자식으로 둔다 — 웹에서 svg(static)가 absolute 유리 레이어
-// (backdrop-filter 스태킹)에 가려지는 문제를 피하려면 형제가 아니라 자식이어야 blur 위에 그려진다.
-const containerStyles = tv({
-  base: "size-10 overflow-hidden rounded-full",
+// backdrop blur 는 네이티브가 지원하지 않아 반투명 배경+보더로 근사하고, 웹에서만 적용한다.
+// inset 하이라이트(box-shadow)는 RN New Arch 의 boxShadow 로 네이티브에서도 렌더된다.
+const iconButtonStyles = tv({
+  base: "size-10 items-center justify-center rounded-full border border-opacity-white-10 bg-opacity-white-05 shadow-[-1px_-1px_1px_0_var(--color-opacity-white-20)_inset,1px_1px_1px_0_var(--color-opacity-white-20)_inset] web:backdrop-blur-[2px]",
 });
 
 export interface IconButtonProps extends Omit<PressableProps, "children"> {
@@ -29,25 +27,16 @@ export function IconButton({
   return (
     <Pressable
       accessibilityRole="button"
-      className={containerStyles({ class: className })}
+      className={iconButtonStyles({ class: className })}
       {...props}
     >
-      <GlassView
-        intensity={55}
-        className="size-full items-center justify-center"
-      >
-        <View
-          pointerEvents="none"
-          className="absolute inset-0 rounded-full shadow-[-1px_-1px_1px_0_var(--color-opacity-white-20)_inset,1px_1px_1px_0_var(--color-opacity-white-20)_inset]"
-        />
-        <Icon
-          iconNode={iconNode}
-          size={24}
-          strokeWidth={1.5}
-          fill={iconFill}
-          className="text-icon-strong"
-        />
-      </GlassView>
+      <Icon
+        iconNode={iconNode}
+        size={24}
+        strokeWidth={1.5}
+        fill={iconFill}
+        className="text-icon-strong"
+      />
     </Pressable>
   );
 }

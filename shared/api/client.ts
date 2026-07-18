@@ -7,7 +7,7 @@ import {
   UnauthorizedError,
 } from "./errors";
 
-export const setRequestDefaultHeaders = async (
+const setRequestDefaultHeaders = async (
   config: InternalAxiosRequestConfig,
 ): Promise<InternalAxiosRequestConfig> => {
   // FormData 전송 시 axios 가 boundary 포함 multipart Content-Type 을 자동 설정하므로,
@@ -17,12 +17,6 @@ export const setRequestDefaultHeaders = async (
     config.headers.set("Content-Type", "application/json");
   }
   config.headers.set("Accept", "application/json");
-
-  // 임시 인증: 서버 MASTER_ACCESS_TOKEN 우회용. EXPO_PUBLIC_* 는 번들 공개 → 프로덕션 미설정.
-  const masterToken = process.env.EXPO_PUBLIC_API_MASTER_TOKEN;
-  if (masterToken) {
-    config.headers.set("Authorization", `Bearer ${masterToken}`);
-  }
 
   // TODO(#auth 별도 이슈):
   //  1) Access token attach

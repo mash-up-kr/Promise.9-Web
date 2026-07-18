@@ -6,7 +6,6 @@ import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { Heading } from "@/components/ui/heading/Heading";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { TabBar } from "@/components/ui/tab-bar/TabBar";
-import { ROUTES } from "@/constants/routes.constants";
 
 export default function TabsLayout() {
   const router = useRouter();
@@ -15,10 +14,7 @@ export default function TabsLayout() {
     <Tabs
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{
-        // 헤더는 투명 프로스트라 콘텐츠가 그 아래로 스크롤되게 한다(화면별 paddingTop=useHeaderHeight).
-        headerTransparent: true,
-        // 시스템 라이트 모드에서 투명 씬 아래 밝은 배경이 비치지 않게 다크로 칠한다.
-        sceneStyle: { backgroundColor: "#0e0e13" },
+        sceneStyle: { backgroundColor: "transparent" },
         header: ({ options }) => (
           <Header title={options.title} right={<HeaderActions />} />
         ),
@@ -37,7 +33,7 @@ export default function TabsLayout() {
                   <IconButton
                     iconNode={Search}
                     accessibilityLabel="검색"
-                    onPress={() => router.navigate(ROUTES.SEARCH)}
+                    onPress={() => router.navigate("/search")}
                   />
                   <IconButton iconNode={Settings} accessibilityLabel="설정" />
                 </>
