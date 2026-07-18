@@ -11,8 +11,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { GlassView } from "@/components/ui/glass-view/GlassView";
-
 const CLOSE_THRESHOLD = 120;
 
 export interface BottomSheetProps {
@@ -83,14 +81,11 @@ export function BottomSheet({ onClose, children }: BottomSheetProps) {
       </Animated.View>
       <Animated.View
         style={sheetStyle}
-        // Figma save-sheet: blur(40) 유리 시트. blur 는 GlassView 레이어, drop shadow·모양은
-        // 컨테이너에 둔다. overflow-hidden 으로 blur 를 rounded-top 에 맞춘다.
-        className="overflow-hidden rounded-t-[36px] px-5 shadow-[4px_0_20px_0_rgba(0,0,0,0.25)]"
+        className="rounded-t-3xl bg-background-base px-5"
       >
-        <GlassView intensity={100} className="absolute inset-0" />
         <GestureDetector gesture={pan}>
           <View className="items-center py-3">
-            <View className="h-1 w-9 rounded-full bg-icon-assistive" />
+            <View className="h-1 w-9 rounded-full bg-icon-alternative" />
           </View>
         </GestureDetector>
         <View style={{ paddingBottom: insets.bottom + 16 }}>{children}</View>

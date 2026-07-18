@@ -3,7 +3,6 @@ import { Plus, X } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, TextInput, View } from "react-native";
 
-import { GlassView } from "@/components/ui/glass-view/GlassView";
 import { Icon } from "@/components/ui/icon/Icon";
 import { TooltipArrowIcon } from "@/components/ui/icon/TooltipArrowIcon";
 import { Text } from "@/components/ui/text/Text";
@@ -126,15 +125,11 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
           pointerEvents="none"
           className="absolute top-0 left-4 z-10 -translate-y-full items-center"
         >
-          <GlassView
-            intensity={77}
-            tint="light"
-            className="rounded-[10px] px-3 py-2"
-          >
+          <View className="rounded-[10px] bg-opacity-white-60 px-3 py-2 web:backdrop-blur">
             <Text variant="caption-2" className="text-icon-inverse">
               {TOOLTIP_TEXT}
             </Text>
-          </GlassView>
+          </View>
           <TooltipArrowIcon />
         </View>
       )}

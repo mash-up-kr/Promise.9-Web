@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
-import { TextInput, View } from "react-native";
+import { Platform, TextInput, View } from "react-native";
+
 import { Text } from "@/components/ui/text/Text";
-import { isWeb } from "@/constants/platform.constants";
 
 import { MEMO_MAX_LENGTH } from "../link.contracts";
 
@@ -19,7 +19,7 @@ export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
   // 리사이즈한다.
   // biome-ignore lint/correctness/useExhaustiveDependencies: memo 를 직접 읽지 않고 ref 로 DOM 을 재측정하는 트리거로만 쓴다 — 값이 바뀔 때마다 다시 실행돼야 한다.
   useLayoutEffect(() => {
-    if (!isWeb) return;
+    if (Platform.OS !== "web") return;
     const node = inputRef.current as unknown as HTMLTextAreaElement | null;
     if (!node) return;
     node.style.height = "auto";
@@ -41,7 +41,7 @@ export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
           placeholderTextColor="#ffffff4d"
           // TODO: 저장 트리거(디바운스/blur) 정책은 백엔드 연동 확정 후 결정 —
           // 지금은 상위 계획 스코프(mock + 로컬 state)에 따라 키 입력마다 즉시 반영한다.
-          className="min-h-5 w-full font-pretendard text-body-2-reading text-text-normal web:outline-none"
+          className="min-h-5 w-full font-pretendard text-body-2-reading text-text-normal"
           // iOS 상단 여백 이슈 우회
           style={{ verticalAlign: "top", padding: 0 }}
         />

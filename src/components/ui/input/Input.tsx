@@ -1,10 +1,9 @@
 import { X } from "lucide-react-native";
 import { createContext, useContext } from "react";
 import type { PressableProps, TextInputProps, ViewProps } from "react-native";
-import { Pressable, TextInput, View } from "react-native";
+import { Platform, Pressable, TextInput, View } from "react-native";
 
 import { Icon } from "@/components/ui/icon/Icon";
-import { isAndroid } from "@/constants/platform.constants";
 import { tv } from "@/lib/tv";
 
 type InputVariant = "pill" | "field";
@@ -53,7 +52,7 @@ const PLACEHOLDER_COLOR: Record<InputVariant, string> = {
 const CURSOR_COLOR = "#ffffff";
 // Android 는 selectionColor 를 하이라이트에 불투명하게 그대로 써서 흰 텍스트가
 // 가려진다(실기 확인). iOS 는 시스템이 알파를 적용하므로 흰색 그대로 쓴다.
-const SELECTION_COLOR = isAndroid ? "#ffffff4d" : "#ffffff";
+const SELECTION_COLOR = Platform.OS === "android" ? "#ffffff4d" : "#ffffff";
 
 export interface InputProps extends Omit<ViewProps, "className"> {
   className?: string;
