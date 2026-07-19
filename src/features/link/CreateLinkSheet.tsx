@@ -1,12 +1,16 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
-import { Input, InputField } from "@/components/ui/input/Input";
+import { Input, InputField, InputSlot } from "@/components/ui/input/Input";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
+import { Text } from "@/components/ui/text/Text";
+import { isWeb } from "@/constants/platform.constants";
+import { useCreateLinkMutation } from "@/features/link/api/link.queries";
 import { CreateLinkHeader } from "@/features/link/components/CreateLinkHeader";
+import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { MemoField } from "@/features/link/components/MemoField";
 import { RemindQuestionSection } from "@/features/link/components/RemindQuestionSection";
 import {
@@ -16,42 +20,92 @@ import {
 
 export function CreateLinkSheet() {
   const router = useRouter();
-  const { control, handleSubmit, setValue, formState } =
+
+  const closeSheet = () => {
+    // 웹에서 히스토리가 없으면(직접 진입 등) back 이 실패하므로 홈으로 대체한다.
+    if (router.canGoBack()) {
+      router.back();
+
+      return;
+    }
+    router.replace("/");
+  };
+
+  const { control, handleSubmit, setValue, watch, formState } =
     useForm<CreateLinkForm>({
       resolver: zodResolver(createLinkSchema),
       mode: "onChange",
-      defaultValues: { url: "", remindType: undefined, memo: "" },
+      defaultValues: {
+        url: "",
+        remindType: undefined,
+        memo: "",
+        previewUrl: "",
+      },
     });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: 최초 진입 시 1회만 클립보드를 검사한다. setValue 는 react-hook-form 이 보장하는 안정 참조.
-  useEffect(function prefillUrlFromClipboard() {
+  const createLinkMutation = useCreateLinkMutation();
+
+  // 클립보드를 자동으로 읽으면 iOS 가 시트를 열 때마다 붙여넣기 권한 팝업을 띄운다.
+  // 존재 확인(hasStringAsync)은 팝업이 없으므로 버튼 노출만 결정하고, 실제 읽기는
+  // 사용자가 붙여넣기를 눌렀을 때만 한다. 웹은 존재 확인조차 권한 프롬프트를
+  // 유발해 버튼을 항상 노출한다.
+  const [canPaste, setCanPaste] = useState(isWeb);
+  // 프리뷰는 blur/붙여넣기로 확정된 유효 URL 에 대해서만 조회한다(입력 중엔 idle). previewUrl 은 폼 상태.
+  const previewUrl = watch("previewUrl") ?? "";
+
+  const commitPreview = (value: string) => {
+    const isValid = createLinkSchema.shape.url.safeParse(value).success;
+    setValue("previewUrl", isValid ? value : "");
+  };
+
+  useEffect(function checkClipboardHasText() {
+    if (isWeb) return;
     let active = true;
-    Clipboard.getStringAsync().then((text) => {
-      if (
-        active &&
-        text &&
-        createLinkSchema.shape.url.safeParse(text).success
-      ) {
-        setValue("url", text, { shouldValidate: true });
-      }
-    });
+    Clipboard.hasStringAsync()
+      .then((hasString) => {
+        if (active) setCanPaste(hasString);
+      })
+      .catch(console.error);
     return () => {
       active = false;
     };
   }, []);
 
-  const onSave = handleSubmit(() => {
-    // TODO(#33): 실제 저장 API 연동 지점. 지금은 mock — 폼 유효 시 시트만 닫는다.
-    router.back();
+  const handlePasteUrl = () => {
+    Clipboard.getStringAsync()
+      .then((text) => {
+        if (text && createLinkSchema.shape.url.safeParse(text).success) {
+          setValue("url", text, { shouldValidate: true });
+          commitPreview(text);
+        }
+      })
+      // 에러 처리 정책 미확정 — 붙여넣기는 부가 기능이라 실패 시 로깅만 하고 넘어간다.
+      .catch(console.error);
+  };
+
+  const onSave = handleSubmit((values) => {
+    // 저장 시트엔 폴더 선택이 없어 folderId 는 항상 null. 실패 시 시트를 열어둔 채
+    // 재시도할 수 있게 성공했을 때만 닫는다.
+    createLinkMutation.mutate(
+      {
+        url: values.url,
+        folderId: null,
+        memo: values.memo?.trim() ? values.memo : null,
+        remindType: values.remindType,
+      },
+      { onSuccess: () => closeSheet() },
+    );
   });
 
   return (
-    <SheetScreen>
+    <SheetScreen onClose={closeSheet}>
       <CreateLinkHeader
-        onCancel={() => router.back()}
+        onCancel={closeSheet}
         onSave={onSave}
-        saveDisabled={!formState.isValid}
+        saveDisabled={!formState.isValid || createLinkMutation.isPending}
       />
+
+      <LinkPreviewCard url={previewUrl} />
 
       <Controller
         control={control}
@@ -64,7 +118,22 @@ export function CreateLinkSheet() {
               keyboardType="url"
               value={field.value}
               onChangeText={field.onChange}
+              onBlur={() => {
+                field.onBlur();
+                commitPreview(field.value);
+              }}
             />
+            {canPaste && !field.value && (
+              <InputSlot
+                accessibilityRole="button"
+                onPress={handlePasteUrl}
+                className="pl-3"
+              >
+                <Text variant="body-2-normal" className="text-icon-accent">
+                  붙여넣기
+                </Text>
+              </InputSlot>
+            )}
           </Input>
         )}
       />

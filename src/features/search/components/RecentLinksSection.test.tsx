@@ -1,7 +1,10 @@
 import type { Link } from "@shared/types/link.types";
-import { render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { RecentLinksSection } from "./RecentLinksSection";
+
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush }) }));
 
 function makeLinks(count: number): Link[] {
   return Array.from({ length: count }, (_, i) => ({
@@ -15,6 +18,18 @@ function makeLinks(count: number): Link[] {
 }
 
 describe("RecentLinksSection", () => {
+  beforeEach(() => mockPush.mockClear());
+
+  test("링크 카드를 누르면 링크 상세로 이동한다", async () => {
+    await render(<RecentLinksSection links={makeLinks(3)} />);
+
+    await fireEvent.press(screen.getByLabelText("링크 1"));
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/link/[id]",
+      params: { id: "1" },
+    });
+  });
+
   test("섹션 타이틀과 링크 카드를 모두 렌더한다", async () => {
     await render(<RecentLinksSection links={makeLinks(3)} />);
 

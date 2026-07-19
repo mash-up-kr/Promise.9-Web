@@ -6,6 +6,7 @@ import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { VStack } from "@/components/ui/vstack/VStack";
+import { ROUTES } from "@/constants/routes.constants";
 
 import { CategoryTabBar } from "./components/CategoryTabBar";
 import { LinkGrid } from "./components/LinkGrid";
@@ -39,6 +40,7 @@ export function CategoriesScreen() {
         options={{
           header: () => (
             <Header
+              variant="dim"
               left={<HeaderBackButton />}
               title="카테고리"
               right={
@@ -46,7 +48,7 @@ export function CategoriesScreen() {
                   iconNode={Search}
                   accessibilityLabel="검색"
                   // 검색에서 진입한 경우 스택 중복 없이 기존 검색 화면으로 복귀 (navigate)
-                  onPress={() => router.navigate("/search")}
+                  onPress={() => router.navigate(ROUTES.SEARCH)}
                 />
               }
             />
