@@ -88,6 +88,14 @@ const Animated = {
 const interpolate = NOOP;
 const interpolateColor = NOOP;
 
+// Layout animation 빌더(entering/exiting: ZoomIn/FadeIn 등)는 device 에서만 실제
+// 동작한다. jest 에선 체이닝(.duration().easing()...)이 깨지지 않도록 무해한
+// 프록시로 stub — 어떤 메서드를 호출해도 자기 자신을 반환한다.
+const layoutAnimationStub = new Proxy(
+  {},
+  { get: () => () => layoutAnimationStub },
+);
+
 module.exports = {
   __esModule: true,
   default: Animated,
@@ -157,6 +165,14 @@ module.exports = {
   },
   // misc
   enableLayoutAnimations: NOOP,
+  // layout animation 빌더 stub (entering/exiting)
+  FadeIn: layoutAnimationStub,
+  FadeOut: layoutAnimationStub,
+  ZoomIn: layoutAnimationStub,
+  ZoomOut: layoutAnimationStub,
+  SlideInDown: layoutAnimationStub,
+  SlideOutDown: layoutAnimationStub,
+  LinearTransition: layoutAnimationStub,
   makeMutable: makeSharedValue,
   createWorkletRuntime: NOOP,
   runOnRuntime: NOOP,
