@@ -1,3 +1,4 @@
+import { FOLDER_TONE_HEX } from "@shared/folder/folder.colors";
 import type { FolderColor } from "@shared/types/link.types";
 import { ChevronRight } from "lucide-react-native";
 import { Pressable, View } from "react-native";
@@ -6,14 +7,18 @@ import { Icon } from "@/components/ui/icon/Icon";
 import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
 
-// 폴더 아이콘 색(raw hex). 보관함 목록은 gray·blue 만 쓰고 나머지는 gray 로 폴백.
-// 색 출처: global.css --color-folder-gray / --color-folder-blue-solid (Figma 동기화 토큰).
+// 폴더 아이콘 채움색(raw hex). 12색은 shared 팔레트(= global.css --color-folder-*-solid)를 그대로 쓰고,
+// gray(시스템 폴더)만 목록 전용 회색을 쓴다.
 const GRAY_FILL = "#65656b";
-const BLUE_FILL = "#61a8ef";
-const TONE_FILL: Partial<Record<FolderColor, string>> = {
+const TONE_FILL: Record<FolderColor, string> = {
   gray: GRAY_FILL,
-  blue: BLUE_FILL,
+  ...FOLDER_TONE_HEX,
 };
+
+/** 폴더 tone → 아이콘 채움 hex. */
+export function folderToneFill(tone: FolderColor): string {
+  return TONE_FILL[tone];
+}
 
 const folderItemStyles = tv({
   base: "h-[52px] flex-row items-center justify-between px-4 py-3",
@@ -50,7 +55,7 @@ export function FolderItem({
       className={folderItemStyles({ selected })}
     >
       <View className="flex-row items-center gap-3">
-        <FolderIcon color={TONE_FILL[tone] ?? GRAY_FILL} size={28} />
+        <FolderIcon color={folderToneFill(tone)} size={28} />
         <Text variant="body-2-normal" className="text-text-normal">
           {name}
         </Text>
