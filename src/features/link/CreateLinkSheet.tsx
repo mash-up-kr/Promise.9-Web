@@ -90,7 +90,7 @@ export function CreateLinkSheet() {
       {
         url: values.url,
         folderId: null,
-        memo: values.memo?.trim() ? values.memo : null,
+        memo: values.memo?.trim() || null,
         remindType: values.remindType,
       },
       { onSuccess: () => closeSheet() },

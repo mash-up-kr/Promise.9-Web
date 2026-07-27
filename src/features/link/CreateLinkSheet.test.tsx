@@ -124,6 +124,35 @@ describe("CreateLinkSheet", () => {
     );
   });
 
+  test("메모는 앞뒤 공백을 제거해 전송한다", async () => {
+    await renderSheet();
+    await fireEvent.changeText(
+      screen.getByPlaceholderText("URL"),
+      "https://example.com",
+    );
+    await fireEvent.changeText(
+      screen.getByPlaceholderText(
+        "저장한 이유나 기억하고 싶은 점을 적어보세요",
+      ),
+      "  기억할 것  ",
+    );
+    await fireEvent.press(screen.getByText("곧 활용할게요"));
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText("저장").props.accessibilityState.disabled,
+      ).toBe(false),
+    );
+    await fireEvent.press(screen.getByLabelText("저장"));
+    await waitFor(() =>
+      expect(apiClient.post).toHaveBeenCalledWith("/links", {
+        url: "https://example.com",
+        folderId: null,
+        memo: "기억할 것",
+        remindType: "soon",
+      }),
+    );
+  });
+
   test("저장 성공 시 링크 쿼리를 무효화한다", async () => {
     const invalidateSpy = jest.spyOn(
       QueryClient.prototype,
