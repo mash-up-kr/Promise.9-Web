@@ -6,6 +6,7 @@ import {
   TimeoutError,
   UnauthorizedError,
 } from "./errors";
+import { getAccessToken } from "./token";
 
 const setRequestDefaultHeaders = async (
   config: InternalAxiosRequestConfig,
@@ -18,11 +19,14 @@ const setRequestDefaultHeaders = async (
   }
   config.headers.set("Accept", "application/json");
 
+  // 액세스 토큰 부착. 현재 토큰 출처는 dev env 시드(shared/api/token) — 정식 저장소·주입은 #auth.
+  const accessToken = await getAccessToken();
+  if (accessToken) {
+    config.headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
   // TODO(#auth 별도 이슈):
-  //  1) Access token attach
-  //     - 앱·웹: expo-secure-store / 익스텐션: chrome.storage.local
-  //     - shared/api/ 에 TokenStorage 인터페이스 두고 표면별 구현 주입
-  //     - 예: config.headers.set('Authorization', `Bearer ${await tokenStorage.getAccessToken()}`)
+  //  1) 토큰 저장소를 surface 별 영속 구현으로 교체 (앱·웹 expo-secure-store / 익스텐션 chrome.storage.local)
   //  2) 401 응답 시 single-flight refresh 큐
   //     - 동시 요청의 refresh 중복 호출 방지 + 원 요청 재시도
 

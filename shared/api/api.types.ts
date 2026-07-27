@@ -1,3 +1,9 @@
+/** 성공 응답 envelope — 서버 공통 래퍼(CommonResponseInterceptor 의 `{ success, data }`). */
+export interface SuccessResponse<T> {
+  success: true;
+  data: T;
+}
+
 /** NestJS HttpException 의 기본 에러 응답 envelope */
 export interface ErrorResponse {
   statusCode: number;

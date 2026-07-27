@@ -1,4 +1,8 @@
-export type { ErrorResponse, PaginatedResponse } from "./api.types";
+export type {
+  ErrorResponse,
+  PaginatedResponse,
+  SuccessResponse,
+} from "./api.types";
 export { apiClient } from "./client";
 export {
   ApiError,
@@ -12,3 +16,4 @@ export {
   TimeoutError,
   UnauthorizedError,
 } from "./errors";
+export { getAccessToken, setAccessToken } from "./token";
