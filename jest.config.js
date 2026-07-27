@@ -19,5 +19,7 @@ module.exports = {
     // gesture-handler 는 네이티브 바인딩에 의존하므로 렌더 stub 으로 대체한다.
     "^react-native-gesture-handler$":
       "<rootDir>/src/__mocks__/react-native-gesture-handler.js",
+    // gorhom 시트는 reanimated/gesture-handler 네이티브에 의존하므로 stub 으로 대체한다.
+    "^@gorhom/bottom-sheet$": "<rootDir>/src/__mocks__/@gorhom/bottom-sheet.js",
   },
 };

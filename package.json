@@ -6,6 +6,7 @@
   "dependencies": {
     "@expo/html-elements": "^56.0.1",
     "@expo/ui": "~56.0.17",
+    "@gorhom/bottom-sheet": "^5.2.14",
     "@hookform/resolvers": "^5.4.0",
     "@react-native-masked-view/masked-view": "^0.3.2",
     "@tailwindcss/postcss": "^4.3.1",

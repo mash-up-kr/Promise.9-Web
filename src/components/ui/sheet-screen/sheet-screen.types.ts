@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export interface SheetShellProps {
   children: ReactNode;
-  /** 웹 바텀시트 dismiss(백드롭·드래그) 콜백. 네이티브는 OS formSheet 가 처리해 미사용. */
+  /** 시트 dismiss(백드롭·pan-down) 콜백. 전 OS gorhom 시트가 사용한다. */
   onClose: () => void;
 }
 
