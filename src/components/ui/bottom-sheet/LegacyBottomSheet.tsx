@@ -1,3 +1,5 @@
+// DEPRECATED: 신규 gorhom 기반 `BottomSheet` 로 대체됨. 현재 사용처 0(제거 대상).
+// 의존성이 완전히 정리되면 이 파일과 테스트를 삭제한다. (#46)
 import { useEffect } from "react";
 import { Pressable, useWindowDimensions, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -15,12 +17,15 @@ import { GlassView } from "@/components/ui/glass-view/GlassView";
 
 const CLOSE_THRESHOLD = 120;
 
-export interface BottomSheetProps {
+export interface LegacyBottomSheetProps {
   onClose: () => void;
   children: React.ReactNode;
 }
 
-export function BottomSheet({ onClose, children }: BottomSheetProps) {
+export function LegacyBottomSheet({
+  onClose,
+  children,
+}: LegacyBottomSheetProps) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { height: keyboardHeight } = useReanimatedKeyboardAnimation();

@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import { Text } from "react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
-import { BottomSheet } from "./BottomSheet";
+import { LegacyBottomSheet } from "./LegacyBottomSheet";
 
 const metrics: Metrics = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -12,12 +12,12 @@ const metrics: Metrics = {
 const renderWithProviders = (ui: React.ReactElement) =>
   render(<SafeAreaProvider initialMetrics={metrics}>{ui}</SafeAreaProvider>);
 
-describe("BottomSheet", () => {
+describe("LegacyBottomSheet", () => {
   test("children 을 렌더한다", async () => {
     await renderWithProviders(
-      <BottomSheet onClose={jest.fn()}>
+      <LegacyBottomSheet onClose={jest.fn()}>
         <Text>내용</Text>
-      </BottomSheet>,
+      </LegacyBottomSheet>,
     );
     expect(screen.getByText("내용")).toBeOnTheScreen();
   });
@@ -25,9 +25,9 @@ describe("BottomSheet", () => {
   test("백드롭을 누르면 onClose 를 호출한다", async () => {
     const onClose = jest.fn();
     await renderWithProviders(
-      <BottomSheet onClose={onClose}>
+      <LegacyBottomSheet onClose={onClose}>
         <Text>내용</Text>
-      </BottomSheet>,
+      </LegacyBottomSheet>,
     );
     fireEvent.press(screen.getByLabelText("닫기"));
     expect(onClose).toHaveBeenCalledTimes(1);
