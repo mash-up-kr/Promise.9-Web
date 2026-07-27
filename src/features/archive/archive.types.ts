@@ -12,3 +12,9 @@ export interface ArchiveFolder {
   count: number;
   tone: FolderColor;
 }
+
+/** 보관함 목록 화면 데이터 — 시스템(기본) 폴더 + 사용자 폴더로 나뉜다. */
+export interface ArchiveFolderData {
+  systemFolders: ArchiveFolder[];
+  myFolders: ArchiveFolder[];
+}

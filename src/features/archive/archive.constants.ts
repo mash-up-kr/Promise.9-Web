@@ -3,6 +3,19 @@ import type { FolderColor } from "@shared/types/link.types";
 /** 폴더 생성 시 사용자가 고를 수 있는 색상. gray 는 시스템 폴더 전용이라 제외한다. */
 export type SelectableFolderColor = Exclude<FolderColor, "gray">;
 
+/**
+ * 시스템(기본) 폴더 descriptor.
+ * - `id`: 라우팅·상세 조회 필터 식별자 (실제 folders row 가 아님)
+ * - `name`: 표시명
+ * - `countKey`: GET /folders `systemFolders` 응답에서 링크 수를 읽을 키
+ */
+export const SYSTEM_FOLDERS = [
+  { id: "all", name: "전체", countKey: "all" },
+  { id: "uncategorized", name: "미분류", countKey: "uncategorized" },
+  { id: "favorites", name: "즐겨찾기", countKey: "favorite" },
+  { id: "trash", name: "최근 삭제된 링크", countKey: "recentlyDeleted" },
+] as const;
+
 // Figma "새 폴더 만들기" 시트 색상 그리드 순서 (2행 × 6열).
 export const FOLDER_COLOR_OPTIONS = [
   "slate",
