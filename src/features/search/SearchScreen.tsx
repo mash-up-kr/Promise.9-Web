@@ -4,7 +4,7 @@ import { Controller, useForm } from "react-hook-form";
 import { ScrollView } from "react-native";
 import { useDebounce } from "react-simplikit";
 
-import { Header } from "@/components/ui/header/Header";
+import { Header, useHeaderHeight } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { VStack } from "@/components/ui/vstack/VStack";
 import { SearchBar } from "@/features/search/components/SearchBar";
@@ -26,6 +26,7 @@ interface SearchFormValues {
 
 export function SearchScreen() {
   const router = useRouter();
+  const headerHeight = useHeaderHeight();
   const { q } = useLocalSearchParams<{ q?: string }>();
   // 커밋된 검색어는 URL 이 단일 진실원 — 새로고침·딥링크에도 결과 상태가 복원된다
   const submittedQuery = typeof q === "string" ? q : "";
@@ -65,8 +66,10 @@ export function SearchScreen() {
     <>
       <Stack.Screen
         options={{
+          headerTransparent: true,
           header: () => (
             <Header
+              variant="dim"
               left={<HeaderBackButton />}
               title={
                 <Controller
@@ -92,6 +95,7 @@ export function SearchScreen() {
       />
       <ScrollView
         className="flex-1 bg-background-base"
+        contentContainerStyle={{ paddingTop: headerHeight }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

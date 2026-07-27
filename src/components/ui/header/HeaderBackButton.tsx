@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 
 import { IconButton } from "@/components/ui/icon-button/IconButton";
+import { ROUTES } from "@/constants/routes.constants";
 
 export function HeaderBackButton() {
   const router = useRouter();
@@ -12,7 +13,7 @@ export function HeaderBackButton() {
       router.back();
       return;
     }
-    router.replace("/");
+    router.replace(ROUTES.HOME);
   };
 
   return (

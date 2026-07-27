@@ -1,6 +1,8 @@
+import { Check } from "lucide-react-native";
 import { createContext, useContext } from "react";
 import { Pressable, View } from "react-native";
 
+import { Icon } from "@/components/ui/icon/Icon";
 import { Text, type TextProps } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
 
@@ -37,12 +39,20 @@ export interface RadioGroupProps {
   value: string | null;
   onChange: (value: string) => void;
   children: React.ReactNode;
+  className?: string;
 }
 
-export function RadioGroup({ value, onChange, children }: RadioGroupProps) {
+export function RadioGroup({
+  value,
+  onChange,
+  children,
+  className,
+}: RadioGroupProps) {
   return (
     <RadioGroupContext.Provider value={{ value, onChange }}>
-      <View accessibilityRole="radiogroup">{children}</View>
+      <View accessibilityRole="radiogroup" className={className}>
+        {children}
+      </View>
     </RadioGroupContext.Provider>
   );
 }
@@ -62,7 +72,7 @@ export function Radio({ value, children }: RadioProps) {
         accessibilityRole="radio"
         accessibilityState={{ checked }}
         onPress={() => group.onChange(value)}
-        className="flex-row items-center gap-3 py-3"
+        className="h-11 flex-row items-center gap-2"
       >
         {children}
       </Pressable>
@@ -70,10 +80,15 @@ export function Radio({ value, children }: RadioProps) {
   );
 }
 
+// Figma save-sheet 라디오 스펙(21px · 1.5px #404040 · 선택 시 accent 채움 + 체크).
+// 미선택 테두리의 mix-blend-plus-lighter 는 RN 미지원이라 색만 반영한다.
 const indicatorStyles = tv({
-  base: "size-5 items-center justify-center rounded-full border-2",
+  base: "size-[21px] items-center justify-center rounded-full",
   variants: {
-    checked: { true: "border-icon-strong", false: "border-icon-alternative" },
+    checked: {
+      true: "bg-icon-accent",
+      false: "border-[1.5px] border-[#404040]",
+    },
   },
 });
 
@@ -92,7 +107,14 @@ export function RadioIcon() {
   if (!checked) {
     return null;
   }
-  return <View className="size-2.5 rounded-full bg-icon-strong" />;
+  return (
+    <Icon
+      iconNode={Check}
+      size={12}
+      strokeWidth={3}
+      className="text-icon-strong"
+    />
+  );
 }
 
 // RadioLabel 은 Text 를 감싸므로 TextProps 를 그대로 연장 — variant·className 등 오버라이드 가능.

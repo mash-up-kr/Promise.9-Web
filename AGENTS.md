@@ -14,6 +14,17 @@
 Expo 는 메이저 변경이 잦다. **앱/웹 코드 작성 전** 반드시 버전 문서 확인:
 https://docs.expo.dev/versions/v56.0.0/
 
+## 서버 API 문서
+
+**서버 연동(API 연결·수정) 작업 전** 아래 문서에서 스펙을 먼저 파악한다:
+
+- Swagger: https://api.link-ding-dong.com/api-docs
+- 서버 레포 문서 브랜치: https://github.com/mash-up-kr/Promise.9-Server/tree/docs/api-screen-mapping
+- 도메인별 API 명세·화면 매핑: https://github.com/mash-up-kr/Promise.9-Server/tree/docs/api-screen-mapping/docs/api (link · folder · tag · auth · user · screen-mapping)
+
+위 GitHub URL 의 브랜치명은 `docs/api-screen-mapping` (슬래시 포함) — URL 을 경로로 오해하지 말 것. 파일 읽기:
+`gh api -H "Accept: application/vnd.github.raw" "repos/mash-up-kr/Promise.9-Server/contents/docs/api/<파일>.md?ref=docs/api-screen-mapping"`
+
 ## 규칙 / 컨벤션
 
 - 행동 규칙(항상 로드): @.claude/rules/core-rules.md
