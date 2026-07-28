@@ -19,7 +19,7 @@ const setRequestDefaultHeaders = async (
   }
   config.headers.set("Accept", "application/json");
 
-  // 액세스 토큰 부착. 현재 토큰 출처는 dev env 시드(shared/api/token) — 정식 저장소·주입은 #auth.
+  // 액세스 토큰 부착. 현재 토큰 출처는 임시 마스터 토큰 env 시드(shared/api/token) — 정식 저장소·주입은 #auth.
   const accessToken = await getAccessToken();
   if (accessToken) {
     config.headers.set("Authorization", `Bearer ${accessToken}`);
