@@ -6,7 +6,7 @@ import { SortableFolderList } from "./SortableFolderList";
 
 const FOLDERS: ArchiveFolder[] = [
   { id: "design", name: "디자인", count: 1, tone: "blue" },
-  { id: "ai", name: "AI", count: 1, tone: "blue" },
+  { id: "ai", name: "AI", count: 1, tone: "red" },
   { id: "dev", name: "개발", count: 1, tone: "blue" },
 ];
 
@@ -36,5 +36,11 @@ describe("SortableFolderList", () => {
     expect(screen.getByText("개발")).toBeOnTheScreen();
     expect(screen.getByLabelText("디자인 순서 변경")).toBeOnTheScreen();
     expect(screen.getByLabelText("개발 순서 변경")).toBeOnTheScreen();
+  });
+
+  test("blue 가 아닌 폴더도 자기 색으로 아이콘을 렌더한다", async () => {
+    const view = await render(<Harness />);
+    // red 폴더 아이콘이 회색으로 폴백되지 않고 red-solid(#e34647)로 그려진다.
+    expect(JSON.stringify(view.toJSON())).toContain("#e34647");
   });
 });
