@@ -1,8 +1,18 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
-import { Pressable, Text } from "react-native";
+import * as ReactNative from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { Popover } from "./Popover";
+
+// useWindowDimensions 는 내부적으로 Dimensions.get("window") 을 읽으므로 그걸 mock 한다.
+const mockWindowWidth = (width: number) =>
+  jest.spyOn(ReactNative.Dimensions, "get").mockReturnValue({
+    width,
+    height: 1000,
+    scale: 1,
+    fontScale: 1,
+  });
 
 const renderPopover = () =>
   render(
@@ -53,5 +63,30 @@ describe("Popover", () => {
     await fireEvent.press(screen.getByLabelText("열기"));
     await fireEvent.press(screen.getByLabelText("항목"));
     expect(screen.queryByText("내용")).toBeNull();
+  });
+
+  describe("가장자리(right) 위치 보정", () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    test("모바일(윈도우 ≤ 768)에서는 anchor.right 를 그대로 쓴다", async () => {
+      mockWindowWidth(375);
+      await renderPopover();
+      await fireEvent.press(screen.getByLabelText("열기"));
+      const style = StyleSheet.flatten(
+        screen.getByTestId("popover-panel").props.style,
+      );
+      expect(style.right).toBe(9);
+    });
+
+    test("웹(윈도우 > 768)에서는 중앙 컬럼 가장자리에 맞춰 offset 을 더한다", async () => {
+      mockWindowWidth(1200);
+      await renderPopover();
+      await fireEvent.press(screen.getByLabelText("열기"));
+      const style = StyleSheet.flatten(
+        screen.getByTestId("popover-panel").props.style,
+      );
+      // 9 + (1200 - 768) / 2 = 9 + 216
+      expect(style.right).toBe(225);
+    });
   });
 });

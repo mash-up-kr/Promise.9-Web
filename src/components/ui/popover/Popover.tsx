@@ -1,7 +1,18 @@
 import { BlurView } from "expo-blur";
 import { useState } from "react";
-import { Modal, Pressable, StyleSheet, View } from "react-native";
+import {
+  Modal,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+// 웹에서 앱 콘텐츠는 max-w-[768px] 중앙 컬럼(_layout.tsx)이지만, Modal 은 그 컬럼을 벗어나
+// 전체 윈도우에 뜬다. 그래서 화면 가장자리(right/left) 기준 anchor 를 중앙 컬럼 가장자리에
+// 맞추도록, 윈도우가 이 폭보다 넓을 때 좌우 여백만큼 offset 을 더한다. 값은 _layout 과 일치시킨다.
+const CONTENT_MAX_WIDTH = 768;
 
 // 화면(safe-area) 기준 팝오버 위치.
 // top 은 safe-area 상단에서의 offset, right/left 는 화면 가장자리에서의 여백.
@@ -31,15 +42,18 @@ export function Popover({
   closeAccessibilityLabel = "메뉴 닫기",
 }: PopoverProps) {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const [visible, setVisible] = useState(false);
 
   const open = () => setVisible(true);
   const close = () => setVisible(false);
 
+  // 중앙 컬럼과 윈도우 가장자리 사이 여백. 모바일(윈도우 ≤ 컬럼 폭)에서는 0 이라 영향 없다.
+  const edgeInset = Math.max(0, (windowWidth - CONTENT_MAX_WIDTH) / 2);
   const position = {
     top: insets.top + (anchor.top ?? 0),
-    right: anchor.right,
-    left: anchor.left,
+    right: anchor.right != null ? anchor.right + edgeInset : undefined,
+    left: anchor.left != null ? anchor.left + edgeInset : undefined,
   };
 
   return (
@@ -59,6 +73,7 @@ export function Popover({
           {/* 리퀴드 글래스 (Figma 레이어 순서): ①블러 → ②반투명 틴트 → ③내용 → ④inset 하이라이트.
               blur 는 expo-blur BlurView 로 처리 — iOS(UIVisualEffectView)·웹(backdrop-filter) 실블러. */}
           <View
+            testID="popover-panel"
             style={[position, width != null ? { width } : null]}
             className="absolute flex-col overflow-hidden rounded-[36px] py-5"
           >
