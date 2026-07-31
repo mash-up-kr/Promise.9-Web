@@ -1,5 +1,6 @@
 import { ScrollView } from "react-native";
 
+import { useHeaderHeight } from "@/components/ui/header/Header";
 import { Text } from "@/components/ui/text/Text";
 import { VStack } from "@/components/ui/vstack/VStack";
 
@@ -8,8 +9,14 @@ import { RecentSaveSection } from "./components/RecentSaveSection";
 import { HOME_FOLDER_SECTIONS, HOME_RECENT_LINKS } from "./mocks";
 
 export function HomeScreen() {
+  const headerHeight = useHeaderHeight();
+
   return (
-    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+    <ScrollView
+      className="flex-1"
+      contentContainerStyle={{ paddingTop: headerHeight }}
+      showsVerticalScrollIndicator={false}
+    >
       <VStack className="gap-12 pt-5 pb-8">
         <RecentSaveSection links={HOME_RECENT_LINKS} />
         <VStack className="gap-4">

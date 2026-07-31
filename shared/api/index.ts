@@ -1,6 +1,7 @@
 export type {
+  CursorPagination,
+  ErrorData,
   ErrorResponse,
-  PaginatedResponse,
   SuccessResponse,
 } from "./api.types";
 export { apiClient } from "./client";

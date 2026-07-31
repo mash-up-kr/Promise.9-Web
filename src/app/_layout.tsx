@@ -3,7 +3,7 @@ import { useFonts } from "expo-font";
 import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -19,22 +19,14 @@ const transparentBackgroundTheme = {
   colors: { ...DefaultTheme.colors, background: "transparent" },
 };
 
-// 바텀시트 형태로 띄우는 라우트 공통 옵션 (create-link · create-folder).
-const sheetScreenOptions =
-  Platform.OS === "web"
-    ? {
-        presentation: "transparentModal" as const,
-        headerShown: false,
-        animation: "none" as const,
-        contentStyle: { backgroundColor: "transparent" },
-      }
-    : {
-        presentation: "formSheet" as const,
-        headerShown: false,
-        sheetAllowedDetents: [0.9],
-        sheetGrabberVisible: true,
-        sheetCornerRadius: 24,
-      };
+// 바텀시트 라우트(create-link · create-folder) 공통 옵션.
+// 전 OS 투명 모달로 열고, 시트 크롬(backdrop·그래버·detent·키보드)은 gorhom BottomSheet 가 그린다.
+const sheetScreenOptions = {
+  presentation: "transparentModal" as const,
+  headerShown: false,
+  animation: "none" as const,
+  contentStyle: { backgroundColor: "transparent" },
+};
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({

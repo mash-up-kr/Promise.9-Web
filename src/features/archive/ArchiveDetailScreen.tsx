@@ -7,6 +7,7 @@ import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { LinkTile } from "@/components/ui/link-card/LinkTile";
 import { Text } from "@/components/ui/text/Text";
+import { linkDetailHref } from "@/constants/routes.constants";
 
 import { folderLinkQueries } from "./api/folder-links.queries";
 import { SYSTEM_FOLDERS } from "./archive.constants";
@@ -69,12 +70,7 @@ export function ArchiveDetailScreen() {
               <LinkTile
                 key={link.linkId}
                 link={link}
-                onPress={() =>
-                  router.push({
-                    pathname: "/link/[id]",
-                    params: { id: String(link.linkId) },
-                  })
-                }
+                onPress={() => router.push(linkDetailHref(String(link.linkId)))}
               />
             ))}
           </View>

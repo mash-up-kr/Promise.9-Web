@@ -8,7 +8,7 @@ import {
 } from "./errors";
 import { getAccessToken } from "./token";
 
-const setRequestDefaultHeaders = async (
+export const setRequestDefaultHeaders = async (
   config: InternalAxiosRequestConfig,
 ): Promise<InternalAxiosRequestConfig> => {
   // FormData 전송 시 axios 가 boundary 포함 multipart Content-Type 을 자동 설정하므로,
@@ -19,7 +19,8 @@ const setRequestDefaultHeaders = async (
   }
   config.headers.set("Accept", "application/json");
 
-  // 액세스 토큰 부착. 현재 토큰 출처는 임시 마스터 토큰 env 시드(shared/api/token) — 정식 저장소·주입은 #auth.
+  // 액세스 토큰 부착. 현재 출처는 임시 마스터 토큰 env 시드(shared/api/token) — 정식 저장소·주입은 #auth.
+  // EXPO_PUBLIC_* 는 번들에 그대로 노출되므로 프로덕션에는 설정하지 않는다.
   const accessToken = await getAccessToken();
   if (accessToken) {
     config.headers.set("Authorization", `Bearer ${accessToken}`);
