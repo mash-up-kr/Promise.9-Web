@@ -7,9 +7,14 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import { ArchiveDetailScreen } from "./ArchiveDetailScreen";
 
 const mockPush = jest.fn();
+// 라우트 파라미터는 테스트마다 바꿀 수 있어야 한다(잘못된 id 케이스).
+// 바인딩 재할당 대신 컨테이너 프로퍼티를 바꾼다 — biome useConst 가 let 을 const 로 되돌린다.
+const mockRouteParams: { current: { id?: string; name?: string } } = {
+  current: { id: "all", name: "전체" },
+};
 jest.mock("expo-router", () => ({
   Stack: { Screen: () => null },
-  useLocalSearchParams: () => ({ id: "all", name: "전체" }),
+  useLocalSearchParams: () => mockRouteParams.current,
   useRouter: () => ({ push: mockPush }),
 }));
 
@@ -50,6 +55,7 @@ describe("ArchiveDetailScreen", () => {
     mockPush.mockClear();
     mockGet.mockReset();
     mockGet.mockResolvedValue(linksResponse([sampleLink]));
+    mockRouteParams.current = { id: "all", name: "전체" };
   });
 
   test("폴더 id 로 /links 를 조회해 링크 타일을 렌더한다", async () => {
@@ -87,5 +93,20 @@ describe("ArchiveDetailScreen", () => {
       await screen.findByText("링크를 불러오지 못했어요."),
     ).toBeOnTheScreen();
     expect(screen.getByText("다시 시도")).toBeOnTheScreen();
+  });
+
+  test("알 수 없는 폴더 id 면 조회하지 않고 안내를 보여준다", async () => {
+    mockRouteParams.current = { id: "foo" };
+    await renderScreen();
+    expect(await screen.findByText("폴더를 찾을 수 없어요.")).toBeOnTheScreen();
+    // NaN 파라미터로 서버를 때리지 않는다.
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
+  test("id 가 없으면 조회하지 않는다", async () => {
+    mockRouteParams.current = {};
+    await renderScreen();
+    expect(await screen.findByText("폴더를 찾을 수 없어요.")).toBeOnTheScreen();
+    expect(mockGet).not.toHaveBeenCalled();
   });
 });

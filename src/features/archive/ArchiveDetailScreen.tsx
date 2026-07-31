@@ -9,21 +9,24 @@ import { LinkTile } from "@/components/ui/link-card/LinkTile";
 import { Text } from "@/components/ui/text/Text";
 import { linkDetailHref } from "@/constants/routes.constants";
 
-import { folderLinkQueries } from "./api/folder-links.queries";
+import { folderLinkQueries, isFolderRouteId } from "./api/folder-links.queries";
 import { SYSTEM_FOLDERS } from "./archive.constants";
 
 // 헤더 타이틀 — 이동 시 넘어온 폴더명을 우선 쓰고, 없으면 시스템 폴더명으로 폴백한다.
-function resolveTitle(id: string, name?: string): string {
+function resolveTitle(id: string | undefined, name?: string): string {
   if (name) return name;
   return SYSTEM_FOLDERS.find((folder) => folder.id === id)?.name ?? "";
 }
 
 export function ArchiveDetailScreen() {
   const router = useRouter();
-  const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
-  const { data, isPending, isError, refetch } = useQuery(
-    folderLinkQueries.list(id),
-  );
+  const { id, name } = useLocalSearchParams<{ id?: string; name?: string }>();
+  // 잘못된 id 로는 조회 자체를 막는다(NaN 파라미터 방지).
+  const isKnownFolder = isFolderRouteId(id);
+  const { data, isPending, isError, refetch } = useQuery({
+    ...folderLinkQueries.list(id ?? ""),
+    enabled: isKnownFolder,
+  });
   const links = data ?? [];
 
   return (
@@ -39,7 +42,13 @@ export function ArchiveDetailScreen() {
           ),
         }}
       />
-      {isPending ? (
+      {!isKnownFolder ? (
+        <View className="flex-1 items-center justify-center bg-background-base px-5">
+          <Text variant="body-2-normal" className="text-text-alternative">
+            폴더를 찾을 수 없어요.
+          </Text>
+        </View>
+      ) : isPending ? (
         <View className="flex-1 items-center justify-center bg-background-base">
           <ActivityIndicator testID="archive-detail-loading" />
         </View>
