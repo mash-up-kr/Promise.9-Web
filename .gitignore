@@ -31,6 +31,8 @@ yarn-error.*
 *.pem
 
 # local env files
+# .env 도 무시한다 — Expo 는 이 파일도 읽으므로 여기에 토큰을 넣으면 그대로 커밋된다.
+.env
 .env*.local
 
 # typescript

@@ -79,8 +79,9 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:app": "maestro test .maestro",
-    "deploy": "pnpm expo export -p web && wrangler deploy",
-    "preview": "pnpm expo export -p web && wrangler dev"
+    "assert-no-master-token": "node scripts/assert-no-master-token.mjs",
+    "deploy": "pnpm assert-no-master-token && pnpm expo export -p web && wrangler deploy",
+    "preview": "pnpm assert-no-master-token && pnpm expo export -p web && wrangler dev"
   },
   "private": true
 }
