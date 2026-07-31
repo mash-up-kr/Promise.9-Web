@@ -107,6 +107,18 @@ describe("ArchiveScreen", () => {
     expect(screen.getByText("완료")).toBeOnTheScreen();
   });
 
+  test("편집 모드에서 완료를 누르면 일반 모드로 돌아온다", async () => {
+    await renderScreen();
+    await screen.findByText("디자인");
+    await fireEvent.press(screen.getByLabelText("더보기"));
+    await fireEvent.press(screen.getByText("폴더 정렬 편집"));
+    await fireEvent.press(screen.getByText("완료"));
+
+    // 일반 모드 복귀: 더보기 버튼이 다시 보이고 핸들은 사라진다.
+    expect(screen.getByLabelText("더보기")).toBeOnTheScreen();
+    expect(screen.queryByLabelText("디자인 순서 변경")).toBeNull();
+  });
+
   test("로딩 중에는 로딩 표시를 보여준다", async () => {
     // 응답을 보류시켜 pending 상태를 관찰한다.
     let resolveGet: (value: unknown) => void = () => {};
