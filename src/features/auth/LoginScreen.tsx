@@ -5,8 +5,8 @@ import { Heading } from "@/components/ui/heading/Heading";
 import { SOCIAL_PROVIDERS, type SocialProvider } from "./auth.constants";
 import { SocialLoginButton } from "./components/SocialLoginButton";
 
-// TODO(#53): PR #52(shared/api/token.ts) 머지 + Google Cloud OAuth 클라이언트 발급 후
-// useSocialAuth(네이티브 SDK → idToken) + useSocialLoginMutation(POST /auth/social) 연결.
+// TODO(#53): useSocialAuth(idToken 발급)는 준비됨. PR #52(shared/api/token.ts) 머지 후
+// useSocialLoginMutation(POST /auth/social) 을 만들어 여기서 getIdToken → 로그인 순서로 연결.
 function handleSocialLogin(_provider: SocialProvider) {}
 
 export function LoginScreen() {
