@@ -17,3 +17,4 @@ export {
   TimeoutError,
   UnauthorizedError,
 } from "./errors";
+export { getAccessToken, setAccessToken } from "./token";

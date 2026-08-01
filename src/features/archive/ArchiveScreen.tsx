@@ -1,6 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import Animated, {
   useAnimatedRef,
@@ -13,37 +14,33 @@ import { Header } from "@/components/ui/header/Header";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Text } from "@/components/ui/text/Text";
 
+import { folderQueries } from "./api/folder.queries";
+import { SYSTEM_FOLDERS } from "./archive.constants";
 import type { ArchiveFolder } from "./archive.types";
+import { applyFolderOrder } from "./archive.utils";
 import { ArchiveMoreMenu } from "./components/ArchiveMoreMenu";
 import { FolderGroup } from "./components/FolderGroup";
 import { FolderItem } from "./components/FolderItem";
+import { FolderListSkeleton } from "./components/FolderListSkeleton";
 import { FolderSection } from "./components/FolderSection";
 import { NewFolderButton } from "./components/NewFolderButton";
 import { SortableFolderList } from "./components/SortableFolderList";
-
-// 폴더 API 는 아직 없어 정적 데이터로 구성한다. react-query 연동은 후속 작업.
-// 최근 삭제된 링크는 Figma 상 "기본 폴더" 섹션에 속한다.
-const BASIC_FOLDERS: ArchiveFolder[] = [
-  { id: "all", name: "전체", count: 370, tone: "gray" },
-  { id: "uncategorized", name: "미분류", count: 370, tone: "gray" },
-  { id: "favorites", name: "즐겨찾기", count: 370, tone: "gray" },
-  { id: "trash", name: "최근 삭제된 링크", count: 370, tone: "gray" },
-];
-
-const MY_FOLDERS: ArchiveFolder[] = [
-  { id: "design", name: "디자인", count: 370, tone: "blue" },
-  { id: "ai", name: "AI", count: 370, tone: "blue" },
-  { id: "dev", name: "개발", count: 370, tone: "blue" },
-  { id: "later-1", name: "나중에 갈 곳", count: 370, tone: "blue" },
-];
 
 export function ArchiveScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   // 하단 플로팅 탭바(pill 높이 60 + safe-area 여백)에 가리지 않도록 스크롤 하단 여백을 준다.
   const listBottomPadding = Math.max(insets.bottom, 20) + 60 + 16;
-  const [selectedId, setSelectedId] = useState<string>("ai");
-  const [myFolders, setMyFolders] = useState<ArchiveFolder[]>(MY_FOLDERS);
+
+  const { data, isPending, isError, refetch } = useQuery(folderQueries.list());
+
+  // 재정렬은 서버 저장 API 가 없어 로컬 전용이다. 서버 데이터를 복사하지 않고 순서(id)만 들고
+  // 있다가 렌더 시 적용해, 재조회로 서버 데이터가 새로 와도 사용자가 바꾼 순서가 유지되게 한다.
+  const [orderedIds, setOrderedIds] = useState<string[]>([]);
+  const myFolders = useMemo(
+    () => applyFolderOrder(data?.myFolders ?? [], orderedIds),
+    [data?.myFolders, orderedIds],
+  );
   const [isReordering, setIsReordering] = useState(false);
   // 드래그 중에는 바깥 ScrollView 스크롤을 끄고, 자동 스크롤(scrollTo)만 동작시킨다.
   const [isDragging, setIsDragging] = useState(false);
@@ -51,9 +48,9 @@ export function ArchiveScreen() {
   const scrollOffset = useScrollOffset(scrollRef);
   const scrollContentHeight = useSharedValue(0);
 
-  const handleOpenFolder = (id: string) => {
-    setSelectedId(id);
-    router.push({ pathname: "/archive/[id]", params: { id } });
+  const handleOpenFolder = (id: string, name: string) => {
+    // 상세 헤더 타이틀로 쓰도록 폴더명도 함께 넘긴다.
+    router.push({ pathname: "/archive/[id]", params: { id, name } });
   };
 
   const handleAddFolder = () => {
@@ -63,22 +60,23 @@ export function ArchiveScreen() {
   // 드래그 제스처가 매 렌더마다 재생성되지 않도록 안정된 참조로 유지한다
   // (SortableFolderItem 의 gesture useMemo 가 이 콜백에 의존한다).
   const handleReorder = useCallback((next: ArchiveFolder[]) => {
-    setMyFolders(next);
+    setOrderedIds(next.map((folder) => folder.id));
   }, []);
 
-  // 기본 폴더 섹션 — 편집 모드에선 읽기 전용(탭 비활성)으로 헤더에 재사용한다.
+  // 기본 폴더 섹션 — 이름·순서가 고정이라 서버 응답을 기다리지 않고 바로 그리고,
+  // 링크 수만 도착하면 채운다. 편집 모드에선 읽기 전용(탭 비활성)으로 헤더에 재사용한다.
   const basicSection = (
     <FolderSection title="기본 폴더">
       <FolderGroup>
-        {BASIC_FOLDERS.map((folder) => (
+        {SYSTEM_FOLDERS.map((folder) => (
           <FolderItem
             key={folder.id}
             name={folder.name}
-            count={folder.count}
-            tone={folder.tone}
-            selected={selectedId === folder.id}
+            count={data?.systemFolderCounts[folder.countKey]}
             onPress={
-              isReordering ? undefined : () => handleOpenFolder(folder.id)
+              isReordering
+                ? undefined
+                : () => handleOpenFolder(folder.id, folder.name)
             }
           />
         ))}
@@ -110,11 +108,50 @@ export function ArchiveScreen() {
     </>
   );
 
-  return (
-    <View className="flex-1 bg-background-base">
-      <Header title="보관함" right={headerRight} />
+  // 내 폴더 본문 — 로딩 / 목록 / 빈 상태.
+  const renderMyFolders = () => {
+    if (isPending) {
+      return <FolderListSkeleton />;
+    }
 
-      {isReordering ? (
+    if (myFolders.length === 0) {
+      return <NewFolderButton onPress={handleAddFolder} />;
+    }
+
+    return (
+      <FolderGroup>
+        {myFolders.map((folder) => (
+          <FolderItem
+            key={folder.id}
+            name={folder.name}
+            count={folder.count}
+            tone={folder.tone}
+            onPress={() => handleOpenFolder(folder.id, folder.name)}
+          />
+        ))}
+      </FolderGroup>
+    );
+  };
+
+  // 화면 본문 — 조회 실패 / 정렬 편집 / 일반 목록.
+  const renderContent = () => {
+    if (isError) {
+      return (
+        <View className="flex-1 items-center justify-center gap-3 px-5">
+          <Text variant="body-2-normal" className="text-text-alternative">
+            폴더를 불러오지 못했어요.
+          </Text>
+          <Pressable accessibilityRole="button" onPress={() => refetch()}>
+            <Text variant="label-1" className="text-icon-accent">
+              다시 시도
+            </Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    if (isReordering) {
+      return (
         <Animated.ScrollView
           ref={scrollRef}
           scrollEnabled={!isDragging}
@@ -143,42 +180,36 @@ export function ArchiveScreen() {
             </FolderSection>
           </View>
         </Animated.ScrollView>
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View
-            className="gap-12 pt-5"
-            style={{ paddingBottom: listBottomPadding }}
-          >
-            {basicSection}
+      );
+    }
 
-            <FolderSection
-              title="내 폴더"
-              action={
-                myFolders.length > 0
-                  ? { label: "폴더 추가", onPress: handleAddFolder }
-                  : undefined
-              }
-            >
-              {myFolders.length > 0 ? (
-                <FolderGroup>
-                  {myFolders.map((folder) => (
-                    <FolderItem
-                      key={folder.id}
-                      name={folder.name}
-                      count={folder.count}
-                      tone={folder.tone}
-                      selected={selectedId === folder.id}
-                      onPress={() => handleOpenFolder(folder.id)}
-                    />
-                  ))}
-                </FolderGroup>
-              ) : (
-                <NewFolderButton onPress={handleAddFolder} />
-              )}
-            </FolderSection>
-          </View>
-        </ScrollView>
-      )}
+    return (
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View
+          className="gap-12 pt-5"
+          style={{ paddingBottom: listBottomPadding }}
+        >
+          {basicSection}
+
+          <FolderSection
+            title="내 폴더"
+            action={
+              myFolders.length > 0
+                ? { label: "폴더 추가", onPress: handleAddFolder }
+                : undefined
+            }
+          >
+            {renderMyFolders()}
+          </FolderSection>
+        </View>
+      </ScrollView>
+    );
+  };
+
+  return (
+    <View className="flex-1 bg-background-base">
+      <Header title="보관함" right={headerRight} />
+      {renderContent()}
     </View>
   );
 }

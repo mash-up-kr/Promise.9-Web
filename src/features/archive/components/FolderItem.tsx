@@ -1,38 +1,33 @@
+import { FOLDER_TONE_HEX } from "@shared/folder/folder.constants";
 import type { FolderColor } from "@shared/types/link.types";
 import { ChevronRight } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 import { FolderIcon } from "@/components/ui/icon/FolderIcon";
 import { Icon } from "@/components/ui/icon/Icon";
+import { Skeleton } from "@/components/ui/skeleton/Skeleton";
 import { Text } from "@/components/ui/text/Text";
-import { tv } from "@/lib/tv";
 
-// 폴더 아이콘 색(raw hex). 보관함 목록은 gray·blue 만 쓰고 나머지는 gray 로 폴백.
-// 색 출처: global.css --color-folder-gray / --color-folder-blue-solid (Figma 동기화 토큰).
+// 폴더 아이콘 채움색(raw hex). 12색은 shared 팔레트(= global.css --color-folder-*-solid)를 그대로 쓰고,
+// gray(시스템 폴더)만 목록 전용 회색을 쓴다.
 const GRAY_FILL = "#65656b";
-const BLUE_FILL = "#61a8ef";
-const TONE_FILL: Partial<Record<FolderColor, string>> = {
+const TONE_FILL: Record<FolderColor, string> = {
   gray: GRAY_FILL,
-  blue: BLUE_FILL,
+  ...FOLDER_TONE_HEX,
 };
 
-const folderItemStyles = tv({
-  base: "h-[52px] flex-row items-center justify-between px-4 py-3",
-  variants: {
-    selected: {
-      true: "bg-background-list-selected",
-      false: "bg-background-thumbnail",
-    },
-  },
-  defaultVariants: {
-    selected: false,
-  },
-});
+/** 폴더 tone → 아이콘 채움 hex. */
+export function folderToneFill(tone: FolderColor): string {
+  return TONE_FILL[tone];
+}
+
+const FOLDER_ITEM_CLASS =
+  "h-[52px] flex-row items-center justify-between bg-background-thumbnail px-4 py-3";
 
 export interface FolderItemProps {
   name: string;
-  count: number;
+  /** 링크 수. 아직 모르면(로딩 중) 생략하고, 그 자리엔 스켈레톤을 보여준다. */
+  count?: number;
   tone?: FolderColor;
-  selected?: boolean;
   onPress?: () => void;
 }
 
@@ -40,25 +35,28 @@ export function FolderItem({
   name,
   count,
   tone = "gray",
-  selected = false,
   onPress,
 }: FolderItemProps) {
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      className={folderItemStyles({ selected })}
+      className={FOLDER_ITEM_CLASS}
     >
       <View className="flex-row items-center gap-3">
-        <FolderIcon color={TONE_FILL[tone] ?? GRAY_FILL} size={28} />
+        <FolderIcon color={folderToneFill(tone)} size={28} />
         <Text variant="body-2-normal" className="text-text-normal">
           {name}
         </Text>
       </View>
       <View className="flex-row items-center gap-1">
-        <Text variant="body-2-normal" className="text-text-alternative">
-          {count}
-        </Text>
+        {count === undefined ? (
+          <Skeleton testID="folder-count-skeleton" className="h-4 w-6" />
+        ) : (
+          <Text variant="body-2-normal" className="text-text-alternative">
+            {count}
+          </Text>
+        )}
         <Icon
           iconNode={ChevronRight}
           size={16}

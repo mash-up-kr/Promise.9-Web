@@ -6,25 +6,31 @@ import {
 describe("createFolderSchema", () => {
   test("유효한 이름·색상을 통과시킨다", () => {
     const result = createFolderSchema.safeParse({
-      name: "디자인",
+      folderName: "디자인",
       color: "blue",
     });
     expect(result.success).toBe(true);
   });
 
   test("빈 이름을 거부한다", () => {
-    const result = createFolderSchema.safeParse({ name: "", color: "blue" });
+    const result = createFolderSchema.safeParse({
+      folderName: "",
+      color: "blue",
+    });
     expect(result.success).toBe(false);
   });
 
   test("공백만 있는 이름을 거부한다", () => {
-    const result = createFolderSchema.safeParse({ name: "   ", color: "blue" });
+    const result = createFolderSchema.safeParse({
+      folderName: "   ",
+      color: "blue",
+    });
     expect(result.success).toBe(false);
   });
 
   test("최대 길이 이름을 통과시킨다", () => {
     const result = createFolderSchema.safeParse({
-      name: "가".repeat(FOLDER_NAME_MAX_LENGTH),
+      folderName: "가".repeat(FOLDER_NAME_MAX_LENGTH),
       color: "blue",
     });
     expect(result.success).toBe(true);
@@ -32,7 +38,7 @@ describe("createFolderSchema", () => {
 
   test("최대 길이를 초과한 이름을 거부한다", () => {
     const result = createFolderSchema.safeParse({
-      name: "가".repeat(FOLDER_NAME_MAX_LENGTH + 1),
+      folderName: "가".repeat(FOLDER_NAME_MAX_LENGTH + 1),
       color: "blue",
     });
     expect(result.success).toBe(false);
@@ -40,7 +46,7 @@ describe("createFolderSchema", () => {
 
   test("선택 불가한 색상(gray)을 거부한다", () => {
     const result = createFolderSchema.safeParse({
-      name: "폴더",
+      folderName: "폴더",
       color: "gray",
     });
     expect(result.success).toBe(false);
