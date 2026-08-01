@@ -4,7 +4,7 @@ import {
   FOLDER_TONE_HEX,
   folderToneToHex,
   hexToFolderTone,
-} from "./folder.colors";
+} from "./folder.constants";
 
 describe("folder color mapping", () => {
   const tones = Object.keys(

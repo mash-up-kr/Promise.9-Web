@@ -1,7 +1,4 @@
-import type { FolderColor } from "@shared/types/link.types";
-
-/** 폴더 생성 시 사용자가 고를 수 있는 색상. gray 는 시스템 폴더 전용이라 제외한다. */
-export type SelectableFolderColor = Exclude<FolderColor, "gray">;
+import type { SelectableFolderColor } from "@shared/folder/folder.constants";
 
 /**
  * 시스템(기본) 폴더 descriptor.

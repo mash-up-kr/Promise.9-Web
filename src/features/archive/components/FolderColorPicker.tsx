@@ -1,10 +1,7 @@
+import type { SelectableFolderColor } from "@shared/folder/folder.constants";
 import { Pressable, View } from "react-native";
 
-import {
-  FOLDER_COLOR_OPTIONS,
-  FOLDER_SOLID_CLASS,
-  type SelectableFolderColor,
-} from "../archive.constants";
+import { FOLDER_COLOR_OPTIONS, FOLDER_SOLID_CLASS } from "../archive.constants";
 
 export interface FolderColorPickerProps {
   value: SelectableFolderColor;
