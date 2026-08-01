@@ -10,6 +10,8 @@ import type { AxiosResponse } from "axios";
 
 import { FOLDER_ERROR_CODE } from "../archive.constants";
 import {
+  folderListResponseSchema,
+  folderQueries,
   isDuplicateFolderNameError,
   toArchiveFolderData,
 } from "./folder.queries";
@@ -55,6 +57,69 @@ describe("toArchiveFolderData", () => {
       { id: "3", name: "디자인", count: 5, tone: "blue" },
       { id: "7", name: "기타", count: 0, tone: "gray" },
     ]);
+  });
+});
+
+describe("folderListResponseSchema", () => {
+  const validResponse = {
+    systemFolders: {
+      all: { linkCount: 10 },
+      uncategorized: { linkCount: 2 },
+      favorite: { linkCount: 0 },
+      recentlyDeleted: { linkCount: 1 },
+    },
+    folders: [
+      {
+        folderId: 3,
+        folderName: "디자인",
+        color: "#61a8ef",
+        linkCount: 5,
+        lastSavedAt: null,
+      },
+    ],
+  };
+
+  it("정상 응답을 통과시킨다", () => {
+    expect(folderListResponseSchema.safeParse(validResponse).success).toBe(
+      true,
+    );
+  });
+
+  it("폴더가 없는 응답을 통과시킨다", () => {
+    expect(
+      folderListResponseSchema.safeParse({ ...validResponse, folders: [] })
+        .success,
+    ).toBe(true);
+  });
+
+  it("systemFolders 키가 빠지면 거부한다", () => {
+    const { favorite: _omitted, ...partial } = validResponse.systemFolders;
+    expect(
+      folderListResponseSchema.safeParse({
+        ...validResponse,
+        systemFolders: partial,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("필드 타입이 계약과 다르면 거부한다", () => {
+    expect(
+      folderListResponseSchema.safeParse({
+        ...validResponse,
+        folders: [{ ...validResponse.folders[0], linkCount: "5" }],
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("folderQueries.list", () => {
+  // select 신원이 렌더마다 바뀌면 react-query 가 매번 재계산한다.
+  it("select 는 호출마다 같은 참조를 유지한다", () => {
+    expect(folderQueries.list().select).toBe(folderQueries.list().select);
+  });
+
+  it("select 가 응답을 보관함 UI 모델로 변환한다", () => {
+    expect(folderQueries.list().select).toBe(toArchiveFolderData);
   });
 });
 
