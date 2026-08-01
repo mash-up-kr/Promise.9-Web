@@ -33,7 +33,6 @@ export function ArchiveScreen() {
   const { data, isPending, isError, refetch } = useQuery(folderQueries.list());
   const systemFolders = data?.systemFolders ?? [];
 
-  const [selectedId, setSelectedId] = useState<string>("");
   // 재정렬은 서버 저장 API 가 없어 로컬 전용이다. 서버 데이터를 복사하지 않고 순서(id)만 들고
   // 있다가 렌더 시 적용해, 재조회로 서버 데이터가 새로 와도 사용자가 바꾼 순서가 유지되게 한다.
   const [orderedIds, setOrderedIds] = useState<string[]>([]);
@@ -49,7 +48,6 @@ export function ArchiveScreen() {
   const scrollContentHeight = useSharedValue(0);
 
   const handleOpenFolder = (id: string, name: string) => {
-    setSelectedId(id);
     // 상세 헤더 타이틀로 쓰도록 폴더명도 함께 넘긴다.
     router.push({ pathname: "/archive/[id]", params: { id, name } });
   };
@@ -74,7 +72,6 @@ export function ArchiveScreen() {
             name={folder.name}
             count={folder.count}
             tone={folder.tone}
-            selected={selectedId === folder.id}
             onPress={
               isReordering
                 ? undefined
@@ -182,7 +179,6 @@ export function ArchiveScreen() {
                       name={folder.name}
                       count={folder.count}
                       tone={folder.tone}
-                      selected={selectedId === folder.id}
                       onPress={() => handleOpenFolder(folder.id, folder.name)}
                     />
                   ))}
