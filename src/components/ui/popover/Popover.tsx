@@ -9,10 +9,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// 웹에서 앱 콘텐츠는 max-w-[768px] 중앙 컬럼(_layout.tsx)이지만, Modal 은 그 컬럼을 벗어나
-// 전체 윈도우에 뜬다. 그래서 화면 가장자리(right/left) 기준 anchor 를 중앙 컬럼 가장자리에
-// 맞추도록, 윈도우가 이 폭보다 넓을 때 좌우 여백만큼 offset 을 더한다. 값은 _layout 과 일치시킨다.
-const CONTENT_MAX_WIDTH = 768;
+import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
+
+// 웹에서 앱 콘텐츠는 중앙 컬럼(_layout.tsx)이지만, Modal 은 그 컬럼을 벗어나 전체 윈도우에 뜬다.
+// 그래서 화면 가장자리(right/left) 기준 anchor 를 중앙 컬럼 가장자리에 맞추도록,
+// 윈도우가 컬럼 폭보다 넓을 때 좌우 여백만큼 offset 을 더한다.
 
 // 화면(safe-area) 기준 팝오버 위치.
 // top 은 safe-area 상단에서의 offset, right/left 는 화면 가장자리에서의 여백.
