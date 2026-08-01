@@ -33,7 +33,7 @@ const folderListItemSchema = z.object({
  * GET /folders 응답 스키마.
  *
  * 모르는 키는 zod 기본 동작대로 버려 서버가 필드를 추가해도 깨지지 않는다.
- * systemFolders 는 satisfies 로 SystemFolderKey 와 묶어, 기본 폴더가 늘면 컴파일에서 잡히게 한다.
+ * 기본 폴더가 늘었는데 스키마를 안 넓히면 toArchiveFolderData 가 컴파일에서 잡는다.
  */
 export const folderListResponseSchema = z.object({
   systemFolders: z.object({
@@ -43,10 +43,7 @@ export const folderListResponseSchema = z.object({
     recentlyDeleted: systemFolderCountSchema,
   }),
   folders: z.array(folderListItemSchema),
-}) satisfies z.ZodType<{
-  systemFolders: Record<SystemFolderKey, { linkCount: number }>;
-  folders: unknown[];
-}>;
+});
 
 type FolderListResponse = z.infer<typeof folderListResponseSchema>;
 

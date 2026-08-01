@@ -1,17 +1,17 @@
 import { apiClient, type SuccessResponse } from "@shared/api";
-import type { Link, LinkTag } from "@shared/types/link.types";
+import type { Link } from "@shared/types/link.types";
 import { queryOptions } from "@tanstack/react-query";
 import { z } from "zod";
 
 import { SYSTEM_FOLDERS } from "../archive.constants";
 
-// satisfies 로 shared 타입과 묶어, 스키마와 인터페이스가 어긋나면 컴파일에서 잡히게 한다.
+// 스키마와 shared 타입의 드리프트는 명시적 반환 타입을 가진 toLink 가 잡는다.
 const linkTagSchema = z.object({
   tagId: z.number(),
   name: z.string(),
   sourceType: z.enum(["user", "rule", "ai"]),
   sortOrder: z.number().nullable(),
-}) satisfies z.ZodType<LinkTag>;
+});
 
 // GET /links 목록 아이템 — title·source 는 OG 미수집 시 null 일 수 있다.
 const linkListItemSchema = z.object({
