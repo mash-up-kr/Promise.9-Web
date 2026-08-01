@@ -122,6 +122,16 @@ describe("linkListResponseSchema", () => {
     ).toBe(false);
   });
 
+  // 서버가 필드를 추가해도 캐시에 그대로 남겨야 응답을 통째로 다시 받지 않고 쓸 수 있다.
+  it("계약에 없는 키를 버리지 않고 통과시킨다", () => {
+    const parsed = linkListResponseSchema.parse({
+      ...validResponse,
+      links: [{ ...validItem, memo: "새 필드" }],
+    });
+
+    expect(parsed.links[0]).toHaveProperty("memo", "새 필드");
+  });
+
   it("알 수 없는 sourceType 은 거부한다", () => {
     const unknownSource = {
       ...validResponse,

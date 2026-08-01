@@ -92,6 +92,16 @@ describe("folderListResponseSchema", () => {
     ).toBe(true);
   });
 
+  // 서버가 필드를 추가해도 캐시에 그대로 남겨야 응답을 통째로 다시 받지 않고 쓸 수 있다.
+  it("계약에 없는 키를 버리지 않고 통과시킨다", () => {
+    const parsed = folderListResponseSchema.parse({
+      ...validResponse,
+      folders: [{ ...validResponse.folders[0], emoji: "🗂️" }],
+    });
+
+    expect(parsed.folders[0]).toHaveProperty("emoji", "🗂️");
+  });
+
   it("systemFolders 키가 빠지면 거부한다", () => {
     const { favorite: _omitted, ...partial } = validResponse.systemFolders;
     expect(

@@ -18,9 +18,9 @@ import type {
   SystemFolderKey,
 } from "../archive.types";
 
-const systemFolderCountSchema = z.object({ linkCount: z.number() });
+const systemFolderCountSchema = z.looseObject({ linkCount: z.number() });
 
-const folderListItemSchema = z.object({
+const folderListItemSchema = z.looseObject({
   folderId: z.number(),
   folderName: z.string(),
   // 서버 팔레트 hex. 팔레트 밖 값·기본색은 hexToFolderTone 이 gray 로 폴백한다.
@@ -32,11 +32,12 @@ const folderListItemSchema = z.object({
 /**
  * GET /folders 응답 스키마.
  *
- * 모르는 키는 zod 기본 동작대로 버려 서버가 필드를 추가해도 깨지지 않는다.
+ * looseObject 라 모르는 키는 버리지 않고 통과시킨다 — 서버가 필드를 추가해도 깨지지 않고,
+ * 캐시에 원본이 남아 그 필드를 쓸 때 스키마만 넓히면 된다(strip 이면 이미 지워져 재요청해야 한다).
  * 기본 폴더가 늘었는데 스키마를 안 넓히면 toArchiveFolderData 가 컴파일에서 잡는다.
  */
-export const folderListResponseSchema = z.object({
-  systemFolders: z.object({
+export const folderListResponseSchema = z.looseObject({
+  systemFolders: z.looseObject({
     all: systemFolderCountSchema,
     uncategorized: systemFolderCountSchema,
     favorite: systemFolderCountSchema,
