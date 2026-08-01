@@ -10,6 +10,7 @@ import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { Text } from "@/components/ui/text/Text";
 
 import { useCreateFolderMutation } from "./api/folder.queries";
+import { FOLDER_ERROR_CODE } from "./archive.constants";
 import { type CreateFolderForm, createFolderSchema } from "./archive.contracts";
 import { CreateFolderHeader } from "./components/CreateFolderHeader";
 import { FolderColorPicker } from "./components/FolderColorPicker";
@@ -30,9 +31,10 @@ export function CreateFolderSheet() {
       {
         onSuccess: () => router.back(),
         onError: (error) => {
-          // 중복 이름(409)만 별도 안내하고, 그 외는 일반 실패 안내한다.
+          // 중복 이름만 별도 안내하고, 그 외는 일반 실패 안내한다.
           const message =
-            isApiError(error) && error.statusCode === 409
+            isApiError(error) &&
+            error.payload?.error.errorCode === FOLDER_ERROR_CODE.DUPLICATE_NAME
               ? "같은 이름의 폴더가 있어요."
               : "폴더를 만들지 못했어요. 다시 시도해주세요.";
           show({ message });

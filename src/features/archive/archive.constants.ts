@@ -16,6 +16,14 @@ export const SYSTEM_FOLDERS = [
   { id: "trash", name: "최근 삭제된 링크", countKey: "recentlyDeleted" },
 ] as const;
 
+/**
+ * 서버 폴더 도메인 errorCode — 서버 `docs/policy/error-code.md` 기준.
+ * 409 는 "중복 생성 또는 리소스 상태 충돌" 을 모두 포함하므로 상태 코드 대신 이 값으로 구분한다.
+ */
+export const FOLDER_ERROR_CODE = {
+  DUPLICATE_NAME: 920002,
+} as const;
+
 // Figma "새 폴더 만들기" 시트 색상 그리드 순서 (2행 × 6열).
 export const FOLDER_COLOR_OPTIONS = [
   "slate",

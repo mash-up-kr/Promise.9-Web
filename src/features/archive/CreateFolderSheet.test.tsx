@@ -18,6 +18,8 @@ import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 
+import { FOLDER_ERROR_CODE } from "./archive.constants";
+
 const mockBack = jest.fn();
 jest.mock("expo-router", () => ({ useRouter: () => ({ back: mockBack }) }));
 
@@ -100,19 +102,41 @@ describe("CreateFolderSheet", () => {
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
   });
 
-  test("이름이 중복되면(409) 안내를 보여주고 시트를 닫지 않는다", async () => {
-    mockPost.mockRejectedValue(
-      new ApiError({
-        status: 409,
-        data: { message: "이미 존재하는 폴더 이름입니다." },
-      } as unknown as AxiosResponse),
-    );
+  const conflictError = (errorCode: number) =>
+    new ApiError({
+      status: 409,
+      data: {
+        success: false,
+        error: {
+          code: 409,
+          errorCode,
+          message: "이미 존재하는 폴더 이름입니다.",
+          timestamp: "2026-07-26T00:00:00.000Z",
+        },
+      },
+    } as unknown as AxiosResponse);
+
+  test("이름이 중복되면(errorCode 920002) 안내를 보여주고 시트를 닫지 않는다", async () => {
+    mockPost.mockRejectedValue(conflictError(FOLDER_ERROR_CODE.DUPLICATE_NAME));
     await renderSheet();
     await typeName("디자인");
     await fireEvent.press(screen.getByLabelText("저장"));
 
     expect(
       await screen.findByText("같은 이름의 폴더가 있어요."),
+    ).toBeOnTheScreen();
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  // 409 는 "중복 생성 또는 리소스 상태 충돌" 이라 상태 코드만으로는 중복 이름을 단정할 수 없다.
+  test("중복 이름이 아닌 409 는 일반 실패로 안내한다", async () => {
+    mockPost.mockRejectedValue(conflictError(910002));
+    await renderSheet();
+    await typeName("디자인");
+    await fireEvent.press(screen.getByLabelText("저장"));
+
+    expect(
+      await screen.findByText("폴더를 만들지 못했어요. 다시 시도해주세요."),
     ).toBeOnTheScreen();
     expect(mockBack).not.toHaveBeenCalled();
   });
