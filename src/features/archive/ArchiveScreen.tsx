@@ -108,11 +108,35 @@ export function ArchiveScreen() {
     </>
   );
 
-  return (
-    <View className="flex-1 bg-background-base">
-      <Header title="보관함" right={headerRight} />
+  // 내 폴더 본문 — 로딩 / 목록 / 빈 상태.
+  const renderMyFolders = () => {
+    if (isPending) {
+      return <FolderListSkeleton />;
+    }
 
-      {isError ? (
+    if (myFolders.length === 0) {
+      return <NewFolderButton onPress={handleAddFolder} />;
+    }
+
+    return (
+      <FolderGroup>
+        {myFolders.map((folder) => (
+          <FolderItem
+            key={folder.id}
+            name={folder.name}
+            count={folder.count}
+            tone={folder.tone}
+            onPress={() => handleOpenFolder(folder.id, folder.name)}
+          />
+        ))}
+      </FolderGroup>
+    );
+  };
+
+  // 화면 본문 — 조회 실패 / 정렬 편집 / 일반 목록.
+  const renderContent = () => {
+    if (isError) {
+      return (
         <View className="flex-1 items-center justify-center gap-3 px-5">
           <Text variant="body-2-normal" className="text-text-alternative">
             폴더를 불러오지 못했어요.
@@ -123,7 +147,11 @@ export function ArchiveScreen() {
             </Text>
           </Pressable>
         </View>
-      ) : isReordering ? (
+      );
+    }
+
+    if (isReordering) {
+      return (
         <Animated.ScrollView
           ref={scrollRef}
           scrollEnabled={!isDragging}
@@ -152,43 +180,36 @@ export function ArchiveScreen() {
             </FolderSection>
           </View>
         </Animated.ScrollView>
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View
-            className="gap-12 pt-5"
-            style={{ paddingBottom: listBottomPadding }}
-          >
-            {basicSection}
+      );
+    }
 
-            <FolderSection
-              title="내 폴더"
-              action={
-                myFolders.length > 0
-                  ? { label: "폴더 추가", onPress: handleAddFolder }
-                  : undefined
-              }
-            >
-              {isPending ? (
-                <FolderListSkeleton />
-              ) : myFolders.length > 0 ? (
-                <FolderGroup>
-                  {myFolders.map((folder) => (
-                    <FolderItem
-                      key={folder.id}
-                      name={folder.name}
-                      count={folder.count}
-                      tone={folder.tone}
-                      onPress={() => handleOpenFolder(folder.id, folder.name)}
-                    />
-                  ))}
-                </FolderGroup>
-              ) : (
-                <NewFolderButton onPress={handleAddFolder} />
-              )}
-            </FolderSection>
-          </View>
-        </ScrollView>
-      )}
+    return (
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View
+          className="gap-12 pt-5"
+          style={{ paddingBottom: listBottomPadding }}
+        >
+          {basicSection}
+
+          <FolderSection
+            title="내 폴더"
+            action={
+              myFolders.length > 0
+                ? { label: "폴더 추가", onPress: handleAddFolder }
+                : undefined
+            }
+          >
+            {renderMyFolders()}
+          </FolderSection>
+        </View>
+      </ScrollView>
+    );
+  };
+
+  return (
+    <View className="flex-1 bg-background-base">
+      <Header title="보관함" right={headerRight} />
+      {renderContent()}
     </View>
   );
 }
