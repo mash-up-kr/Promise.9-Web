@@ -2,8 +2,7 @@ import { apiClient, isApiError, type SuccessResponse } from "@shared/api";
 import {
   folderToneToHex,
   hexToFolderTone,
-  type MappedFolderTone,
-} from "@shared/folder/folder.colors";
+} from "@shared/folder/folder.constants";
 import {
   queryOptions,
   useMutation,
@@ -11,6 +10,7 @@ import {
 } from "@tanstack/react-query";
 
 import { FOLDER_ERROR_CODE, SYSTEM_FOLDERS } from "../archive.constants";
+import type { CreateFolderInput } from "../archive.contracts";
 import type { ArchiveFolder, ArchiveFolderData } from "../archive.types";
 
 interface SystemFolderCount {
@@ -74,12 +74,6 @@ export const folderQueries = {
     }),
 };
 
-export interface CreateFolderPayload {
-  folderName: string;
-  // UI tone — 전송 시 서버 팔레트 hex 로 변환한다.
-  color: MappedFolderTone;
-}
-
 interface CreatedFolder {
   folderId: number;
   folderName: string;
@@ -104,7 +98,7 @@ export function isDuplicateFolderNameError(error: unknown): boolean {
 export function useCreateFolderMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ folderName, color }: CreateFolderPayload) => {
+    mutationFn: async ({ folderName, color }: CreateFolderInput) => {
       const { data } = await apiClient.post<SuccessResponse<CreatedFolder>>(
         "/folders",
         { folderName, color: folderToneToHex(color) },

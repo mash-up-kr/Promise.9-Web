@@ -12,7 +12,10 @@ import {
   isDuplicateFolderNameError,
   useCreateFolderMutation,
 } from "./api/folder.queries";
-import { type CreateFolderForm, createFolderSchema } from "./archive.contracts";
+import {
+  type CreateFolderInput,
+  createFolderSchema,
+} from "./archive.contracts";
 import { CreateFolderHeader } from "./components/CreateFolderHeader";
 import { FolderColorPicker } from "./components/FolderColorPicker";
 
@@ -20,26 +23,23 @@ export function CreateFolderSheet() {
   const router = useRouter();
   const { show } = useSnackbar();
   const { mutate, isPending } = useCreateFolderMutation();
-  const { control, handleSubmit, formState } = useForm<CreateFolderForm>({
+  const { control, handleSubmit, formState } = useForm<CreateFolderInput>({
     resolver: zodResolver(createFolderSchema),
     mode: "onChange",
-    defaultValues: { name: "", color: "blue" },
+    defaultValues: { folderName: "", color: "blue" },
   });
 
-  const onSave = handleSubmit(({ name, color }) => {
-    mutate(
-      { folderName: name, color },
-      {
-        onSuccess: () => router.back(),
-        onError: (error) => {
-          // 중복 이름만 별도 안내하고, 그 외는 일반 실패 안내한다.
-          const message = isDuplicateFolderNameError(error)
-            ? "같은 이름의 폴더가 있어요."
-            : "폴더를 만들지 못했어요. 다시 시도해주세요.";
-          show({ message });
-        },
+  const onSave = handleSubmit((values) => {
+    mutate(values, {
+      onSuccess: () => router.back(),
+      onError: (error) => {
+        // 중복 이름만 별도 안내하고, 그 외는 일반 실패 안내한다.
+        const message = isDuplicateFolderNameError(error)
+          ? "같은 이름의 폴더가 있어요."
+          : "폴더를 만들지 못했어요. 다시 시도해주세요.";
+        show({ message });
       },
-    );
+    });
   });
 
   return (
@@ -56,7 +56,7 @@ export function CreateFolderSheet() {
         </Text>
         <Controller
           control={control}
-          name="name"
+          name="folderName"
           render={({ field }) => (
             <Input variant="field">
               <InputField
