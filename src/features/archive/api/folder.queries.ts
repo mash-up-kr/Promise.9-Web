@@ -1,4 +1,4 @@
-import { apiClient, type SuccessResponse } from "@shared/api";
+import { apiClient, isApiError, type SuccessResponse } from "@shared/api";
 import {
   folderToneToHex,
   hexToFolderTone,
@@ -10,7 +10,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import { SYSTEM_FOLDERS } from "../archive.constants";
+import { FOLDER_ERROR_CODE, SYSTEM_FOLDERS } from "../archive.constants";
 import type { ArchiveFolder, ArchiveFolderData } from "../archive.types";
 
 interface SystemFolderCount {
@@ -85,6 +85,19 @@ interface CreatedFolder {
   folderName: string;
   color: string;
   createdAt: string;
+}
+
+/**
+ * 폴더 이름 중복 실패인지 판별한다.
+ *
+ * 409 는 "중복 생성 또는 리소스 상태 충돌" 을 모두 포함하므로 상태 코드로는 단정할 수 없다.
+ * 서버 계약(errorCode) 해석은 여기서 하고, 사용자 문구는 화면이 정한다.
+ */
+export function isDuplicateFolderNameError(error: unknown): boolean {
+  return (
+    isApiError(error) &&
+    error.payload?.error.errorCode === FOLDER_ERROR_CODE.DUPLICATE_NAME
+  );
 }
 
 // POST /folders — 이름·색상으로 폴더를 생성하고 목록 캐시를 무효화한다.
