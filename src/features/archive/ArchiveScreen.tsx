@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import Animated, {
   useAnimatedRef,
@@ -16,6 +16,7 @@ import { Text } from "@/components/ui/text/Text";
 
 import { folderQueries } from "./api/folder.queries";
 import type { ArchiveFolder } from "./archive.types";
+import { applyFolderOrder } from "./archive.utils";
 import { ArchiveMoreMenu } from "./components/ArchiveMoreMenu";
 import { FolderGroup } from "./components/FolderGroup";
 import { FolderItem } from "./components/FolderItem";
@@ -33,11 +34,13 @@ export function ArchiveScreen() {
   const systemFolders = data?.systemFolders ?? [];
 
   const [selectedId, setSelectedId] = useState<string>("");
-  // 재정렬은 서버 저장 API 가 없어 로컬 전용이다. 서버 순서를 시드로 두고, 새로고침 시 서버 순서로 되돌린다.
-  const [myFolders, setMyFolders] = useState<ArchiveFolder[]>([]);
-  useEffect(() => {
-    if (data?.myFolders) setMyFolders(data.myFolders);
-  }, [data?.myFolders]);
+  // 재정렬은 서버 저장 API 가 없어 로컬 전용이다. 서버 데이터를 복사하지 않고 순서(id)만 들고
+  // 있다가 렌더 시 적용해, 재조회로 서버 데이터가 새로 와도 사용자가 바꾼 순서가 유지되게 한다.
+  const [orderedIds, setOrderedIds] = useState<string[]>([]);
+  const myFolders = useMemo(
+    () => applyFolderOrder(data?.myFolders ?? [], orderedIds),
+    [data?.myFolders, orderedIds],
+  );
   const [isReordering, setIsReordering] = useState(false);
   // 드래그 중에는 바깥 ScrollView 스크롤을 끄고, 자동 스크롤(scrollTo)만 동작시킨다.
   const [isDragging, setIsDragging] = useState(false);
@@ -58,7 +61,7 @@ export function ArchiveScreen() {
   // 드래그 제스처가 매 렌더마다 재생성되지 않도록 안정된 참조로 유지한다
   // (SortableFolderItem 의 gesture useMemo 가 이 콜백에 의존한다).
   const handleReorder = useCallback((next: ArchiveFolder[]) => {
-    setMyFolders(next);
+    setOrderedIds(next.map((folder) => folder.id));
   }, []);
 
   // 기본 폴더 섹션 — 편집 모드에선 읽기 전용(탭 비활성)으로 헤더에 재사용한다.
