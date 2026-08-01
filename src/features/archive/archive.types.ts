@@ -1,5 +1,7 @@
 import type { FolderColor } from "@shared/types/link.types";
 
+import type { SYSTEM_FOLDERS } from "./archive.constants";
+
 /**
  * 보관함 폴더 목록 항목 (UI 전용).
  *
@@ -13,8 +15,16 @@ export interface ArchiveFolder {
   tone: FolderColor;
 }
 
-/** 보관함 목록 화면 데이터 — 시스템(기본) 폴더 + 사용자 폴더로 나뉜다. */
+/** 기본 폴더 카운트 키 — GET /folders `systemFolders` 응답 키와 1:1. */
+export type SystemFolderKey = (typeof SYSTEM_FOLDERS)[number]["countKey"];
+
+/**
+ * 보관함 목록 화면 데이터.
+ *
+ * 기본 폴더는 이름·순서가 고정(SYSTEM_FOLDERS)이라 서버에서 오는 건 링크 수뿐이다.
+ * 그래서 폴더 항목이 아니라 카운트만 담아, 화면이 목록을 먼저 그리고 수치만 나중에 채우게 한다.
+ */
 export interface ArchiveFolderData {
-  systemFolders: ArchiveFolder[];
+  systemFolderCounts: Record<SystemFolderKey, number>;
   myFolders: ArchiveFolder[];
 }

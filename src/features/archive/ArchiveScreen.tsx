@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 import Animated, {
   useAnimatedRef,
   useScrollOffset,
@@ -15,11 +15,13 @@ import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Text } from "@/components/ui/text/Text";
 
 import { folderQueries } from "./api/folder.queries";
+import { SYSTEM_FOLDERS } from "./archive.constants";
 import type { ArchiveFolder } from "./archive.types";
 import { applyFolderOrder } from "./archive.utils";
 import { ArchiveMoreMenu } from "./components/ArchiveMoreMenu";
 import { FolderGroup } from "./components/FolderGroup";
 import { FolderItem } from "./components/FolderItem";
+import { FolderListSkeleton } from "./components/FolderListSkeleton";
 import { FolderSection } from "./components/FolderSection";
 import { NewFolderButton } from "./components/NewFolderButton";
 import { SortableFolderList } from "./components/SortableFolderList";
@@ -31,7 +33,6 @@ export function ArchiveScreen() {
   const listBottomPadding = Math.max(insets.bottom, 20) + 60 + 16;
 
   const { data, isPending, isError, refetch } = useQuery(folderQueries.list());
-  const systemFolders = data?.systemFolders ?? [];
 
   // 재정렬은 서버 저장 API 가 없어 로컬 전용이다. 서버 데이터를 복사하지 않고 순서(id)만 들고
   // 있다가 렌더 시 적용해, 재조회로 서버 데이터가 새로 와도 사용자가 바꾼 순서가 유지되게 한다.
@@ -62,16 +63,16 @@ export function ArchiveScreen() {
     setOrderedIds(next.map((folder) => folder.id));
   }, []);
 
-  // 기본 폴더 섹션 — 편집 모드에선 읽기 전용(탭 비활성)으로 헤더에 재사용한다.
+  // 기본 폴더 섹션 — 이름·순서가 고정이라 서버 응답을 기다리지 않고 바로 그리고,
+  // 링크 수만 도착하면 채운다. 편집 모드에선 읽기 전용(탭 비활성)으로 헤더에 재사용한다.
   const basicSection = (
     <FolderSection title="기본 폴더">
       <FolderGroup>
-        {systemFolders.map((folder) => (
+        {SYSTEM_FOLDERS.map((folder) => (
           <FolderItem
             key={folder.id}
             name={folder.name}
-            count={folder.count}
-            tone={folder.tone}
+            count={data?.systemFolderCounts[folder.countKey]}
             onPress={
               isReordering
                 ? undefined
@@ -111,11 +112,7 @@ export function ArchiveScreen() {
     <View className="flex-1 bg-background-base">
       <Header title="보관함" right={headerRight} />
 
-      {isPending ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator testID="archive-loading" />
-        </View>
-      ) : isError ? (
+      {isError ? (
         <View className="flex-1 items-center justify-center gap-3 px-5">
           <Text variant="body-2-normal" className="text-text-alternative">
             폴더를 불러오지 못했어요.
@@ -171,7 +168,9 @@ export function ArchiveScreen() {
                   : undefined
               }
             >
-              {myFolders.length > 0 ? (
+              {isPending ? (
+                <FolderListSkeleton />
+              ) : myFolders.length > 0 ? (
                 <FolderGroup>
                   {myFolders.map((folder) => (
                     <FolderItem

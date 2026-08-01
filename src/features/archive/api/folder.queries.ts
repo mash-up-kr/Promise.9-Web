@@ -9,15 +9,17 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import { FOLDER_ERROR_CODE, SYSTEM_FOLDERS } from "../archive.constants";
+import { FOLDER_ERROR_CODE } from "../archive.constants";
 import type { CreateFolderInput } from "../archive.contracts";
-import type { ArchiveFolder, ArchiveFolderData } from "../archive.types";
+import type {
+  ArchiveFolder,
+  ArchiveFolderData,
+  SystemFolderKey,
+} from "../archive.types";
 
 interface SystemFolderCount {
   linkCount: number;
 }
-
-type SystemFolderKey = (typeof SYSTEM_FOLDERS)[number]["countKey"];
 
 interface FolderListItem {
   folderId: number;
@@ -41,12 +43,13 @@ const folderKeys = {
 export function toArchiveFolderData(
   res: FolderListResponse,
 ): ArchiveFolderData {
-  const systemFolders: ArchiveFolder[] = SYSTEM_FOLDERS.map((folder) => ({
-    id: folder.id,
-    name: folder.name,
-    count: res.systemFolders[folder.countKey].linkCount,
-    tone: "gray",
-  }));
+  // 기본 폴더의 표시명·순서는 SYSTEM_FOLDERS 가 갖고 있으므로 링크 수만 뽑는다.
+  const systemFolderCounts: Record<SystemFolderKey, number> = {
+    all: res.systemFolders.all.linkCount,
+    uncategorized: res.systemFolders.uncategorized.linkCount,
+    favorite: res.systemFolders.favorite.linkCount,
+    recentlyDeleted: res.systemFolders.recentlyDeleted.linkCount,
+  };
 
   const myFolders: ArchiveFolder[] = res.folders.map((folder) => ({
     id: String(folder.folderId),
@@ -55,7 +58,7 @@ export function toArchiveFolderData(
     tone: hexToFolderTone(folder.color),
   }));
 
-  return { systemFolders, myFolders };
+  return { systemFolderCounts, myFolders };
 }
 
 export const folderQueries = {

@@ -40,13 +40,14 @@ describe("toArchiveFolderData", () => {
     ],
   };
 
-  it("systemFolders 카운트를 기본 폴더 항목으로 변환한다", () => {
-    expect(toArchiveFolderData(response).systemFolders).toEqual([
-      { id: "all", name: "전체", count: 10, tone: "gray" },
-      { id: "uncategorized", name: "미분류", count: 2, tone: "gray" },
-      { id: "favorites", name: "즐겨찾기", count: 0, tone: "gray" },
-      { id: "trash", name: "최근 삭제된 링크", count: 1, tone: "gray" },
-    ]);
+  // 기본 폴더의 이름·순서는 정적 상수이므로 서버에서 오는 건 카운트뿐이다.
+  it("systemFolders 를 countKey 별 링크 수로 변환한다", () => {
+    expect(toArchiveFolderData(response).systemFolderCounts).toEqual({
+      all: 10,
+      uncategorized: 2,
+      favorite: 0,
+      recentlyDeleted: 1,
+    });
   });
 
   it("사용자 폴더의 hex color 를 tone 으로 변환하고 기본색은 gray 로 폴백한다", () => {

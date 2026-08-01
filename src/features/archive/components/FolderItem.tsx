@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 import { FolderIcon } from "@/components/ui/icon/FolderIcon";
 import { Icon } from "@/components/ui/icon/Icon";
+import { Skeleton } from "@/components/ui/skeleton/Skeleton";
 import { Text } from "@/components/ui/text/Text";
 
 // 폴더 아이콘 채움색(raw hex). 12색은 shared 팔레트(= global.css --color-folder-*-solid)를 그대로 쓰고,
@@ -24,7 +25,8 @@ const FOLDER_ITEM_CLASS =
 
 export interface FolderItemProps {
   name: string;
-  count: number;
+  /** 링크 수. 아직 모르면(로딩 중) 생략하고, 그 자리엔 스켈레톤을 보여준다. */
+  count?: number;
   tone?: FolderColor;
   onPress?: () => void;
 }
@@ -48,9 +50,13 @@ export function FolderItem({
         </Text>
       </View>
       <View className="flex-row items-center gap-1">
-        <Text variant="body-2-normal" className="text-text-alternative">
-          {count}
-        </Text>
+        {count === undefined ? (
+          <Skeleton testID="folder-count-skeleton" className="h-4 w-6" />
+        ) : (
+          <Text variant="body-2-normal" className="text-text-alternative">
+            {count}
+          </Text>
+        )}
         <Icon
           iconNode={ChevronRight}
           size={16}

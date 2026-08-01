@@ -9,6 +9,7 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ArchiveScreen } from "./ArchiveScreen";
+import { SYSTEM_FOLDERS } from "./archive.constants";
 
 const mockGet = apiClient.get as jest.Mock;
 const mockPush = jest.fn();
@@ -74,10 +75,11 @@ describe("ArchiveScreen", () => {
 
   test("서버 응답의 기본 폴더와 사용자 폴더 항목을 렌더한다", async () => {
     await renderScreen();
-    expect(await screen.findByText("전체")).toBeOnTheScreen();
+    // 기본 폴더는 응답 전에도 보이므로, 응답 도착 기준은 사용자 폴더로 잡는다.
+    expect(await screen.findByText("디자인")).toBeOnTheScreen();
+    expect(screen.getByText("전체")).toBeOnTheScreen();
     expect(screen.getByText("즐겨찾기")).toBeOnTheScreen();
     expect(screen.getByText("최근 삭제된 링크")).toBeOnTheScreen();
-    expect(screen.getByText("디자인")).toBeOnTheScreen();
   });
 
   test("폴더를 누르면 해당 폴더 상세로 이동한다", async () => {
@@ -119,19 +121,52 @@ describe("ArchiveScreen", () => {
     expect(screen.queryByLabelText("디자인 순서 변경")).toBeNull();
   });
 
-  test("로딩 중에는 로딩 표시를 보여준다", async () => {
-    // 응답을 보류시켜 pending 상태를 관찰한다.
-    let resolveGet: (value: unknown) => void = () => {};
-    mockGet.mockReturnValue(
-      new Promise((resolve) => {
-        resolveGet = resolve;
-      }),
-    );
-    await renderScreen();
-    expect(screen.getByTestId("archive-loading")).toBeOnTheScreen();
-    // 미해결 프로미스가 열린 핸들로 남지 않도록 정리한다.
-    resolveGet(folderResponse);
-    await screen.findByText("전체");
+  describe("로딩 중", () => {
+    // 응답을 보류시켜 pending 상태를 관찰한다. 반환된 resolve 로 정리한다.
+    const renderPending = async () => {
+      let resolveGet: (value: unknown) => void = () => {};
+      mockGet.mockReturnValue(
+        new Promise((resolve) => {
+          resolveGet = resolve;
+        }),
+      );
+      await renderScreen();
+      return () => resolveGet(folderResponse);
+    };
+
+    // 기본 폴더는 이름·순서가 고정이라 서버 응답을 기다릴 이유가 없다.
+    test("기본 폴더 목록을 바로 보여준다", async () => {
+      const settle = await renderPending();
+      expect(screen.getByText("전체")).toBeOnTheScreen();
+      expect(screen.getByText("미분류")).toBeOnTheScreen();
+      expect(screen.getByText("즐겨찾기")).toBeOnTheScreen();
+      expect(screen.getByText("최근 삭제된 링크")).toBeOnTheScreen();
+      settle();
+      await screen.findByText("디자인");
+    });
+
+    test("기본 폴더의 링크 개수는 스켈레톤으로 보여준다", async () => {
+      const settle = await renderPending();
+      expect(screen.getAllByTestId("folder-count-skeleton")).toHaveLength(
+        SYSTEM_FOLDERS.length,
+      );
+      settle();
+      await screen.findByText("디자인");
+    });
+
+    test("내 폴더 목록은 스켈레톤으로 보여준다", async () => {
+      const settle = await renderPending();
+      expect(screen.getByTestId("folder-list-skeleton")).toBeOnTheScreen();
+      settle();
+      await screen.findByText("디자인");
+    });
+
+    test("응답이 오면 스켈레톤 대신 실제 개수를 보여준다", async () => {
+      await renderScreen();
+      expect(await screen.findByText("370")).toBeOnTheScreen();
+      expect(screen.queryByTestId("folder-count-skeleton")).toBeNull();
+      expect(screen.queryByTestId("folder-list-skeleton")).toBeNull();
+    });
   });
 
   test("조회 실패 시 에러 메시지와 다시 시도를 보여준다", async () => {
