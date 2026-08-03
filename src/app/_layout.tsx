@@ -1,3 +1,4 @@
+import { setTokenPersistence } from "@shared/api";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
@@ -10,9 +11,14 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { queryClient } from "@/lib/queryClient";
+import { tokenPersistence } from "@/lib/tokenStorage";
 import "@/global.css";
 
 SplashScreen.preventAutoHideAsync();
+
+// 리프레시 토큰 영속 저장소 주입 — @/lib/tokenStorage 는 플랫폼별로 갈린다
+// (네이티브: expo-secure-store · 웹: tokenStorage.web.ts, localStorage).
+setTokenPersistence(tokenPersistence);
 
 const transparentBackgroundTheme = {
   ...DefaultTheme,
