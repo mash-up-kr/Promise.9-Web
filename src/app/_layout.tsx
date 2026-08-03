@@ -10,6 +10,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
+import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
 import { queryClient } from "@/lib/queryClient";
 import { tokenPersistence } from "@/lib/tokenStorage";
 import "@/global.css";
@@ -57,8 +58,12 @@ export default function RootLayout() {
       <GestureHandlerRootView className="flex-1 bg-background-base">
         <SafeAreaProvider>
           <KeyboardProvider>
-            {/* 웹에서 앱 폭을 768px 로 제한하고 중앙 정렬한다. 네이티브는 화면보다 넓어 영향 없음. */}
-            <View className="mx-auto w-full max-w-[768px] flex-1">
+            {/* 웹에서 앱 폭을 제한하고 중앙 정렬한다. 네이티브는 화면보다 넓어 영향 없음.
+                Modal 위치 보정(Popover)이 같은 상수를 참조하므로 리터럴 대신 상수를 쓴다. */}
+            <View
+              className="mx-auto w-full flex-1"
+              style={{ maxWidth: CONTENT_MAX_WIDTH }}
+            >
               <SnackbarProvider>
                 <ThemeProvider value={transparentBackgroundTheme}>
                   <Stack

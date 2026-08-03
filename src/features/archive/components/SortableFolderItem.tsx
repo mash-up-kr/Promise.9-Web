@@ -14,15 +14,12 @@ import { Icon } from "@/components/ui/icon/Icon";
 import { Text } from "@/components/ui/text/Text";
 
 import type { ArchiveFolder } from "../archive.types";
+import { folderToneFill } from "./FolderItem";
 import {
   ITEM_HEIGHT,
   SORTABLE_SPRING,
   useSortableContext,
 } from "./sortable.context";
-
-// 아이콘 색(raw hex) — FolderItem 과 동일 토큰(folder-gray / folder-blue-solid).
-const GRAY_FILL = "#65656b";
-const BLUE_FILL = "#61a8ef";
 
 export interface SortableFolderItemProps {
   folder: ArchiveFolder;
@@ -114,10 +111,7 @@ export function SortableFolderItem({ folder }: SortableFolderItemProps) {
     <Animated.View style={rowStyle} className="absolute right-0 left-0">
       <View className="h-[52px] flex-row items-center justify-between overflow-hidden bg-background-thumbnail px-4">
         <View className="flex-row items-center gap-3">
-          <FolderIcon
-            color={folder.tone === "blue" ? BLUE_FILL : GRAY_FILL}
-            size={28}
-          />
+          <FolderIcon color={folderToneFill(folder.tone)} size={28} />
           <Text variant="body-2-normal" className="text-text-normal">
             {folder.name}
           </Text>

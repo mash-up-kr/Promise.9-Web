@@ -1,6 +1,18 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
-import { FolderItem } from "./FolderItem";
+import { FolderItem, folderToneFill } from "./FolderItem";
+
+describe("folderToneFill", () => {
+  test("각 tone 을 해당 폴더 색 hex 로 매핑한다", () => {
+    expect(folderToneFill("blue")).toBe("#61a8ef");
+    expect(folderToneFill("orange")).toBe("#f1a23f");
+    expect(folderToneFill("purple")).toBe("#b282cc");
+  });
+
+  test("gray 는 목록 전용 회색을 쓴다", () => {
+    expect(folderToneFill("gray")).toBe("#65656b");
+  });
+});
 
 describe("FolderItem", () => {
   test("이름과 개수를 렌더한다", async () => {
