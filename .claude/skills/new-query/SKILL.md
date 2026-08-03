@@ -16,8 +16,8 @@ description: TanStack Query 쿼리 정의·훅을 팀 컨벤션대로 스캐폴�
 
 ## 규칙
 1. **쿼리키는 계층적 팩토리**로만 만든다. 문자열 배열을 호출부에 직접 쓰지 않는다 — 무효화가 상위 키로 한 번에 되게.
-2. **쿼리는 `queryOptions()` 헬퍼로 정의**하고 컴포넌트는 `useQuery(xxxQueries.detail(id))` 로 소비한다.
-3. **queryFn/mutationFn 은 `@shared/api` 의 `apiClient`** 를 쓴다. 에러는 apiClient 가 이미 서브클래스(`ApiError` 등)로 던지므로 **try/catch 로 삼키지 말고 그대로 전파** — 컴포넌트에서 `error` 상태 + `isUnauthorizedError()` 같은 가드로 분기한다.
+2. **쿼리는 `queryOptions()` 헬퍼로 정의**하고 컴포넌트는 `useQuery(...)` 또는 `useSuspenseQuery(...)` 로 소비한다. 둘 중 무엇을 쓸지는 로딩·에러를 **경계(`AsyncBoundary`)로 올릴지 지역 상태로 둘지**에 따라 정한다 — 판단 기준: docs/conventions/app-web.md "로딩 · 에러".
+3. **queryFn/mutationFn 은 `@shared/api` 의 `apiClient`** 를 쓴다. 에러는 apiClient 가 이미 서브클래스(`ApiError` 등)로 던지므로 **try/catch 로 삼키지 말고 그대로 전파** — 조회 에러는 경계의 `fallback` 또는 컴포넌트의 `error` 상태에서, mutation 에러는 호출부(`onError`)에서 다룬다. 어느 쪽이든 원인별 분기는 `isUnauthorizedError()` 같은 가드로 좁혀서 한다.
 4. `queryFn` 에는 `{ signal }` 을 받아 요청에 전달한다 (언마운트 시 취소).
 5. **훅 안에서는 `useQueryClient()`** 를 쓴다. `@/lib/queryClient` 전역 인스턴스를 직접 import 하면 테스트 wrapper(테스트별 새 QueryClient)와 어긋난다. 전역 인스턴스는 Provider 세팅·React 밖 코드 전용.
 
