@@ -61,6 +61,23 @@ describe("ErrorBoundary", () => {
     spy.mockRestore();
   });
 
+  test("fallback 이 함수면 던져진 에러를 그대로 넘긴다", async () => {
+    const spy = jest.spyOn(console, "error").mockImplementation(() => {});
+    await render(
+      <ErrorBoundary
+        fallback={({ error }) => (
+          <Text>
+            {error instanceof Error ? error.message : "알 수 없는 에러"}
+          </Text>
+        )}
+      >
+        <Boom />
+      </ErrorBoundary>,
+    );
+    expect(screen.getByText("boom")).toBeOnTheScreen();
+    spy.mockRestore();
+  });
+
   test("resetKeys 가 바뀌면 에러 상태를 해제하고 다시 렌더한다", async () => {
     const spy = jest.spyOn(console, "error").mockImplementation(() => {});
     const { rerender } = await render(

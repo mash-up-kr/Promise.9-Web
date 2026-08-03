@@ -1,6 +1,8 @@
 import { Component, type ReactNode } from "react";
 
 export interface ErrorBoundaryFallbackProps {
+  /** 던져진 값. 원인별로 분기하려면 `isUnauthorizedError()` 같은 가드로 좁힌다. */
+  error: unknown;
   /** 에러 상태를 해제하고 children 을 다시 렌더한다(재시도 버튼용). */
   reset: () => void;
 }
@@ -21,16 +23,17 @@ export interface ErrorBoundaryProps {
 
 interface ErrorBoundaryState {
   hasError: boolean;
+  error: unknown;
 }
 
 export class ErrorBoundary extends Component<
   ErrorBoundaryProps,
   ErrorBoundaryState
 > {
-  state: ErrorBoundaryState = { hasError: false };
+  state: ErrorBoundaryState = { hasError: false, error: undefined };
 
-  static getDerivedStateFromError(): ErrorBoundaryState {
-    return { hasError: true };
+  static getDerivedStateFromError(error: unknown): ErrorBoundaryState {
+    return { hasError: true, error };
   }
 
   componentDidUpdate(prev: ErrorBoundaryProps) {
@@ -43,7 +46,7 @@ export class ErrorBoundary extends Component<
   }
 
   private reset = () => {
-    this.setState({ hasError: false });
+    this.setState({ hasError: false, error: undefined });
     this.props.onReset?.();
   };
 
@@ -55,7 +58,7 @@ export class ErrorBoundary extends Component<
     }
 
     return typeof fallback === "function"
-      ? fallback({ reset: this.reset })
+      ? fallback({ error: this.state.error, reset: this.reset })
       : fallback;
   }
 }
