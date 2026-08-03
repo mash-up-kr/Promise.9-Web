@@ -1,4 +1,12 @@
-export type SocialProvider = "google" | "kakao";
+import type { SocialProvider } from "@shared/api";
+
+// 서버 계약(POST /auth/social)의 provider 타입을 그대로 쓴다 — 여기서 다시 정의하지 않는다.
+export type { SocialProvider } from "@shared/api";
+
+export const AUTH_ERROR_CODE = {
+  SOCIAL_TOKEN_VERIFICATION_FAILED: 950003,
+  UNSUPPORTED_PROVIDER: 950004,
+} as const;
 
 export interface SocialProviderConfig {
   provider: SocialProvider;
