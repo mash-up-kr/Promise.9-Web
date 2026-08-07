@@ -2,8 +2,10 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useCallback } from "react";
 
 import type { SocialProvider } from "../auth.constants";
+import { SocialLoginCancelledError } from "../auth.errors";
 
-export class SocialLoginCancelledError extends Error {}
+// 웹 구현(useSocialAuth.web.ts)과 export 표면을 맞춘다 — 화면은 어느 쪽이 로드되든 같은 import 를 쓴다.
+export { SocialLoginCancelledError };
 
 let isGoogleConfigured = false;
 
