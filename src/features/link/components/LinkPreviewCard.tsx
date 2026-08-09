@@ -1,9 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "lucide-react-native";
-import { type ReactNode, Suspense } from "react";
+import type { ReactNode } from "react";
 import { Image, View } from "react-native";
-
-import { ErrorBoundary } from "@/components/ui/error-boundary/ErrorBoundary";
+import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { Icon } from "@/components/ui/icon/Icon";
 import { Skeleton } from "@/components/ui/skeleton/Skeleton";
 import { Text } from "@/components/ui/text/Text";
@@ -22,11 +21,13 @@ export function LinkPreviewCard({ url }: LinkPreviewCardProps) {
   }
 
   return (
-    <ErrorBoundary resetKeys={[url]} fallback={<PreviewFailed />}>
-      <Suspense fallback={<PreviewSkeleton />}>
-        <PreviewLoaded url={url} />
-      </Suspense>
-    </ErrorBoundary>
+    <AsyncBoundary
+      resetKeys={[url]}
+      pending={<PreviewSkeleton />}
+      fallback={<PreviewFailed />}
+    >
+      <PreviewLoaded url={url} />
+    </AsyncBoundary>
   );
 }
 

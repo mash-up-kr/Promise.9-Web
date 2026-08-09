@@ -176,5 +176,18 @@ describe("ArchiveScreen", () => {
       await screen.findByText("폴더를 불러오지 못했어요."),
     ).toBeOnTheScreen();
     expect(screen.getByText("다시 시도")).toBeOnTheScreen();
+    // 실패는 화면 전체를 대체한다 — 기본 폴더도 남기지 않는다.
+    expect(screen.queryByText("전체")).toBeNull();
+  });
+
+  test("다시 시도를 누르면 재조회해 폴더 목록을 보여준다", async () => {
+    mockGet
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValueOnce(folderResponse);
+    await renderScreen();
+    await fireEvent.press(await screen.findByText("다시 시도"));
+
+    expect(await screen.findByText("디자인")).toBeOnTheScreen();
+    expect(screen.getByText("전체")).toBeOnTheScreen();
   });
 });
