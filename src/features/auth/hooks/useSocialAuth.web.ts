@@ -137,9 +137,22 @@ async function getGoogleIdToken(): Promise<string> {
   });
 }
 
-// 서버가 아직 카카오를 지원하지 않는다(POST /auth/social 이 provider=kakao 에 950004 반환) — SOCIAL_PROVIDERS 에서도 비활성.
+/**
+ * 웹에서는 카카오 idToken 을 프론트만으로 발급받을 방법이 없다(서버 미구현과는 별개의,
+ * 구조적인 제약).
+ *
+ * 카카오 OIDC 는 `response_type` 이 `code` 로 고정이고, idToken 은 그 code 를
+ * token endpoint 에서 교환할 때만 발급된다 — 이 교환에는 client_secret 이 필수다
+ * (카카오는 기본적으로 REST API 키에 client secret 을 강제한다). client_secret 을
+ * 프론트 번들(`EXPO_PUBLIC_*`)에 넣으면 그대로 공개되므로, 서버가 code→token 교환을
+ * 대신해주는 프록시 엔드포인트 없이는 웹에서 카카오 로그인이 불가능하다.
+ * (네이티브는 `@react-native-seoul/kakao-login` SDK 가 이 과정을 내부적으로 처리해
+ * client_secret 노출 없이 idToken 을 돌려준다 — useSocialAuth.ts 참고.)
+ */
 async function getKakaoIdToken(): Promise<string> {
-  throw new Error("카카오 로그인은 아직 지원하지 않습니다.");
+  throw new Error(
+    "카카오 웹 로그인은 아직 지원하지 않습니다. (서버의 code-exchange 프록시가 필요합니다)",
+  );
 }
 
 export function useSocialAuth() {

@@ -203,7 +203,8 @@ describe("useSocialAuth (웹)", () => {
     await expect(promise).resolves.toBe("web-id-token");
   });
 
-  it("카카오는 아직 지원하지 않아 에러를 던진다", async () => {
+  // 웹은 client_secret 없이는 카카오 idToken 을 발급받을 방법이 없다(구조적 제약, useSocialAuth.web.ts 참고).
+  it("카카오 웹 로그인은 아직 지원하지 않아 에러를 던진다", async () => {
     const { result } = await renderHook(() => useSocialAuth());
 
     await expect(result.current.getIdToken("kakao")).rejects.toThrow();

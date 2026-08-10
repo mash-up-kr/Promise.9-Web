@@ -24,5 +24,8 @@ module.exports = {
     // 구글 로그인 SDK 는 네이티브 모듈이라 jest 환경에서 동작할 수 없다 — jest.fn() stub 으로 대체.
     "^@react-native-google-signin/google-signin$":
       "<rootDir>/src/__mocks__/@react-native-google-signin/google-signin.js",
+    // 카카오 로그인 SDK 도 네이티브 모듈이라 jest 환경에서 동작할 수 없다 — jest.fn() stub 으로 대체.
+    "^@react-native-seoul/kakao-login$":
+      "<rootDir>/src/__mocks__/@react-native-seoul/kakao-login.js",
   },
 };

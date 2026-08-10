@@ -1,4 +1,5 @@
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { login as kakaoLogin } from "@react-native-seoul/kakao-login";
 import { useCallback } from "react";
 
 import type { SocialProvider } from "../auth.constants";
@@ -34,9 +35,17 @@ async function getGoogleIdToken(): Promise<string> {
   return idToken;
 }
 
-// 서버가 아직 카카오를 지원하지 않는다(POST /auth/social 이 provider=kakao 에 950004 반환) — SOCIAL_PROVIDERS 에서도 비활성.
+// idToken 발급 자체는 되지만, 서버가 아직 카카오를 지원하지 않아(POST /auth/social 이
+// provider=kakao 에 950004 반환) SOCIAL_PROVIDERS 에서 버튼은 비활성 — 서버 연결 시 플래그만 켠다.
+//
+// 카카오 SDK 는 취소를 구분하는 신호를 문서화하지 않는다 — 임의로 추측해 분기하지 않고
+// 모든 실패를 그대로 전파한다(구글과 달리 사용자가 취소해도 일반 실패 안내가 뜬다).
 async function getKakaoIdToken(): Promise<string> {
-  throw new Error("카카오 로그인은 아직 지원하지 않습니다.");
+  const token = await kakaoLogin();
+  if (!token.idToken) {
+    throw new Error("카카오 로그인 응답에 idToken 이 없습니다.");
+  }
+  return token.idToken;
 }
 
 export function useSocialAuth() {
