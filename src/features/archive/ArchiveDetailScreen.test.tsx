@@ -95,6 +95,16 @@ describe("ArchiveDetailScreen", () => {
     expect(screen.getByText("다시 시도")).toBeOnTheScreen();
   });
 
+  test("다시 시도를 누르면 재조회해 링크를 보여준다", async () => {
+    mockGet
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValueOnce(linksResponse([sampleLink]));
+    await renderScreen();
+    await fireEvent.press(await screen.findByText("다시 시도"));
+
+    expect(await screen.findByText(sampleLink.title)).toBeOnTheScreen();
+  });
+
   test("알 수 없는 폴더 id 면 조회하지 않고 안내를 보여준다", async () => {
     mockRouteParams.current = { id: "foo" };
     await renderScreen();
