@@ -88,7 +88,17 @@ async function getGoogleIdToken(): Promise<string> {
 
   return new Promise<string>((resolve, reject) => {
     const closedTimer = setInterval(() => {
-      if (!popup.closed) return;
+      // COOP(Cross-Origin-Opener-Policy)가 켜진 환경에선 popup.closed 접근이 막힌다.
+      // 그 경우 취소 감지는 포기하고 postMessage 결과만 기다린다 — 성공한 로그인을
+      // "취소됨"으로 잘못 끝내는 것보다 낫다.
+      let isClosed: boolean;
+      try {
+        isClosed = popup.closed;
+      } catch {
+        clearInterval(closedTimer);
+        return;
+      }
+      if (!isClosed) return;
       cleanup();
       reject(new SocialLoginCancelledError());
     }, POPUP_CLOSED_POLL_MS);

@@ -179,6 +179,30 @@ describe("useSocialAuth (웹)", () => {
     jest.useRealTimers();
   });
 
+  // COOP(Cross-Origin-Opener-Policy)가 켜진 환경에서는 popup.closed 접근이 막힌다.
+  // 취소 감지를 포기할지언정, 로그인이 성공했는데 "취소됨"으로 끝나는 일은 없어야 한다.
+  it("popup.closed 접근이 COOP 로 막혀도 로그인 결과를 그대로 살린다", async () => {
+    jest.useFakeTimers();
+    Object.defineProperty(popup, "closed", {
+      get() {
+        throw new Error("Cross-Origin-Opener-Policy would block window.closed");
+      },
+    });
+    const { result } = await renderHook(() => useSocialAuth());
+
+    const promise = result.current.getIdToken("google");
+    jest.advanceTimersByTime(2000);
+    jest.useRealTimers();
+
+    emitMessage({
+      source: "promise9-google-auth",
+      idToken: "web-id-token",
+      state: sentState(),
+    });
+
+    await expect(promise).resolves.toBe("web-id-token");
+  });
+
   it("카카오는 아직 지원하지 않아 에러를 던진다", async () => {
     const { result } = await renderHook(() => useSocialAuth());
 
