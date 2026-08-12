@@ -187,6 +187,11 @@
   --text-heading-3--font-weight: 600;
   --text-heading-3--letter-spacing: -0.01em;
 
+  --text-heading-3-medium: 16px;
+  --text-heading-3-medium--line-height: calc(24 / 16);
+  --text-heading-3-medium--font-weight: 500;
+  --text-heading-3-medium--letter-spacing: -0.01em;
+
   --text-body-1: 15px;
   --text-body-1--line-height: calc(22 / 15);
   --text-body-1--font-weight: 400;
