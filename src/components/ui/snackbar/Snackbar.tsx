@@ -25,7 +25,7 @@ export function Snackbar({ message, action }: SnackbarProps) {
           onPress={action.onPress}
           hitSlop={8}
         >
-          <Text variant="label-2-semibold" className="text-blue-400">
+          <Text variant="label-2-semibold" className="text-old-blue-400">
             {action.label}
           </Text>
         </Pressable>

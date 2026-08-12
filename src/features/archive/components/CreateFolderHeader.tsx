@@ -7,7 +7,7 @@ import { tv } from "@/lib/tv";
 const submitButtonStyles = tv({
   base: "rounded-full px-4 py-2",
   variants: {
-    disabled: { true: "bg-blue-700", false: "bg-blue-500" },
+    disabled: { true: "bg-old-blue-700", false: "bg-old-blue-500" },
   },
 });
 
@@ -28,7 +28,7 @@ export function CreateFolderHeader({
         accessibilityRole="button"
         accessibilityLabel="취소"
         onPress={onCancel}
-        className="rounded-full bg-background-input px-4 py-2"
+        className="rounded-full bg-old-background-input px-4 py-2"
       >
         <Text variant="label-1" className="text-text-strong">
           취소

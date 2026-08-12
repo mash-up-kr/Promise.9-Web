@@ -21,7 +21,7 @@ function resolveTitle(id: string | undefined, name?: string): string {
 // 화면 가운데 안내 문구 — 없음·빈 목록·에러 상태가 공유한다.
 function CenteredMessage({ children }: { children: React.ReactNode }) {
   return (
-    <View className="flex-1 items-center justify-center gap-3 bg-background-base px-5">
+    <View className="flex-1 items-center justify-center gap-3 bg-old-background-base px-5">
       {children}
     </View>
   );
@@ -69,7 +69,7 @@ function ArchiveDetailContent({ id }: { id?: string }) {
 
   if (isPending) {
     return (
-      <View className="flex-1 items-center justify-center bg-background-base">
+      <View className="flex-1 items-center justify-center bg-old-background-base">
         <ActivityIndicator testID="archive-detail-loading" />
       </View>
     );
@@ -82,7 +82,7 @@ function ArchiveDetailContent({ id }: { id?: string }) {
           링크를 불러오지 못했어요.
         </Text>
         <Pressable accessibilityRole="button" onPress={() => refetch()}>
-          <Text variant="label-1" className="text-icon-accent">
+          <Text variant="label-1" className="text-old-icon-accent">
             다시 시도
           </Text>
         </Pressable>
@@ -103,7 +103,7 @@ function ArchiveDetailContent({ id }: { id?: string }) {
 
   return (
     <ScrollView
-      className="flex-1 bg-background-base"
+      className="flex-1 bg-old-background-base"
       showsVerticalScrollIndicator={false}
     >
       <View className="flex-row flex-wrap justify-between gap-y-5 px-5 pt-2 pb-6">

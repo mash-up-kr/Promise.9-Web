@@ -11,7 +11,7 @@ const tabStyles = tv({
   variants: {
     isSelected: {
       true: "bg-opacity-white-100",
-      false: "bg-background-input",
+      false: "bg-old-background-input",
     },
   },
 });
@@ -19,7 +19,7 @@ const tabStyles = tv({
 const tabTextStyles = tv({
   variants: {
     isSelected: {
-      true: "text-gray-900",
+      true: "text-old-gray-900",
       false: "text-opacity-white-80",
     },
   },

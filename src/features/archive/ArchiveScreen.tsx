@@ -90,7 +90,7 @@ export function ArchiveScreen() {
       accessibilityLabel="완료"
       onPress={() => setIsReordering(false)}
     >
-      <Text variant="label-1" className="text-icon-accent">
+      <Text variant="label-1" className="text-old-icon-accent">
         완료
       </Text>
     </Pressable>
@@ -142,7 +142,7 @@ export function ArchiveScreen() {
             폴더를 불러오지 못했어요.
           </Text>
           <Pressable accessibilityRole="button" onPress={() => refetch()}>
-            <Text variant="label-1" className="text-icon-accent">
+            <Text variant="label-1" className="text-old-icon-accent">
               다시 시도
             </Text>
           </Pressable>
@@ -207,7 +207,7 @@ export function ArchiveScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background-base">
+    <View className="flex-1 bg-old-background-base">
       <Header title="보관함" right={headerRight} />
       {renderContent()}
     </View>

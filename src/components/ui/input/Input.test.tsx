@@ -87,7 +87,7 @@ describe("Input variant", () => {
     const cls = inputStyles({ variant: "pill" });
     expect(cls).toContain("rounded-full");
     expect(cls).toContain("h-10");
-    expect(cls).toContain("bg-background-input");
+    expect(cls).toContain("bg-old-background-input");
   });
 
   test("field(Default) 변형은 radius 20 · white-10 배경이다", () => {

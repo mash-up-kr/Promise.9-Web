@@ -55,7 +55,7 @@ export function CategoriesScreen() {
           ),
         }}
       />
-      <VStack className="flex-1 bg-background-base">
+      <VStack className="flex-1 bg-old-background-base">
         <CategoryTabBar selected={selected} onSelect={handleSelectTab} />
         <ScrollView showsVerticalScrollIndicator={false}>
           <VStack className="px-5 pt-3 pb-8">

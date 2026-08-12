@@ -129,7 +129,7 @@ export function CreateLinkSheet() {
                 onPress={handlePasteUrl}
                 className="pl-3"
               >
-                <Text variant="body-2-normal" className="text-icon-accent">
+                <Text variant="body-2-normal" className="text-old-icon-accent">
                   붙여넣기
                 </Text>
               </InputSlot>

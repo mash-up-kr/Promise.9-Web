@@ -86,7 +86,7 @@ const indicatorStyles = tv({
   base: "size-[21px] items-center justify-center rounded-full",
   variants: {
     checked: {
-      true: "bg-icon-accent",
+      true: "bg-old-icon-accent",
       false: "border-[1.5px] border-[#404040]",
     },
   },

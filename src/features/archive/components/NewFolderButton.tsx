@@ -16,7 +16,7 @@ export function NewFolderButton({ onPress }: NewFolderButtonProps) {
       onPress={onPress}
       className="h-[52px] flex-row items-center gap-3 rounded-[20px] bg-background-thumbnail px-4"
     >
-      <Icon iconNode={Plus} size={24} className="text-icon-accent" />
+      <Icon iconNode={Plus} size={24} className="text-old-icon-accent" />
       <Text variant="body-2-normal" className="text-text-normal">
         새 폴더 추가
       </Text>

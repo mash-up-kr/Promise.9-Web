@@ -69,7 +69,7 @@ function PreviewShell({ children }: { children: ReactNode }) {
   return (
     <View
       testID="link-preview-card"
-      className="w-full flex-row items-center gap-3 rounded-2xl bg-background-input p-3"
+      className="w-full flex-row items-center gap-3 rounded-2xl bg-old-background-input p-3"
     >
       {children}
     </View>

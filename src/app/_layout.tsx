@@ -49,7 +49,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView className="flex-1 bg-background-base">
+      <GestureHandlerRootView className="flex-1 bg-old-background-base">
         <SafeAreaProvider>
           <KeyboardProvider>
             {/* 웹에서 앱 폭을 제한하고 중앙 정렬한다. 네이티브는 화면보다 넓어 영향 없음.

@@ -23,20 +23,24 @@
   --color-gray-600: #3a3a40;
   --color-gray-700: #2f2f33;
   --color-gray-800: #242426;
-  --color-gray-900: #0e0e13;
+  --color-gray-900: #1a1a1a;
   --color-gray-950: #121212;
 
-  /* ── Primitive: Blue (★ blue-500 = accent/primary) ── */
-  --color-blue-50: #e6f3ff;
-  --color-blue-100: #b3d9ff;
-  --color-blue-200: #80bfff;
-  --color-blue-300: #4da8ff;
-  --color-blue-400: #1a92ff;
-  --color-blue-500: #0093ff;
-  --color-blue-600: #0079d9;
-  --color-blue-700: #005fb3;
-  --color-blue-800: #00458c;
-  --color-blue-900: #002b66;
+  /* ── Primitive: Yellow (★ yellow-300 = accent/primary) ── */
+  --color-yellow-50: #fdfee8;
+  --color-yellow-100: #fbffc2;
+  --color-yellow-200: #fbff89;
+  --color-yellow-300: #fffe66;
+  --color-yellow-400: #fdf212;
+  --color-yellow-500: #ecd706;
+  --color-yellow-600: #ccaa02;
+  --color-yellow-700: #a37a05;
+  --color-yellow-800: #865f0d;
+  --color-yellow-900: #724e11;
+  --color-yellow-950: #432905;
+
+  /* ── Primitive: Kakao (소셜 로그인 버튼) ── */
+  --color-kakao-yellow: #fee500;
 
   /* ── Primitive: Opacity / White ── */
   --color-opacity-white-05: #ffffff0d;
@@ -69,11 +73,10 @@
   --color-background-list: var(--color-gray-800);
   --color-background-thumbnail: var(--color-gray-800);
   --color-background-list-selected: var(--color-gray-700);
-  /* Figma 미토큰화 raw 값(SearchBar 배경) — 디자이너 확정 시 값 조정 */
-  --color-background-input: #26262b;
+  --color-background-elevated: var(--color-gray-950);
 
   /* ── Semantic: Border ── */
-  --color-border-divider: var(--color-gray-600);
+  --color-border-divider: var(--color-gray-700);
 
   /* ── Semantic: Text ── */
   --color-text-strong: var(--color-gray-50);
@@ -88,9 +91,18 @@
   --color-icon-normal: var(--color-gray-100);
   --color-icon-alternative: var(--color-gray-300);
   --color-icon-assistive: var(--color-gray-400);
-  --color-icon-accent: var(--color-blue-500);
+  --color-icon-accent: var(--color-yellow-300);
   --color-icon-inverse: var(--color-gray-950);
-  --color-icon-accent: var(--color-blue-500);
+
+  /* ── Semantic: Action ── */
+  --color-action-primary: var(--color-yellow-300);
+  --color-action-inverse: var(--color-gray-50);
+  /* Figma 직접값 (Primitive 미참조) */
+  --color-action-destructive: #ff3838;
+  --color-action-destructive-background: #692725;
+
+  /* ── Semantic: State ── */
+  --color-state-hover: var(--color-opacity-white-05);
 
   /* ── Semantic: Folder / Accent ── */
   --color-folder-gray: var(--color-gray-400);
@@ -130,6 +142,18 @@
   --color-folder-orange-solid: #f1a23f;
   --color-folder-orange-subtle: #383128;
   --color-folder-orange-subtle-active: #624a2e;
+  --color-folder-blue-stroke: #61a8ef80;
+  --color-folder-slate-stroke: #859fc180;
+  --color-folder-purple-stroke: #b282cc80;
+  --color-folder-orange-red-stroke: #ec5a2980;
+  --color-folder-green-stroke: #50b09480;
+  --color-folder-teal-stroke: #81c7ba80;
+  --color-folder-pink-stroke: #ee97a480;
+  --color-folder-red-stroke: #e3464780;
+  --color-folder-lime-stroke: #8bd35f80;
+  --color-folder-yellow-green-stroke: #d5d76a80;
+  --color-folder-yellow-stroke: #f8d45780;
+  --color-folder-orange-stroke: #f1a23f80;
 
   /* ── Font family ──
    * 네이티브는 커스텀 폰트의 weight 축을 지원하지 않아 font-weight 스타일만으로는
@@ -204,6 +228,20 @@
   --text-caption-2: 12px;
   --text-caption-2--line-height: calc(14 / 12);
   --text-caption-2--font-weight: 400;
+
+  /* ── OLD: 구 시안 토큰 (OCP 보존) ──
+   * 신규 시안 전환 전 화면이 아직 쓰는 구 토큰. 새 코드에서 사용 금지,
+   * 화면별 마이그레이션이 끝나면 제거한다. */
+  --color-old-gray-900: #0e0e13;
+  --color-old-blue-100: #b3d9ff;
+  --color-old-blue-400: #1a92ff;
+  --color-old-blue-500: #0093ff;
+  --color-old-blue-700: #005fb3;
+  --color-old-background-base: var(--color-old-gray-900);
+  /* Figma 미토큰화 raw 값(SearchBar 배경)이었음 */
+  --color-old-background-input: #26262b;
+  --color-old-border-divider: var(--color-gray-600);
+  --color-old-icon-accent: var(--color-old-blue-500);
 }
 
 /* Platform-specific font families */
