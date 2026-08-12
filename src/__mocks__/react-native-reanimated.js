@@ -168,6 +168,8 @@ module.exports = {
   // layout animation 빌더 stub (entering/exiting)
   FadeIn: layoutAnimationStub,
   FadeOut: layoutAnimationStub,
+  FadeInDown: layoutAnimationStub,
+  FadeOutDown: layoutAnimationStub,
   ZoomIn: layoutAnimationStub,
   ZoomOut: layoutAnimationStub,
   SlideInDown: layoutAnimationStub,
