@@ -30,6 +30,7 @@ export default function TabsLayout() {
           title: "홈",
           header: () => (
             <Header
+              scrollScope="home"
               // 서비스 워드마크 로고(svg)가 확정되면 임시 텍스트를 로고로 교체 예정
               left={<Heading>Link-dingdong</Heading>}
               right={

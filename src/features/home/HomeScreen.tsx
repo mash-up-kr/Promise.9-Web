@@ -1,6 +1,7 @@
-import { ScrollView } from "react-native";
+import Animated from "react-native-reanimated";
 
 import { useHeaderHeight } from "@/components/ui/header/Header";
+import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { Text } from "@/components/ui/text/Text";
 import { VStack } from "@/components/ui/vstack/VStack";
 
@@ -10,12 +11,15 @@ import { HOME_FOLDER_SECTIONS, HOME_RECENT_LINKS } from "./mocks";
 
 export function HomeScreen() {
   const headerHeight = useHeaderHeight();
+  const scrollHandler = useHeaderAwareScrollHandler("home");
 
   return (
-    <ScrollView
+    <Animated.ScrollView
       className="flex-1"
       contentContainerStyle={{ paddingTop: headerHeight }}
       showsVerticalScrollIndicator={false}
+      onScroll={scrollHandler}
+      scrollEventThrottle={16}
     >
       <VStack className="gap-12 pt-5 pb-8">
         <RecentSaveSection links={HOME_RECENT_LINKS} />
@@ -34,6 +38,6 @@ export function HomeScreen() {
           </VStack>
         </VStack>
       </VStack>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }

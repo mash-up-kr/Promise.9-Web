@@ -7,7 +7,7 @@ import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-
+import { HeaderScrollProvider } from "@/components/ui/header/HeaderScrollProvider";
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
 import { queryClient } from "@/lib/queryClient";
@@ -59,30 +59,32 @@ export default function RootLayout() {
               style={{ maxWidth: CONTENT_MAX_WIDTH }}
             >
               <SnackbarProvider>
-                <ThemeProvider value={transparentBackgroundTheme}>
-                  <Stack
-                    screenOptions={{
-                      contentStyle: { backgroundColor: "transparent" },
-                    }}
-                  >
-                    <Stack.Screen
-                      name="(tabs)"
-                      options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                      name="(auth)"
-                      options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                      name="create-link"
-                      options={sheetScreenOptions}
-                    />
-                    <Stack.Screen
-                      name="create-folder"
-                      options={sheetScreenOptions}
-                    />
-                  </Stack>
-                </ThemeProvider>
+                <HeaderScrollProvider>
+                  <ThemeProvider value={transparentBackgroundTheme}>
+                    <Stack
+                      screenOptions={{
+                        contentStyle: { backgroundColor: "transparent" },
+                      }}
+                    >
+                      <Stack.Screen
+                        name="(tabs)"
+                        options={{ headerShown: false }}
+                      />
+                      <Stack.Screen
+                        name="(auth)"
+                        options={{ headerShown: false }}
+                      />
+                      <Stack.Screen
+                        name="create-link"
+                        options={sheetScreenOptions}
+                      />
+                      <Stack.Screen
+                        name="create-folder"
+                        options={sheetScreenOptions}
+                      />
+                    </Stack>
+                  </ThemeProvider>
+                </HeaderScrollProvider>
               </SnackbarProvider>
             </View>
           </KeyboardProvider>
