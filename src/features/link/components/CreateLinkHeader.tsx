@@ -22,7 +22,7 @@ const cancelHighlightStyles = tv({
 const saveStyles = tv({
   base: `h-11 items-center justify-center rounded-full border border-opacity-white-10 px-4 ${insetHighlight}`,
   variants: {
-    disabled: { true: "bg-blue-700", false: "bg-blue-500" },
+    disabled: { true: "bg-old-blue-700", false: "bg-old-blue-500" },
   },
 });
 

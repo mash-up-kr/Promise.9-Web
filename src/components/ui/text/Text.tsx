@@ -10,6 +10,7 @@ const variantPresets = {
   "heading-1": "text-heading-1 font-pretendard-semibold",
   "heading-2": "text-heading-2 font-pretendard-semibold",
   "heading-3": "text-heading-3 font-pretendard-semibold",
+  "heading-3-medium": "text-heading-3-medium font-pretendard-medium",
   "body-1": "text-body-1 font-pretendard",
   "body-2-normal": "text-body-2-normal font-pretendard-medium",
   "body-2-reading": "text-body-2-reading font-pretendard",

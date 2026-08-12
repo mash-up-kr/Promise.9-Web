@@ -13,7 +13,7 @@ export function CategoryChip({ name, onPress }: CategoryChipProps) {
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      className="h-8 items-center justify-center rounded-2xl bg-blue-100 px-3"
+      className="h-8 items-center justify-center rounded-2xl bg-old-blue-100 px-3"
     >
       <Text variant="label-2-medium" className="text-text-inverse">
         {name}

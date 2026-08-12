@@ -5,7 +5,7 @@ import { View } from "react-native";
 function Divider() {
   return (
     <View testID="folder-divider" className="h-px bg-background-thumbnail">
-      <View className="mx-4 h-px bg-border-divider" />
+      <View className="mx-4 h-px bg-old-border-divider" />
     </View>
   );
 }

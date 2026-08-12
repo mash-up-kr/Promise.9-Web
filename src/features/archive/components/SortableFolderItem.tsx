@@ -132,7 +132,10 @@ export function SortableFolderItem({ folder }: SortableFolderItemProps) {
         style={dividerStyle}
         className="absolute right-0 bottom-0 left-0"
       >
-        <View testID="folder-divider" className="mx-4 h-px bg-border-divider" />
+        <View
+          testID="folder-divider"
+          className="mx-4 h-px bg-old-border-divider"
+        />
       </Animated.View>
     </Animated.View>
   );

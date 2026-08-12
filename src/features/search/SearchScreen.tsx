@@ -94,7 +94,7 @@ export function SearchScreen() {
         }}
       />
       <ScrollView
-        className="flex-1 bg-background-base"
+        className="flex-1 bg-old-background-base"
         contentContainerStyle={{ paddingTop: headerHeight }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

@@ -18,7 +18,7 @@ export const inputStyles = tv({
   base: "flex-row items-center",
   variants: {
     variant: {
-      pill: "h-10 flex-1 rounded-full bg-background-input px-3",
+      pill: "h-10 flex-1 rounded-full bg-old-background-input px-3",
       field: "min-h-13 w-full rounded-[20px] bg-opacity-white-10 p-4",
     },
   },
@@ -115,7 +115,7 @@ export function InputField({
             iconNode={X}
             size={10}
             strokeWidth={1.5}
-            className="text-background-input"
+            className="text-old-background-input"
           />
         </InputSlot>
       )}
