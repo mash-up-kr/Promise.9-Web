@@ -67,7 +67,7 @@ export function LinkDetailScreen() {
           headerTransparent: true,
           header: () => (
             <Header
-              variant="plain"
+              background={false}
               left={<HeaderBackButton />}
               right={
                 <>

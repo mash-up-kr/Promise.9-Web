@@ -69,7 +69,6 @@ export function SearchScreen() {
           headerTransparent: true,
           header: () => (
             <Header
-              variant="dim"
               left={<HeaderBackButton />}
               title={
                 <Controller
