@@ -1,16 +1,32 @@
+import { useState } from "react";
 import type { PressableProps } from "react-native";
-import { Pressable, View } from "react-native";
+import { Pressable } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
-import { GlassView } from "@/components/ui/glass-view/GlassView";
 import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
 import { tv } from "@/lib/tv";
 
-// Figma 헤더 아이콘 버튼: rgba(18,18,18,0.5) + blur(4) 유리 + inset 하이라이트.
-// 아이콘·하이라이트는 GlassView 의 자식으로 둔다 — 웹에서 svg(static)가 absolute 유리 레이어
-// (backdrop-filter 스태킹)에 가려지는 문제를 피하려면 형제가 아니라 자식이어야 blur 위에 그려진다.
-const containerStyles = tv({
-  base: "size-10 overflow-hidden rounded-full",
+// Figma Icon Button: 40 원형 gray-700 + 아이콘 24 icon-strong.
+// Pressed(전 플랫폼)·Hover(웹 포인터 전용)는 배경을 gray-600 으로 스왑하고,
+// Pressed 는 추가로 전체(배경+아이콘) scale(1.1) — 100ms ease-out 진입, 120ms 복귀.
+export const iconButtonStyles = tv({
+  base: "size-10 items-center justify-center rounded-full",
+  variants: {
+    active: {
+      true: "bg-gray-600",
+      false: "bg-gray-700",
+    },
+  },
 });
+
+const PRESS_SCALE = 1.1;
+const PRESS_IN_MS = 100;
+const PRESS_OUT_MS = 120;
 
 export interface IconButtonProps extends Omit<PressableProps, "children"> {
   iconNode: IconComponent;
@@ -24,22 +40,56 @@ export function IconButton({
   iconNode,
   className,
   iconFill = "none",
+  onPressIn,
+  onPressOut,
+  onHoverIn,
+  onHoverOut,
   ...props
 }: IconButtonProps) {
+  const [isPressed, setIsPressed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const scale = useSharedValue(1);
+  const scaleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
   return (
     <Pressable
       accessibilityRole="button"
-      className={containerStyles({ class: className })}
+      onPressIn={(event) => {
+        setIsPressed(true);
+        scale.value = withTiming(PRESS_SCALE, {
+          duration: PRESS_IN_MS,
+          easing: Easing.out(Easing.ease),
+        });
+        onPressIn?.(event);
+      }}
+      onPressOut={(event) => {
+        setIsPressed(false);
+        scale.value = withTiming(1, {
+          duration: PRESS_OUT_MS,
+          easing: Easing.out(Easing.ease),
+        });
+        onPressOut?.(event);
+      }}
+      onHoverIn={(event) => {
+        setIsHovered(true);
+        onHoverIn?.(event);
+      }}
+      onHoverOut={(event) => {
+        setIsHovered(false);
+        onHoverOut?.(event);
+      }}
       {...props}
     >
-      <GlassView
-        intensity={55}
-        className="size-full items-center justify-center"
+      <Animated.View
+        style={scaleStyle}
+        className={iconButtonStyles({
+          active: isPressed || isHovered,
+          class: className,
+        })}
       >
-        <View
-          pointerEvents="none"
-          className="absolute inset-0 rounded-full shadow-[-1px_-1px_1px_0_var(--color-opacity-white-20)_inset,1px_1px_1px_0_var(--color-opacity-white-20)_inset]"
-        />
         <Icon
           iconNode={iconNode}
           size={24}
@@ -47,7 +97,7 @@ export function IconButton({
           fill={iconFill}
           className="text-icon-strong"
         />
-      </GlassView>
+      </Animated.View>
     </Pressable>
   );
 }
