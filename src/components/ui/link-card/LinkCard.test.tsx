@@ -43,6 +43,11 @@ describe("LinkCard", () => {
     expect(screen.getByText(link.title)).toBeOnTheScreen();
   });
 
+  test("Title 은 시안 최대치인 3줄로 말줄임한다", async () => {
+    await renderCard();
+    expect(screen.getByText(link.title).props.numberOfLines).toBe(3);
+  });
+
   test("Meta 는 대표 태그와 저장 시기를 보여준다", async () => {
     await renderCard();
     expect(screen.getByText("AI")).toBeOnTheScreen();

@@ -100,12 +100,12 @@ interface TitleProps {
   className?: string;
 }
 
-/** 링크 제목. 2줄 말줄임으로 렌더한다. */
+/** 링크 제목. 시안 최대치(max-height = 3줄)대로 3줄 말줄임으로 렌더한다. */
 function Title({ variant = "body-3", className }: TitleProps) {
   const { title } = useLinkCard();
 
   return (
-    <Text variant={variant} numberOfLines={2} className={className}>
+    <Text variant={variant} numberOfLines={3} className={className}>
       {title}
     </Text>
   );

@@ -28,6 +28,16 @@ describe("LinkTile", () => {
     expect(screen.getByText("3일 전")).toBeOnTheScreen();
   });
 
+  test("isSelected 면 선택 표시(체크 뱃지)를 보여준다", async () => {
+    await render(<LinkTile link={link} isSelected />);
+    expect(screen.getByTestId("link-tile-selected-badge")).toBeOnTheScreen();
+  });
+
+  test("기본(미선택)에는 선택 표시가 없다", async () => {
+    await render(<LinkTile link={link} />);
+    expect(screen.queryByTestId("link-tile-selected-badge")).not.toBeOnTheScreen();
+  });
+
   test("제목 버튼을 누르면 onPress 를 호출한다", async () => {
     const onPress = jest.fn();
     await render(<LinkTile link={link} onPress={onPress} />);
