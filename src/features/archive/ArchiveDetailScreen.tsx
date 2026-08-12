@@ -1,7 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 
+import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { Header } from "@/components/ui/header/Header";
 import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
@@ -43,21 +44,15 @@ export function ArchiveDetailScreen() {
           ),
         }}
       />
-      <ArchiveDetailContent id={id} />
+      <ArchiveDetailBody id={id} />
     </>
   );
 }
 
-function ArchiveDetailContent({ id }: { id?: string }) {
-  const router = useRouter();
-  // 잘못된 id 로는 조회 자체를 막는다(NaN 파라미터 방지).
-  const isKnownFolder = isFolderRouteId(id);
-  const { data, isPending, isError, refetch } = useQuery({
-    ...folderLinkQueries.list(id ?? ""),
-    enabled: isKnownFolder,
-  });
-
-  if (!isKnownFolder) {
+function ArchiveDetailBody({ id }: { id?: string }) {
+  // 잘못된 id 는 조회 이전 분기라 경계 밖에 남는다 — useSuspenseQuery 는 끌 수 없어서
+  // 여기서 막지 않으면 NaN 파라미터가 서버로 새어나간다.
+  if (!isFolderRouteId(id)) {
     return (
       <CenteredMessage>
         <Text variant="body-2-normal" className="text-text-alternative">
@@ -67,30 +62,36 @@ function ArchiveDetailContent({ id }: { id?: string }) {
     );
   }
 
-  if (isPending) {
-    return (
-      <View className="flex-1 items-center justify-center bg-old-background-base">
-        <ActivityIndicator testID="archive-detail-loading" />
-      </View>
-    );
-  }
-
-  if (isError) {
-    return (
-      <CenteredMessage>
-        <Text variant="body-2-normal" className="text-text-alternative">
-          링크를 불러오지 못했어요.
-        </Text>
-        <Pressable accessibilityRole="button" onPress={() => refetch()}>
-          <Text variant="label-1" className="text-old-icon-accent">
-            다시 시도
+  return (
+    <AsyncBoundary
+      resetKeys={[id]}
+      pending={
+        <View className="flex-1 items-center justify-center bg-old-background-base">
+          <ActivityIndicator testID="archive-detail-loading" />
+        </View>
+      }
+      fallback={({ reset }) => (
+        <CenteredMessage>
+          <Text variant="body-2-normal" className="text-text-alternative">
+            링크를 불러오지 못했어요.
           </Text>
-        </Pressable>
-      </CenteredMessage>
-    );
-  }
+          <Pressable accessibilityRole="button" onPress={reset}>
+            <Text variant="label-1" className="text-old-icon-accent">
+              다시 시도
+            </Text>
+          </Pressable>
+        </CenteredMessage>
+      )}
+    >
+      <ArchiveDetailContent folderId={id} />
+    </AsyncBoundary>
+  );
+}
 
-  const links = data ?? [];
+function ArchiveDetailContent({ folderId }: { folderId: string }) {
+  const router = useRouter();
+  const { data: links } = useSuspenseQuery(folderLinkQueries.list(folderId));
+
   if (links.length === 0) {
     return (
       <CenteredMessage>
