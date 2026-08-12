@@ -9,13 +9,14 @@ export const AUTH_ERROR_CODE = {
 } as const;
 
 export interface SocialProviderConfig {
-  provider: SocialProvider;
   label: string;
   // 카카오는 서버가 아직 미구현(POST /auth/social 이 provider=kakao 에 950004 를 반환) — 연결되면 true 로.
   enabled: boolean;
 }
 
-export const SOCIAL_PROVIDERS: readonly SocialProviderConfig[] = [
-  { provider: "google", label: "구글로 로그인", enabled: true },
-  { provider: "kakao", label: "카카오로 로그인", enabled: false },
-];
+// Record<SocialProvider, ...> + satisfies — provider 가 늘어나도(예: 애플) 여기 추가를
+// 깜빡하면 컴파일 에러로 잡힌다. 배열이었다면 빠뜨려도 타입 통과라 화면에서만 조용히 샌다.
+export const SOCIAL_PROVIDERS = {
+  google: { label: "구글로 로그인", enabled: true },
+  kakao: { label: "카카오로 로그인", enabled: false },
+} satisfies Record<SocialProvider, SocialProviderConfig>;

@@ -65,15 +65,17 @@ export function LoginScreen() {
     <View className="flex-1 items-center justify-center gap-8 p-6">
       <Heading size="2xl">로그인</Heading>
       <View className="w-full gap-3">
-        {SOCIAL_PROVIDERS.filter((p) => p.enabled).map((p) => (
-          <SocialLoginButton
-            key={p.provider}
-            provider={p.provider}
-            label={p.label}
-            onPress={handleSocialLogin}
-            disabled={pendingProvider !== null}
-          />
-        ))}
+        {Object.entries(SOCIAL_PROVIDERS)
+          .filter(([, config]) => config.enabled)
+          .map(([provider, config]) => (
+            <SocialLoginButton
+              key={provider}
+              provider={provider as SocialProvider}
+              label={config.label}
+              onPress={handleSocialLogin}
+              disabled={pendingProvider !== null}
+            />
+          ))}
       </View>
     </View>
   );
