@@ -6,16 +6,14 @@ import { Heading } from "@/components/ui/heading/Heading";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { ROUTES } from "@/constants/routes.constants";
 
+import { useSocialLoginMutation } from "./api/auth.queries";
+import { SOCIAL_PROVIDERS, type SocialProvider } from "./auth.constants";
 import {
   isUnsupportedProviderError,
-  useSocialLoginMutation,
-} from "./api/auth.queries";
-import { SOCIAL_PROVIDERS, type SocialProvider } from "./auth.constants";
-import { SocialLoginButton } from "./components/SocialLoginButton";
-import {
   SocialLoginCancelledError,
-  useSocialAuth,
-} from "./hooks/useSocialAuth";
+} from "./auth.errors";
+import { SocialLoginButton } from "./components/SocialLoginButton";
+import { useSocialAuth } from "./hooks/useSocialAuth";
 
 const LOGIN_FAILED_MESSAGE = "로그인에 실패했어요. 다시 시도해주세요.";
 

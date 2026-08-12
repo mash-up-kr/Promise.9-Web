@@ -8,11 +8,11 @@ jest.mock("@shared/api", () => {
 import { ApiError } from "@shared/api";
 import type { AxiosResponse } from "axios";
 
-import { AUTH_ERROR_CODE } from "../auth.constants";
 import {
+  AUTH_ERROR_CODE,
   isSocialTokenVerificationError,
   isUnsupportedProviderError,
-} from "./auth.queries";
+} from "./auth.errors";
 
 const apiError = (status: number, errorCode: number) =>
   new ApiError({

@@ -26,7 +26,7 @@ import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 
-import { AUTH_ERROR_CODE } from "./auth.constants";
+import { AUTH_ERROR_CODE } from "./auth.errors";
 
 const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({
