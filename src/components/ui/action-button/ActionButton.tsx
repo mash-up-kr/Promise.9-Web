@@ -85,6 +85,10 @@ const labelStyles = tv({
   ],
 });
 
+// ActionButton size(2값) → Spinner size(3값) 매핑. size 축이 늘어나도
+// 조용히 small 로 떨어지지 않도록 명시한다.
+const SPINNER_SIZE = { small: "small", medium: "medium" } as const;
+
 export interface ActionButtonProps
   extends Omit<PressableProps, "children" | "style"> {
   label: string;
@@ -167,7 +171,7 @@ export function ActionButton({
           className="absolute inset-0 items-center justify-center"
         >
           <Spinner
-            size={size === "medium" ? "medium" : "small"}
+            size={SPINNER_SIZE[size]}
             tone={variant === "primary" ? "on-light" : "on-dark"}
           />
         </View>
