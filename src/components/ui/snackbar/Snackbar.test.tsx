@@ -1,5 +1,6 @@
 import { act, render, screen, userEvent } from "@testing-library/react-native";
-import { Pressable, Text } from "react-native";
+import type { ReactNode } from "react";
+import { Pressable, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider, useSnackbar } from "./SnackbarProvider";
@@ -12,16 +13,18 @@ const SAFE_AREA_METRICS = {
 function Harness({
   message = "링크를 저장했어요.",
   action,
+  icon,
 }: {
   message?: string;
   action?: { label: string; onPress: () => void };
+  icon?: ReactNode;
 }) {
   const { show } = useSnackbar();
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="show"
-      onPress={() => show({ message, action })}
+      onPress={() => show({ message, action, icon })}
     >
       <Text>trigger</Text>
     </Pressable>
@@ -76,7 +79,7 @@ describe("Snackbar", () => {
     expect(screen.queryByText("실행 취소")).toBeNull();
   });
 
-  test("일정 시간이 지나면 자동으로 사라진다", async () => {
+  test("2500ms 이 지나면 자동으로 사라진다", async () => {
     jest.useFakeTimers();
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     try {
@@ -84,11 +87,38 @@ describe("Snackbar", () => {
       await user.press(screen.getByLabelText("show"));
       expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
       await act(async () => {
-        jest.advanceTimersByTime(4000);
+        jest.advanceTimersByTime(2400);
+      });
+      expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
+      await act(async () => {
+        jest.advanceTimersByTime(100);
       });
       expect(screen.queryByText("링크를 저장했어요.")).toBeNull();
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  test("icon 을 넘기면 아이콘이 함께 뜬다", async () => {
+    const user = userEvent.setup();
+    await renderWithProvider(<Harness icon={<View testID="stub-icon" />} />);
+    await user.press(screen.getByLabelText("show"));
+    expect(screen.getByTestId("stub-icon")).toBeOnTheScreen();
+  });
+
+  test("icon 을 넘기지 않으면 아이콘 자리가 없다", async () => {
+    const user = userEvent.setup();
+    await renderWithProvider(<Harness />);
+    await user.press(screen.getByLabelText("show"));
+    expect(screen.queryByTestId("stub-icon")).toBeNull();
+  });
+
+  test("긴 메시지가 한 줄로 잘리지 않고 여러 줄로 보인다", async () => {
+    const user = userEvent.setup();
+    const longMessage = "오프라인 상태예요. 연결되면 저장할게요.";
+    await renderWithProvider(<Harness message={longMessage} />);
+    await user.press(screen.getByLabelText("show"));
+    const messageText = screen.getByText(longMessage);
+    expect(messageText.props.numberOfLines).toBeUndefined();
   });
 });
