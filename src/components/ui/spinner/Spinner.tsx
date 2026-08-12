@@ -3,6 +3,10 @@ import { View } from "react-native";
 import { SpinnerArc } from "./SpinnerArc";
 
 const SIZES = { small: 16, medium: 20, large: 24 } as const;
+// opacity-black-100(#000000) · opacity-white-100(#ffffff) 토큰과 정확히 같은 값.
+// className(토큰) → color 매핑을 시도했다: Icon.tsx 와 동일하게 nativewind styled() +
+// nativeStyleMapping 으로 배선했으나, 브라우저에서 실측한 결과 lucide 아이콘(LucideIcon)에는
+// 적용되는 매핑이 이 커스텀 react-native-svg 래퍼(SpinnerArc)에는 적용되지 않았다
 const TONES = { "on-light": "#000000", "on-dark": "#ffffff" } as const;
 
 export interface SpinnerProps {
