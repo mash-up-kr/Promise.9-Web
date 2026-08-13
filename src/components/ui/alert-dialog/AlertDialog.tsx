@@ -2,6 +2,7 @@ import type { PropsWithChildren, ReactNode } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import Animated, { withSpring } from "react-native-reanimated";
 
+import { Dialog } from "@/components/ui/dialog/Dialog";
 import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
 
@@ -9,6 +10,7 @@ import { createAlertDialog } from "./createAlertDialog";
 
 // 오버레이 호스트 = RN Modal (gluestack Overlay 의 useRNModal 방식 · Popover 선례와 동일).
 // 닫힘 시 언마운트해 잔여 렌더를 남기지 않는다.
+// 가운데 정렬은 Dialog 에 맡긴다 — dim 은 아래 Backdrop 이 따로 그리므로 onDismiss 는 넘기지 않는다.
 function Overlay({
   visible,
   onRequestClose,
@@ -27,9 +29,7 @@ function Overlay({
       animationType="fade"
       onRequestClose={onRequestClose}
     >
-      <View className="flex-1 items-center justify-center px-6">
-        {children}
-      </View>
+      <Dialog>{children}</Dialog>
     </Modal>
   );
 }
