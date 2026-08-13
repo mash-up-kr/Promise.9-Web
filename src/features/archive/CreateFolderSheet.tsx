@@ -1,8 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { View } from "react-native";
 
+import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { Input, InputField } from "@/components/ui/input/Input";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
@@ -20,7 +20,17 @@ import { CreateFolderHeader } from "./components/CreateFolderHeader";
 import { FolderColorPicker } from "./components/FolderColorPicker";
 
 export function CreateFolderSheet() {
-  const router = useRouter();
+  return (
+    <SheetScreen>
+      <CreateFolderSheetBody />
+    </SheetScreen>
+  );
+}
+
+// 취소·저장 성공 시 라우트를 바로 제거하지 않고 시트 닫힘 애니메이션을 거친다
+// (useSheetDismiss 는 시트 자손에서만 쓸 수 있어 본문을 분리).
+function CreateFolderSheetBody() {
+  const dismiss = useSheetDismiss();
   const { show } = useSnackbar();
   const { mutate, isPending } = useCreateFolderMutation();
   const { control, handleSubmit, formState } = useForm<CreateFolderInput>({
@@ -31,7 +41,7 @@ export function CreateFolderSheet() {
 
   const onSave = handleSubmit((values) => {
     mutate(values, {
-      onSuccess: () => router.back(),
+      onSuccess: () => dismiss(),
       onError: (error) => {
         // 중복 이름만 별도 안내하고, 그 외는 일반 실패 안내한다.
         const message = isDuplicateFolderNameError(error)
@@ -43,9 +53,9 @@ export function CreateFolderSheet() {
   });
 
   return (
-    <SheetScreen>
+    <>
       <CreateFolderHeader
-        onCancel={() => router.back()}
+        onCancel={dismiss}
         onSave={onSave}
         saveDisabled={!formState.isValid || isPending}
       />
@@ -81,6 +91,6 @@ export function CreateFolderSheet() {
           )}
         />
       </View>
-    </SheetScreen>
+    </>
   );
 }

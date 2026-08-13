@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
+import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { Input, InputField, InputSlot } from "@/components/ui/input/Input";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
 import { Text } from "@/components/ui/text/Text";
@@ -30,6 +31,19 @@ export function CreateLinkSheet() {
     }
     router.replace("/");
   };
+
+  return (
+    <SheetScreen onClose={closeSheet}>
+      <CreateLinkSheetBody />
+    </SheetScreen>
+  );
+}
+
+// 취소·저장 성공 시 라우트를 바로 제거하지 않고 시트 닫힘 애니메이션을 거친다
+// (useSheetDismiss 는 시트 자손에서만 쓸 수 있어 본문을 분리). 실제 라우트 제거는
+// 닫힘 완료 후 SheetScreen 의 onClose(closeSheet)가 담당한다.
+function CreateLinkSheetBody() {
+  const dismiss = useSheetDismiss();
 
   const { control, handleSubmit, setValue, watch, formState } =
     useForm<CreateLinkForm>({
@@ -93,14 +107,14 @@ export function CreateLinkSheet() {
         memo: values.memo?.trim() || null,
         remindType: values.remindType,
       },
-      { onSuccess: () => closeSheet() },
+      { onSuccess: () => dismiss() },
     );
   });
 
   return (
-    <SheetScreen onClose={closeSheet}>
+    <>
       <CreateLinkHeader
-        onCancel={closeSheet}
+        onCancel={dismiss}
         onSave={onSave}
         saveDisabled={!formState.isValid || createLinkMutation.isPending}
       />
@@ -156,6 +170,6 @@ export function CreateLinkSheet() {
           <MemoField memo={field.value ?? ""} onChangeMemo={field.onChange} />
         )}
       />
-    </SheetScreen>
+    </>
   );
 }
