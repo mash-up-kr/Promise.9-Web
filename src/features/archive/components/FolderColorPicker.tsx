@@ -44,7 +44,7 @@ function Swatch({ color, selected, onPress }: SwatchProps) {
         <View
           className={`h-11 w-11 items-center justify-center rounded-full ${solid}`}
         >
-          <View className="h-[38px] w-[38px] items-center justify-center rounded-full bg-old-background-base">
+          <View className="h-[38px] w-[38px] items-center justify-center rounded-full bg-background-base">
             <View className={`h-8 w-8 rounded-full ${solid}`} />
           </View>
         </View>
