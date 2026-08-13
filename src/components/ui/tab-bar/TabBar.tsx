@@ -148,16 +148,15 @@ function TabBarItem({
         withTiming(1.14, { duration: 90, easing: Easing.out(Easing.ease) }),
         withTiming(1, { duration: 110, easing: Easing.out(Easing.ease) }),
       );
-    } else {
-      // 클린업이 팝 시퀀스를 중간에 취소한 경우를 대비해 원래 크기로 복원한다.
-      popScale.value = 1;
     }
     isMountedRef.current = true;
 
-    // 언마운트 시 진행 중인 애니메이션을 UI 스레드에서 정리한다.
+    // 재실행·언마운트 시 진행 중인 애니메이션을 정리하고,
+    // 중간에 끊긴 팝 스케일은 원래 크기로 복원한다.
     return () => {
       cancelAnimation(activeProgress);
       cancelAnimation(popScale);
+      popScale.value = 1;
     };
   }, [isActive, activeProgress, popScale]);
 
