@@ -2,6 +2,7 @@ import { apiClient, isApiError, type SuccessResponse } from "@shared/api";
 import {
   folderToneToHex,
   hexToFolderTone,
+  type SelectableFolderColor,
 } from "@shared/folder/folder.constants";
 import {
   queryOptions,
@@ -182,8 +183,14 @@ export function useCreateFolderMutation() {
   });
 }
 
-export interface UpdateFolderVariables extends CreateFolderInput {
+export interface UpdateFolderVariables {
   folderId: string;
+  folderName: string;
+  /**
+   * 바꾸지 않았으면 생략한다. 팔레트 밖 색(기본색 등)은 편집 폼에서 폴백 색으로 보이므로,
+   * 늘 보내면 이름만 고쳐도 그 폴백 색으로 덮어쓰게 된다.
+   */
+  color?: SelectableFolderColor;
 }
 
 // PATCH /folders/{folderId} — 이름·색상을 수정하고 목록 캐시를 무효화한다.
@@ -198,7 +205,7 @@ export function useUpdateFolderMutation() {
     }: UpdateFolderVariables) => {
       await apiClient.patch(`/folders/${folderId}`, {
         folderName,
-        color: folderToneToHex(color),
+        ...(color && { color: folderToneToHex(color) }),
       });
     },
     onSuccess: () => {

@@ -77,7 +77,7 @@ describe("EditFolderSheet", () => {
     ).toBe(true);
   });
 
-  test("저장하면 folderId 로 이름·색상 hex 를 보내고 시트를 닫는다", async () => {
+  test("이름만 고치면 folderId 로 이름만 보내고 시트를 닫는다", async () => {
     await renderSheet();
     await fireEvent.changeText(
       screen.getByPlaceholderText("폴더 이름을 입력하세요."),
@@ -88,10 +88,39 @@ describe("EditFolderSheet", () => {
     await waitFor(() =>
       expect(mockPatch).toHaveBeenCalledWith("/folders/3", {
         folderName: "디자인 자료",
-        color: "#b282cc",
       }),
     );
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
+  });
+
+  test("색상을 바꾸면 색상 hex 도 함께 보낸다", async () => {
+    await renderSheet();
+    await fireEvent.press(screen.getByTestId("folder-color-red"));
+    await fireEvent.press(screen.getByLabelText("저장"));
+
+    await waitFor(() =>
+      expect(mockPatch).toHaveBeenCalledWith("/folders/3", {
+        folderName: "디자인",
+        color: "#e34647",
+      }),
+    );
+  });
+
+  // 팔레트 밖 색은 폼에 폴백 색으로 잡히므로, 그대로 보내면 이름만 고쳐도 색이 덮인다.
+  test("팔레트에 없는 색으로 들어와 이름만 고치면 색상을 보내지 않는다", async () => {
+    mockParams.mockReturnValue({ id: "3", name: "기타", color: "gray" });
+    await renderSheet();
+    await fireEvent.changeText(
+      screen.getByPlaceholderText("폴더 이름을 입력하세요."),
+      "기타 자료",
+    );
+    await fireEvent.press(screen.getByLabelText("저장"));
+
+    await waitFor(() =>
+      expect(mockPatch).toHaveBeenCalledWith("/folders/3", {
+        folderName: "기타 자료",
+      }),
+    );
   });
 
   test("이름이 중복되면 다이얼로그로 안내하고 시트를 닫지 않는다", async () => {

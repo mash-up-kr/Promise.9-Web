@@ -41,9 +41,15 @@ export function EditFolderSheet() {
         }}
         isSubmitting={isPending}
         onCancel={() => router.back()}
-        onSubmit={(values) =>
+        onSubmit={(values, dirtyFields) =>
           mutate(
-            { folderId: id, ...values },
+            {
+              folderId: id,
+              folderName: values.folderName,
+              // 색을 고르지 않았으면 보내지 않는다 — 팔레트 밖 색으로 들어온 폴더는
+              // 폼에 폴백 색이 잡혀 있어, 그대로 보내면 이름만 고쳐도 색이 덮인다.
+              color: dirtyFields.color ? values.color : undefined,
+            },
             {
               onSuccess: () => router.back(),
               onError: (error) => {

@@ -34,12 +34,20 @@ const actionButtonLabelStyles = tv({
   },
 });
 
+/** 사용자가 실제로 건드린 필드. 편집은 바뀐 필드만 보내야 해서 제출 시 함께 넘긴다. */
+export type FolderFormDirtyFields = Partial<
+  Record<keyof CreateFolderInput, boolean>
+>;
+
 export interface FolderFormSheetProps {
   /** 카드 상단 문구 — "새 폴더 만들기" / "폴더 편집". */
   title: string;
   defaultValues: CreateFolderInput;
   isSubmitting: boolean;
-  onSubmit: (values: CreateFolderInput) => void;
+  onSubmit: (
+    values: CreateFolderInput,
+    dirtyFields: FolderFormDirtyFields,
+  ) => void;
   onCancel: () => void;
 }
 
@@ -63,6 +71,8 @@ export function FolderFormSheet({
     defaultValues,
   });
 
+  // 렌더 중에 읽어야 RHF 가 dirty 변화를 구독해 최신 값을 유지한다.
+  const { dirtyFields } = formState;
   const saveDisabled = !formState.isValid || isSubmitting;
 
   return (
@@ -131,7 +141,7 @@ export function FolderFormSheet({
             accessibilityLabel="저장"
             accessibilityState={{ disabled: saveDisabled }}
             disabled={saveDisabled}
-            onPress={handleSubmit(onSubmit)}
+            onPress={handleSubmit((values) => onSubmit(values, dirtyFields))}
             className={actionButtonStyles({
               variant: "primary",
               disabled: saveDisabled,
