@@ -4,9 +4,8 @@ import { Pressable } from "react-native";
 import Animated from "react-native-reanimated";
 
 import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
+import { usePressedScale } from "@/hooks/usePressedScale";
 import { tv } from "@/lib/tv";
-
-import { usePressedScale } from "./usePressedScale";
 
 // Figma Icon Button: 40 원형 gray-700 + 아이콘 24 icon-strong.
 // Pressed(전 플랫폼)·Hover(웹 포인터 전용)는 배경을 gray-600 으로 스왑하고,

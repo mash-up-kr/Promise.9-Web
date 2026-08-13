@@ -14,8 +14,8 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Icon } from "@/components/ui/icon/Icon";
-import { usePressedScale } from "@/components/ui/icon-button/usePressedScale";
 import { ROUTES } from "@/constants/routes.constants";
+import { usePressedScale } from "@/hooks/usePressedScale";
 import { tv } from "@/lib/tv";
 
 import {
