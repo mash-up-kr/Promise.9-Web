@@ -1,19 +1,16 @@
 import { useState } from "react";
 import type { PressableProps } from "react-native";
 import { Pressable } from "react-native";
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 
 import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
 import { tv } from "@/lib/tv";
 
+import { usePressedScale } from "./usePressedScale";
+
 // Figma Icon Button: 40 원형 gray-700 + 아이콘 24 icon-strong.
 // Pressed(전 플랫폼)·Hover(웹 포인터 전용)는 배경을 gray-600 으로 스왑하고,
-// Pressed 는 추가로 전체(배경+아이콘) scale(1.1) — 100ms ease-out 진입, 120ms 복귀.
+// Pressed 는 추가로 전체(배경+아이콘) scale(1.1) — usePressedScale.
 export const iconButtonStyles = tv({
   base: "size-10 items-center justify-center rounded-full",
   variants: {
@@ -23,10 +20,6 @@ export const iconButtonStyles = tv({
     },
   },
 });
-
-const PRESS_SCALE = 1.1;
-const PRESS_IN_MS = 100;
-const PRESS_OUT_MS = 120;
 
 export interface IconButtonProps extends Omit<PressableProps, "children"> {
   iconNode: IconComponent;
@@ -46,31 +39,19 @@ export function IconButton({
   onHoverOut,
   ...props
 }: IconButtonProps) {
-  const [isPressed, setIsPressed] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-
-  const scale = useSharedValue(1);
-  const scaleStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  const { isPressed, pressedScaleStyle, handlePressIn, handlePressOut } =
+    usePressedScale();
 
   return (
     <Pressable
       accessibilityRole="button"
       onPressIn={(event) => {
-        setIsPressed(true);
-        scale.value = withTiming(PRESS_SCALE, {
-          duration: PRESS_IN_MS,
-          easing: Easing.out(Easing.ease),
-        });
+        handlePressIn();
         onPressIn?.(event);
       }}
       onPressOut={(event) => {
-        setIsPressed(false);
-        scale.value = withTiming(1, {
-          duration: PRESS_OUT_MS,
-          easing: Easing.out(Easing.ease),
-        });
+        handlePressOut();
         onPressOut?.(event);
       }}
       onHoverIn={(event) => {
@@ -84,7 +65,7 @@ export function IconButton({
       {...props}
     >
       <Animated.View
-        style={scaleStyle}
+        style={pressedScaleStyle}
         className={iconButtonStyles({
           active: isPressed || isHovered,
           class: className,
