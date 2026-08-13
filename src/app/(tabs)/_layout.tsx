@@ -3,8 +3,8 @@ import { Search, Settings } from "lucide-react-native";
 
 import { Header } from "@/components/ui/header/Header";
 import { HeaderActions } from "@/components/ui/header/HeaderActions";
-import { Heading } from "@/components/ui/heading/Heading";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
+import { Logo } from "@/components/ui/logo/Logo";
 import { TabBar } from "@/components/ui/tab-bar/TabBar";
 import { ROUTES } from "@/constants/routes.constants";
 
@@ -31,8 +31,7 @@ export default function TabsLayout() {
           header: () => (
             <Header
               scrollScope="home"
-              // 서비스 워드마크 로고(svg)가 확정되면 임시 텍스트를 로고로 교체 예정
-              left={<Heading>Link-dingdong</Heading>}
+              left={<Logo />}
               right={
                 <>
                   <IconButton
