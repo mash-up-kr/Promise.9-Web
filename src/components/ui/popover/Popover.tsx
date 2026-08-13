@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
+import { isIOS } from "@/constants/platform.constants";
 
 import { type PopoverTriggerRect, resolvePopoverTop } from "./popover.utils";
 
@@ -36,6 +37,13 @@ export interface PopoverProps {
   gap?: number;
   width?: number;
   closeAccessibilityLabel?: string;
+  /**
+   * 팝오버가 완전히 닫힌 뒤 호출된다.
+   *
+   * iOS 는 Modal 이 사라지는 도중에 다른 Modal 을 띄우면 그 Modal 이 아예 나타나지 않는다.
+   * 메뉴 항목이 다이얼로그·시트를 여는 경우 그 동작을 이 시점까지 미뤄야 한다.
+   */
+  onClosed?: () => void;
 }
 
 // 리퀴드 글래스 플로팅 패널 — 트리거 바로 아래에 띄운다(아래 공간이 모자라면 위로 뒤집는다).
@@ -47,6 +55,7 @@ export function Popover({
   gap = DEFAULT_GAP,
   width,
   closeAccessibilityLabel = "메뉴 닫기",
+  onClosed,
 }: PopoverProps) {
   const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
@@ -71,7 +80,12 @@ export function Popover({
     setVisible(true);
     measureTrigger();
   };
-  const close = () => setVisible(false);
+  // Modal 의 onDismiss 는 iOS 전용(사라짐 애니메이션이 끝난 뒤 호출)이다. 다른 플랫폼은
+  // 애니메이션 중 Modal 중첩 문제가 없으므로 닫는 즉시 알린다.
+  const close = () => {
+    setVisible(false);
+    if (!isIOS) onClosed?.();
+  };
 
   // 중앙 컬럼과 윈도우 가장자리 사이 여백. 모바일(윈도우 ≤ 컬럼 폭)에서는 0 이라 영향 없다.
   const edgeInset = Math.max(0, (windowWidth - CONTENT_MAX_WIDTH) / 2);
@@ -94,10 +108,12 @@ export function Popover({
         {trigger(open)}
       </View>
       <Modal
+        testID="popover-overlay"
         visible={visible}
         transparent
         animationType="fade"
         onRequestClose={close}
+        onDismiss={isIOS ? onClosed : undefined}
       >
         <Pressable
           accessibilityLabel={closeAccessibilityLabel}
