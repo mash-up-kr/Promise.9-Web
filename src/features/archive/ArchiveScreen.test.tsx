@@ -15,6 +15,7 @@ jest.mock("@shared/api", () => {
 import { apiClient } from "@shared/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -166,6 +167,16 @@ describe("ArchiveScreen", () => {
       await fireEvent(await screen.findByText("디자인"), "longPress");
     };
 
+    // 메뉴에서 고른 동작은 팝오버 Modal 이 사라진 뒤에 실행된다(iOS Modal 중첩 회피).
+    // RNTL 은 네이티브 dismiss 를 흉내내지 않고 닫힌 Modal 은 트리에서 사라지므로,
+    // 누르기 전에 onDismiss 를 붙잡아 두었다가 직접 호출한다.
+    const selectMenuItem = async (label: string) => {
+      const dismiss: () => void =
+        screen.getByTestId("popover-overlay").props.onDismiss;
+      await fireEvent.press(screen.getByText(label));
+      await act(async () => dismiss());
+    };
+
     test("내 폴더를 길게 누르면 편집·삭제 메뉴를 보여준다", async () => {
       await openMenu();
       expect(screen.getByText("폴더 편집")).toBeOnTheScreen();
@@ -174,7 +185,7 @@ describe("ArchiveScreen", () => {
 
     test("폴더 편집을 누르면 편집 시트로 이동한다", async () => {
       await openMenu();
-      await fireEvent.press(screen.getByText("폴더 편집"));
+      await selectMenuItem("폴더 편집");
 
       expect(mockPush).toHaveBeenCalledWith({
         pathname: "/edit-folder",
@@ -184,7 +195,7 @@ describe("ArchiveScreen", () => {
 
     test("삭제를 누르면 확인 다이얼로그를 먼저 보여준다", async () => {
       await openMenu();
-      await fireEvent.press(screen.getByText("삭제"));
+      await selectMenuItem("삭제");
 
       expect(screen.getByText("폴더를 삭제하시겠어요?")).toBeOnTheScreen();
       expect(
@@ -196,7 +207,7 @@ describe("ArchiveScreen", () => {
 
     test("다이얼로그에서 폴더 삭제를 확인하면 삭제 요청을 보낸다", async () => {
       await openMenu();
-      await fireEvent.press(screen.getByText("삭제"));
+      await selectMenuItem("삭제");
       await fireEvent.press(screen.getByText("폴더 삭제"));
 
       await waitFor(() => {
@@ -206,7 +217,7 @@ describe("ArchiveScreen", () => {
 
     test("다이얼로그에서 취소하면 삭제하지 않는다", async () => {
       await openMenu();
-      await fireEvent.press(screen.getByText("삭제"));
+      await selectMenuItem("삭제");
       await fireEvent.press(screen.getByText("취소"));
 
       expect(mockDelete).not.toHaveBeenCalled();

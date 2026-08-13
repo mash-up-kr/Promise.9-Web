@@ -1,4 +1,5 @@
 import { Pencil, Trash2 } from "lucide-react-native";
+import { useRef } from "react";
 import { Pressable, View } from "react-native";
 
 import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
@@ -27,11 +28,27 @@ export function FolderContextMenu({
   onEdit,
   onDelete,
 }: FolderContextMenuProps) {
+  // 편집 시트·삭제 다이얼로그는 또 다른 모달이라 메뉴가 사라지는 도중에 띄우면 나타나지 않는다.
+  // 고른 동작을 여기 담아뒀다가 팝오버가 완전히 닫힌 뒤에 실행한다.
+  const pendingActionRef = useRef<(() => void) | null>(null);
+
+  const selectAction = (close: () => void, action: () => void) => {
+    pendingActionRef.current = action;
+    close();
+  };
+
+  const runPendingAction = () => {
+    const action = pendingActionRef.current;
+    pendingActionRef.current = null;
+    action?.();
+  };
+
   return (
     <Popover
       width={MENU_WIDTH}
       anchor={MENU_ANCHOR}
       closeAccessibilityLabel="폴더 메뉴 닫기"
+      onClosed={runPendingAction}
       trigger={(open) => (
         <FolderItem
           name={folder.name}
@@ -47,19 +64,13 @@ export function FolderContextMenu({
           <MenuItem
             icon={Pencil}
             label="폴더 편집"
-            onPress={() => {
-              close();
-              onEdit();
-            }}
+            onPress={() => selectAction(close, onEdit)}
           />
           <MenuItem
             icon={Trash2}
             label="삭제"
             destructive
-            onPress={() => {
-              close();
-              onDelete();
-            }}
+            onPress={() => selectAction(close, onDelete)}
           />
         </View>
       )}
