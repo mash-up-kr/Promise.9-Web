@@ -150,8 +150,16 @@ export function useReorderFoldersMutation() {
     mutationFn: async (orderedIds: readonly string[]) => {
       await apiClient.put("/folders/order", toReorderRequest(orderedIds));
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: folderKeys.root() });
+    // 재조회 promise 를 반환해 그게 끝나야 mutation 이 끝나게 한다 — 화면이 로컬 순서를
+    // 버리는 시점이 새 목록 도착보다 빠르면 옛 순서로 되돌아갔다 다시 튄다.
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: folderKeys.root() }),
+    // 목록이 서버와 어긋나서 실패한 경우엔 화면이 들고 있는 목록 자체가 낡았다.
+    // 재조회하지 않으면 같은 목록으로 다시 저장해도 계속 같은 실패가 난다.
+    onError: (error) => {
+      if (isFolderOrderMismatchError(error)) {
+        queryClient.invalidateQueries({ queryKey: folderKeys.root() });
+      }
     },
   });
 }

@@ -77,9 +77,10 @@ export function ArchiveScreen() {
             : "폴더 순서를 저장하지 못했어요. 다시 시도해주세요.",
         });
       },
+      // 성공하면 재조회 결과가, 실패하면 기존 서버 순서가 정답이므로 어느 쪽이든 로컬 순서를
+      // 버린다. 응답 전에 버리면 그 사이 낡은 서버 순서가 잠깐 보였다가 다시 튄다.
+      onSettled: () => setOrderedIds([]),
     });
-    // 성공하면 재조회 결과가, 실패하면 기존 서버 순서가 정답이므로 어느 쪽이든 로컬 순서를 버린다.
-    setOrderedIds([]);
   }, [orderedIds, saveOrder, show]);
 
   const handleOpenFolder = useCallback<OpenFolderHandler>(
