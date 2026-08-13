@@ -116,15 +116,31 @@ describe("CreateFolderSheet", () => {
       },
     } as unknown as AxiosResponse);
 
-  test("이름이 중복되면(errorCode 920002) 안내를 보여주고 시트를 닫지 않는다", async () => {
+  test("이름이 중복되면(errorCode 920002) 다이얼로그로 안내하고 시트를 닫지 않는다", async () => {
     mockPost.mockRejectedValue(conflictError(FOLDER_ERROR_CODE.DUPLICATE_NAME));
     await renderSheet();
     await typeName("디자인");
     await fireEvent.press(screen.getByLabelText("저장"));
 
     expect(
-      await screen.findByText("같은 이름의 폴더가 있어요."),
+      await screen.findByText("같은 이름의 폴더가 있어요"),
     ).toBeOnTheScreen();
+    expect(screen.getByText("다른 이름을 입력해 주세요")).toBeOnTheScreen();
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  // 확인을 누르면 이름만 고쳐 다시 저장할 수 있어야 한다 — 입력값을 잃으면 안 된다.
+  test("중복 안내에서 확인을 누르면 다이얼로그만 닫고 입력값은 남는다", async () => {
+    mockPost.mockRejectedValue(conflictError(FOLDER_ERROR_CODE.DUPLICATE_NAME));
+    await renderSheet();
+    await typeName("디자인");
+    await fireEvent.press(screen.getByLabelText("저장"));
+    await fireEvent.press(await screen.findByText("확인"));
+
+    expect(screen.queryByText("같은 이름의 폴더가 있어요")).toBeNull();
+    expect(
+      screen.getByPlaceholderText("폴더 이름을 입력하세요.").props.value,
+    ).toBe("디자인");
     expect(mockBack).not.toHaveBeenCalled();
   });
 
