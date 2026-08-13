@@ -2,7 +2,10 @@
 // 에러 유틸(ApiError·isApiError)은 실제 구현을 쓴다.
 jest.mock("@shared/api", () => {
   const errors = jest.requireActual("@shared/api/errors");
-  return { apiClient: { get: jest.fn(), post: jest.fn() }, ...errors };
+  return {
+    apiClient: { get: jest.fn(), post: jest.fn(), put: jest.fn() },
+    ...errors,
+  };
 });
 
 import { ApiError } from "@shared/api";
@@ -13,7 +16,9 @@ import {
   folderListResponseSchema,
   folderQueries,
   isDuplicateFolderNameError,
+  isFolderOrderMismatchError,
   toArchiveFolderData,
+  toReorderRequest,
 } from "./folder.queries";
 
 describe("toArchiveFolderData", () => {
@@ -163,5 +168,44 @@ describe("isDuplicateFolderNameError", () => {
 
   it("API 에러가 아니면 판별하지 않는다", () => {
     expect(isDuplicateFolderNameError(new Error("network"))).toBe(false);
+  });
+});
+
+describe("toReorderRequest", () => {
+  // 서버는 folderId 를 number 로 받는데 UI 모델의 id 는 문자열이라 되돌려야 한다.
+  it("폴더 id 순서를 folderIds 요청 본문으로 변환한다", () => {
+    expect(toReorderRequest(["4", "2", "3"])).toEqual({ folderIds: [4, 2, 3] });
+  });
+});
+
+describe("isFolderOrderMismatchError", () => {
+  const apiError = (status: number, errorCode: number) =>
+    new ApiError({
+      status,
+      data: {
+        success: false,
+        error: {
+          code: status,
+          errorCode,
+          message: "폴더 순서 목록이 현재 폴더 전체와 일치하지 않습니다.",
+          timestamp: "2026-07-26T00:00:00.000Z",
+        },
+      },
+    } as unknown as AxiosResponse);
+
+  it("폴더 순서 불일치 errorCode 를 판별한다", () => {
+    expect(
+      isFolderOrderMismatchError(
+        apiError(400, FOLDER_ERROR_CODE.ORDER_MISMATCH),
+      ),
+    ).toBe(true);
+  });
+
+  it("순서 불일치가 아닌 400 은 판별하지 않는다", () => {
+    expect(isFolderOrderMismatchError(apiError(400, 910001))).toBe(false);
+  });
+
+  it("API 에러가 아니면 판별하지 않는다", () => {
+    expect(isFolderOrderMismatchError(new Error("network"))).toBe(false);
   });
 });

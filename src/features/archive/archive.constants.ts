@@ -19,6 +19,8 @@ export const SYSTEM_FOLDERS = [
  */
 export const FOLDER_ERROR_CODE = {
   DUPLICATE_NAME: 920002,
+  /** PUT /folders/order 에 넘긴 목록이 현재 폴더 전체와 다를 때(누락·미소유·중복). */
+  ORDER_MISMATCH: 920003,
 } as const;
 
 // Figma "새 폴더 만들기" 시트 색상 그리드 순서 (2행 × 6열).

@@ -122,6 +122,40 @@ export function isDuplicateFolderNameError(error: unknown): boolean {
   );
 }
 
+/**
+ * 폴더 순서 저장 실패가 "목록이 현재 폴더 전체와 다름" 인지 판별한다.
+ *
+ * 400 은 일반 검증 실패도 포함하므로 상태 코드로는 단정할 수 없다. 이 경우는 화면이 들고
+ * 있던 목록이 서버와 어긋난 상태(다른 기기에서 폴더 추가·삭제 등)라 재조회가 필요하다.
+ */
+export function isFolderOrderMismatchError(error: unknown): boolean {
+  return (
+    isApiError(error) &&
+    error.payload?.error.errorCode === FOLDER_ERROR_CODE.ORDER_MISMATCH
+  );
+}
+
+/** 화면이 들고 있는 폴더 id 순서를 PUT /folders/order 요청 본문으로 변환한다. */
+export function toReorderRequest(orderedIds: readonly string[]): {
+  folderIds: number[];
+} {
+  return { folderIds: orderedIds.map(Number) };
+}
+
+// PUT /folders/order — 최종 순서 전체를 저장하고 목록 캐시를 무효화한다.
+// 서버가 이 순서를 GET /folders 에 반영하므로 성공 후엔 재조회 결과가 곧 정답이다.
+export function useReorderFoldersMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderedIds: readonly string[]) => {
+      await apiClient.put("/folders/order", toReorderRequest(orderedIds));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: folderKeys.root() });
+    },
+  });
+}
+
 // POST /folders — 이름·색상으로 폴더를 생성하고 목록 캐시를 무효화한다.
 export function useCreateFolderMutation() {
   const queryClient = useQueryClient();
@@ -136,6 +170,46 @@ export function useCreateFolderMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: folderKeys.root() });
+    },
+  });
+}
+
+export interface UpdateFolderVariables extends CreateFolderInput {
+  folderId: string;
+}
+
+// PATCH /folders/{folderId} — 이름·색상을 수정하고 목록 캐시를 무효화한다.
+// 서버 문서에는 folderName 만 적혀 있으나 구현(updateFolderSchema)은 color 도 받는다.
+export function useUpdateFolderMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      folderId,
+      folderName,
+      color,
+    }: UpdateFolderVariables) => {
+      await apiClient.patch(`/folders/${folderId}`, {
+        folderName,
+        color: folderToneToHex(color),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: folderKeys.root() });
+    },
+  });
+}
+
+// DELETE /folders/{folderId} — 폴더를 삭제하고 목록 캐시를 무효화한다.
+// 폴더에 있던 링크는 서버가 미분류로 옮기므로 폴더 링크 목록 캐시도 함께 버린다.
+export function useDeleteFolderMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (folderId: string) => {
+      await apiClient.delete(`/folders/${folderId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: folderKeys.root() });
+      queryClient.invalidateQueries({ queryKey: ["folder-links"] });
     },
   });
 }
