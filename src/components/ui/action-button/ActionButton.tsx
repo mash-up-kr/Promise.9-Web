@@ -1,24 +1,23 @@
-import { useState } from "react";
-import { Pressable, type PressableProps, View } from "react-native";
+import { createContext, useContext } from "react";
+import { View } from "react-native";
 
+import {
+  Button,
+  type ButtonProps,
+  useButtonState,
+} from "@/components/ui/button/Button";
+import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
 import { Spinner } from "@/components/ui/spinner/Spinner";
 import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
 
-// Figma Action Button 통합(Button/Primary·Assistive·Destructive + Alert Button).
-// State 축(Default/Pressed/Loading/Disabled)은 prop 이 아니라 각기 다른 출처의 런타임 상태로 다룬다:
-// Pressed=onPressIn/onPressOut, Loading=isLoading prop, Disabled=disabled prop.
-//
-// 색 토큰 매핑 (2026-08-13, PR#59 토큰 반영 후):
-// - Destructive 배경/라벨은 semantic 토큰(action-destructive*)이 신설되어 그대로 매핑.
-// - Primary 라벨(#242426)은 Figma 자체가 semantic 이 아니라 gray-800 primitive 를 직접 참조한다
-//   (get_variable_defs 결과 "gray/gray-800" — semantic 이름 없음). semantic 후보도 없어
-//   Snackbar.tsx 의 bg-gray-800 선례를 따라 primitive 를 그대로 쓴다.
+// Figma Action Button(Primary·Assistive·Destructive) 스킨. 헤드리스 코어 Button 에
+// 색 토큰: Destructive 는 semantic 토큰(action-destructive*). Primary 라벨(#242426)은
+// Figma 가 gray-800 primitive 를 직접 참조하므로 Snackbar 선례대로 primitive 를 쓴다.
 const containerStyles = tv({
   base: "flex-row items-center justify-center overflow-hidden rounded-full px-4",
   variants: {
-    // 너비는 지정하지 않는다 — height/padding/min-width 만 컴포넌트가 소유한다.
-    // 가로는 호출부(부모 레이아웃)가 결정한다.
+    // 너비는 지정하지 않는다 — height/padding/min-width 만 소유. 가로는 호출부가 결정한다.
     size: {
       small: "h-11 min-w-[60px] py-2.5",
       medium: "h-12 min-w-[132px] py-3",
@@ -28,7 +27,7 @@ const containerStyles = tv({
       assistive: "",
       destructive: "bg-action-destructive-background",
     },
-    // Pressed·Loading 배경이 동일해 하나의 불리언으로 묶는다.
+    // Pressed·Loading 배경이 같아 하나로 묶는다. 아래 두 축은 compoundVariants 매칭 키.
     isActive: { true: "", false: "" },
     isDisabled: { true: "", false: "" },
   },
@@ -65,117 +64,169 @@ const containerStyles = tv({
   defaultVariants: { size: "medium", variant: "primary" },
 });
 
-// 타이포(size/line-height/weight/tracking)는 Text 의 variant="heading-3-medium" 이 맡는다.
-// 여기서는 색만 다룬다.
-const labelStyles = tv({
+// 라벨·아이콘 색만 다룬다(타이포는 Text variant 가). isDimmed = disabled(Loading 제외).
+const contentColorStyles = tv({
   variants: {
     variant: {
       primary: "text-gray-800",
       assistive: "text-text-strong",
       destructive: "text-action-destructive",
     },
-    isDisabled: { true: "", false: "" },
-    // 로딩 중에도 라벨은 자리를 차지해야 버튼 폭이 유지된다.
-    isHidden: { true: "opacity-0", false: "" },
+    isDimmed: { true: "", false: "" },
   },
   compoundVariants: [
-    { variant: "primary", isDisabled: true, class: "text-text-assistive" },
-    { variant: "assistive", isDisabled: true, class: "text-text-neutral" },
-    { variant: "destructive", isDisabled: true, class: "text-text-neutral" },
+    { variant: "primary", isDimmed: true, class: "text-text-assistive" },
+    { variant: "assistive", isDimmed: true, class: "text-text-neutral" },
+    { variant: "destructive", isDimmed: true, class: "text-text-neutral" },
   ],
 });
 
-// ActionButton size(2값) → Spinner size(3값) 매핑. size 축이 늘어나도
-// 조용히 small 로 떨어지지 않도록 명시한다.
-const SPINNER_SIZE = { small: "small", medium: "medium" } as const;
+type ActionVariant = "primary" | "assistive" | "destructive";
+type ActionSize = "small" | "medium";
 
-export interface ActionButtonProps
-  extends Omit<PressableProps, "children" | "style"> {
-  label: string;
+interface ActionButtonStyle {
+  size: ActionSize;
+  variant: ActionVariant;
+}
+
+const StyleContext = createContext<ActionButtonStyle | null>(null);
+
+function useActionButtonStyle(): ActionButtonStyle {
+  const style = useContext(StyleContext);
+  if (!style) {
+    throw new Error(
+      "ActionButton.Text·ActionButton.Icon 은 <ActionButton> 안에서만 쓸 수 있습니다.",
+    );
+  }
+  return style;
+}
+
+export interface ActionButtonProps extends Omit<ButtonProps, "className"> {
   /** 기본 medium */
-  size?: "small" | "medium";
+  size?: ActionSize;
   /** 기본 primary */
-  variant?: "primary" | "assistive" | "destructive";
-  /** 로딩 중에는 라벨을 숨기고 Spinner 를 보여주며, 자동으로 press 가 막힌다. */
-  isLoading?: boolean;
+  variant?: ActionVariant;
   /**
-   * 너비는 여기로 주입한다(`w-full` · `flex-1` 등) — 컴포넌트는 height·padding·min-width 만 소유한다.
-   * RN 기본(`flex-col`, `align-items: stretch`)에서는 지정하지 않아도 부모 폭을 꽉 채운다.
-   * 내용만큼 줄이려면 호출부에서 `self-start` 를 준다.
+   * 너비 주입 통로(`w-full` · `flex-1`) — 컴포넌트는 height·padding·min-width 만 소유한다.
+   * RN 기본(flex-col, stretch)에서는 미지정 시 부모 폭을 꽉 채운다. 줄이려면 `self-start`.
    */
   className?: string;
 }
 
 export function ActionButton({
-  label,
   size = "medium",
   variant = "primary",
   isLoading = false,
   disabled,
   className,
-  onPressIn,
-  onPressOut,
+  children,
+  accessibilityLabel,
   ...props
 }: ActionButtonProps) {
-  const [isPressed, setIsPressed] = useState(false);
-
-  // isDisabled = "누를 수 없음"(Loading 포함). isDimmed = "회색으로 죽은 모양"(Loading 제외).
-  const isDisabled = Boolean(disabled) || isLoading;
-  const isDimmed = Boolean(disabled);
-  const isActive = isPressed || isLoading;
+  // 문자열 children 은 ActionButton.Text 가 접근성 이름을 제공한다. 아이콘만 조립하면
+  // 호출부가 accessibilityLabel 을 넘겨야 이름이 생긴다.
+  const resolvedLabel =
+    accessibilityLabel ?? (typeof children === "string" ? children : undefined);
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled: isDisabled, busy: isLoading }}
-      disabled={isDisabled}
-      onPressIn={(event) => {
-        setIsPressed(true);
-        onPressIn?.(event);
-      }}
-      onPressOut={(event) => {
-        setIsPressed(false);
-        onPressOut?.(event);
-      }}
-      className={containerStyles({
-        size,
-        variant,
-        isActive,
-        isDisabled: isDimmed,
-        class: className,
-      })}
-      {...props}
-    >
-      {variant === "destructive" && isActive && !isDimmed && (
-        <View
-          pointerEvents="none"
-          className="absolute inset-0 bg-opacity-white-10"
-        />
-      )}
-
-      <Text
-        variant="heading-3-medium"
-        className={labelStyles({
-          variant,
-          isDisabled: isDimmed,
-          isHidden: isLoading,
-        })}
+    <StyleContext.Provider value={{ size, variant }}>
+      <Button
+        isLoading={isLoading}
+        disabled={disabled}
+        accessibilityLabel={resolvedLabel}
+        // 상태 의존 배경은 코어 상태로 스킨이 계산한다(className 리졸버).
+        className={(state) =>
+          containerStyles({
+            size,
+            variant,
+            isActive: state.isPressed || state.isLoading,
+            isDisabled: state.disabled,
+            class: className,
+          })
+        }
+        {...props}
       >
-        {label}
-      </Text>
+        {/* destructive 눌림 오버레이 — content 보다 먼저 와야 뒤에 깔린다. */}
+        <PressOverlay />
 
-      {isLoading && (
-        <View
-          pointerEvents="none"
-          className="absolute inset-0 items-center justify-center"
-        >
-          <Spinner
-            size={SPINNER_SIZE[size]}
-            tone={variant === "primary" ? "on-light" : "on-dark"}
-          />
+        {/* 로딩 중에도 자리를 차지해야 폭이 유지된다 — 언마운트하지 않고 opacity-0. */}
+        <View className={isLoading ? "opacity-0" : undefined}>
+          {typeof children === "string" ? (
+            <ActionButtonText>{children}</ActionButtonText>
+          ) : (
+            children
+          )}
         </View>
-      )}
-    </Pressable>
+
+        {isLoading && <SpinnerOverlay />}
+      </Button>
+    </StyleContext.Provider>
   );
 }
+
+function PressOverlay() {
+  const { variant } = useActionButtonStyle();
+  const { isPressed, isLoading, disabled } = useButtonState();
+  const isActive = isPressed || isLoading;
+  if (variant !== "destructive" || !isActive || disabled) {
+    return null;
+  }
+  return (
+    <View
+      pointerEvents="none"
+      className="absolute inset-0 bg-opacity-white-10"
+    />
+  );
+}
+
+function SpinnerOverlay() {
+  const { size, variant } = useActionButtonStyle();
+  return (
+    <View
+      pointerEvents="none"
+      className="absolute inset-0 items-center justify-center"
+    >
+      {/* 버튼 size(small|medium)는 Spinner size 의 부분집합이라 그대로 넘긴다. */}
+      <Spinner
+        size={size}
+        tone={variant === "primary" ? "on-light" : "on-dark"}
+      />
+    </View>
+  );
+}
+
+function ActionButtonText({ children }: { children: string }) {
+  const { variant } = useActionButtonStyle();
+  const { disabled } = useButtonState();
+  return (
+    <Text
+      variant="heading-3-medium"
+      className={contentColorStyles({ variant, isDimmed: disabled })}
+    >
+      {children}
+    </Text>
+  );
+}
+
+interface ActionButtonIconProps {
+  iconNode: IconComponent;
+  /** 아이콘 내부 채움(토글 아이콘 등). 기본은 채우지 않음. */
+  fill?: string;
+}
+
+function ActionButtonIcon({ iconNode, fill }: ActionButtonIconProps) {
+  const { size, variant } = useActionButtonStyle();
+  const { disabled } = useButtonState();
+  return (
+    <Icon
+      iconNode={iconNode}
+      // Figma 에 버튼 아이콘 변형이 없어 잠정값이다.
+      size={size === "medium" ? 20 : 16}
+      fill={fill}
+      className={contentColorStyles({ variant, isDimmed: disabled })}
+    />
+  );
+}
+
+ActionButton.Text = ActionButtonText;
+ActionButton.Icon = ActionButtonIcon;
