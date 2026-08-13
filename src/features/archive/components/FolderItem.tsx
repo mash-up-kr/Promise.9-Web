@@ -21,7 +21,7 @@ export function folderToneFill(tone: FolderColor): string {
 }
 
 const FOLDER_ITEM_CLASS =
-  "h-[52px] flex-row items-center justify-between bg-background-thumbnail px-4 py-3";
+  "h-[52px] flex-row items-center justify-between bg-background-list px-4 py-3 active:bg-background-list-selected";
 
 export interface FolderItemProps {
   name: string;
@@ -29,6 +29,8 @@ export interface FolderItemProps {
   count?: number;
   tone?: FolderColor;
   onPress?: () => void;
+  /** 내 폴더에서 컨텍스트 메뉴(편집·삭제)를 여는 롱프레스. 기본 폴더에는 없다. */
+  onLongPress?: () => void;
 }
 
 export function FolderItem({
@@ -36,11 +38,13 @@ export function FolderItem({
   count,
   tone = "gray",
   onPress,
+  onLongPress,
 }: FolderItemProps) {
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
+      onLongPress={onLongPress}
       className={FOLDER_ITEM_CLASS}
     >
       <View className="flex-row items-center gap-3">

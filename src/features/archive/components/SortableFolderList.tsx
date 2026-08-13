@@ -167,7 +167,7 @@ export function SortableFolderList({
   return (
     <Animated.View
       ref={containerRef}
-      className="overflow-hidden rounded-[20px] bg-background-thumbnail"
+      className="overflow-hidden rounded-[20px] bg-background-list"
       style={{ height: folders.length * ITEM_HEIGHT }}
     >
       <SortableContext.Provider value={contextValue}>

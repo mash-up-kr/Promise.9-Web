@@ -109,7 +109,7 @@ export function SortableFolderItem({ folder }: SortableFolderItemProps) {
 
   return (
     <Animated.View style={rowStyle} className="absolute right-0 left-0">
-      <View className="h-[52px] flex-row items-center justify-between overflow-hidden bg-background-thumbnail px-4">
+      <View className="h-[52px] flex-row items-center justify-between overflow-hidden bg-background-list px-4">
         <View className="flex-row items-center gap-3">
           <FolderIcon color={folderToneFill(folder.tone)} size={28} />
           <Text variant="body-2-normal" className="text-text-normal">
@@ -124,7 +124,7 @@ export function SortableFolderItem({ folder }: SortableFolderItemProps) {
             hitSlop={8}
             className="py-2 pl-4"
           >
-            <Icon iconNode={Menu} size={20} className="text-icon-assistive" />
+            <Icon iconNode={Menu} size={24} className="text-icon-assistive" />
           </View>
         </GestureDetector>
       </View>
@@ -132,10 +132,7 @@ export function SortableFolderItem({ folder }: SortableFolderItemProps) {
         style={dividerStyle}
         className="absolute right-0 bottom-0 left-0"
       >
-        <View
-          testID="folder-divider"
-          className="mx-4 h-px bg-old-border-divider"
-        />
+        <View testID="folder-divider" className="mx-4 h-px bg-border-divider" />
       </Animated.View>
     </Animated.View>
   );

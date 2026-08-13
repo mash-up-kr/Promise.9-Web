@@ -10,7 +10,7 @@ export function FolderListSkeleton() {
   return (
     <View
       testID="folder-list-skeleton"
-      className="overflow-hidden rounded-[20px] bg-background-thumbnail"
+      className="overflow-hidden rounded-[20px] bg-background-list"
     >
       {Array.from({ length: PLACEHOLDER_COUNT }).map((_, index) => (
         <View
