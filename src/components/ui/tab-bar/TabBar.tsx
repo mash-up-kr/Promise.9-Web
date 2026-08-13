@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import type { BottomTabBarProps } from "expo-router/js-tabs";
-import { Archive, House, Plus } from "lucide-react-native";
+import { Plus } from "lucide-react-native";
 import { useEffect } from "react";
 import { Pressable, View } from "react-native";
 import Animated, {
@@ -11,10 +11,16 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
+import { Icon } from "@/components/ui/icon/Icon";
 import { usePressedScale } from "@/components/ui/icon-button/usePressedScale";
 import { ROUTES } from "@/constants/routes.constants";
 import { tv } from "@/lib/tv";
+
+import {
+  TabFolderGlyph,
+  TabHomeGlyph,
+  type TabGlyphProps,
+} from "./TabBarGlyphs";
 
 // Figma Tab Bar: 화면 하단 중앙 gray-700 솔리드 pill(h60·px16·gap12).
 export const tabBarStyles = tv({
@@ -26,14 +32,21 @@ export const tabItemStyles = tv({
   base: "size-11 items-center justify-center rounded-full",
 });
 
-export const tabIconStyles = tv({
-  variants: {
-    isActive: {
-      true: "text-icon-accent",
-      false: "text-icon-assistive",
-    },
-  },
+// 활성 글리프는 노란 썸 위라 대비되는 inverse, 비활성은 시안 회색(assistive).
+// svg fill 은 className 토큰을 받지 못해 raw 값으로 둔다(gray-950 · gray-400).
+export const TAB_ICON_COLORS = {
+  active: "#121212",
+  inactive: "#65656b",
+} as const;
+
+// iOS 탭바처럼 선택 탭 뒤에서 미끄러져 이동하는 노란 썸.
+export const tabThumbStyles = tv({
+  base: "absolute top-2 size-11 rounded-full bg-yellow-300",
 });
+
+// 썸 x 좌표: pill 좌측 패딩(16) + [홈 44 + gap 12 + 플러스 40 + gap 12] = 124.
+const THUMB_X = { home: 16, archive: 124 } as const;
+const TAB_SWITCH_MS = 250;
 
 // Nav Tab Item / Save Sheet: 40 원형 gray-500 + 흰색 plus 고정.
 // 누르는 동안은 IconButton 인터랙션(배경 한 단계 밝게 + scale)을 따른다.
@@ -72,6 +85,24 @@ export function TabBar({ state, navigation }: TabBarProps) {
     }
   };
 
+  const thumbProgress = useSharedValue(activeRouteName === "archive" ? 1 : 0);
+
+  useEffect(() => {
+    thumbProgress.value = withTiming(activeRouteName === "archive" ? 1 : 0, {
+      duration: TAB_SWITCH_MS,
+      easing: Easing.out(Easing.ease),
+    });
+  }, [activeRouteName, thumbProgress]);
+
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateX:
+          THUMB_X.home + thumbProgress.value * (THUMB_X.archive - THUMB_X.home),
+      },
+    ],
+  }));
+
   return (
     <View
       pointerEvents="box-none"
@@ -79,6 +110,12 @@ export function TabBar({ state, navigation }: TabBarProps) {
       style={{ paddingBottom: Math.max(insets.bottom, 20) }}
     >
       <View className={tabBarStyles()}>
+        <Animated.View
+          testID="tab-bar-thumb"
+          pointerEvents="none"
+          style={thumbStyle}
+          className={tabThumbStyles({ class: "left-0" })}
+        />
         <TabBarItem
           item={HOME_TAB}
           isActive={activeRouteName === HOME_TAB.name}
@@ -100,21 +137,22 @@ export function TabBar({ state, navigation }: TabBarProps) {
 type TabItemConfig = {
   name: string;
   label: string;
-  iconNode: IconComponent;
+  Glyph: React.ComponentType<TabGlyphProps>;
 };
 
 // 디자인상 탭은 홈·보관함 2개. 검색·세팅 라우트는 헤더 아이콘으로 진입한다.
-const HOME_TAB: TabItemConfig = { name: "index", label: "홈", iconNode: House };
+const HOME_TAB: TabItemConfig = {
+  name: "index",
+  label: "홈",
+  Glyph: TabHomeGlyph,
+};
 const ARCHIVE_TAB: TabItemConfig = {
   name: "archive",
   label: "보관함",
-  iconNode: Archive,
+  Glyph: TabFolderGlyph,
 };
 
-// 선택 전환 시 노란 채움이 이전 탭에서 빠져나가 새 탭으로 옮겨가는 것처럼 보이도록,
-// accent/assistive 두 레이어의 아이콘을 겹쳐 두고 opacity 를 교차 전환한다.
-const TAB_SWITCH_MS = 250;
-
+// 썸 이동과 같은 타이밍으로 inverse/assistive 두 레이어 아이콘의 opacity 를 교차 전환한다.
 function TabBarItem({
   item,
   isActive,
@@ -151,23 +189,10 @@ function TabBarItem({
     >
       <View className="size-6">
         <Animated.View style={assistiveStyle} className="absolute inset-0">
-          <Icon
-            iconNode={item.iconNode}
-            size={24}
-            strokeWidth={1.5}
-            // 시안 탭 아이콘은 filled 글리프 — lucide 채움 방식(FolderIcon 선례)으로 근사한다.
-            fill="currentColor"
-            className={tabIconStyles({ isActive: false })}
-          />
+          <item.Glyph color={TAB_ICON_COLORS.inactive} />
         </Animated.View>
         <Animated.View style={accentStyle} className="absolute inset-0">
-          <Icon
-            iconNode={item.iconNode}
-            size={24}
-            strokeWidth={1.5}
-            fill="currentColor"
-            className={tabIconStyles({ isActive: true })}
-          />
+          <item.Glyph color={TAB_ICON_COLORS.active} />
         </Animated.View>
       </View>
     </Pressable>

@@ -8,11 +8,12 @@ import type { BottomTabBarProps } from "expo-router/js-tabs";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import {
+  TAB_ICON_COLORS,
   TabBar,
   plusButtonStyles,
   tabBarStyles,
-  tabIconStyles,
   tabItemStyles,
+  tabThumbStyles,
 } from "./TabBar";
 
 const metrics: Metrics = {
@@ -53,6 +54,7 @@ describe("TabBar", () => {
     expect(screen.getByRole("tab", { name: "홈" })).toBeOnTheScreen();
     expect(screen.getByRole("tab", { name: "보관함" })).toBeOnTheScreen();
     expect(screen.getByRole("button", { name: "링크 추가" })).toBeOnTheScreen();
+    expect(screen.getByTestId("tab-bar-thumb")).toBeOnTheScreen();
   });
 
   test("검색·세팅 라우트는 탭바에 노출하지 않는다", async () => {
@@ -105,11 +107,18 @@ describe("TabBar 시안 스타일", () => {
     expect(cls).not.toContain("bg-");
   });
 
-  test("탭 아이콘은 선택=accent, 비선택=assistive 채움이다", () => {
-    expect(tabIconStyles({ isActive: true })).toContain("text-icon-accent");
-    expect(tabIconStyles({ isActive: false })).toContain(
-      "text-icon-assistive",
-    );
+  test("탭 글리프 색: 선택=inverse(썸 위 대비색), 비선택=assistive(시안 회색)", () => {
+    // svg fill 은 className 토큰을 못 받아 raw 값으로 검증한다.
+    expect(TAB_ICON_COLORS.active).toBe("#121212");
+    expect(TAB_ICON_COLORS.inactive).toBe("#65656b");
+  });
+
+  test("노란 썸은 44 원형 yellow-300 절대배치다", () => {
+    const cls = tabThumbStyles();
+    expect(cls).toContain("absolute");
+    expect(cls).toContain("size-11");
+    expect(cls).toContain("rounded-full");
+    expect(cls).toContain("bg-yellow-300");
   });
 
   test("링크 추가 버튼은 40 원형 gray-500 이다", () => {
