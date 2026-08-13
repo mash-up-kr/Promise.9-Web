@@ -1,4 +1,10 @@
-import { createContext, useCallback, useContext, useRef } from "react";
+import {
+  createContext,
+  type PropsWithChildren,
+  useCallback,
+  useContext,
+  useRef,
+} from "react";
 import type { SharedValue } from "react-native-reanimated";
 import { makeMutable } from "react-native-reanimated";
 
@@ -13,11 +19,7 @@ interface HeaderScrollRegistry {
 
 const HeaderScrollContext = createContext<HeaderScrollRegistry | null>(null);
 
-export function HeaderScrollProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function HeaderScrollProvider({ children }: PropsWithChildren) {
   const registry = useRef(new Map<string, SharedValue<number>>());
 
   const getHiddenOffset = useCallback((scope: string) => {

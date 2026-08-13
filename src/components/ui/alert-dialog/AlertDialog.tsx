@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { PropsWithChildren, ReactNode } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import Animated, { withSpring } from "react-native-reanimated";
 
@@ -64,7 +64,7 @@ function enterDialog() {
 }
 
 // Figma Alert Dialog: 플랫 gray-800 카드 + white-05 헤어라인 보더.
-function AlertDialogContent({ children }: { children: ReactNode }) {
+function AlertDialogContent({ children }: PropsWithChildren) {
   return (
     <Animated.View
       entering={enterDialog}
