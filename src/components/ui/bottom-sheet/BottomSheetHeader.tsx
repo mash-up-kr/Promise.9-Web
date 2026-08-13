@@ -55,6 +55,8 @@ function HeaderButton({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: isDisabled }}
       disabled={isDisabled}
       onPress={onPress}
       className={bottomSheetHeaderButtonStyles({ variant, isDisabled })}

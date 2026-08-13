@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { View } from "react-native";
 
+import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { Input, InputField } from "@/components/ui/input/Input";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
@@ -16,7 +17,6 @@ import {
   type CreateFolderInput,
   createFolderSchema,
 } from "./archive.contracts";
-import { CreateFolderHeader } from "./components/CreateFolderHeader";
 import { FolderColorPicker } from "./components/FolderColorPicker";
 
 export function CreateFolderSheet() {
@@ -54,10 +54,11 @@ function CreateFolderSheetBody() {
 
   return (
     <>
-      <CreateFolderHeader
+      <BottomSheetHeader
+        title="새 폴더 만들기"
         onCancel={dismiss}
-        onSave={onSave}
-        saveDisabled={!formState.isValid || isPending}
+        onConfirm={onSave}
+        isConfirmDisabled={!formState.isValid || isPending}
       />
 
       <View className="gap-2">
