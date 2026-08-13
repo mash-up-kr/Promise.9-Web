@@ -13,7 +13,6 @@ import {
   plusButtonStyles,
   tabBarStyles,
   tabItemStyles,
-  tabThumbStyles,
 } from "./TabBar";
 
 const metrics: Metrics = {
@@ -54,7 +53,6 @@ describe("TabBar", () => {
     expect(screen.getByRole("tab", { name: "홈" })).toBeOnTheScreen();
     expect(screen.getByRole("tab", { name: "보관함" })).toBeOnTheScreen();
     expect(screen.getByRole("button", { name: "링크 추가" })).toBeOnTheScreen();
-    expect(screen.getByTestId("tab-bar-thumb")).toBeOnTheScreen();
   });
 
   test("검색·세팅 라우트는 탭바에 노출하지 않는다", async () => {
@@ -107,19 +105,12 @@ describe("TabBar 시안 스타일", () => {
     expect(cls).not.toContain("bg-");
   });
 
-  test("탭 글리프 색: 선택=inverse(썸 위 대비색), 비선택=assistive(시안 회색)", () => {
+  test("탭 글리프 색: 선택=yellow-300 채움(시안), 비선택=assistive 회색", () => {
     // svg fill 은 className 토큰을 못 받아 raw 값으로 검증한다.
-    expect(TAB_ICON_COLORS.active).toBe("#121212");
+    expect(TAB_ICON_COLORS.active).toBe("#fffe66");
     expect(TAB_ICON_COLORS.inactive).toBe("#65656b");
   });
 
-  test("노란 썸은 44 원형 yellow-300 절대배치다", () => {
-    const cls = tabThumbStyles();
-    expect(cls).toContain("absolute");
-    expect(cls).toContain("size-11");
-    expect(cls).toContain("rounded-full");
-    expect(cls).toContain("bg-yellow-300");
-  });
 
   test("링크 추가 버튼은 40 원형 gray-500 이다", () => {
     const cls = plusButtonStyles();

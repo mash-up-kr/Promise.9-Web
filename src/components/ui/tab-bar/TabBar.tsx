@@ -1,12 +1,14 @@
 import { useRouter } from "expo-router";
 import type { BottomTabBarProps } from "expo-router/js-tabs";
 import { Plus } from "lucide-react-native";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Pressable, View } from "react-native";
 import Animated, {
+  cancelAnimation,
   Easing,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -18,8 +20,8 @@ import { tv } from "@/lib/tv";
 
 import {
   TabFolderGlyph,
-  TabHomeGlyph,
   type TabGlyphProps,
+  TabHomeGlyph,
 } from "./TabBarGlyphs";
 
 // Figma Tab Bar: 화면 하단 중앙 gray-700 솔리드 pill(h60·px16·gap12).
@@ -32,21 +34,14 @@ export const tabItemStyles = tv({
   base: "size-11 items-center justify-center rounded-full",
 });
 
-// 활성 글리프는 노란 썸 위라 대비되는 inverse, 비활성은 시안 회색(assistive).
-// svg fill 은 className 토큰을 받지 못해 raw 값으로 둔다(gray-950 · gray-400).
+// 시안 그대로 — 선택 글리프는 yellow-300 채움, 비선택은 assistive 회색.
+// svg fill 은 className 토큰을 받지 못해 raw 값으로 둔다(yellow-300 · gray-400).
 export const TAB_ICON_COLORS = {
-  active: "#121212",
+  active: "#fffe66",
   inactive: "#65656b",
 } as const;
 
-// iOS 탭바처럼 선택 탭 뒤에서 미끄러져 이동하는 노란 썸.
-export const tabThumbStyles = tv({
-  base: "absolute top-2 size-11 rounded-full bg-yellow-300",
-});
-
-// 썸 x 좌표: pill 좌측 패딩(16) + [홈 44 + gap 12 + 플러스 40 + gap 12] = 124.
-const THUMB_X = { home: 16, archive: 124 } as const;
-const TAB_SWITCH_MS = 250;
+const TAB_FADE_MS = 200;
 
 // Nav Tab Item / Save Sheet: 40 원형 gray-500 + 흰색 plus 고정.
 // 누르는 동안은 IconButton 인터랙션(배경 한 단계 밝게 + scale)을 따른다.
@@ -85,24 +80,6 @@ export function TabBar({ state, navigation }: TabBarProps) {
     }
   };
 
-  const thumbProgress = useSharedValue(activeRouteName === "archive" ? 1 : 0);
-
-  useEffect(() => {
-    thumbProgress.value = withTiming(activeRouteName === "archive" ? 1 : 0, {
-      duration: TAB_SWITCH_MS,
-      easing: Easing.out(Easing.ease),
-    });
-  }, [activeRouteName, thumbProgress]);
-
-  const thumbStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateX:
-          THUMB_X.home + thumbProgress.value * (THUMB_X.archive - THUMB_X.home),
-      },
-    ],
-  }));
-
   return (
     <View
       pointerEvents="box-none"
@@ -110,12 +87,6 @@ export function TabBar({ state, navigation }: TabBarProps) {
       style={{ paddingBottom: Math.max(insets.bottom, 20) }}
     >
       <View className={tabBarStyles()}>
-        <Animated.View
-          testID="tab-bar-thumb"
-          pointerEvents="none"
-          style={thumbStyle}
-          className={tabThumbStyles({ class: "left-0" })}
-        />
         <TabBarItem
           item={HOME_TAB}
           isActive={activeRouteName === HOME_TAB.name}
@@ -152,7 +123,8 @@ const ARCHIVE_TAB: TabItemConfig = {
   Glyph: TabFolderGlyph,
 };
 
-// 썸 이동과 같은 타이밍으로 inverse/assistive 두 레이어 아이콘의 opacity 를 교차 전환한다.
+// 선택되면 회색↔노랑 크로스페이드와 함께 아이콘이 볼록 튄다(1→1.14→1).
+// 앱 시작 시(마운트) 초기 활성 탭에는 팝을 재생하지 않는다.
 function TabBarItem({
   item,
   isActive,
@@ -163,19 +135,40 @@ function TabBarItem({
   onPress: () => void;
 }) {
   const activeProgress = useSharedValue(isActive ? 1 : 0);
+  const popScale = useSharedValue(1);
+  const isMountedRef = useRef(false);
 
   useEffect(() => {
     activeProgress.value = withTiming(isActive ? 1 : 0, {
-      duration: TAB_SWITCH_MS,
+      duration: TAB_FADE_MS,
       easing: Easing.out(Easing.ease),
     });
-  }, [isActive, activeProgress]);
+    if (isActive && isMountedRef.current) {
+      popScale.value = withSequence(
+        withTiming(1.14, { duration: 90, easing: Easing.out(Easing.ease) }),
+        withTiming(1, { duration: 110, easing: Easing.out(Easing.ease) }),
+      );
+    } else {
+      // 클린업이 팝 시퀀스를 중간에 취소한 경우를 대비해 원래 크기로 복원한다.
+      popScale.value = 1;
+    }
+    isMountedRef.current = true;
+
+    // 언마운트 시 진행 중인 애니메이션을 UI 스레드에서 정리한다.
+    return () => {
+      cancelAnimation(activeProgress);
+      cancelAnimation(popScale);
+    };
+  }, [isActive, activeProgress, popScale]);
 
   const accentStyle = useAnimatedStyle(() => ({
     opacity: activeProgress.value,
   }));
   const assistiveStyle = useAnimatedStyle(() => ({
     opacity: 1 - activeProgress.value,
+  }));
+  const popStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: popScale.value }],
   }));
 
   return (
@@ -187,14 +180,14 @@ function TabBarItem({
       onPress={onPress}
       className={tabItemStyles()}
     >
-      <View className="size-6">
+      <Animated.View style={popStyle} className="size-6">
         <Animated.View style={assistiveStyle} className="absolute inset-0">
           <item.Glyph color={TAB_ICON_COLORS.inactive} />
         </Animated.View>
         <Animated.View style={accentStyle} className="absolute inset-0">
           <item.Glyph color={TAB_ICON_COLORS.active} />
         </Animated.View>
-      </View>
+      </Animated.View>
     </Pressable>
   );
 }
