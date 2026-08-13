@@ -6,7 +6,6 @@ import {
   type ButtonProps,
   useButtonState,
 } from "@/components/ui/button/Button";
-import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
 import { Spinner } from "@/components/ui/spinner/Spinner";
 import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
@@ -64,8 +63,8 @@ const containerStyles = tv({
   defaultVariants: { size: "medium", variant: "primary" },
 });
 
-// 라벨·아이콘 색만 다룬다(타이포는 Text variant 가). isDimmed = disabled(Loading 제외).
-const contentColorStyles = tv({
+// 라벨 색만 다룬다(타이포는 Text variant 가). isDimmed = disabled(Loading 제외).
+const labelColorStyles = tv({
   variants: {
     variant: {
       primary: "text-gray-800",
@@ -95,7 +94,7 @@ function useActionButtonStyle(): ActionButtonStyle {
   const style = useContext(StyleContext);
   if (!style) {
     throw new Error(
-      "ActionButton.Text·ActionButton.Icon 은 <ActionButton> 안에서만 쓸 수 있습니다.",
+      "ActionButton.Text 는 <ActionButton> 안에서만 쓸 수 있습니다.",
     );
   }
   return style;
@@ -201,32 +200,11 @@ function ActionButtonText({ children }: { children: string }) {
   return (
     <Text
       variant="heading-3-medium"
-      className={contentColorStyles({ variant, isDimmed: disabled })}
+      className={labelColorStyles({ variant, isDimmed: disabled })}
     >
       {children}
     </Text>
   );
 }
 
-interface ActionButtonIconProps {
-  iconNode: IconComponent;
-  /** 아이콘 내부 채움(토글 아이콘 등). 기본은 채우지 않음. */
-  fill?: string;
-}
-
-function ActionButtonIcon({ iconNode, fill }: ActionButtonIconProps) {
-  const { size, variant } = useActionButtonStyle();
-  const { disabled } = useButtonState();
-  return (
-    <Icon
-      iconNode={iconNode}
-      // Figma 에 버튼 아이콘 변형이 없어 잠정값이다.
-      size={size === "medium" ? 20 : 16}
-      fill={fill}
-      className={contentColorStyles({ variant, isDimmed: disabled })}
-    />
-  );
-}
-
 ActionButton.Text = ActionButtonText;
-ActionButton.Icon = ActionButtonIcon;
