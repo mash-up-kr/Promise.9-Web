@@ -4,10 +4,7 @@ import { apiClient } from "@shared/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
-import {
-  type Metrics,
-  SafeAreaProvider,
-} from "react-native-safe-area-context";
+import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ArchiveDetailScreen } from "./ArchiveDetailScreen";
 

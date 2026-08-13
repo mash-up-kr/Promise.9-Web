@@ -2,7 +2,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, View } from "react-native";
 import Animated, {
   useAnimatedRef,
   useScrollOffset,

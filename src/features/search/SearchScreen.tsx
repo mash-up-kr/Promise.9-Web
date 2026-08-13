@@ -5,8 +5,8 @@ import Animated from "react-native-reanimated";
 import { useDebounce } from "react-simplikit";
 
 import { Header, useHeaderHeight } from "@/components/ui/header/Header";
-import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
+import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { VStack } from "@/components/ui/vstack/VStack";
 import { SearchBar } from "@/features/search/components/SearchBar";
 

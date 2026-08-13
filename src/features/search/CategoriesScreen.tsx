@@ -3,8 +3,8 @@ import { Search } from "lucide-react-native";
 import Animated from "react-native-reanimated";
 
 import { Header } from "@/components/ui/header/Header";
-import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
+import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { VStack } from "@/components/ui/vstack/VStack";
 import { ROUTES } from "@/constants/routes.constants";

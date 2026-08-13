@@ -5,9 +5,9 @@ import Animated from "react-native-reanimated";
 
 import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { Header } from "@/components/ui/header/Header";
-import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
+import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { LinkTile } from "@/components/ui/link-card/LinkTile";
 import { Text } from "@/components/ui/text/Text";
 import { linkDetailHref } from "@/constants/routes.constants";
@@ -105,7 +105,6 @@ function ArchiveDetailContent({ folderId }: { folderId: string }) {
       </CenteredMessage>
     );
   }
-
 
   return (
     <Animated.ScrollView

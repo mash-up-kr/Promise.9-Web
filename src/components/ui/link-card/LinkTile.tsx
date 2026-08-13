@@ -35,7 +35,11 @@ function SelectedOverlay() {
 }
 
 /** 세로형 링크 카드 — 그리드·캐러셀용. 큰 썸네일(160×200) 위에 메타·제목을 쌓는다. */
-export function LinkTile({ link, isSelected = false, ...props }: LinkTileProps) {
+export function LinkTile({
+  link,
+  isSelected = false,
+  ...props
+}: LinkTileProps) {
   return (
     <LinkCard.Root link={link} className="w-40 gap-2" {...props}>
       <Box

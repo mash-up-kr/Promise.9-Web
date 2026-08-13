@@ -8,9 +8,9 @@ import type { BottomTabBarProps } from "expo-router/js-tabs";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import {
+  plusButtonStyles,
   TAB_ICON_COLORS,
   TabBar,
-  plusButtonStyles,
   tabBarStyles,
   tabItemStyles,
 } from "./TabBar";
@@ -110,7 +110,6 @@ describe("TabBar 시안 스타일", () => {
     expect(TAB_ICON_COLORS.active).toBe("#fffe66");
     expect(TAB_ICON_COLORS.inactive).toBe("#65656b");
   });
-
 
   test("링크 추가 버튼은 40 원형 gray-500 이다", () => {
     const cls = plusButtonStyles();
