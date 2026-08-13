@@ -39,6 +39,22 @@ describe("Dialog", () => {
     expect(screen.queryByLabelText("닫기")).toBeNull();
   });
 
+  // 배경이 카드 안쪽에 갇히면 absoluteFill 의 기준이 카드 크기로 줄어
+  // dim 이 카드 뒤 띠만 덮고 바깥을 눌러 닫을 영역도 사라진다.
+  test("배경과 카드를 같은 컨테이너의 형제로 놓는다", async () => {
+    await render(
+      <Dialog onDismiss={() => {}}>
+        <View testID="card">
+          <Text>내용</Text>
+        </View>
+      </Dialog>,
+    );
+
+    expect(screen.getByTestId("card").parent).toBe(
+      screen.getByLabelText("닫기").parent,
+    );
+  });
+
   test("배경 접근성 라벨을 바꿀 수 있다", async () => {
     await render(
       <Dialog onDismiss={() => {}} dismissAccessibilityLabel="시트 닫기">
