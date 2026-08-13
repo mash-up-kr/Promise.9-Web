@@ -4,6 +4,11 @@ import { apiClient } from "@shared/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
+import {
+  type Metrics,
+  SafeAreaProvider,
+} from "react-native-safe-area-context";
+
 import { ArchiveDetailScreen } from "./ArchiveDetailScreen";
 
 const mockPush = jest.fn();
@@ -39,14 +44,22 @@ const sampleLink = {
   savedAt: "2026-07-26T00:00:00.000Z",
 };
 
+const metrics: Metrics = {
+  frame: { x: 0, y: 0, width: 375, height: 812 },
+  insets: { top: 47, left: 0, right: 0, bottom: 34 },
+};
+
 const renderScreen = () => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  // 헤더 스크롤 연동 훅이 safe-area 를 읽으므로 화면 테스트는 SafeAreaProvider 로 감싼다.
   return render(
-    <QueryClientProvider client={queryClient}>
-      <ArchiveDetailScreen />
-    </QueryClientProvider>,
+    <SafeAreaProvider initialMetrics={metrics}>
+      <QueryClientProvider client={queryClient}>
+        <ArchiveDetailScreen />
+      </QueryClientProvider>
+    </SafeAreaProvider>,
   );
 };
 

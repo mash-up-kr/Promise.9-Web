@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { Header } from "@/components/ui/header/Header";
+import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Text } from "@/components/ui/text/Text";
 
@@ -75,8 +76,8 @@ export function ArchiveScreen() {
   );
 
   return (
-    <View className="flex-1 bg-old-background-base">
-      <Header title="보관함" right={headerRight} />
+    <View className="flex-1 bg-background-base">
+      <Header scrollScope="archive" title="보관함" right={headerRight} />
       <AsyncBoundary
         // 기본 폴더는 이름·순서가 고정이라 응답을 기다리지 않고 그대로 보여주고,
         // 서버에서 오는 링크 수와 내 폴더 목록만 스켈레톤으로 채운다.
@@ -252,11 +253,18 @@ function ArchiveScrollBody({
   bottomPadding: number;
   children: ReactNode;
 }) {
+  // 정렬 편집 모드 스크롤러는 드래그 자동 스크롤 전용이라 헤더 연동은 일반 모드에만 건다.
+  const scrollHandler = useHeaderAwareScrollHandler("archive");
+
   return (
-    <ScrollView showsVerticalScrollIndicator={false}>
+    <Animated.ScrollView
+      showsVerticalScrollIndicator={false}
+      onScroll={scrollHandler}
+      scrollEventThrottle={16}
+    >
       <View className="gap-12 pt-5" style={{ paddingBottom: bottomPadding }}>
         {children}
       </View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }

@@ -1,10 +1,11 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { ScrollView } from "react-native";
+import Animated from "react-native-reanimated";
 import { useDebounce } from "react-simplikit";
 
 import { Header, useHeaderHeight } from "@/components/ui/header/Header";
+import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { VStack } from "@/components/ui/vstack/VStack";
 import { SearchBar } from "@/features/search/components/SearchBar";
@@ -27,6 +28,7 @@ interface SearchFormValues {
 export function SearchScreen() {
   const router = useRouter();
   const headerHeight = useHeaderHeight();
+  const scrollHandler = useHeaderAwareScrollHandler("search");
   const { q } = useLocalSearchParams<{ q?: string }>();
   // 커밋된 검색어는 URL 이 단일 진실원 — 새로고침·딥링크에도 결과 상태가 복원된다
   const submittedQuery = typeof q === "string" ? q : "";
@@ -69,6 +71,7 @@ export function SearchScreen() {
           headerTransparent: true,
           header: () => (
             <Header
+              scrollScope="search"
               left={<HeaderBackButton />}
               title={
                 <Controller
@@ -92,11 +95,13 @@ export function SearchScreen() {
           ),
         }}
       />
-      <ScrollView
-        className="flex-1 bg-old-background-base"
+      <Animated.ScrollView
+        className="flex-1 bg-background-base"
         contentContainerStyle={{ paddingTop: headerHeight }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
       >
         {submittedQuery !== "" ? (
           <VStack className="px-5 pt-3.5 pb-8">
@@ -116,7 +121,7 @@ export function SearchScreen() {
             <RecentLinksSection links={RECENT_VIEWED_LINKS} />
           </VStack>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
     </>
   );
 }

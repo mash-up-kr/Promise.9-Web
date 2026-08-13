@@ -1,9 +1,11 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
+import Animated from "react-native-reanimated";
 
 import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { Header } from "@/components/ui/header/Header";
+import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { LinkTile } from "@/components/ui/link-card/LinkTile";
@@ -22,7 +24,7 @@ function resolveTitle(id: string | undefined, name?: string): string {
 // 화면 가운데 안내 문구 — 없음·빈 목록·에러 상태가 공유한다.
 function CenteredMessage({ children }: { children: React.ReactNode }) {
   return (
-    <View className="flex-1 items-center justify-center gap-3 bg-old-background-base px-5">
+    <View className="flex-1 items-center justify-center gap-3 bg-background-base px-5">
       {children}
     </View>
   );
@@ -37,6 +39,7 @@ export function ArchiveDetailScreen() {
         options={{
           header: () => (
             <Header
+              scrollScope="archive-detail"
               left={<HeaderBackButton />}
               title={resolveTitle(id, name)}
               right={<HeaderActions />}
@@ -66,7 +69,7 @@ function ArchiveDetailBody({ id }: { id?: string }) {
     <AsyncBoundary
       resetKeys={[id]}
       pending={
-        <View className="flex-1 items-center justify-center bg-old-background-base">
+        <View className="flex-1 items-center justify-center bg-background-base">
           <ActivityIndicator testID="archive-detail-loading" />
         </View>
       }
@@ -89,6 +92,7 @@ function ArchiveDetailBody({ id }: { id?: string }) {
 }
 
 function ArchiveDetailContent({ folderId }: { folderId: string }) {
+  const scrollHandler = useHeaderAwareScrollHandler("archive-detail");
   const router = useRouter();
   const { data: links } = useSuspenseQuery(folderLinkQueries.list(folderId));
 
@@ -102,10 +106,13 @@ function ArchiveDetailContent({ folderId }: { folderId: string }) {
     );
   }
 
+
   return (
-    <ScrollView
-      className="flex-1 bg-old-background-base"
+    <Animated.ScrollView
+      className="flex-1 bg-background-base"
       showsVerticalScrollIndicator={false}
+      onScroll={scrollHandler}
+      scrollEventThrottle={16}
     >
       <View className="flex-row flex-wrap justify-between gap-y-5 px-5 pt-2 pb-6">
         {links.map((link) => (
@@ -116,6 +123,6 @@ function ArchiveDetailContent({ folderId }: { folderId: string }) {
           />
         ))}
       </View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
