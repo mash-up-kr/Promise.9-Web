@@ -75,6 +75,16 @@ describe("ActionButton (스킨)", () => {
     expect(screen.getByText("저장")).toBeOnTheScreen();
   });
 
+  test("숫자 children 도 텍스트로 렌더한다", async () => {
+    await render(<ActionButton onPress={jest.fn()}>{3}</ActionButton>);
+    expect(screen.getByText("3")).toBeOnTheScreen();
+  });
+
+  test("문자열과 표현식이 섞인 children 을 하나의 텍스트로 렌더한다", async () => {
+    await render(<ActionButton onPress={jest.fn()}>저장 {2}개</ActionButton>);
+    expect(screen.getByText("저장 2개")).toBeOnTheScreen();
+  });
+
   test("ActionButton.Text 로 조립한 라벨도 button 으로 렌더한다", async () => {
     await render(
       <ActionButton onPress={jest.fn()} accessibilityLabel="저장">

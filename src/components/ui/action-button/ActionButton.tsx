@@ -83,6 +83,23 @@ const labelColorStyles = tv({
 type ActionVariant = "primary" | "assistive" | "destructive";
 type ActionSize = "small" | "medium";
 
+// 텍스트성 children — string · number · (string|number)[](JSX 가 "저장 {n}개" 를
+// ["저장 ", n, "개"] 배열로 내려보내는 경우). 이 범위 밖(엘리먼트 조립)은 호출부가
+// ActionButton.Text 로 직접 감싸야 한다.
+type TextLikeChildren = string | number | (string | number)[];
+
+function isTextLikeChildren(children: unknown): children is TextLikeChildren {
+  if (typeof children === "string" || typeof children === "number") {
+    return true;
+  }
+  return (
+    Array.isArray(children) &&
+    children.every(
+      (child) => typeof child === "string" || typeof child === "number",
+    )
+  );
+}
+
 interface ActionButtonStyle {
   size: ActionSize;
   variant: ActionVariant;
@@ -122,10 +139,15 @@ export function ActionButton({
   accessibilityLabel,
   ...props
 }: ActionButtonProps) {
-  // 문자열 children 은 ActionButton.Text 가 접근성 이름을 제공한다. 아이콘만 조립하면
+  // 텍스트성 children 은 ActionButton.Text 가 접근성 이름을 제공한다. 아이콘만 조립하면
   // 호출부가 accessibilityLabel 을 넘겨야 이름이 생긴다.
   const resolvedLabel =
-    accessibilityLabel ?? (typeof children === "string" ? children : undefined);
+    accessibilityLabel ??
+    (isTextLikeChildren(children)
+      ? Array.isArray(children)
+        ? children.join("")
+        : String(children)
+      : undefined);
 
   return (
     <StyleContext.Provider value={{ size, variant }}>
@@ -150,7 +172,7 @@ export function ActionButton({
 
         {/* 로딩 중에도 자리를 차지해야 폭이 유지된다 — 언마운트하지 않고 opacity-0. */}
         <View className={isLoading ? "opacity-0" : undefined}>
-          {typeof children === "string" ? (
+          {isTextLikeChildren(children) ? (
             <ActionButtonText>{children}</ActionButtonText>
           ) : (
             children
@@ -194,7 +216,7 @@ function SpinnerOverlay() {
   );
 }
 
-function ActionButtonText({ children }: { children: string }) {
+function ActionButtonText({ children }: { children: TextLikeChildren }) {
   const { variant } = useActionButtonStyle();
   const { disabled } = useButtonState();
   return (
