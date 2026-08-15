@@ -18,6 +18,7 @@ import type {
   ArchiveFolderData,
   SystemFolderKey,
 } from "../archive.types";
+import { folderLinkQueries } from "./folder-links.queries";
 
 const systemFolderCountSchema = z.looseObject({ linkCount: z.number() });
 
@@ -224,7 +225,9 @@ export function useDeleteFolderMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: folderKeys.root() });
-      queryClient.invalidateQueries({ queryKey: ["folder-links"] });
+      queryClient.invalidateQueries({
+        queryKey: folderLinkQueries.keys.root(),
+      });
     },
   });
 }
