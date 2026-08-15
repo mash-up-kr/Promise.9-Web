@@ -2,13 +2,10 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
-
-import {
-  isDuplicateFolderNameError,
-  useCreateFolderMutation,
-} from "./api/folder.queries";
+import { useCreateFolderMutation } from "./api/folder.queries";
 import { DuplicateFolderNameAlert } from "./components/DuplicateFolderNameAlert";
 import { FolderFormSheet } from "./components/FolderFormSheet";
+import { isDuplicateFolderNameError } from "./folder.errors";
 
 export function CreateFolderSheet() {
   const router = useRouter();

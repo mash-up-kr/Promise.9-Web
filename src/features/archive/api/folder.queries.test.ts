@@ -14,12 +14,11 @@ import { renderHook, waitFor } from "@testing-library/react-native";
 import type { AxiosResponse } from "axios";
 import { createElement, type ReactNode } from "react";
 
-import { FOLDER_ERROR_CODE } from "../archive.constants";
+import { FOLDER_ERROR_CODE } from "../folder.errors";
+
 import {
   folderListResponseSchema,
   folderQueries,
-  isDuplicateFolderNameError,
-  isFolderOrderMismatchError,
   toArchiveFolderData,
   toReorderRequest,
   useReorderFoldersMutation,
@@ -142,75 +141,10 @@ describe("folderQueries.list", () => {
   });
 });
 
-describe("isDuplicateFolderNameError", () => {
-  const apiError = (status: number, errorCode: number) =>
-    new ApiError({
-      status,
-      data: {
-        success: false,
-        error: {
-          code: status,
-          errorCode,
-          message: "이미 존재하는 폴더 이름입니다.",
-          timestamp: "2026-07-26T00:00:00.000Z",
-        },
-      },
-    } as unknown as AxiosResponse);
-
-  it("폴더 이름 중복 errorCode 를 판별한다", () => {
-    expect(
-      isDuplicateFolderNameError(
-        apiError(409, FOLDER_ERROR_CODE.DUPLICATE_NAME),
-      ),
-    ).toBe(true);
-  });
-
-  // 409 는 "중복 생성 또는 리소스 상태 충돌" 이라 상태 코드만으로는 단정할 수 없다.
-  it("중복 이름이 아닌 409 는 판별하지 않는다", () => {
-    expect(isDuplicateFolderNameError(apiError(409, 910002))).toBe(false);
-  });
-
-  it("API 에러가 아니면 판별하지 않는다", () => {
-    expect(isDuplicateFolderNameError(new Error("network"))).toBe(false);
-  });
-});
-
 describe("toReorderRequest", () => {
   // 서버는 folderId 를 number 로 받는데 UI 모델의 id 는 문자열이라 되돌려야 한다.
   it("폴더 id 순서를 folderIds 요청 본문으로 변환한다", () => {
     expect(toReorderRequest(["4", "2", "3"])).toEqual({ folderIds: [4, 2, 3] });
-  });
-});
-
-describe("isFolderOrderMismatchError", () => {
-  const apiError = (status: number, errorCode: number) =>
-    new ApiError({
-      status,
-      data: {
-        success: false,
-        error: {
-          code: status,
-          errorCode,
-          message: "폴더 순서 목록이 현재 폴더 전체와 일치하지 않습니다.",
-          timestamp: "2026-07-26T00:00:00.000Z",
-        },
-      },
-    } as unknown as AxiosResponse);
-
-  it("폴더 순서 불일치 errorCode 를 판별한다", () => {
-    expect(
-      isFolderOrderMismatchError(
-        apiError(400, FOLDER_ERROR_CODE.ORDER_MISMATCH),
-      ),
-    ).toBe(true);
-  });
-
-  it("순서 불일치가 아닌 400 은 판별하지 않는다", () => {
-    expect(isFolderOrderMismatchError(apiError(400, 910001))).toBe(false);
-  });
-
-  it("API 에러가 아니면 판별하지 않는다", () => {
-    expect(isFolderOrderMismatchError(new Error("network"))).toBe(false);
   });
 });
 

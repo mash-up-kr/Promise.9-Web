@@ -20,10 +20,8 @@ import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwa
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { Text } from "@/components/ui/text/Text";
-
 import {
   folderQueries,
-  isFolderOrderMismatchError,
   useDeleteFolderMutation,
   useReorderFoldersMutation,
 } from "./api/folder.queries";
@@ -38,6 +36,7 @@ import { FolderListSkeleton } from "./components/FolderListSkeleton";
 import { FolderSection } from "./components/FolderSection";
 import { NewFolderButton } from "./components/NewFolderButton";
 import { SortableFolderList } from "./components/SortableFolderList";
+import { isFolderOrderMismatchError } from "./folder.errors";
 
 type OpenFolderHandler = (id: string, name: string) => void;
 

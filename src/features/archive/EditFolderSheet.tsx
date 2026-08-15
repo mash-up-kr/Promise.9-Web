@@ -3,14 +3,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
-
-import {
-  isDuplicateFolderNameError,
-  useUpdateFolderMutation,
-} from "./api/folder.queries";
+import { useUpdateFolderMutation } from "./api/folder.queries";
 import { FOLDER_COLOR_OPTIONS } from "./archive.constants";
 import { DuplicateFolderNameAlert } from "./components/DuplicateFolderNameAlert";
 import { FolderFormSheet } from "./components/FolderFormSheet";
+import { isDuplicateFolderNameError } from "./folder.errors";
 
 /** 팔레트 밖 값(기본색 등)으로 편집을 시작하면 폼이 검증에 걸리므로 선택 가능한 색으로 맞춘다. */
 function toSelectableColor(color?: string): SelectableFolderColor {

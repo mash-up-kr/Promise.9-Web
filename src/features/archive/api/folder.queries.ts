@@ -1,4 +1,4 @@
-import { apiClient, isApiError, type SuccessResponse } from "@shared/api";
+import { apiClient, type SuccessResponse } from "@shared/api";
 import {
   folderToneToHex,
   hexToFolderTone,
@@ -11,13 +11,13 @@ import {
 } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { FOLDER_ERROR_CODE } from "../archive.constants";
 import type { CreateFolderInput } from "../archive.contracts";
 import type {
   ArchiveFolder,
   ArchiveFolderData,
   SystemFolderKey,
 } from "../archive.types";
+import { isFolderOrderMismatchError } from "../folder.errors";
 import { folderLinkQueries } from "./folder-links.queries";
 
 const systemFolderCountSchema = z.looseObject({ linkCount: z.number() });
@@ -109,32 +109,6 @@ interface CreatedFolder {
   folderName: string;
   color: string;
   createdAt: string;
-}
-
-/**
- * 폴더 이름 중복 실패인지 판별한다.
- *
- * 409 는 "중복 생성 또는 리소스 상태 충돌" 을 모두 포함하므로 상태 코드로는 단정할 수 없다.
- * 서버 계약(errorCode) 해석은 여기서 하고, 사용자 문구는 화면이 정한다.
- */
-export function isDuplicateFolderNameError(error: unknown): boolean {
-  return (
-    isApiError(error) &&
-    error.payload?.error.errorCode === FOLDER_ERROR_CODE.DUPLICATE_NAME
-  );
-}
-
-/**
- * 폴더 순서 저장 실패가 "목록이 현재 폴더 전체와 다름" 인지 판별한다.
- *
- * 400 은 일반 검증 실패도 포함하므로 상태 코드로는 단정할 수 없다. 이 경우는 화면이 들고
- * 있던 목록이 서버와 어긋난 상태(다른 기기에서 폴더 추가·삭제 등)라 재조회가 필요하다.
- */
-export function isFolderOrderMismatchError(error: unknown): boolean {
-  return (
-    isApiError(error) &&
-    error.payload?.error.errorCode === FOLDER_ERROR_CODE.ORDER_MISMATCH
-  );
 }
 
 /** 화면이 들고 있는 폴더 id 순서를 PUT /folders/order 요청 본문으로 변환한다. */
