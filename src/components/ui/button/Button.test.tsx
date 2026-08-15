@@ -67,6 +67,37 @@ describe("Button (헤드리스 코어)", () => {
     );
   });
 
+  test("accessibilityState 를 넘기면 컴포넌트 계산값과 병합된다(덮어쓰지 않는다)", async () => {
+    await render(
+      <Button
+        onPress={jest.fn()}
+        isLoading
+        accessibilityState={{ selected: true }}
+      >
+        <Text>저장</Text>
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "저장" });
+    expect(button.props.accessibilityState).toMatchObject({
+      selected: true,
+      busy: true,
+    });
+  });
+
+  test("accessibilityState 로 disabled:false 를 넘겨도 컴포넌트가 계산한 disabled 가 우선한다", async () => {
+    await render(
+      <Button
+        onPress={jest.fn()}
+        disabled
+        accessibilityState={{ disabled: false }}
+      >
+        <Text>저장</Text>
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "저장" });
+    expect(button.props.accessibilityState).toMatchObject({ disabled: true });
+  });
+
   test("useButtonState 를 <Button> 밖에서 쓰면 던진다", async () => {
     function Consumer() {
       useButtonState();

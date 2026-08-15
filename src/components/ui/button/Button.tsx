@@ -48,6 +48,8 @@ export function Button({
   children,
   onPressIn,
   onPressOut,
+  accessibilityRole = "button",
+  accessibilityState,
   ...props
 }: ButtonProps) {
   const [isPressed, setIsPressed] = useState(false);
@@ -65,8 +67,12 @@ export function Button({
   return (
     <ButtonStateContext.Provider value={state}>
       <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ disabled: isBlocked, busy: isLoading }}
+        accessibilityRole={accessibilityRole}
+        accessibilityState={{
+          ...accessibilityState,
+          disabled: isBlocked,
+          busy: isLoading,
+        }}
         disabled={isBlocked}
         onPressIn={(event) => {
           setIsPressed(true);
