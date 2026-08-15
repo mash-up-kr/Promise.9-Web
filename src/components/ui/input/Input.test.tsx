@@ -83,11 +83,12 @@ describe("Input", () => {
 });
 
 describe("Input variant", () => {
-  test("pill(Search) 변형은 완전 둥근 pill · #26262b 배경이다", () => {
+  test("pill(Search) 변형은 완전 둥근 pill · gray-800 배경이다", () => {
     const cls = inputStyles({ variant: "pill" });
     expect(cls).toContain("rounded-full");
     expect(cls).toContain("h-10");
-    expect(cls).toContain("bg-old-background-input");
+    expect(cls).toContain("bg-gray-800");
+    expect(cls).not.toContain("bg-old-background-input");
   });
 
   test("field(Default) 변형은 radius 20 · white-10 배경이다", () => {
@@ -107,10 +108,10 @@ describe("InputField 타입별 폰트 스펙", () => {
     expect(cls).toContain("text-text-normal");
   });
 
-  test("pill(Search) 는 Pretendard Medium 16(heading-3)", () => {
+  test("pill(Search) 는 Pretendard Medium 16(heading-3-medium)", () => {
     const cls = inputFieldStyles({ variant: "pill" });
     expect(cls).toContain("font-pretendard-medium");
-    expect(cls).toContain("text-heading-3");
+    expect(cls).toContain("text-heading-3-medium");
     expect(cls).toContain("text-text-normal");
   });
 });

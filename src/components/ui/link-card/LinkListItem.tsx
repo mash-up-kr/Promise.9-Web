@@ -22,7 +22,7 @@ export function LinkListItem({ link, ...props }: LinkListItemProps) {
           <LinkCard.Title variant="body-2-normal" />
         </VStack>
       </HStack>
-      <Box className="ml-[108px] h-px w-[200px] rounded-xl bg-old-border-divider" />
+      <Box className="ml-[108px] h-px w-[200px] rounded-xl bg-border-divider" />
     </LinkCard.Root>
   );
 }

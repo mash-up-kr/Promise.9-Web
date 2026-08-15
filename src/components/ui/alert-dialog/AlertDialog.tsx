@@ -1,7 +1,6 @@
-import { BlurView } from "expo-blur";
-import type { ReactNode } from "react";
+import type { PropsWithChildren, ReactNode } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
-import Animated, { ZoomIn } from "react-native-reanimated";
+import Animated, { withSpring } from "react-native-reanimated";
 
 import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
@@ -42,40 +41,38 @@ function Backdrop({ onPress }: { onPress?: () => void }) {
       accessibilityLabel="닫기"
       onPress={onPress}
       style={StyleSheet.absoluteFill}
-      className="bg-opacity-black-50"
+      className="bg-opacity-black-70"
     />
   );
 }
 
 const Core = createAlertDialog({ Overlay, Backdrop });
 
-// Figma Alert 카드 = Popover 와 동일한 글래스 레시피
-// (①블러 → ②반투명 틴트 → ③내용 → ④inset 하이라이트).
-function AlertDialogContent({ children }: { children: ReactNode }) {
+// 시안 DeleteDialog 주석: enter opacity 0 + scale 0.86→1, spring 520/34 mass 0.7.
+// (exit 스펙은 Modal 이 닫히며 즉시 언마운트되는 구조라 적용하지 않는다.)
+const DIALOG_SPRING = { stiffness: 520, damping: 34, mass: 0.7 };
+
+function enterDialog() {
+  "worklet";
+  return {
+    initialValues: { opacity: 0, transform: [{ scale: 0.86 }] },
+    animations: {
+      opacity: withSpring(1, DIALOG_SPRING),
+      transform: [{ scale: withSpring(1, DIALOG_SPRING) }],
+    },
+  };
+}
+
+// Figma Alert Dialog: 플랫 gray-800 카드 + white-05 헤어라인 보더.
+function AlertDialogContent({ children }: PropsWithChildren) {
   return (
     <Animated.View
-      entering={ZoomIn.duration(200)}
+      entering={enterDialog}
       accessibilityViewIsModal
       accessibilityRole="alert"
-      className="w-[304px] gap-5 overflow-hidden rounded-[36px] px-4 pt-5 pb-4"
+      className="w-[304px] gap-5 overflow-hidden rounded-[36px] border border-opacity-white-05 bg-gray-800 px-4 pt-5 pb-4"
     >
-      <BlurView
-        intensity={30}
-        tint="dark"
-        pointerEvents="none"
-        style={StyleSheet.absoluteFill}
-      />
-      <View
-        pointerEvents="none"
-        style={StyleSheet.absoluteFill}
-        className="bg-[rgba(101,101,107,0.1)]"
-      />
       {children}
-      <View
-        pointerEvents="none"
-        style={StyleSheet.absoluteFill}
-        className="rounded-[36px] shadow-[inset_1px_1px_1px_0_var(--color-opacity-white-10),inset_3px_3px_38px_0_rgba(0,0,0,0.31),inset_0px_0px_2px_0_var(--color-opacity-white-40)]"
-      />
     </Animated.View>
   );
 }
@@ -128,29 +125,33 @@ export function AlertDialog({
   );
 }
 
-const alertButtonStyles = tv({
-  base: "h-11 flex-1 flex-row items-center justify-center rounded-full px-4 py-2.5",
+// 시안 Action Button Medium: 높이 48 pill. primary=흰 배경(확인), secondary=Assistive,
+// destructive=삭제.
+export const alertButtonStyles = tv({
+  base: "h-12 flex-1 flex-row items-center justify-center rounded-full px-4 py-3",
   variants: {
     variant: {
+      primary: "bg-opacity-white-100",
       secondary: "bg-gray-600",
-      destructive: "bg-[rgba(168,55,50,0.3)]",
+      destructive: "bg-action-destructive-background",
     },
   },
 });
 
 const alertButtonLabelStyles = tv({
-  base: "font-pretendard-medium text-heading-3 tracking-[-0.16px]",
+  base: "font-pretendard-medium text-heading-3-medium",
   variants: {
     variant: {
-      secondary: "text-text-normal",
-      destructive: "text-[#ec5656]",
+      primary: "text-gray-800",
+      secondary: "text-text-strong",
+      destructive: "text-action-destructive",
     },
   },
 });
 
 export interface AlertDialogButtonProps {
   label: string;
-  variant: "secondary" | "destructive";
+  variant: "primary" | "secondary" | "destructive";
   onPress: () => void;
 }
 

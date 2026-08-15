@@ -4,12 +4,13 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
+import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
+import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { Input, InputField, InputSlot } from "@/components/ui/input/Input";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
 import { Text } from "@/components/ui/text/Text";
 import { isWeb } from "@/constants/platform.constants";
 import { useCreateLinkMutation } from "@/features/link/api/link.queries";
-import { CreateLinkHeader } from "@/features/link/components/CreateLinkHeader";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { MemoField } from "@/features/link/components/MemoField";
 import { RemindQuestionSection } from "@/features/link/components/RemindQuestionSection";
@@ -30,6 +31,19 @@ export function CreateLinkSheet() {
     }
     router.replace("/");
   };
+
+  return (
+    <SheetScreen onClose={closeSheet}>
+      <CreateLinkSheetBody />
+    </SheetScreen>
+  );
+}
+
+// 취소·저장 성공 시 라우트를 바로 제거하지 않고 시트 닫힘 애니메이션을 거친다
+// (useSheetDismiss 는 시트 자손에서만 쓸 수 있어 본문을 분리). 실제 라우트 제거는
+// 닫힘 완료 후 SheetScreen 의 onClose(closeSheet)가 담당한다.
+function CreateLinkSheetBody() {
+  const dismiss = useSheetDismiss();
 
   const { control, handleSubmit, setValue, watch, formState } =
     useForm<CreateLinkForm>({
@@ -93,16 +107,17 @@ export function CreateLinkSheet() {
         memo: values.memo?.trim() || null,
         remindType: values.remindType,
       },
-      { onSuccess: () => closeSheet() },
+      { onSuccess: () => dismiss() },
     );
   });
 
   return (
-    <SheetScreen onClose={closeSheet}>
-      <CreateLinkHeader
-        onCancel={closeSheet}
-        onSave={onSave}
-        saveDisabled={!formState.isValid || createLinkMutation.isPending}
+    <>
+      <BottomSheetHeader
+        title="링크 저장"
+        onCancel={dismiss}
+        onConfirm={onSave}
+        isConfirmDisabled={!formState.isValid || createLinkMutation.isPending}
       />
 
       <LinkPreviewCard url={previewUrl} />
@@ -156,6 +171,6 @@ export function CreateLinkSheet() {
           <MemoField memo={field.value ?? ""} onChangeMemo={field.onChange} />
         )}
       />
-    </SheetScreen>
+    </>
   );
 }

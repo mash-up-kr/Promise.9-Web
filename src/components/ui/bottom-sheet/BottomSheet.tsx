@@ -2,12 +2,11 @@ import GorhomBottomSheet, {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
   type BottomSheetBackgroundProps,
+  useBottomSheetSpringConfigs,
 } from "@gorhom/bottom-sheet";
 import type { ReactNode } from "react";
 import { useCallback, useRef } from "react";
 import { View } from "react-native";
-
-import { GlassView } from "@/components/ui/glass-view/GlassView";
 
 export interface BottomSheetProps {
   onClose: () => void;
@@ -15,19 +14,19 @@ export interface BottomSheetProps {
   snapPoints?: (string | number)[];
 }
 
-function GlassBackground({ style }: BottomSheetBackgroundProps) {
+// Figma Sheet Container: gray-900 솔리드 + 상단 radius 24 + 위쪽 그림자.
+function SolidBackground({ style }: BottomSheetBackgroundProps) {
   return (
-    <GlassView
-      intensity={100}
+    <View
       style={style}
-      className="overflow-hidden rounded-t-[36px]"
+      className="overflow-hidden rounded-t-3xl bg-gray-900 shadow-[0px_-8px_24px_0px_rgba(0,0,0,0.35)]"
     />
   );
 }
 
 function Handle() {
   return (
-    <View className="items-center py-3">
+    <View className="items-center pt-2 pb-1">
       <View className="h-1 w-9 rounded-full bg-icon-assistive" />
     </View>
   );
@@ -40,11 +39,28 @@ export function BottomSheet({
 }: BottomSheetProps) {
   const ref = useRef<GorhomBottomSheet>(null);
 
+  // 시안 FolderSheet 주석: enter/exit spring 420/40.
+  // overshootClamping: 목표 지점을 지나쳐 되튕기는(통통 튀는) 동작을 제거한다.
+  const animationConfigs = useBottomSheetSpringConfigs({
+    stiffness: 420,
+    damping: 40,
+    overshootClamping: true,
+  });
+
+  // 제스처 닫힘은 onChange(-1), 명령형 close() 는 gorhom 의 onClose 로 통지된다 —
+  // 두 경로가 모두 불릴 수 있어 한 번만 전달한다(중복 시 router.back 이 두 번 pop 됨).
+  const hasNotifiedCloseRef = useRef(false);
+  const notifyClose = useCallback(() => {
+    if (hasNotifiedCloseRef.current) return;
+    hasNotifiedCloseRef.current = true;
+    onClose();
+  }, [onClose]);
+
   const handleChange = useCallback(
     (index: number) => {
-      if (index === -1) onClose();
+      if (index === -1) notifyClose();
     },
-    [onClose],
+    [notifyClose],
   );
 
   const renderBackdrop = useCallback(
@@ -54,6 +70,7 @@ export function BottomSheet({
         appearsOnIndex={0}
         disappearsOnIndex={-1}
         pressBehavior="close"
+        opacity={0.6}
       />
     ),
     [],
@@ -70,8 +87,10 @@ export function BottomSheet({
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
       onChange={handleChange}
+      onClose={notifyClose}
+      animationConfigs={animationConfigs}
       backdropComponent={renderBackdrop}
-      backgroundComponent={GlassBackground}
+      backgroundComponent={SolidBackground}
       handleComponent={Handle}
     >
       {children}

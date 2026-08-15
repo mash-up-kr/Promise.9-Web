@@ -1,9 +1,10 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Search } from "lucide-react-native";
-import { ScrollView } from "react-native";
+import Animated from "react-native-reanimated";
 
 import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
+import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { VStack } from "@/components/ui/vstack/VStack";
 import { ROUTES } from "@/constants/routes.constants";
@@ -18,6 +19,7 @@ function isCategoryTab(value: string | undefined): value is CategoryTab {
 }
 
 export function CategoriesScreen() {
+  const scrollHandler = useHeaderAwareScrollHandler("categories");
   const router = useRouter();
   const { category } = useLocalSearchParams<{ category?: string }>();
   const selected: CategoryTab = isCategoryTab(category) ? category : "전체";
@@ -40,7 +42,7 @@ export function CategoriesScreen() {
         options={{
           header: () => (
             <Header
-              variant="dim"
+              scrollScope="categories"
               left={<HeaderBackButton />}
               title="카테고리"
               right={
@@ -55,13 +57,17 @@ export function CategoriesScreen() {
           ),
         }}
       />
-      <VStack className="flex-1 bg-old-background-base">
+      <VStack className="flex-1 bg-background-base">
         <CategoryTabBar selected={selected} onSelect={handleSelectTab} />
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <Animated.ScrollView
+          showsVerticalScrollIndicator={false}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+        >
           <VStack className="px-5 pt-3 pb-8">
             <LinkGrid links={links} />
           </VStack>
-        </ScrollView>
+        </Animated.ScrollView>
       </VStack>
     </>
   );
