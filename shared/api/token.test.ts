@@ -59,6 +59,25 @@ describe("refresh token persistence seam", () => {
     await expect(getRefreshToken()).resolves.toBe("new-refresh");
   });
 
+  it("refreshToken 저장이 실패하면 accessToken 도 갱신하지 않는다", async () => {
+    // 저장소 I/O 실패 시 메모리(ATK)와 영속(RTK) 상태가 어긋나면 안 된다 —
+    // RTK 만 옛 값으로 남고 ATK 는 새 값이 되는 불일치를 막는다.
+    setAccessToken("old-access");
+    const persistence: TokenPersistence = {
+      getRefreshToken: jest.fn(async () => null),
+      setRefreshToken: jest.fn(async () => {
+        throw new Error("storage failure");
+      }),
+    };
+    setTokenPersistence(persistence);
+
+    await expect(setTokens("new-access", "new-refresh")).rejects.toThrow(
+      "storage failure",
+    );
+
+    await expect(getAccessToken()).resolves.toBe("old-access");
+  });
+
   it("clearTokens 는 accessToken 과 저장된 refreshToken 을 모두 지운다", async () => {
     const persistence = createFakeTokenPersistence();
     setTokenPersistence(persistence);
