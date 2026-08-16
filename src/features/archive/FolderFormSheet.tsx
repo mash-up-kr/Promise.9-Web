@@ -38,8 +38,8 @@ export interface FolderFormSheetProps {
  * 초기값·요청·문구는 이 모듈이 안에서 정한다.
  */
 export function FolderFormSheet({ mode }: FolderFormSheetProps) {
-  // 모드별로 필요한 훅이 다르다(생성/수정 mutation, 편집만 쓰는 라우트 파라미터).
-  // 훅은 조건부로 부를 수 없으므로 분기를 여기서 끝내고, 아래는 각자 자기 것만 부른다.
+  // 모드마다 초기값·요청·문구가 전부 다르다. 분기를 여기서 한 번에 끝내야
+  // 삼항이 흩어지지 않고, 편집에만 있는 라우트 파라미터도 그쪽에 갇힌다.
   return mode === "create" ? <CreateFolderForm /> : <EditFolderForm />;
 }
 
