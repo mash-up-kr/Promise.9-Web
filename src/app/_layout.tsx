@@ -20,9 +20,9 @@ const transparentBackgroundTheme = {
   colors: { ...DefaultTheme.colors, background: "transparent" },
 };
 
-// 오버레이 라우트(create-link · create-folder · edit-folder) 공통 옵션 — 전 OS 투명 모달로 연다.
-// 그 위에 무엇을 그릴지는 화면이 정한다: create-link 는 gorhom 바텀시트(backdrop·그래버·detent·
-// 키보드까지 그린다), 폴더 생성·편집은 화면 중앙 카드(FolderFormSheet).
+// 오버레이 라우트(create-link · create-folder · edit-folder · move-links) 공통 옵션 —
+// 전 OS 투명 모달로 연다. 그 위에 무엇을 그릴지는 화면이 정한다: create-link·move-links 는
+// gorhom 바텀시트(backdrop·그래버·detent·키보드까지 그린다), 폴더 생성·편집은 화면 중앙 카드.
 const sheetScreenOptions = {
   presentation: "transparentModal" as const,
   headerShown: false,
@@ -85,6 +85,10 @@ export default function RootLayout() {
                       />
                       <Stack.Screen
                         name="edit-folder"
+                        options={sheetScreenOptions}
+                      />
+                      <Stack.Screen
+                        name="move-links"
                         options={sheetScreenOptions}
                       />
                     </Stack>

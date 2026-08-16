@@ -6,9 +6,16 @@ import type { SelectableFolderColor } from "@shared/folder/folder.constants";
  * - `name`: 표시명
  * - `countKey`: GET /folders `systemFolders` 응답에서 링크 수를 읽을 키
  */
+/** 미분류 — 폴더 이동 시트가 유일하게 고를 수 있는 기본 폴더라 따로 꺼내 쓴다. */
+export const UNCATEGORIZED_FOLDER = {
+  id: "uncategorized",
+  name: "미분류",
+  countKey: "uncategorized",
+} as const;
+
 export const SYSTEM_FOLDERS = [
   { id: "all", name: "전체", countKey: "all" },
-  { id: "uncategorized", name: "미분류", countKey: "uncategorized" },
+  UNCATEGORIZED_FOLDER,
   { id: "favorites", name: "즐겨찾기", countKey: "favorite" },
   { id: "trash", name: "최근 삭제된 링크", countKey: "recentlyDeleted" },
 ] as const;
