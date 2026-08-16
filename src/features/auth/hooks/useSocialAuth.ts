@@ -12,8 +12,15 @@ let isGoogleConfigured = false;
 
 function ensureGoogleConfigured() {
   if (isGoogleConfigured) return;
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  // webClientId 는 idToken 발급에 필수다(SDK 문서 기준). 없으면 SDK 내부 에러로 새어나가
+  // 원인을 알기 어려우므로, 웹 구현(useSocialAuth.web.ts)과 같은 톤으로 미리 막는다.
+  // iosClientId 는 선택이라(GoogleService-Info.plist 로 대체 가능) 검증하지 않는다.
+  if (!webClientId) {
+    throw new Error("EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID 가 설정되지 않았습니다.");
+  }
   GoogleSignin.configure({
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    webClientId,
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
   });
   isGoogleConfigured = true;

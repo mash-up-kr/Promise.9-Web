@@ -5,8 +5,29 @@ import { renderHook } from "@testing-library/react-native";
 import { SocialLoginCancelledError, useSocialAuth } from "./useSocialAuth";
 
 describe("useSocialAuth", () => {
+  const originalWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+
+  beforeEach(() => {
+    // 구글 로그인 경로는 webClientId 가 있어야 진행된다 — 기본으로 유효한 값을 채워두고,
+    // 미설정 케이스만 개별 테스트에서 비운다.
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = "test-web-client-id";
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = originalWebClientId;
+  });
+
+  test("EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID 가 없으면 명시적 에러를 던진다", async () => {
+    // webClientId 는 idToken 발급에 필수(SDK 문서) — 없으면 SDK 내부 에러로 새지 않고
+    // 웹 구현과 같은 톤의 명시적 에러로 원인을 알린다.
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = "";
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("google")).rejects.toThrow(
+      "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID",
+    );
+    expect(GoogleSignin.signIn).not.toHaveBeenCalled();
   });
 
   test("구글 로그인 성공 시 idToken 을 반환한다", async () => {

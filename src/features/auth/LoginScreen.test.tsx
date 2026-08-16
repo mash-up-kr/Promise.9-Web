@@ -78,10 +78,18 @@ const apiError = (status: number, errorCode: number) =>
   } as unknown as AxiosResponse);
 
 describe("LoginScreen", () => {
+  const originalWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+
   beforeEach(() => {
     mockReplace.mockClear();
     mockPost.mockReset();
     mockSignIn.mockReset();
+    // useSocialAuth 의 구글 경로는 webClientId 가 있어야 진행된다.
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = "test-web-client-id";
+  });
+
+  afterEach(() => {
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = originalWebClientId;
   });
 
   test("활성화된 provider 버튼만 렌더한다", async () => {
