@@ -25,7 +25,7 @@ const renderPopover = () =>
       }}
     >
       <Popover
-        anchor={{ top: 7, right: 9 }}
+        anchor={{ right: 9 }}
         trigger={(open) => (
           <Pressable accessibilityLabel="열기" onPress={open}>
             <Text>열기</Text>
@@ -65,6 +65,18 @@ describe("Popover", () => {
     await fireEvent.press(screen.getByLabelText("열기"));
     await fireEvent.press(screen.getByLabelText("항목"));
     expect(screen.queryByText("내용")).toBeNull();
+  });
+
+  // 패널은 화면 전체를 덮는 Modal 안에 있어 top 이 화면 절대 좌표다. safe-area 를 빼면
+  // 그만큼 위로 올라가 헤더를 덮는다.
+  test("트리거를 재기 전에도 safe-area 아래에 뜬다", async () => {
+    await renderPopover();
+    await fireEvent.press(screen.getByLabelText("열기"));
+    const style = StyleSheet.flatten(
+      screen.getByTestId("popover-panel").props.style,
+    );
+
+    expect(style.top).toBeGreaterThanOrEqual(47);
   });
 
   describe("가장자리(right) 위치 보정", () => {

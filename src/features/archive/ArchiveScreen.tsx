@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { Search } from "lucide-react-native";
+import { Check, Search } from "lucide-react-native";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 import Animated, {
@@ -10,23 +10,33 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import {
+  AlertDialog,
+  AlertDialogButton,
+} from "@/components/ui/alert-dialog/AlertDialog";
 import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { Header } from "@/components/ui/header/Header";
 import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
+import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { Text } from "@/components/ui/text/Text";
-
-import { folderQueries } from "./api/folder.queries";
+import {
+  folderQueries,
+  useDeleteFolderMutation,
+  useReorderFoldersMutation,
+} from "./api/folder.queries";
 import { SYSTEM_FOLDERS } from "./archive.constants";
 import type { ArchiveFolder, SystemFolderKey } from "./archive.types";
 import { applyFolderOrder } from "./archive.utils";
 import { ArchiveMoreMenu } from "./components/ArchiveMoreMenu";
+import { FolderContextMenu } from "./components/FolderContextMenu";
 import { FolderGroup } from "./components/FolderGroup";
 import { FolderItem } from "./components/FolderItem";
 import { FolderListSkeleton } from "./components/FolderListSkeleton";
 import { FolderSection } from "./components/FolderSection";
 import { NewFolderButton } from "./components/NewFolderButton";
 import { SortableFolderList } from "./components/SortableFolderList";
+import { isFolderOrderMismatchError } from "./folder.errors";
 
 type OpenFolderHandler = (id: string, name: string) => void;
 
@@ -36,8 +46,41 @@ export function ArchiveScreen() {
   // 하단 플로팅 탭바(pill 높이 60 + safe-area 여백)에 가리지 않도록 스크롤 하단 여백을 준다.
   const listBottomPadding = Math.max(insets.bottom, 20) + 60 + 16;
 
-  // 헤더가 경계 밖이라 편집 모드는 여기서 들고 있는다(완료 버튼이 헤더에 있다).
+  const { show } = useSnackbar();
+  const { mutate: saveOrder } = useReorderFoldersMutation();
+  const { mutate: deleteFolder } = useDeleteFolderMutation();
+
+  // 삭제 확인 중인 폴더. null 이면 다이얼로그가 닫힌 상태다.
+  const [folderToDelete, setFolderToDelete] = useState<ArchiveFolder | null>(
+    null,
+  );
+
+  // 헤더가 경계 밖이라 편집 모드·편집 중 순서는 여기서 들고 있는다(완료 버튼이 헤더에 있다).
   const [isReordering, setIsReordering] = useState(false);
+  // 드래그로 바뀐 순서(id). 편집 세션 동안만 유지하고, 저장·취소 후엔 비워 서버 순서를 따른다.
+  const [orderedIds, setOrderedIds] = useState<string[]>([]);
+
+  const finishReordering = useCallback(() => {
+    setIsReordering(false);
+
+    // 드래그를 안 했으면 보낼 변경이 없다 — 서버 순서 그대로다.
+    if (orderedIds.length === 0) {
+      return;
+    }
+
+    saveOrder(orderedIds, {
+      onError: (error) => {
+        show({
+          message: isFolderOrderMismatchError(error)
+            ? "폴더 목록이 변경되어 순서를 저장하지 못했어요."
+            : "폴더 순서를 저장하지 못했어요. 다시 시도해주세요.",
+        });
+      },
+      // 성공하면 재조회 결과가, 실패하면 기존 서버 순서가 정답이므로 어느 쪽이든 로컬 순서를
+      // 버린다. 응답 전에 버리면 그 사이 낡은 서버 순서가 잠깐 보였다가 다시 튄다.
+      onSettled: () => setOrderedIds([]),
+    });
+  }, [orderedIds, saveOrder, show]);
 
   const handleOpenFolder = useCallback<OpenFolderHandler>(
     (id, name) => {
@@ -51,16 +94,34 @@ export function ArchiveScreen() {
     router.push("/create-folder");
   }, [router]);
 
+  // 목록이 이미 이름·색을 갖고 있어 편집 시트가 상세를 다시 조회하지 않도록 함께 넘긴다.
+  const handleEditFolder = useCallback(
+    (folder: ArchiveFolder) => {
+      router.push({
+        pathname: "/edit-folder",
+        params: { id: folder.id, name: folder.name, color: folder.tone },
+      });
+    },
+    [router],
+  );
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!folderToDelete) {
+      return;
+    }
+    deleteFolder(folderToDelete.id, {
+      onError: () =>
+        show({ message: "폴더를 삭제하지 못했어요. 다시 시도해주세요." }),
+    });
+    setFolderToDelete(null);
+  }, [deleteFolder, folderToDelete, show]);
+
   const headerRight = isReordering ? (
-    <Pressable
-      accessibilityRole="button"
+    <IconButton
+      iconNode={Check}
       accessibilityLabel="완료"
-      onPress={() => setIsReordering(false)}
-    >
-      <Text variant="label-1" className="text-old-icon-accent">
-        완료
-      </Text>
-    </Pressable>
+      onPress={finishReordering}
+    />
   ) : (
     <>
       <IconButton
@@ -95,7 +156,7 @@ export function ArchiveScreen() {
               폴더를 불러오지 못했어요.
             </Text>
             <Pressable accessibilityRole="button" onPress={reset}>
-              <Text variant="label-1" className="text-old-icon-accent">
+              <Text variant="label-1" className="text-icon-accent">
                 다시 시도
               </Text>
             </Pressable>
@@ -104,33 +165,66 @@ export function ArchiveScreen() {
       >
         <ArchiveFolders
           isReordering={isReordering}
+          orderedIds={orderedIds}
+          onReorder={setOrderedIds}
           bottomPadding={listBottomPadding}
           onOpenFolder={handleOpenFolder}
           onAddFolder={handleAddFolder}
+          onEditFolder={handleEditFolder}
+          onDeleteFolder={setFolderToDelete}
         />
       </AsyncBoundary>
+
+      <AlertDialog
+        isOpen={folderToDelete !== null}
+        onClose={() => setFolderToDelete(null)}
+        title="폴더를 삭제하시겠어요?"
+        description="저장된 링크는 미분류 폴더로 이동돼요"
+        actions={
+          <>
+            <AlertDialogButton
+              label="취소"
+              variant="secondary"
+              onPress={() => setFolderToDelete(null)}
+            />
+            <AlertDialogButton
+              label="폴더 삭제"
+              variant="destructive"
+              onPress={handleConfirmDelete}
+            />
+          </>
+        }
+      />
     </View>
   );
 }
 
 interface ArchiveFoldersProps {
   isReordering: boolean;
+  /** 편집 중 순서(id). 비어 있으면 서버 순서를 그대로 쓴다. */
+  orderedIds: string[];
+  onReorder: (orderedIds: string[]) => void;
   bottomPadding: number;
   onOpenFolder: OpenFolderHandler;
   onAddFolder: () => void;
+  onEditFolder: (folder: ArchiveFolder) => void;
+  onDeleteFolder: (folder: ArchiveFolder) => void;
 }
 
 function ArchiveFolders({
   isReordering,
+  orderedIds,
+  onReorder,
   bottomPadding,
   onOpenFolder,
   onAddFolder,
+  onEditFolder,
+  onDeleteFolder,
 }: ArchiveFoldersProps) {
   const { data } = useSuspenseQuery(folderQueries.list());
 
-  // 재정렬은 서버 저장 API 가 없어 로컬 전용이다. 서버 데이터를 복사하지 않고 순서(id)만 들고
-  // 있다가 렌더 시 적용해, 재조회로 서버 데이터가 새로 와도 사용자가 바꾼 순서가 유지되게 한다.
-  const [orderedIds, setOrderedIds] = useState<string[]>([]);
+  // 서버 데이터를 복사하지 않고 순서(id)만 들고 있다가 렌더 시 적용한다. 편집 중 재조회가
+  // 일어나도 사용자가 드래그한 순서가 유지되고, 저장 후엔 순서를 비워 서버 값이 정답이 된다.
   const myFolders = useMemo(
     () => applyFolderOrder(data.myFolders, orderedIds),
     [data.myFolders, orderedIds],
@@ -144,9 +238,12 @@ function ArchiveFolders({
 
   // 드래그 제스처가 매 렌더마다 재생성되지 않도록 안정된 참조로 유지한다
   // (SortableFolderItem 의 gesture useMemo 가 이 콜백에 의존한다).
-  const handleReorder = useCallback((next: ArchiveFolder[]) => {
-    setOrderedIds(next.map((folder) => folder.id));
-  }, []);
+  const handleReorder = useCallback(
+    (next: ArchiveFolder[]) => {
+      onReorder(next.map((folder) => folder.id));
+    },
+    [onReorder],
+  );
 
   // 편집 모드에선 기본 폴더를 읽기 전용(탭 비활성)으로 헤더에 재사용한다.
   const basicSection = (
@@ -202,12 +299,12 @@ function ArchiveFolders({
         ) : (
           <FolderGroup>
             {myFolders.map((folder) => (
-              <FolderItem
+              <FolderContextMenu
                 key={folder.id}
-                name={folder.name}
-                count={folder.count}
-                tone={folder.tone}
-                onPress={() => onOpenFolder(folder.id, folder.name)}
+                folder={folder}
+                onOpenFolder={() => onOpenFolder(folder.id, folder.name)}
+                onEdit={() => onEditFolder(folder)}
+                onDelete={() => onDeleteFolder(folder)}
               />
             ))}
           </FolderGroup>

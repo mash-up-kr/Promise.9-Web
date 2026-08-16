@@ -2,13 +2,15 @@ import type { PropsWithChildren, ReactNode } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import Animated, { withSpring } from "react-native-reanimated";
 
+import { ActionButton } from "@/components/ui/action-button/ActionButton";
+import { Dialog } from "@/components/ui/dialog/Dialog";
 import { Text } from "@/components/ui/text/Text";
-import { tv } from "@/lib/tv";
 
 import { createAlertDialog } from "./createAlertDialog";
 
 // 오버레이 호스트 = RN Modal (gluestack Overlay 의 useRNModal 방식 · Popover 선례와 동일).
 // 닫힘 시 언마운트해 잔여 렌더를 남기지 않는다.
+// 가운데 정렬은 Dialog 에 맡긴다 — dim 은 아래 Backdrop 이 따로 그리므로 onDismiss 는 넘기지 않는다.
 function Overlay({
   visible,
   onRequestClose,
@@ -27,9 +29,7 @@ function Overlay({
       animationType="fade"
       onRequestClose={onRequestClose}
     >
-      <View className="flex-1 items-center justify-center px-6">
-        {children}
-      </View>
+      <Dialog>{children}</Dialog>
     </Modal>
   );
 }
@@ -125,35 +125,19 @@ export function AlertDialog({
   );
 }
 
-// 시안 Action Button Medium: 높이 48 pill. primary=흰 배경(확인), secondary=Assistive,
-// destructive=삭제.
-export const alertButtonStyles = tv({
-  base: "h-12 flex-1 flex-row items-center justify-center rounded-full px-4 py-3",
-  variants: {
-    variant: {
-      primary: "bg-opacity-white-100",
-      secondary: "bg-gray-600",
-      destructive: "bg-action-destructive-background",
-    },
-  },
-});
-
-const alertButtonLabelStyles = tv({
-  base: "font-pretendard-medium text-heading-3-medium",
-  variants: {
-    variant: {
-      primary: "text-gray-800",
-      secondary: "text-text-strong",
-      destructive: "text-action-destructive",
-    },
-  },
-});
-
 export interface AlertDialogButtonProps {
   label: string;
   variant: "primary" | "secondary" | "destructive";
   onPress: () => void;
 }
+
+// 시안 Action Button Medium 을 그대로 쓰고, 알림 액션이 늘 원하는 반반 배치(flex-1)만 얹는다.
+// 스킨의 assistive 를 알림 문맥의 이름(secondary)으로만 바꿔 부른다.
+const ACTION_VARIANT = {
+  primary: "primary",
+  secondary: "assistive",
+  destructive: "destructive",
+} as const;
 
 export function AlertDialogButton({
   label,
@@ -161,12 +145,12 @@ export function AlertDialogButton({
   onPress,
 }: AlertDialogButtonProps) {
   return (
-    <Pressable
-      accessibilityRole="button"
+    <ActionButton
+      variant={ACTION_VARIANT[variant]}
+      className="flex-1"
       onPress={onPress}
-      className={alertButtonStyles({ variant })}
     >
-      <Text className={alertButtonLabelStyles({ variant })}>{label}</Text>
-    </Pressable>
+      {label}
+    </ActionButton>
   );
 }
