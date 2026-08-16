@@ -1,5 +1,5 @@
-import { EditFolderSheet } from "@/features/archive/EditFolderSheet";
+import { FolderFormSheet } from "@/features/archive/FolderFormSheet";
 
 export default function Route() {
-  return <EditFolderSheet />;
+  return <FolderFormSheet mode="edit" />;
 }
