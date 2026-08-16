@@ -12,6 +12,14 @@ describe("snackbarPresets", () => {
     expect(options.action).toBeUndefined();
   });
 
+  test("success 에 onView 를 넘기면 '보기' 액션이 붙는다", () => {
+    const onView = jest.fn();
+    const options = snackbarPresets.success("디자인에 저장됨", onView);
+    expect(options.action?.label).toBe("보기");
+    options.action?.onPress();
+    expect(onView).toHaveBeenCalledTimes(1);
+  });
+
   test("offline 은 아이콘과 '다시 시도' 액션이 있고, 액션은 전달한 콜백을 그대로 호출한다", () => {
     const onRetry = jest.fn();
     const options = snackbarPresets.offline(onRetry);

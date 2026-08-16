@@ -9,9 +9,11 @@ import type { SnackbarOptions } from "./SnackbarProvider";
 // Snackbar/SnackbarProvider 는 상태를 모르는 조합형 프리미티브라, 반복되는 상태별
 // 아이콘·문구·액션 조합을 여기서 한 곳에 고정해 일관성을 지킨다.
 export const snackbarPresets = {
-  success: (message: string): SnackbarOptions => ({
+  // onView 를 넘기면 "보기" 액션이 붙는다 (예: 폴더 이동 완료 → 옮긴 폴더 열기).
+  success: (message: string, onView?: () => void): SnackbarOptions => ({
     message,
     icon: <CheckCircleIcon />,
+    ...(onView && { action: { label: "보기", onPress: onView } }),
   }),
   duplicate: (message: string, onView: () => void): SnackbarOptions => ({
     message,
