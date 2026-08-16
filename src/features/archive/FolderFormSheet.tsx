@@ -3,13 +3,13 @@ import type { SelectableFolderColor } from "@shared/folder/folder.constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 
+import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import { Dialog } from "@/components/ui/dialog/Dialog";
 import { Input, InputField } from "@/components/ui/input/Input";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { Text } from "@/components/ui/text/Text";
-import { tv } from "@/lib/tv";
 
 import {
   useCreateFolderMutation,
@@ -23,27 +23,6 @@ import {
 import { DuplicateFolderNameAlert } from "./components/DuplicateFolderNameAlert";
 import { FolderColorPicker } from "./components/FolderColorPicker";
 import { isDuplicateFolderNameError } from "./folder.errors";
-
-// Figma "Action Button" 중 이 시트가 쓰는 두 타입.
-// primary=흰 배경/어두운 텍스트(저장), assistive=진회색 배경/흰 텍스트(취소).
-const actionButtonStyles = tv({
-  base: "h-12 flex-1 flex-row items-center justify-center rounded-full px-4 py-3",
-  variants: {
-    variant: {
-      primary: "border border-opacity-white-20 bg-white",
-      assistive: "bg-gray-600",
-    },
-    disabled: { true: "bg-gray-200", false: "" },
-  },
-});
-
-const actionButtonLabelStyles = tv({
-  base: "",
-  variants: {
-    variant: { primary: "text-gray-800", assistive: "text-text-strong" },
-    disabled: { true: "text-gray-400", false: "" },
-  },
-});
 
 export type FolderFormMode = "create" | "edit";
 
@@ -214,40 +193,20 @@ function FolderFormCard({
           </View>
 
           <View className="flex-row gap-2">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="취소"
+            <ActionButton
+              variant="assistive"
+              className="flex-1"
               onPress={close}
-              className={actionButtonStyles({ variant: "assistive" })}
             >
-              <Text
-                variant="heading-3-medium"
-                className={actionButtonLabelStyles({ variant: "assistive" })}
-              >
-                취소
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="저장"
-              accessibilityState={{ disabled: saveDisabled }}
+              취소
+            </ActionButton>
+            <ActionButton
+              className="flex-1"
               disabled={saveDisabled}
               onPress={submit}
-              className={actionButtonStyles({
-                variant: "primary",
-                disabled: saveDisabled,
-              })}
             >
-              <Text
-                variant="heading-3-medium"
-                className={actionButtonLabelStyles({
-                  variant: "primary",
-                  disabled: saveDisabled,
-                })}
-              >
-                저장
-              </Text>
-            </Pressable>
+              저장
+            </ActionButton>
           </View>
         </View>
       </Dialog>

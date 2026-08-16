@@ -3,7 +3,7 @@ import { Text } from "react-native";
 
 import { ErrorBoundary } from "@/components/ui/error-boundary/ErrorBoundary";
 
-import { ActionButton } from "./ActionButton";
+import { ActionButton, actionButtonStyles } from "./ActionButton";
 
 describe("ActionButton (스킨)", () => {
   test("문자열 children 을 button 으로 렌더한다", async () => {
@@ -112,5 +112,52 @@ describe("ActionButton (스킨)", () => {
       </ActionButton>,
     );
     expect(screen.getByText("저장")).toBeOnTheScreen();
+  });
+});
+
+// jest 는 className 을 해석하지 않으므로 tv 매핑을 직접 단언한다(expo-pitfalls).
+// 배경은 pressed·disabled 조합으로 갈리므로(compoundVariants) 평상시 상태를 명시해 뽑는다.
+describe("actionButtonStyles", () => {
+  const resting = { isActive: false, isDisabled: false } as const;
+
+  test("medium 은 시안 Action Button Medium(높이 48·pill)이다", () => {
+    const cls = actionButtonStyles({ variant: "primary", ...resting });
+    expect(cls).toContain("h-12");
+    expect(cls).toContain("rounded-full");
+  });
+
+  test("primary 는 흰 배경이다", () => {
+    expect(actionButtonStyles({ variant: "primary", ...resting })).toContain(
+      "bg-opacity-white-100",
+    );
+  });
+
+  test("assistive 는 gray-600 배경이다", () => {
+    expect(actionButtonStyles({ variant: "assistive", ...resting })).toContain(
+      "bg-gray-600",
+    );
+  });
+
+  test("destructive 는 action-destructive 토큰 배경이다", () => {
+    const cls = actionButtonStyles({ variant: "destructive", ...resting });
+    expect(cls).toContain("bg-action-destructive-background");
+    expect(cls).not.toContain("rgba");
+  });
+
+  test("disabled 는 variant 와 무관하게 죽은 회색이다", () => {
+    expect(
+      actionButtonStyles({
+        variant: "primary",
+        isActive: false,
+        isDisabled: true,
+      }),
+    ).toContain("bg-gray-200");
+    expect(
+      actionButtonStyles({
+        variant: "assistive",
+        isActive: false,
+        isDisabled: true,
+      }),
+    ).toContain("bg-gray-400");
   });
 });
