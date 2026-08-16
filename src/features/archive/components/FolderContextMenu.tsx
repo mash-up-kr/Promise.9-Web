@@ -5,14 +5,18 @@ import { Pressable, View } from "react-native";
 import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
 import { Popover } from "@/components/ui/popover/Popover";
 import { Text } from "@/components/ui/text/Text";
+import { isWeb } from "@/constants/platform.constants";
 
 import type { ArchiveFolder } from "../archive.types";
 import { FolderItem } from "./FolderItem";
 
 // Figma "More Menu" (node 46:5976): 170 폭, 화면 좌측에서 74px.
 // 세로 위치(누른 행 아래, 공간 부족 시 위)는 Popover 가 트리거를 재서 잡는다.
-const MENU_ANCHOR = { left: 74 };
 const MENU_WIDTH = 170;
+const LONG_PRESS_ANCHOR = { left: 74 };
+// 웹은 행 오른쪽 "..." 버튼이 트리거라 메뉴도 그 옆에 붙는다. 버튼이 행 오른쪽 끝에서
+// 일정 거리에 있으므로, 컬럼 폭이 달라져도 따라가도록 좌측이 아닌 우측 기준으로 잡는다.
+const MORE_BUTTON_ANCHOR = { right: 78 };
 
 export interface FolderContextMenuProps {
   folder: ArchiveFolder;
@@ -46,7 +50,7 @@ export function FolderContextMenu({
   return (
     <Popover
       width={MENU_WIDTH}
-      anchor={MENU_ANCHOR}
+      anchor={isWeb ? MORE_BUTTON_ANCHOR : LONG_PRESS_ANCHOR}
       closeAccessibilityLabel="폴더 메뉴 닫기"
       onClosed={runPendingAction}
       trigger={(open) => (
@@ -55,7 +59,9 @@ export function FolderContextMenu({
           count={folder.count}
           tone={folder.tone}
           onPress={onOpenFolder}
-          onLongPress={open}
+          // 웹은 hover 로 뜨는 "..." 클릭, 모바일은 롱프레스 (Figma archive / context-menu).
+          onLongPress={isWeb ? undefined : open}
+          onMorePress={isWeb ? open : undefined}
         />
       )}
     >

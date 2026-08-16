@@ -109,7 +109,7 @@ describe("ArchiveScreen", () => {
 
   test("폴더를 누르면 해당 폴더 상세로 이동한다", async () => {
     await renderScreen();
-    fireEvent.press(await screen.findByText("전체"));
+    fireEvent.press(await screen.findByLabelText("전체"));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/archive/[id]",
       params: { id: "all", name: "전체" },
@@ -118,7 +118,7 @@ describe("ArchiveScreen", () => {
 
   test("사용자 폴더를 누르면 folderId 로 상세로 이동한다", async () => {
     await renderScreen();
-    fireEvent.press(await screen.findByText("디자인"));
+    fireEvent.press(await screen.findByLabelText("디자인"));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/archive/[id]",
       params: { id: "1", name: "디자인" },
@@ -164,7 +164,7 @@ describe("ArchiveScreen", () => {
   describe("폴더 컨텍스트 메뉴", () => {
     const openMenu = async () => {
       await renderScreen();
-      await fireEvent(await screen.findByText("디자인"), "longPress");
+      await fireEvent(await screen.findByLabelText("디자인"), "longPress");
     };
 
     // 메뉴에서 고른 동작은 팝오버 Modal 이 사라진 뒤에 실행된다(iOS Modal 중첩 회피).
