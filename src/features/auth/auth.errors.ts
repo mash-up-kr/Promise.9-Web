@@ -17,15 +17,6 @@ export const AUTH_ERROR_CODE = {
   UNSUPPORTED_PROVIDER: 950004,
 } as const;
 
-/** 소셜 ID 토큰 검증 실패(errorCode 950003) — 소셜 SDK 가 만료·위조된 idToken 을 넘긴 경우. */
-export function isSocialTokenVerificationError(error: unknown): boolean {
-  return (
-    isApiError(error) &&
-    error.payload?.error.errorCode ===
-      AUTH_ERROR_CODE.SOCIAL_TOKEN_VERIFICATION_FAILED
-  );
-}
-
 /** 지원하지 않는 provider(errorCode 950004) — 현재는 카카오가 여기 해당(서버 미구현). */
 export function isUnsupportedProviderError(error: unknown): boolean {
   return (

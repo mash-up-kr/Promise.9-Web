@@ -8,11 +8,7 @@ jest.mock("@shared/api", () => {
 import { ApiError } from "@shared/api";
 import type { AxiosResponse } from "axios";
 
-import {
-  AUTH_ERROR_CODE,
-  isSocialTokenVerificationError,
-  isUnsupportedProviderError,
-} from "./auth.errors";
+import { AUTH_ERROR_CODE, isUnsupportedProviderError } from "./auth.errors";
 
 const apiError = (status: number, errorCode: number) =>
   new ApiError({
@@ -27,24 +23,6 @@ const apiError = (status: number, errorCode: number) =>
       },
     },
   } as unknown as AxiosResponse);
-
-describe("isSocialTokenVerificationError", () => {
-  it("errorCode 950003 을 판별한다", () => {
-    expect(
-      isSocialTokenVerificationError(
-        apiError(401, AUTH_ERROR_CODE.SOCIAL_TOKEN_VERIFICATION_FAILED),
-      ),
-    ).toBe(true);
-  });
-
-  it("다른 errorCode 는 판별하지 않는다", () => {
-    expect(isSocialTokenVerificationError(apiError(401, 950001))).toBe(false);
-  });
-
-  it("API 에러가 아니면 판별하지 않는다", () => {
-    expect(isSocialTokenVerificationError(new Error("network"))).toBe(false);
-  });
-});
 
 describe("isUnsupportedProviderError", () => {
   it("errorCode 950004 를 판별한다", () => {
