@@ -13,6 +13,12 @@ export const SYSTEM_FOLDERS = [
   { id: "trash", name: "최근 삭제된 링크", countKey: "recentlyDeleted" },
 ] as const;
 
+// Figma 폴더 상세 "정렬" 서브메뉴 — 순서·표시명이 곧 메뉴 항목이다. 기본값은 첫 항목(최신순).
+export const LINK_SORT_OPTIONS = [
+  { value: "latest", label: "최신순" },
+  { value: "oldest", label: "오래된 순" },
+] as const;
+
 // Figma "새 폴더 만들기" 시트 색상 그리드 순서 (2행 × 6열).
 export const FOLDER_COLOR_OPTIONS = [
   "slate",
