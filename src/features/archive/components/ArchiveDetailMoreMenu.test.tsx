@@ -51,6 +51,21 @@ describe("ArchiveDetailMoreMenu", () => {
     expect(screen.getByText("오래된 순")).toBeOnTheScreen();
   });
 
+  // 서브메뉴가 열린 동안 부모 행은 눌린 상태로 남는다(Figma gray-600).
+  test("정렬을 펼치면 정렬 행이 눌린 상태로 보인다", async () => {
+    await renderMenu();
+    await openMenu();
+    expect(screen.getByLabelText("정렬").props.className).not.toContain(
+      "bg-gray-600",
+    );
+
+    await fireEvent.press(screen.getByText("정렬"));
+
+    expect(screen.getByLabelText("정렬").props.className).toContain(
+      "bg-gray-600",
+    );
+  });
+
   test("현재 정렬 기준을 선택된 상태로 표시한다", async () => {
     await renderMenu({ sort: "oldest" });
     await openMenu();

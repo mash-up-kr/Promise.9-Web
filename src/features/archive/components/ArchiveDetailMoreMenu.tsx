@@ -130,7 +130,7 @@ function MenuItem({
       accessibilityLabel={label}
       onPress={onPress}
       className={`w-full flex-row items-center gap-3 px-5 ${
-        isHighlighted ? "py-1" : ""
+        isHighlighted ? "bg-gray-600 py-1" : ""
       }`}
     >
       <Icon iconNode={icon} size={20} className="text-icon-normal" />
