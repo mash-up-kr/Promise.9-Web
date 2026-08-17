@@ -1,3 +1,17 @@
+// 트리거 방식이 플랫폼마다 다르다(웹=hover 후 "..." 클릭 · 모바일=롱프레스).
+// jest 는 항상 네이티브로 도는 환경이라 플랫폼 판별을 갈아끼워 양쪽을 다 검증한다.
+const mockPlatform = { isWeb: false };
+jest.mock("@/constants/platform.constants", () => ({
+  get isWeb() {
+    return mockPlatform.isWeb;
+  },
+  get isIOS() {
+    return !mockPlatform.isWeb;
+  },
+  isAndroid: false,
+  isServer: false,
+}));
+
 import type { Link } from "@shared/types/link.types";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
@@ -43,6 +57,10 @@ const captureDismiss = (): (() => void) =>
   screen.getByTestId("popover-overlay").props.onDismiss;
 
 describe("LinkContextMenu", () => {
+  beforeEach(() => {
+    mockPlatform.isWeb = false;
+  });
+
   test("기본은 링크 카드만 보이고 메뉴는 닫혀 있다", async () => {
     await renderMenu();
 
@@ -117,5 +135,66 @@ describe("LinkContextMenu", () => {
     await act(async () => dismiss());
 
     expect(onShare).toHaveBeenCalledTimes(1);
+  });
+
+  // 공유는 사용자 제스처와 같은 태스크에서 시작해야 해서, 화면이 메뉴가 열릴 때
+  // 원문 URL 을 미리 받아둔다.
+  test("메뉴를 열면 onOpen 을 호출한다", async () => {
+    const onOpen = jest.fn();
+    await renderMenu({ onOpen });
+
+    expect(onOpen).not.toHaveBeenCalled();
+    await fireEvent(screen.getByLabelText(link.title), "longPress");
+
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+});
+
+// 웹: 롱프레스는 어포던스가 없어 카드 hover 시 "..." 버튼을 노출한다(폴더 행과 같은 방식).
+describe("LinkContextMenu (웹)", () => {
+  beforeEach(() => {
+    mockPlatform.isWeb = true;
+  });
+
+  test("hover 하기 전에는 더보기 버튼이 없다", async () => {
+    await renderMenu();
+
+    expect(screen.queryByLabelText("링크 메뉴 열기")).toBeNull();
+  });
+
+  test("hover 후 더보기 버튼을 누르면 메뉴가 열린다", async () => {
+    const onOpen = jest.fn();
+    await renderMenu({ onOpen });
+    await fireEvent(screen.getByText(link.title), "pointerEnter");
+    await fireEvent.press(screen.getByLabelText("링크 메뉴 열기"));
+
+    expect(screen.getByText("폴더 이동")).toBeOnTheScreen();
+    expect(screen.getByText("링크 공유")).toBeOnTheScreen();
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  test("hover 를 벗어나면 버튼이 사라진다", async () => {
+    await renderMenu();
+    await fireEvent(screen.getByText(link.title), "pointerEnter");
+    expect(screen.getByLabelText("링크 메뉴 열기")).toBeOnTheScreen();
+
+    await fireEvent(screen.getByText(link.title), "pointerLeave");
+    expect(screen.queryByLabelText("링크 메뉴 열기")).toBeNull();
+  });
+
+  test("더보기 버튼을 눌러도 링크는 열리지 않는다", async () => {
+    const onOpenLink = jest.fn();
+    await renderMenu({ onOpenLink });
+    await fireEvent(screen.getByText(link.title), "pointerEnter");
+    await fireEvent.press(screen.getByLabelText("링크 메뉴 열기"));
+
+    expect(onOpenLink).not.toHaveBeenCalled();
+  });
+
+  test("길게 눌러도 메뉴가 열리지 않는다", async () => {
+    await renderMenu();
+    await fireEvent(screen.getByLabelText(link.title), "longPress");
+
+    expect(screen.queryByText("폴더 이동")).toBeNull();
   });
 });
