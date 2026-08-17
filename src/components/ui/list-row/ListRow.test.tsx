@@ -44,4 +44,15 @@ describe("ListRow", () => {
     fireEvent.press(screen.getByText("로그아웃"));
     expect(onPress).not.toHaveBeenCalled();
   });
+
+  test("onPress 가 있으면 button 역할로 노출한다", async () => {
+    await render(<ListRow label="로그아웃" onPress={jest.fn()} />);
+    expect(screen.getByRole("button", { name: "로그아웃" })).toBeOnTheScreen();
+  });
+
+  test("onPress 가 없으면 button 역할이 아니다", async () => {
+    // 이메일·버전 정보처럼 동작 없는 행은 스크린리더가 버튼으로 읽지 않아야 한다.
+    await render(<ListRow label="버전 정보" trailing={<Text>v1.0.0</Text>} />);
+    expect(screen.queryByRole("button")).not.toBeOnTheScreen();
+  });
 });

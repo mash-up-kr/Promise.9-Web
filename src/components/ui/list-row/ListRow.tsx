@@ -56,15 +56,19 @@ export function ListRow({
 }: ListRowProps) {
   const [isPressed, setIsPressed] = useState(false);
 
+  // 동작(onPress) 없는 행(이메일·버전 정보 등)은 눌러도 반응이 없으므로
+  // 스크린리더에 버튼으로 읽히지 않게 하고 press 하이라이트도 걸지 않는다.
+  const isInteractive = onPress != null;
+
   return (
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole={isInteractive ? "button" : undefined}
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
+      accessibilityState={isInteractive ? { disabled } : undefined}
+      disabled={disabled || !isInteractive}
       onPress={onPress}
-      onPressIn={() => setIsPressed(true)}
-      onPressOut={() => setIsPressed(false)}
+      onPressIn={isInteractive ? () => setIsPressed(true) : undefined}
+      onPressOut={isInteractive ? () => setIsPressed(false) : undefined}
       className={rowStyles({ isPressed })}
     >
       <View className="flex-row items-center gap-3">
