@@ -12,12 +12,18 @@ export interface FolderSectionAction {
 }
 
 // 가로 여백은 보관함 화면 기준(px-5)이지만, 이미 여백을 가진 컨테이너(폴더 이동 시트) 안에서는
-// 호출부가 className 으로 덮어쓴다.
-const sectionStyles = tv({ base: "gap-3 px-5" });
+// 이중으로 들어가므로 끈다.
+const sectionStyles = tv({
+  base: "gap-3",
+  variants: { inset: { true: "px-5" } },
+  defaultVariants: { inset: true },
+});
 
 export interface FolderSectionProps {
   title: string;
   action?: FolderSectionAction;
+  /** 기본 true. 이미 가로 여백을 가진 컨테이너 안에서는 false. */
+  inset?: boolean;
   className?: string;
   children: ReactNode;
 }
@@ -25,11 +31,12 @@ export interface FolderSectionProps {
 export function FolderSection({
   title,
   action,
+  inset,
   className,
   children,
 }: FolderSectionProps) {
   return (
-    <View className={sectionStyles({ class: className })}>
+    <View className={sectionStyles({ inset, class: className })}>
       <View className="flex-row items-center justify-between">
         <Text variant="heading-2" className="text-text-normal">
           {title}

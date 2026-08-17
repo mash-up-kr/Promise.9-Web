@@ -66,9 +66,13 @@ function MoveLinksSheetBody() {
   );
   const [isMoving, setIsMoving] = useState(false);
 
+  // 옮길 링크가 없으면(ids 파라미터가 없거나 망가진 경우) 저장은 아무것도 하지 않는다 —
+  // 그대로 두면 PATCH 는 한 건도 없이 "저장됨" 스낵바만 뜬다.
+  const isSaveDisabled = isMoving || linkIds.length === 0;
+
   const handleSave = async (folders: ArchiveFolder[]) => {
     const target = findTargetFolder(folders, targetFolderId);
-    if (!target || isMoving) {
+    if (!target || isSaveDisabled) {
       return;
     }
 
@@ -129,7 +133,7 @@ function MoveLinksSheetBody() {
     >
       <FolderPicker
         selectedFolderId={targetFolderId}
-        isMoving={isMoving}
+        isSaveDisabled={isSaveDisabled}
         onSelect={setTargetFolderId}
         onCancel={dismiss}
         onSave={handleSave}
@@ -141,7 +145,8 @@ function MoveLinksSheetBody() {
 
 interface FolderPickerProps {
   selectedFolderId: string | null;
-  isMoving: boolean;
+  /** 이동 중이거나 옮길 링크가 없으면 폴더를 골랐어도 저장할 수 없다. */
+  isSaveDisabled: boolean;
   onSelect: (folderId: string) => void;
   onCancel: () => void;
   onSave: (folders: ArchiveFolder[]) => void;
@@ -150,7 +155,7 @@ interface FolderPickerProps {
 
 function FolderPicker({
   selectedFolderId,
-  isMoving,
+  isSaveDisabled,
   onSelect,
   onCancel,
   onSave,
@@ -164,10 +169,10 @@ function FolderPicker({
         title="폴더 이동"
         onCancel={onCancel}
         onConfirm={() => onSave(data.myFolders)}
-        isConfirmDisabled={selectedFolderId === null || isMoving}
+        isConfirmDisabled={selectedFolderId === null || isSaveDisabled}
       />
       {/* 시트가 이미 가로 여백을 가져 섹션은 여백 없이 붙인다. */}
-      <FolderSection title="기본 폴더" className="gap-3">
+      <FolderSection title="기본 폴더" inset={false}>
         <FolderGroup>
           <FolderSelectItem
             name={UNCATEGORIZED_FOLDER.name}
@@ -178,7 +183,7 @@ function FolderPicker({
       </FolderSection>
       <FolderSection
         title="내 폴더"
-        className="gap-3"
+        inset={false}
         action={{ label: "새 폴더 만들기", onPress: onAddFolder }}
       >
         <FolderGroup>

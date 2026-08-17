@@ -120,6 +120,24 @@ describe("MoveLinksSheet", () => {
     ).toBe(true);
   });
 
+  // ids 파라미터가 없거나 망가진 채로 열리면 옮길 대상이 없다 —
+  // 그대로 저장을 허용하면 아무것도 안 옮기고 "저장됨" 스낵바만 뜬다.
+  test("옮길 링크가 없으면 저장할 수 없다", async () => {
+    mockRouteParams.current = {};
+    await renderSheet();
+    await fireEvent.press(await screen.findByRole("radio", { name: "디자인" }));
+
+    expect(
+      screen.getByLabelText("저장").props.accessibilityState.disabled,
+    ).toBe(true);
+
+    await fireEvent.press(screen.getByLabelText("저장"));
+
+    expect(mockPatch).not.toHaveBeenCalled();
+    expect(mockBack).not.toHaveBeenCalled();
+    expect(screen.queryByText("디자인에 저장됨")).toBeNull();
+  });
+
   test("폴더를 고르고 저장하면 선택한 링크마다 PATCH 를 보낸다", async () => {
     mockRouteParams.current = { ids: "42,43" };
     await renderSheet();
