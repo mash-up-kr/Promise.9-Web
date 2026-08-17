@@ -1,11 +1,5 @@
 import type { SelectableFolderColor } from "@shared/folder/folder.constants";
 
-/**
- * 시스템(기본) 폴더 descriptor.
- * - `id`: 라우팅·상세 조회 필터 식별자 (실제 folders row 가 아님)
- * - `name`: 표시명
- * - `countKey`: GET /folders `systemFolders` 응답에서 링크 수를 읽을 키
- */
 /** 미분류 — 폴더 이동 시트가 유일하게 고를 수 있는 기본 폴더라 따로 꺼내 쓴다. */
 export const UNCATEGORIZED_FOLDER = {
   id: "uncategorized",
@@ -20,6 +14,12 @@ export const TRASH_FOLDER = {
   countKey: "recentlyDeleted",
 } as const;
 
+/**
+ * 시스템(기본) 폴더 descriptor.
+ * - `id`: 라우팅·상세 조회 필터 식별자 (실제 folders row 가 아님)
+ * - `name`: 표시명
+ * - `countKey`: GET /folders `systemFolders` 응답에서 링크 수를 읽을 키
+ */
 export const SYSTEM_FOLDERS = [
   { id: "all", name: "전체", countKey: "all" },
   UNCATEGORIZED_FOLDER,
