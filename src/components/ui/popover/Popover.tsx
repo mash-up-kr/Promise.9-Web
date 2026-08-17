@@ -35,19 +35,11 @@ export interface PopoverAnchor {
   left?: number;
 }
 
-export interface PopoverProps {
+interface PopoverBaseProps {
   // 트리거 요소. open() 을 눌렀을 때 팝오버가 열린다.
   trigger: (open: () => void) => React.ReactNode;
   // 팝오버 내용. close() 로 직접 닫을 수 있다.
   children: (close: () => void) => React.ReactNode;
-  /** 화면 가장자리 기준 가로 위치. `offsetFromTrigger` 를 주면 쓰이지 않는다. */
-  anchor?: PopoverAnchor;
-  /**
-   * 트리거 좌상단에서 떨어뜨릴 거리. 주면 트리거 아래가 아니라 그 위에 겹쳐 뜬다 —
-   * 링크 카드처럼 큰 항목은 아래에 붙이면 누른 대상에서 멀어지기 때문이다.
-   * 화면 밖으로 나가면 안쪽으로 민다.
-   */
-  offsetFromTrigger?: PopoverTriggerOffset;
   /** 트리거 하단과의 간격. 기본 8. */
   gap?: number;
   width?: number;
@@ -60,6 +52,25 @@ export interface PopoverProps {
    */
   onClosed?: () => void;
 }
+
+/** 화면 가장자리 기준 가로 위치로 트리거 아래에 붙인다. */
+interface AnchoredPopoverProps extends PopoverBaseProps {
+  anchor: PopoverAnchor;
+  offsetFromTrigger?: never;
+}
+
+/**
+ * 트리거 좌상단에서 떨어뜨릴 거리. 주면 트리거 아래가 아니라 그 위에 겹쳐 뜬다 —
+ * 링크 카드처럼 큰 항목은 아래에 붙이면 누른 대상에서 멀어지기 때문이다.
+ * 화면 밖으로 나가면 안쪽으로 민다.
+ */
+interface TriggerOffsetPopoverProps extends PopoverBaseProps {
+  offsetFromTrigger: PopoverTriggerOffset;
+  anchor?: never;
+}
+
+// 가로 위치를 잡는 방법은 둘 중 하나여야 한다 — 없으면 패널이 컨테이너 왼쪽에 붙어버린다.
+export type PopoverProps = AnchoredPopoverProps | TriggerOffsetPopoverProps;
 
 // 리퀴드 글래스 플로팅 패널 — 트리거 바로 아래에 띄운다(아래 공간이 모자라면 위로 뒤집는다).
 // 내부 항목(메뉴 등)은 children 으로 자유롭게 구성한다.
