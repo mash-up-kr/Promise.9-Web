@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Check, Search } from "lucide-react-native";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -365,12 +365,17 @@ function SelectionActionBar({
   const insets = useSafeAreaInsets();
 
   return (
-    <LinearGradient
-      colors={SELECTION_BAR_GRADIENT}
+    <View
       pointerEvents="box-none"
       style={{ paddingBottom: Math.max(insets.bottom, 20) }}
       className="absolute right-0 bottom-0 left-0 items-center pt-11"
     >
+      {/* expo-linear-gradient 는 NativeWind className 을 받지 않아(무시된다) 배경만 style 로 채운다. */}
+      <LinearGradient
+        colors={SELECTION_BAR_GRADIENT}
+        pointerEvents="none"
+        style={StyleSheet.absoluteFill}
+      />
       <View className="flex-row gap-2">
         <ActionButton
           size="small"
@@ -390,6 +395,6 @@ function SelectionActionBar({
           링크 삭제
         </ActionButton>
       </View>
-    </LinearGradient>
+    </View>
   );
 }
