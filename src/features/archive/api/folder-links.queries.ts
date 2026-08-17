@@ -4,6 +4,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { z } from "zod";
 
 import { SYSTEM_FOLDERS } from "../archive.constants";
+import type { LinkSortOption } from "../archive.types";
 
 // 스키마와 shared 타입의 드리프트는 명시적 반환 타입을 가진 toLink 가 잡는다.
 const linkTagSchema = z.looseObject({
@@ -57,19 +58,29 @@ export function isFolderRouteId(id: string | undefined): id is string {
   return /^[1-9]\d*$/.test(id);
 }
 
-/** 보관함 라우트 id → GET /links 필터. 숫자 id 는 사용자 폴더(folderId)로 취급한다. */
-export function toLinkListParams(folderId: string): LinkListParams {
+/**
+ * 보관함 라우트 id → GET /links 필터. 숫자 id 는 사용자 폴더(folderId)로 취급한다.
+ *
+ * 정렬 기준은 폴더가 정한다 — 최근 삭제 목록은 저장 시각이 아니라 삭제 시각 순이고,
+ * 서버도 `deleted=false` 와 `sortBy=deletedAt` 조합은 400 으로 막는다.
+ */
+export function toLinkListParams(
+  folderId: string,
+  sort: LinkSortOption = "latest",
+): LinkListParams {
+  const order = sort === "latest" ? "desc" : "asc";
+
   switch (folderId) {
     case "all":
-      return {};
+      return { sortBy: "savedAt", order };
     case "uncategorized":
-      return { unassigned: true };
+      return { unassigned: true, sortBy: "savedAt", order };
     case "favorites":
-      return { favorite: true };
+      return { favorite: true, sortBy: "savedAt", order };
     case "trash":
-      return { deleted: true };
+      return { deleted: true, sortBy: "deletedAt", order };
     default:
-      return { folderId: Number(folderId) };
+      return { folderId: Number(folderId), sortBy: "savedAt", order };
   }
 }
 
@@ -87,7 +98,8 @@ export function toLink(item: LinkListItem): Link {
 
 const folderLinkKeys = {
   root: () => ["folder-links"] as const,
-  list: (folderId: string) => [...folderLinkKeys.root(), folderId] as const,
+  list: (folderId: string, sort: LinkSortOption) =>
+    [...folderLinkKeys.root(), folderId, sort] as const,
 };
 
 // 모듈 스코프에 둬야 호출마다 같은 참조라 react-query 가 데이터가 그대로일 때 재계산을 건너뛴다.
@@ -96,14 +108,14 @@ const selectLinks = (data: LinkListResponse): Link[] => data.links.map(toLink);
 export const folderLinkQueries = {
   keys: folderLinkKeys,
   // 폴더(시스템/사용자) 내 링크 목록. 페이지네이션은 후속 — 우선 첫 페이지만 표시한다.
-  list: (folderId: string) =>
+  list: (folderId: string, sort: LinkSortOption = "latest") =>
     queryOptions({
-      queryKey: folderLinkKeys.list(folderId),
+      queryKey: folderLinkKeys.list(folderId, sort),
       // 캐시에는 검증된 서버 응답을 그대로 두고, UI 모델 변환은 select 가 맡는다.
       queryFn: async ({ signal }) => {
         const { data } = await apiClient.get<SuccessResponse<unknown>>(
           "/links",
-          { params: toLinkListParams(folderId), signal },
+          { params: toLinkListParams(folderId, sort), signal },
         );
 
         return linkListResponseSchema.parse(data.data);

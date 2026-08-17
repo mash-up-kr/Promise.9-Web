@@ -1,4 +1,9 @@
-import { archiveDetailHref, linkDetailHref, ROUTES } from "./routes.constants";
+import {
+  archiveDetailHref,
+  linkDetailHref,
+  moveLinksHref,
+  ROUTES,
+} from "./routes.constants";
 
 describe("routes.constants", () => {
   test("정적 경로는 실제 라우트 파일 경로와 일치한다", () => {
@@ -15,6 +20,21 @@ describe("routes.constants", () => {
     expect(archiveDetailHref("folder-1")).toEqual({
       pathname: "/archive/[id]",
       params: { id: "folder-1" },
+    });
+  });
+
+  test("moveLinksHref 는 링크 id 를 쉼표로 이어 붙인다", () => {
+    expect(moveLinksHref([42, 43])).toEqual({
+      pathname: "/move-links",
+      params: { ids: "42,43" },
+    });
+  });
+
+  // 원래 폴더를 알면 시트가 그 폴더를 미리 골라둔 채로 열린다.
+  test("moveLinksHref 는 현재 폴더를 함께 담는다", () => {
+    expect(moveLinksHref([42], "7")).toEqual({
+      pathname: "/move-links",
+      params: { ids: "42", folderId: "7" },
     });
   });
 

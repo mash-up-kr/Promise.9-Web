@@ -1,10 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
-import {
-  AlertDialog,
-  AlertDialogButton,
-  alertButtonStyles,
-} from "./AlertDialog";
+import { AlertDialog, AlertDialogButton } from "./AlertDialog";
 
 async function renderDialog(
   overrides: Partial<{
@@ -91,32 +87,5 @@ describe("AlertDialog", () => {
       }),
     );
     expect(onClose).not.toHaveBeenCalled();
-  });
-});
-
-// jest 는 className 을 해석하지 않으므로 tv 매핑을 직접 단언한다(expo-pitfalls).
-describe("alertButtonStyles", () => {
-  test("버튼은 시안 Action Button Medium(높이 48·pill)이다", () => {
-    const cls = alertButtonStyles({ variant: "secondary" });
-    expect(cls).toContain("h-12");
-    expect(cls).toContain("rounded-full");
-  });
-
-  test("secondary 는 gray-600 배경이다", () => {
-    expect(alertButtonStyles({ variant: "secondary" })).toContain(
-      "bg-gray-600",
-    );
-  });
-
-  test("primary 는 흰 배경(확인 버튼)이다", () => {
-    expect(alertButtonStyles({ variant: "primary" })).toContain(
-      "bg-opacity-white-100",
-    );
-  });
-
-  test("destructive 는 action-destructive 토큰 배경이다", () => {
-    const cls = alertButtonStyles({ variant: "destructive" });
-    expect(cls).toContain("bg-action-destructive-background");
-    expect(cls).not.toContain("rgba");
   });
 });

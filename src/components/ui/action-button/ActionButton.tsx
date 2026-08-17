@@ -13,7 +13,7 @@ import { tv } from "@/lib/tv";
 // Figma Action Button(Primary·Assistive·Destructive) 스킨. 헤드리스 코어 Button 에
 // 색 토큰: Destructive 는 semantic 토큰(action-destructive*). Primary 라벨(#242426)은
 // Figma 가 gray-800 primitive 를 직접 참조하므로 Snackbar 선례대로 primitive 를 쓴다.
-const containerStyles = tv({
+export const actionButtonStyles = tv({
   base: "flex-row items-center justify-center overflow-hidden rounded-full px-4",
   variants: {
     // 너비는 지정하지 않는다 — height/padding/min-width 만 소유. 가로는 호출부가 결정한다.
@@ -157,7 +157,7 @@ export function ActionButton({
         accessibilityLabel={resolvedLabel}
         // 상태 의존 배경은 코어 상태로 스킨이 계산한다(className 리졸버).
         className={(state) =>
-          containerStyles({
+          actionButtonStyles({
             size,
             variant,
             isActive: state.isPressed || state.isLoading,

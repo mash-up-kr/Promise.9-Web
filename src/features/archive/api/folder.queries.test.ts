@@ -2,18 +2,26 @@
 // 에러 유틸(ApiError·isApiError)은 실제 구현을 쓴다.
 jest.mock("@shared/api", () => {
   const errors = jest.requireActual("@shared/api/errors");
-  return { apiClient: { get: jest.fn(), post: jest.fn() }, ...errors };
+  return {
+    apiClient: { get: jest.fn(), post: jest.fn(), put: jest.fn() },
+    ...errors,
+  };
 });
 
-import { ApiError } from "@shared/api";
+import { ApiError, apiClient } from "@shared/api";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, waitFor } from "@testing-library/react-native";
 import type { AxiosResponse } from "axios";
+import { createElement, type ReactNode } from "react";
 
-import { FOLDER_ERROR_CODE } from "../archive.constants";
+import { FOLDER_ERROR_CODE } from "../folder.errors";
+
 import {
   folderListResponseSchema,
   folderQueries,
-  isDuplicateFolderNameError,
   toArchiveFolderData,
+  toReorderRequest,
+  useReorderFoldersMutation,
 } from "./folder.queries";
 
 describe("toArchiveFolderData", () => {
@@ -133,35 +141,101 @@ describe("folderQueries.list", () => {
   });
 });
 
-describe("isDuplicateFolderNameError", () => {
-  const apiError = (status: number, errorCode: number) =>
-    new ApiError({
-      status,
-      data: {
-        success: false,
-        error: {
-          code: status,
-          errorCode,
-          message: "이미 존재하는 폴더 이름입니다.",
-          timestamp: "2026-07-26T00:00:00.000Z",
-        },
+describe("toReorderRequest", () => {
+  // 서버는 folderId 를 number 로 받는데 UI 모델의 id 는 문자열이라 되돌려야 한다.
+  it("폴더 id 순서를 folderIds 요청 본문으로 변환한다", () => {
+    expect(toReorderRequest(["4", "2", "3"])).toEqual({ folderIds: [4, 2, 3] });
+  });
+});
+
+describe("useReorderFoldersMutation", () => {
+  const mockPut = apiClient.put as jest.Mock;
+
+  const orderMismatchError = new ApiError({
+    status: 400,
+    data: {
+      success: false,
+      error: {
+        code: 400,
+        errorCode: FOLDER_ERROR_CODE.ORDER_MISMATCH,
+        message: "폴더 순서 목록이 현재 폴더 전체와 일치하지 않습니다.",
+        timestamp: "2026-07-26T00:00:00.000Z",
       },
-    } as unknown as AxiosResponse);
+    },
+  } as unknown as AxiosResponse);
 
-  it("폴더 이름 중복 errorCode 를 판별한다", () => {
-    expect(
-      isDuplicateFolderNameError(
-        apiError(409, FOLDER_ERROR_CODE.DUPLICATE_NAME),
-      ),
-    ).toBe(true);
+  const renderReorder = async () => {
+    const queryClient = new QueryClient({
+      // gcTime 기본값(5분) 타이머가 남으면 jest worker 가 바로 종료되지 않는다.
+      defaultOptions: { mutations: { retry: false, gcTime: 0 } },
+    });
+    const invalidate = jest.spyOn(queryClient, "invalidateQueries");
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children);
+    const { result } = await renderHook(() => useReorderFoldersMutation(), {
+      wrapper,
+    });
+    return { result, invalidate };
+  };
+
+  beforeEach(() => {
+    mockPut.mockReset();
+    mockPut.mockResolvedValue({ data: { success: true, data: null } });
   });
 
-  // 409 는 "중복 생성 또는 리소스 상태 충돌" 이라 상태 코드만으로는 단정할 수 없다.
-  it("중복 이름이 아닌 409 는 판별하지 않는다", () => {
-    expect(isDuplicateFolderNameError(apiError(409, 910002))).toBe(false);
+  it("성공하면 폴더 목록을 재조회한다", async () => {
+    const { result, invalidate } = await renderReorder();
+    result.current.mutate(["4", "2"]);
+
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({
+        queryKey: folderQueries.keys.root(),
+      }),
+    );
   });
 
-  it("API 에러가 아니면 판별하지 않는다", () => {
-    expect(isDuplicateFolderNameError(new Error("network"))).toBe(false);
+  // 재조회가 끝나기 전에 mutation 이 끝나면 화면이 로컬 순서를 먼저 버려
+  // 낡은 서버 순서가 잠깐 보였다가 다시 튄다.
+  it("재조회가 끝난 뒤에 mutation 을 끝낸다", async () => {
+    const { result, invalidate } = await renderReorder();
+    const steps: string[] = [];
+    // 다음 매크로태스크에서 끝나게 해 "기다리지 않으면 순서가 뒤집히는" 상황을 만든다.
+    invalidate.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          setImmediate(() => {
+            steps.push("재조회");
+            resolve();
+          });
+        }),
+    );
+
+    result.current.mutate(["4", "2"], {
+      onSettled: () => steps.push("완료"),
+    });
+
+    await waitFor(() => expect(steps).toEqual(["재조회", "완료"]));
+  });
+
+  // 목록이 서버와 어긋나 실패한 경우, 재조회하지 않으면 같은 목록으로 계속 같은 실패가 난다.
+  it("순서 불일치로 실패하면 폴더 목록을 재조회한다", async () => {
+    mockPut.mockRejectedValue(orderMismatchError);
+    const { result, invalidate } = await renderReorder();
+    result.current.mutate(["4", "2"]);
+
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({
+        queryKey: folderQueries.keys.root(),
+      }),
+    );
+  });
+
+  it("그 밖의 실패에는 재조회하지 않는다", async () => {
+    mockPut.mockRejectedValue(new Error("network"));
+    const { result, invalidate } = await renderReorder();
+    result.current.mutate(["4", "2"]);
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(invalidate).not.toHaveBeenCalled();
   });
 });

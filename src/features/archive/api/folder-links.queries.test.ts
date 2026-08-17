@@ -34,15 +34,48 @@ describe("isFolderRouteId", () => {
 });
 
 describe("toLinkListParams", () => {
+  const latest = { sortBy: "savedAt", order: "desc" };
+
   it("시스템 폴더 id 를 /links 필터로 매핑한다", () => {
-    expect(toLinkListParams("all")).toEqual({});
-    expect(toLinkListParams("uncategorized")).toEqual({ unassigned: true });
-    expect(toLinkListParams("favorites")).toEqual({ favorite: true });
-    expect(toLinkListParams("trash")).toEqual({ deleted: true });
+    expect(toLinkListParams("all")).toEqual(latest);
+    expect(toLinkListParams("uncategorized")).toEqual({
+      unassigned: true,
+      ...latest,
+    });
+    expect(toLinkListParams("favorites")).toEqual({
+      favorite: true,
+      ...latest,
+    });
   });
 
   it("사용자 폴더(숫자 id)는 folderId 로 매핑한다", () => {
-    expect(toLinkListParams("7")).toEqual({ folderId: 7 });
+    expect(toLinkListParams("7")).toEqual({ folderId: 7, ...latest });
+  });
+
+  it("정렬을 지정하지 않으면 최신순이다", () => {
+    expect(toLinkListParams("all")).toEqual(toLinkListParams("all", "latest"));
+  });
+
+  it("오래된 순은 order 를 asc 로 보낸다", () => {
+    expect(toLinkListParams("7", "oldest")).toEqual({
+      folderId: 7,
+      sortBy: "savedAt",
+      order: "asc",
+    });
+  });
+
+  // 서버는 deleted=true 목록만 deletedAt 으로 정렬할 수 있고, 저장 시각으로는 정렬하지 않는다.
+  it("최근 삭제 폴더는 삭제 시각으로 정렬한다", () => {
+    expect(toLinkListParams("trash")).toEqual({
+      deleted: true,
+      sortBy: "deletedAt",
+      order: "desc",
+    });
+    expect(toLinkListParams("trash", "oldest")).toEqual({
+      deleted: true,
+      sortBy: "deletedAt",
+      order: "asc",
+    });
   });
 });
 
@@ -152,6 +185,13 @@ describe("linkListResponseSchema", () => {
 });
 
 describe("folderLinkQueries.list", () => {
+  // 정렬이 키에 없으면 최신순 캐시가 오래된 순 화면에 그대로 재사용된다.
+  it("정렬이 다르면 다른 쿼리 키를 쓴다", () => {
+    expect(folderLinkQueries.list("7", "latest").queryKey).not.toEqual(
+      folderLinkQueries.list("7", "oldest").queryKey,
+    );
+  });
+
   it("select 가 응답을 UI Link 목록으로 변환한다", () => {
     const { select } = folderLinkQueries.list("all");
     expect(select?.(validResponse)).toEqual([

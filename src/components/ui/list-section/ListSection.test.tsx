@@ -25,6 +25,25 @@ describe("ListSection", () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  // 시트처럼 이미 가로 여백을 가진 컨테이너 안에서는 여백이 이중으로 들어간다.
+  test("기본은 보관함 화면 가로 여백(px-5)을 가진다", async () => {
+    const { toJSON } = await render(
+      <ListSection title="기본 폴더">
+        <Text>전체</Text>
+      </ListSection>,
+    );
+    expect(toJSON()?.props.className).toContain("px-5");
+  });
+
+  test("inset 을 끄면 가로 여백을 넣지 않는다", async () => {
+    const { toJSON } = await render(
+      <ListSection title="기본 폴더" inset={false}>
+        <Text>전체</Text>
+      </ListSection>,
+    );
+    expect(toJSON()?.props.className).not.toContain("px-5");
+  });
+
   test("action 이 없으면 액션 버튼을 렌더하지 않는다", async () => {
     await render(
       <ListSection title="서비스">
