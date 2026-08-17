@@ -5,18 +5,19 @@ import { Pressable, View } from "react-native";
 import { Icon } from "@/components/ui/icon/Icon";
 import { Text } from "@/components/ui/text/Text";
 
-export interface FolderSectionAction {
+export interface ListSectionAction {
   label: string;
   onPress: () => void;
 }
 
-export interface FolderSectionProps {
+export interface ListSectionProps {
   title: string;
-  action?: FolderSectionAction;
+  action?: ListSectionAction;
   children: ReactNode;
 }
 
-export function FolderSection({ title, action, children }: FolderSectionProps) {
+// Figma "Section" — 섹션 타이틀 + optional 액션(+) + 그룹. 보관함·설정 공용.
+export function ListSection({ title, action, children }: ListSectionProps) {
   return (
     <View className="gap-3 px-5">
       <View className="flex-row items-center justify-between">

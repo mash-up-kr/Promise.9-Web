@@ -14,6 +14,8 @@ import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { Header } from "@/components/ui/header/Header";
 import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
+import { ListGroup } from "@/components/ui/list-group/ListGroup";
+import { ListSection } from "@/components/ui/list-section/ListSection";
 import { Text } from "@/components/ui/text/Text";
 
 import { folderQueries } from "./api/folder.queries";
@@ -21,10 +23,8 @@ import { SYSTEM_FOLDERS } from "./archive.constants";
 import type { ArchiveFolder, SystemFolderKey } from "./archive.types";
 import { applyFolderOrder } from "./archive.utils";
 import { ArchiveMoreMenu } from "./components/ArchiveMoreMenu";
-import { FolderGroup } from "./components/FolderGroup";
 import { FolderItem } from "./components/FolderItem";
 import { FolderListSkeleton } from "./components/FolderListSkeleton";
-import { FolderSection } from "./components/FolderSection";
 import { NewFolderButton } from "./components/NewFolderButton";
 import { SortableFolderList } from "./components/SortableFolderList";
 
@@ -84,9 +84,9 @@ export function ArchiveScreen() {
         pending={
           <ArchiveScrollBody bottomPadding={listBottomPadding}>
             <BasicFolderSection onOpenFolder={handleOpenFolder} />
-            <FolderSection title="내 폴더">
+            <ListSection title="내 폴더">
               <FolderListSkeleton />
-            </FolderSection>
+            </ListSection>
           </ArchiveScrollBody>
         }
         fallback={({ reset }) => (
@@ -168,7 +168,7 @@ function ArchiveFolders({
       >
         <View className="gap-12 pt-5" style={{ paddingBottom: bottomPadding }}>
           {basicSection}
-          <FolderSection
+          <ListSection
             title="내 폴더"
             action={{ label: "폴더 추가", onPress: onAddFolder }}
           >
@@ -180,7 +180,7 @@ function ArchiveFolders({
               scrollContentHeight={scrollContentHeight}
               onDraggingChange={setIsDragging}
             />
-          </FolderSection>
+          </ListSection>
         </View>
       </Animated.ScrollView>
     );
@@ -189,7 +189,7 @@ function ArchiveFolders({
   return (
     <ArchiveScrollBody bottomPadding={bottomPadding}>
       {basicSection}
-      <FolderSection
+      <ListSection
         title="내 폴더"
         action={
           myFolders.length > 0
@@ -200,7 +200,7 @@ function ArchiveFolders({
         {myFolders.length === 0 ? (
           <NewFolderButton onPress={onAddFolder} />
         ) : (
-          <FolderGroup>
+          <ListGroup>
             {myFolders.map((folder) => (
               <FolderItem
                 key={folder.id}
@@ -210,9 +210,9 @@ function ArchiveFolders({
                 onPress={() => onOpenFolder(folder.id, folder.name)}
               />
             ))}
-          </FolderGroup>
+          </ListGroup>
         )}
-      </FolderSection>
+      </ListSection>
     </ArchiveScrollBody>
   );
 }
@@ -226,8 +226,8 @@ function BasicFolderSection({
   onOpenFolder?: OpenFolderHandler;
 }) {
   return (
-    <FolderSection title="기본 폴더">
-      <FolderGroup>
+    <ListSection title="기본 폴더">
+      <ListGroup>
         {SYSTEM_FOLDERS.map((folder) => (
           <FolderItem
             key={folder.id}
@@ -240,8 +240,8 @@ function BasicFolderSection({
             }
           />
         ))}
-      </FolderGroup>
-    </FolderSection>
+      </ListGroup>
+    </ListSection>
   );
 }
 

@@ -1,9 +1,8 @@
 import { FOLDER_TONE_HEX } from "@shared/folder/folder.constants";
 import type { FolderColor } from "@shared/types/link.types";
-import { ChevronRight } from "lucide-react-native";
-import { Pressable, View } from "react-native";
+
 import { FolderIcon } from "@/components/ui/icon/FolderIcon";
-import { Icon } from "@/components/ui/icon/Icon";
+import { ListRow } from "@/components/ui/list-row/ListRow";
 import { Skeleton } from "@/components/ui/skeleton/Skeleton";
 import { Text } from "@/components/ui/text/Text";
 
@@ -20,9 +19,6 @@ export function folderToneFill(tone: FolderColor): string {
   return TONE_FILL[tone];
 }
 
-const FOLDER_ITEM_CLASS =
-  "h-[52px] flex-row items-center justify-between bg-background-thumbnail px-4 py-3";
-
 export interface FolderItemProps {
   name: string;
   /** 링크 수. 아직 모르면(로딩 중) 생략하고, 그 자리엔 스켈레톤을 보여준다. */
@@ -31,6 +27,7 @@ export interface FolderItemProps {
   onPress?: () => void;
 }
 
+// 공용 ListRow 위에 폴더 전용 슬롯(아이콘 leading · 링크 수 trailing)만 얹은 얇은 래퍼.
 export function FolderItem({
   name,
   count,
@@ -38,31 +35,20 @@ export function FolderItem({
   onPress,
 }: FolderItemProps) {
   return (
-    <Pressable
-      accessibilityRole="button"
+    <ListRow
+      label={name}
       onPress={onPress}
-      className={FOLDER_ITEM_CLASS}
-    >
-      <View className="flex-row items-center gap-3">
-        <FolderIcon color={folderToneFill(tone)} size={28} />
-        <Text variant="body-2-normal" className="text-text-normal">
-          {name}
-        </Text>
-      </View>
-      <View className="flex-row items-center gap-1">
-        {count === undefined ? (
+      chevron
+      leading={<FolderIcon color={folderToneFill(tone)} size={28} />}
+      trailing={
+        count === undefined ? (
           <Skeleton testID="folder-count-skeleton" className="h-4 w-6" />
         ) : (
           <Text variant="body-2-normal" className="text-text-alternative">
             {count}
           </Text>
-        )}
-        <Icon
-          iconNode={ChevronRight}
-          size={16}
-          className="text-icon-assistive"
-        />
-      </View>
-    </Pressable>
+        )
+      }
+    />
   );
 }
