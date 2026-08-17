@@ -52,7 +52,11 @@ export default function TabsLayout() {
         name="archive"
         options={{ title: "보관함", headerShown: false }}
       />
-      <Tabs.Screen name="settings" options={{ title: "세팅" }} />
+      {/* 설정은 Figma 대로 자체 헤더(뒤로가기 + "설정")를 렌더하므로 탭 헤더는 숨긴다(보관함 선례). */}
+      <Tabs.Screen
+        name="settings"
+        options={{ title: "세팅", headerShown: false }}
+      />
     </Tabs>
   );
 }
