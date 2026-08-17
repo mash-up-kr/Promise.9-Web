@@ -81,6 +81,18 @@ export function useUpdateLinkFolderMutation() {
   });
 }
 
+// POST /links/{linkId}/restore — 최근 삭제된 링크를 미분류로 되돌린다.
+export function useRestoreLinkMutation() {
+  const invalidateFolderCaches = useInvalidateFolderCaches();
+
+  return useMutation({
+    mutationFn: async (linkId: number) => {
+      await apiClient.post(`/links/${linkId}/restore`);
+    },
+    onSuccess: invalidateFolderCaches,
+  });
+}
+
 // DELETE /links/{linkId} — soft delete 라 링크는 "최근 삭제된 링크" 폴더로 옮겨간다.
 export function useDeleteLinkMutation() {
   const invalidateFolderCaches = useInvalidateFolderCaches();

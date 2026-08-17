@@ -5,6 +5,7 @@ import {
   ChevronUp,
   CopyCheck,
   Ellipsis,
+  Undo2,
 } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
@@ -21,18 +22,31 @@ import type { LinkSortOption } from "../archive.types";
 const MENU_WIDTH = 170;
 const MENU_ANCHOR = { right: 20 };
 
+// 최근 삭제 폴더에서 고를 수 있는 동작은 복구뿐이라 "선택하기" 자리가 "복구하기"가 된다
+// (Figma "보관함 - 최근 삭제된 링크" 62:7583).
+const SELECT_MENU_ITEM = {
+  default: { icon: CopyCheck, label: "선택하기" },
+  trash: { icon: Undo2, label: "복구하기" },
+} as const;
+
 export interface ArchiveDetailMoreMenuProps {
   sort: LinkSortOption;
+  /** 기본 `default`. 최근 삭제 폴더는 `trash`. */
+  variant?: keyof typeof SELECT_MENU_ITEM;
   onSortChange: (sort: LinkSortOption) => void;
+  /** 선택 모드로 들어간다(최근 삭제 폴더에서는 복구할 링크를 고르는 모드). */
   onSelectMode: () => void;
 }
 
 /** 폴더 상세 헤더 "더보기" 드롭다운 — 선택하기 / 정렬(최신순·오래된 순). */
 export function ArchiveDetailMoreMenu({
   sort,
+  variant = "default",
   onSortChange,
   onSelectMode,
 }: ArchiveDetailMoreMenuProps) {
+  const selectItem = SELECT_MENU_ITEM[variant];
+
   // 정렬 서브메뉴 펼침 여부. 메뉴를 닫으면 접어 다음에 열 때 처음 상태로 시작한다.
   const [isSortExpanded, setIsSortExpanded] = useState(false);
 
@@ -56,8 +70,8 @@ export function ArchiveDetailMoreMenu({
       {(close) => (
         <View className="flex-col gap-4">
           <MenuItem
-            icon={CopyCheck}
-            label="선택하기"
+            icon={selectItem.icon}
+            label={selectItem.label}
             onPress={() => {
               close();
               onSelectMode();

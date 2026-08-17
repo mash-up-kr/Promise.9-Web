@@ -79,6 +79,27 @@ describe("ArchiveDetailMoreMenu", () => {
     expect(onSelectMode).toHaveBeenCalledTimes(1);
   });
 
+  // 최근 삭제 폴더는 고를 수 있는 동작이 복구뿐이라 "선택하기" 자리가 "복구하기"가 된다.
+  describe("최근 삭제 폴더", () => {
+    test("선택하기 대신 복구하기를 보여준다", async () => {
+      await renderMenu({ variant: "trash" });
+      await openMenu();
+
+      expect(screen.getByText("복구하기")).toBeOnTheScreen();
+      expect(screen.queryByText("선택하기")).toBeNull();
+      expect(screen.getByText("정렬")).toBeOnTheScreen();
+    });
+
+    test("복구하기를 누르면 onSelectMode 를 호출한다", async () => {
+      const onSelectMode = jest.fn();
+      await renderMenu({ variant: "trash", onSelectMode });
+      await openMenu();
+      await fireEvent.press(screen.getByText("복구하기"));
+
+      expect(onSelectMode).toHaveBeenCalledTimes(1);
+    });
+  });
+
   // 메뉴를 닫았다 다시 열면 정렬 서브메뉴는 접힌 처음 상태여야 한다.
   test("메뉴를 다시 열면 정렬 서브메뉴가 접혀 있다", async () => {
     await renderMenu();

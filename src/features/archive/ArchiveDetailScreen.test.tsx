@@ -1,5 +1,10 @@
 jest.mock("@shared/api", () => ({
-  apiClient: { get: jest.fn(), patch: jest.fn(), delete: jest.fn() },
+  apiClient: {
+    get: jest.fn(),
+    post: jest.fn(),
+    patch: jest.fn(),
+    delete: jest.fn(),
+  },
 }));
 
 const mockShareUrl = jest.fn();
@@ -131,6 +136,10 @@ describe("ArchiveDetailScreen", () => {
   test("링크가 없으면 폴더에 맞는 빈 상태를 보여준다", async () => {
     mockGet.mockResolvedValue(linksResponse([]));
     await renderScreen();
+
+    expect(
+      await screen.findByText("아직 저장된 링크가 없어요"),
+    ).toBeOnTheScreen();
     expect(
       screen.getByText("링크를 저장하고 한곳에서 모아보세요"),
     ).toBeOnTheScreen();
@@ -146,10 +155,6 @@ describe("ArchiveDetailScreen", () => {
     ).toBeOnTheScreen();
   });
 
-
-    expect(
-      await screen.findByText("아직 저장된 링크가 없어요"),
-    ).toBeOnTheScreen();
   test("조회 실패 시 에러와 다시 시도를 보여준다", async () => {
     mockGet.mockRejectedValue(new Error("network"));
     await renderScreen();
@@ -298,6 +303,79 @@ describe("ArchiveDetailScreen 선택 모드", () => {
 
     expect(mockDelete).not.toHaveBeenCalled();
     expect(screen.getByText("1개 선택")).toBeOnTheScreen();
+  });
+});
+
+// Figma "보관함 - 최근 삭제된 링크"(62:7541): 검색 없음 · 복구만 할 수 있다.
+describe("ArchiveDetailScreen 최근 삭제된 링크", () => {
+  const mockPost = apiClient.post as jest.Mock;
+
+  beforeEach(() => {
+    mockPush.mockClear();
+    mockGet.mockReset().mockResolvedValue(linksResponse([sampleLink]));
+    mockPost.mockReset().mockResolvedValue({ data: { success: true } });
+    mockRouteParams.current = { id: "trash", name: "최근 삭제된 링크" };
+  });
+
+  test("헤더에 검색 버튼이 없다", async () => {
+    await renderScreen();
+    await screen.findByText(sampleLink.title);
+
+    expect(screen.queryByLabelText("검색")).toBeNull();
+    expect(screen.getByLabelText("더보기")).toBeOnTheScreen();
+  });
+
+  test("더보기에서 선택하기 대신 복구하기를 보여준다", async () => {
+    await renderScreen();
+    await screen.findByText(sampleLink.title);
+    await fireEvent.press(screen.getByLabelText("더보기"));
+
+    expect(screen.getByText("복구하기")).toBeOnTheScreen();
+    expect(screen.queryByText("선택하기")).toBeNull();
+  });
+
+  test("선택 모드 하단에는 복구하기 버튼만 있다", async () => {
+    await renderScreen();
+    await screen.findByText(sampleLink.title);
+    await fireEvent.press(screen.getByLabelText("더보기"));
+    await fireEvent.press(screen.getByText("복구하기"));
+
+    expect(screen.getByLabelText("복구하기")).toBeOnTheScreen();
+    expect(screen.queryByLabelText("폴더 이동")).toBeNull();
+    expect(screen.queryByLabelText("링크 삭제")).toBeNull();
+  });
+
+  test("고른 링크를 복구하고 스낵바로 알린다", async () => {
+    await renderScreen();
+    await screen.findByText(sampleLink.title);
+    await fireEvent.press(screen.getByLabelText("더보기"));
+    await fireEvent.press(screen.getByText("복구하기"));
+    await fireEvent.press(screen.getByLabelText(sampleLink.title));
+    await fireEvent.press(screen.getByLabelText("복구하기"));
+
+    await waitFor(() =>
+      expect(mockPost).toHaveBeenCalledWith("/links/42/restore"),
+    );
+    expect(
+      await screen.findByText(
+        "링크를 복구했어요. 미분류에서 확인할 수 있어요.",
+      ),
+    ).toBeOnTheScreen();
+  });
+
+  test("컨텍스트 메뉴에서도 바로 복구한다", async () => {
+    await renderScreen();
+    await fireEvent(
+      await screen.findByLabelText(sampleLink.title),
+      "longPress",
+    );
+    const dismiss = captureDismiss();
+    await fireEvent.press(screen.getByText("복구하기"));
+    await act(async () => dismiss());
+
+    await waitFor(() =>
+      expect(mockPost).toHaveBeenCalledWith("/links/42/restore"),
+    );
   });
 });
 

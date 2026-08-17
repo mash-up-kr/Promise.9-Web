@@ -1,5 +1,10 @@
 jest.mock("@shared/api", () => ({
-  apiClient: { get: jest.fn(), patch: jest.fn(), delete: jest.fn() },
+  apiClient: {
+    get: jest.fn(),
+    post: jest.fn(),
+    patch: jest.fn(),
+    delete: jest.fn(),
+  },
 }));
 
 import { apiClient } from "@shared/api";
@@ -9,6 +14,7 @@ import { renderHook, waitFor } from "@testing-library/react-native";
 import {
   linkQueries,
   useDeleteLinkMutation,
+  useRestoreLinkMutation,
   useUpdateLinkFolderMutation,
 } from "./link.queries";
 
@@ -87,6 +93,30 @@ describe("useDeleteLinkMutation", () => {
 
   it("성공하면 폴더 링크 목록과 폴더 목록 캐시를 버린다", async () => {
     const { result, invalidate } = await renderMutation(useDeleteLinkMutation);
+    result.current.mutate(42);
+
+    await expectFolderCachesInvalidated(invalidate);
+  });
+});
+
+describe("useRestoreLinkMutation", () => {
+  const mockPost = apiClient.post as jest.Mock;
+
+  beforeEach(() => {
+    mockPost.mockReset().mockResolvedValue({ data: { success: true } });
+  });
+
+  it("삭제된 링크를 복구한다", async () => {
+    const { result } = await renderMutation(useRestoreLinkMutation);
+    result.current.mutate(42);
+
+    await waitFor(() =>
+      expect(mockPost).toHaveBeenCalledWith("/links/42/restore"),
+    );
+  });
+
+  it("성공하면 폴더 링크 목록과 폴더 목록 캐시를 버린다", async () => {
+    const { result, invalidate } = await renderMutation(useRestoreLinkMutation);
     result.current.mutate(42);
 
     await expectFolderCachesInvalidated(invalidate);

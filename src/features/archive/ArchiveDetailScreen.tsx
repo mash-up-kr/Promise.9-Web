@@ -20,6 +20,7 @@ import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwa
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { LinkTile } from "@/components/ui/link-card/LinkTile";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
+import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { Text } from "@/components/ui/text/Text";
 import {
   linkDetailHref,
@@ -29,16 +30,17 @@ import {
 import {
   linkQueries,
   useDeleteLinkMutation,
+  useRestoreLinkMutation,
 } from "@/features/link/api/link.queries";
 import { shareUrl } from "@/utils/share";
 
 import { folderLinkQueries, isFolderRouteId } from "./api/folder-links.queries";
-import { SYSTEM_FOLDERS } from "./archive.constants";
+import { SYSTEM_FOLDERS, TRASH_FOLDER } from "./archive.constants";
 import type { LinkSortOption } from "./archive.types";
 import { ArchiveDetailMoreMenu } from "./components/ArchiveDetailMoreMenu";
+import { EmptyLinks } from "./components/EmptyLinks";
 import { LinkContextMenu } from "./components/LinkContextMenu";
 
-import { EmptyLinks } from "./components/EmptyLinks";
 // 헤더 타이틀 — 이동 시 넘어온 폴더명을 우선 쓰고, 없으면 시스템 폴더명으로 폴백한다.
 function resolveTitle(id: string | undefined, name?: string): string {
   if (name) return name;
@@ -65,6 +67,11 @@ export function ArchiveDetailScreen() {
   const queryClient = useQueryClient();
   const { show } = useSnackbar();
   const { mutateAsync: deleteLink } = useDeleteLinkMutation();
+  const { mutateAsync: restoreLink } = useRestoreLinkMutation();
+
+  // 최근 삭제 폴더는 할 수 있는 게 복구뿐이라 검색·메뉴·하단 액션이 모두 다르다
+  // (Figma "보관함 - 최근 삭제된 링크" 62:7541).
+  const isTrash = id === TRASH_FOLDER.id;
 
   const [sort, setSort] = useState<LinkSortOption>("latest");
   // 선택 모드가 아니면 null. 모드 진입 여부와 선택 목록이 한 상태라 둘이 어긋나지 않는다.
@@ -102,6 +109,21 @@ export function ArchiveDetailScreen() {
     }
   };
 
+  const handleRestore = async (linkIds: number[]) => {
+    try {
+      // 벌크 API 가 없어 링크마다 보낸다.
+      await Promise.all(linkIds.map((linkId) => restoreLink(linkId)));
+      setSelectedIds(null);
+      show(
+        snackbarPresets.success(
+          "링크를 복구했어요. 미분류에서 확인할 수 있어요.",
+        ),
+      );
+    } catch {
+      show({ message: "링크를 복구하지 못했어요. 다시 시도해주세요." });
+    }
+  };
+
   const handleConfirmDelete = async () => {
     if (!idsToDelete) {
       return;
@@ -121,7 +143,12 @@ export function ArchiveDetailScreen() {
     <Header
       scrollScope="archive-detail"
       title={
-        selectedIds.length === 0 ? "선택하기" : `${selectedIds.length}개 선택`
+        selectedIds.length === 0
+          ? // 고르기 전 타이틀은 그 모드가 무엇을 위한 것인지 알려준다(복구 / 선택).
+            isTrash
+            ? "복구하기"
+            : "선택하기"
+          : `${selectedIds.length}개 선택`
       }
       right={
         <IconButton
@@ -138,13 +165,17 @@ export function ArchiveDetailScreen() {
       title={resolveTitle(id, name)}
       right={
         <>
-          <IconButton
-            iconNode={Search}
-            accessibilityLabel="검색"
-            onPress={() => router.navigate(ROUTES.SEARCH)}
-          />
+          {/* 최근 삭제 폴더에는 검색이 없다(시안 62:7542). */}
+          {!isTrash && (
+            <IconButton
+              iconNode={Search}
+              accessibilityLabel="검색"
+              onPress={() => router.navigate(ROUTES.SEARCH)}
+            />
+          )}
           <ArchiveDetailMoreMenu
             sort={sort}
+            variant={isTrash ? "trash" : "default"}
             onSortChange={setSort}
             onSelectMode={() => setSelectedIds([])}
           />
@@ -159,20 +190,49 @@ export function ArchiveDetailScreen() {
       <ArchiveDetailBody
         id={id}
         sort={sort}
+        isTrash={isTrash}
         selectedIds={selectedIds}
         onOpenLink={(linkId) => router.push(linkDetailHref(String(linkId)))}
         onToggleSelection={toggleSelection}
         onMove={(linkId) => handleMove([linkId])}
         onShare={handleShare}
         onDelete={(linkId) => setIdsToDelete([linkId])}
+        onRestore={(linkId) => handleRestore([linkId])}
       />
 
       {isSelecting && (
-        <SelectionActionBar
-          isDisabled={selectedIds.length === 0}
-          onMove={() => handleMove(selectedIds)}
-          onDelete={() => setIdsToDelete(selectedIds)}
-        />
+        <SelectionActionBar>
+          {isTrash ? (
+            <ActionButton
+              size="small"
+              className="self-start"
+              disabled={selectedIds.length === 0}
+              onPress={() => handleRestore(selectedIds)}
+            >
+              복구하기
+            </ActionButton>
+          ) : (
+            <>
+              <ActionButton
+                size="small"
+                className="self-start"
+                disabled={selectedIds.length === 0}
+                onPress={() => handleMove(selectedIds)}
+              >
+                폴더 이동
+              </ActionButton>
+              <ActionButton
+                size="small"
+                variant="destructive"
+                className="self-start"
+                disabled={selectedIds.length === 0}
+                onPress={() => setIdsToDelete(selectedIds)}
+              >
+                링크 삭제
+              </ActionButton>
+            </>
+          )}
+        </SelectionActionBar>
       )}
 
       <AlertDialog
@@ -202,6 +262,8 @@ export function ArchiveDetailScreen() {
 interface ArchiveDetailBodyProps {
   id?: string;
   sort: LinkSortOption;
+  /** 최근 삭제 폴더 — 카드 메뉴가 복구 하나뿐이다. */
+  isTrash: boolean;
   /** null 이면 선택 모드가 아니다. */
   selectedIds: number[] | null;
   onOpenLink: (linkId: number) => void;
@@ -209,6 +271,7 @@ interface ArchiveDetailBodyProps {
   onMove: (linkId: number) => void;
   onShare: (linkId: number) => void;
   onDelete: (linkId: number) => void;
+  onRestore: (linkId: number) => void;
 }
 
 function ArchiveDetailBody({ id, sort, ...listProps }: ArchiveDetailBodyProps) {
@@ -260,11 +323,7 @@ function ArchiveDetailContent({
   folderId,
   sort,
   selectedIds,
-  onOpenLink,
-  onToggleSelection,
-  onMove,
-  onShare,
-  onDelete,
+  ...itemProps
 }: ArchiveDetailContentProps) {
   const scrollHandler = useHeaderAwareScrollHandler("archive-detail");
   const { data: links } = useSuspenseQuery(
@@ -287,18 +346,12 @@ function ArchiveDetailContent({
         // 선택 모드에서는 하단 액션 바가 마지막 줄을 가리지 않도록 여백을 더 준다.
         style={selectedIds !== null ? { paddingBottom: 130 } : undefined}
       >
-        {links.map((link, index) => (
+        {links.map((link) => (
           <LinkGridItem
             key={link.linkId}
             link={link}
-            // 컨텍스트 메뉴는 눌린 카드가 있는 열 쪽에 붙는다.
-            align={index % 2 === 0 ? "start" : "end"}
             selectedIds={selectedIds}
-            onOpenLink={onOpenLink}
-            onToggleSelection={onToggleSelection}
-            onMove={onMove}
-            onShare={onShare}
-            onDelete={onDelete}
+            {...itemProps}
           />
         ))}
       </View>
@@ -309,19 +362,19 @@ function ArchiveDetailContent({
 interface LinkGridItemProps
   extends Omit<ArchiveDetailContentProps, "folderId" | "sort"> {
   link: Link;
-  align: "start" | "end";
 }
 
 // 선택 모드에서는 탭이 선택 토글이 되고 컨텍스트 메뉴도 열리지 않는다.
 function LinkGridItem({
   link,
-  align,
+  isTrash,
   selectedIds,
   onOpenLink,
   onToggleSelection,
   onMove,
   onShare,
   onDelete,
+  onRestore,
 }: LinkGridItemProps) {
   if (selectedIds !== null) {
     return (
@@ -333,10 +386,20 @@ function LinkGridItem({
     );
   }
 
+  if (isTrash) {
+    return (
+      <LinkContextMenu
+        link={link}
+        variant="trash"
+        onOpenLink={() => onOpenLink(link.linkId)}
+        onRestore={() => onRestore(link.linkId)}
+      />
+    );
+  }
+
   return (
     <LinkContextMenu
       link={link}
-      align={align}
       onOpenLink={() => onOpenLink(link.linkId)}
       onMove={() => onMove(link.linkId)}
       onShare={() => onShare(link.linkId)}
@@ -352,16 +415,11 @@ const SELECTION_BAR_GRADIENT = [
 ] as const;
 
 interface SelectionActionBarProps {
-  isDisabled: boolean;
-  onMove: () => void;
-  onDelete: () => void;
+  /** 폴더마다 할 수 있는 동작이 달라 버튼은 호출부가 넣는다(기본: 이동·삭제 / 최근 삭제: 복구). */
+  children: React.ReactNode;
 }
 
-function SelectionActionBar({
-  isDisabled,
-  onMove,
-  onDelete,
-}: SelectionActionBarProps) {
+function SelectionActionBar({ children }: SelectionActionBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -376,25 +434,7 @@ function SelectionActionBar({
         pointerEvents="none"
         style={StyleSheet.absoluteFill}
       />
-      <View className="flex-row gap-2">
-        <ActionButton
-          size="small"
-          className="self-start"
-          disabled={isDisabled}
-          onPress={onMove}
-        >
-          폴더 이동
-        </ActionButton>
-        <ActionButton
-          size="small"
-          variant="destructive"
-          className="self-start"
-          disabled={isDisabled}
-          onPress={onDelete}
-        >
-          링크 삭제
-        </ActionButton>
-      </View>
+      <View className="flex-row gap-2">{children}</View>
     </View>
   );
 }
