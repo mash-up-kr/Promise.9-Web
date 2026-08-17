@@ -128,14 +128,28 @@ describe("ArchiveDetailScreen", () => {
     });
   });
 
-  test("링크가 없으면 빈 상태를 보여준다", async () => {
+  test("링크가 없으면 폴더에 맞는 빈 상태를 보여준다", async () => {
     mockGet.mockResolvedValue(linksResponse([]));
     await renderScreen();
     expect(
-      await screen.findByText("아직 저장된 링크가 없어요."),
+      screen.getByText("링크를 저장하고 한곳에서 모아보세요"),
     ).toBeOnTheScreen();
   });
 
+  test("즐겨찾기 폴더의 빈 상태는 즐겨찾기 문구를 쓴다", async () => {
+    mockRouteParams.current = { id: "favorites", name: "즐겨찾기" };
+    mockGet.mockResolvedValue(linksResponse([]));
+    await renderScreen();
+
+    expect(
+      await screen.findByText("즐겨찾기한 링크가 없어요"),
+    ).toBeOnTheScreen();
+  });
+
+
+    expect(
+      await screen.findByText("아직 저장된 링크가 없어요"),
+    ).toBeOnTheScreen();
   test("조회 실패 시 에러와 다시 시도를 보여준다", async () => {
     mockGet.mockRejectedValue(new Error("network"));
     await renderScreen();

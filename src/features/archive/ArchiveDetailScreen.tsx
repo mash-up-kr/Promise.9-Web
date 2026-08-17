@@ -38,6 +38,7 @@ import type { LinkSortOption } from "./archive.types";
 import { ArchiveDetailMoreMenu } from "./components/ArchiveDetailMoreMenu";
 import { LinkContextMenu } from "./components/LinkContextMenu";
 
+import { EmptyLinks } from "./components/EmptyLinks";
 // 헤더 타이틀 — 이동 시 넘어온 폴더명을 우선 쓰고, 없으면 시스템 폴더명으로 폴백한다.
 function resolveTitle(id: string | undefined, name?: string): string {
   if (name) return name;
@@ -271,13 +272,7 @@ function ArchiveDetailContent({
   );
 
   if (links.length === 0) {
-    return (
-      <CenteredMessage>
-        <Text variant="body-2-normal" className="text-text-alternative">
-          아직 저장된 링크가 없어요.
-        </Text>
-      </CenteredMessage>
-    );
+    return <EmptyLinks folderId={folderId} />;
   }
 
   return (
