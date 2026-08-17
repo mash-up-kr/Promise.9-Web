@@ -12,7 +12,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
 import { isIOS } from "@/constants/platform.constants";
 
-import { type PopoverTriggerRect, resolvePopoverTop } from "./popover.utils";
+import {
+  type PopoverTriggerOffset,
+  type PopoverTriggerRect,
+  resolvePopoverOffsetPosition,
+  resolvePopoverTop,
+} from "./popover.utils";
 
 // 웹에서 앱 콘텐츠는 중앙 컬럼(_layout.tsx)이지만, Modal 은 그 컬럼을 벗어나 전체 윈도우에 뜬다.
 // 그래서 화면 가장자리(right/left) 기준 anchor 를 중앙 컬럼 가장자리에 맞추도록,
@@ -20,6 +25,9 @@ import { type PopoverTriggerRect, resolvePopoverTop } from "./popover.utils";
 
 /** 트리거 하단과 팝오버 사이 기본 간격. */
 const DEFAULT_GAP = 8;
+
+/** 화면 가장자리와 최소로 남길 여백 — 오프셋 배치가 화면 밖으로 나갈 때 여기까지만 민다. */
+const EDGE_MARGIN = 8;
 
 // 팝오버의 가로 위치. 세로는 트리거를 재서 그 아래에 붙이므로 지정하지 않는다.
 export interface PopoverAnchor {
@@ -32,7 +40,14 @@ export interface PopoverProps {
   trigger: (open: () => void) => React.ReactNode;
   // 팝오버 내용. close() 로 직접 닫을 수 있다.
   children: (close: () => void) => React.ReactNode;
-  anchor: PopoverAnchor;
+  /** 화면 가장자리 기준 가로 위치. `offsetFromTrigger` 를 주면 쓰이지 않는다. */
+  anchor?: PopoverAnchor;
+  /**
+   * 트리거 좌상단에서 떨어뜨릴 거리. 주면 트리거 아래가 아니라 그 위에 겹쳐 뜬다 —
+   * 링크 카드처럼 큰 항목은 아래에 붙이면 누른 대상에서 멀어지기 때문이다.
+   * 화면 밖으로 나가면 안쪽으로 민다.
+   */
+  offsetFromTrigger?: PopoverTriggerOffset;
   /** 트리거 하단과의 간격. 기본 8. */
   gap?: number;
   width?: number;
@@ -52,6 +67,7 @@ export function Popover({
   trigger,
   children,
   anchor,
+  offsetFromTrigger,
   gap = DEFAULT_GAP,
   width,
   closeAccessibilityLabel = "메뉴 닫기",
@@ -69,8 +85,8 @@ export function Popover({
   // measureInWindow 만이 화면 절대 좌표를 준다(onLayout 은 부모 기준이라 못 쓴다).
   // 환경에 따라 없을 수도 있어 optional call 로 둔다.
   const measureTrigger = () => {
-    triggerRef.current?.measureInWindow?.((_x, y, _width, height) => {
-      setTriggerRect({ top: y, height });
+    triggerRef.current?.measureInWindow?.((x, y, _width, height) => {
+      setTriggerRect({ top: y, left: x, height });
     });
   };
 
@@ -88,19 +104,32 @@ export function Popover({
   };
 
   // 중앙 컬럼과 윈도우 가장자리 사이 여백. 모바일(윈도우 ≤ 컬럼 폭)에서는 0 이라 영향 없다.
+  // 트리거 기준 오프셋 배치는 이미 윈도우 절대 좌표를 재므로 보정이 필요 없다.
   const edgeInset = Math.max(0, (windowWidth - CONTENT_MAX_WIDTH) / 2);
-  const position = {
-    top: resolvePopoverTop({
-      trigger: triggerRect,
-      panelHeight,
-      windowHeight,
-      safeAreaTop: insets.top,
-      safeAreaBottom: insets.bottom,
-      gap,
-    }),
-    right: anchor.right != null ? anchor.right + edgeInset : undefined,
-    left: anchor.left != null ? anchor.left + edgeInset : undefined,
-  };
+  const position = offsetFromTrigger
+    ? resolvePopoverOffsetPosition({
+        trigger: triggerRect,
+        offset: offsetFromTrigger,
+        panelWidth: width ?? null,
+        panelHeight,
+        windowWidth,
+        windowHeight,
+        safeAreaTop: insets.top,
+        safeAreaBottom: insets.bottom,
+        margin: EDGE_MARGIN,
+      })
+    : {
+        top: resolvePopoverTop({
+          trigger: triggerRect,
+          panelHeight,
+          windowHeight,
+          safeAreaTop: insets.top,
+          safeAreaBottom: insets.bottom,
+          gap,
+        }),
+        right: anchor?.right != null ? anchor.right + edgeInset : undefined,
+        left: anchor?.left != null ? anchor.left + edgeInset : undefined,
+      };
 
   return (
     <>
