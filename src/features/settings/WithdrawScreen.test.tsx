@@ -2,6 +2,7 @@ jest.mock("@shared/api", () => ({ setAccessToken: jest.fn() }));
 
 const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({
+  Stack: { Screen: () => null },
   useRouter: () => ({
     replace: mockReplace,
     canGoBack: () => true,

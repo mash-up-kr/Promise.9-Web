@@ -1,3 +1,4 @@
+import { Stack } from "expo-router";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -15,6 +16,8 @@ export function WithdrawScreen() {
 
   return (
     <View className="flex-1 bg-background-base">
+      {/* 화면이 자체 헤더를 렌더하므로 네이티브 스택 헤더는 숨긴다(다른 상세 화면 선례). */}
+      <Stack.Screen options={{ headerShown: false }} />
       <Header title="회원 탈퇴" left={<HeaderBackButton />} />
 
       <View className="flex-1 items-center justify-center gap-16 px-5">

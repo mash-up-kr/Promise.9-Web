@@ -1,4 +1,5 @@
 jest.mock("expo-router", () => ({
+  Stack: { Screen: () => null },
   useRouter: () => ({
     canGoBack: () => true,
     back: jest.fn(),
