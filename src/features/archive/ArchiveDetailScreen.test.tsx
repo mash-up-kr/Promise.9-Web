@@ -273,6 +273,19 @@ describe("ArchiveDetailScreen 선택 모드", () => {
     });
   });
 
+  // 이동한 링크는 이 폴더에서 사라지므로 선택을 남겨두면 보이지 않는 링크가 선택된 채로 남는다
+  // (그 상태로 "링크 삭제" 를 누르면 화면에 없는 링크가 지워진다).
+  test("폴더 이동 시트로 넘기면 선택 모드를 끝낸다", async () => {
+    await renderScreen();
+    await screen.findByText(sampleLink.title);
+    await enterSelectMode();
+    await fireEvent.press(screen.getByLabelText(sampleLink.title));
+    await fireEvent.press(screen.getByLabelText("폴더 이동"));
+
+    expect(screen.queryByLabelText("링크 삭제")).toBeNull();
+    expect(screen.getByText("개발")).toBeOnTheScreen();
+  });
+
   test("선택한 링크를 삭제하면 확인 후 DELETE 하고 선택 모드를 끝낸다", async () => {
     await renderScreen();
     await screen.findByText(sampleLink.title);
@@ -421,7 +434,8 @@ describe("ArchiveDetailScreen 링크 컨텍스트 메뉴", () => {
     await waitFor(() => expect(mockDelete).toHaveBeenCalledWith("/links/42"));
   });
 
-  test("링크 공유를 고르면 원문 URL 을 조회해 공유한다", async () => {
+  // 목록 응답엔 원문 url 이 없어 상세를 따로 조회한다.
+  const mockDetailGet = () =>
     mockGet.mockImplementation((url: string) =>
       url === "/links/42"
         ? Promise.resolve({
@@ -432,6 +446,12 @@ describe("ArchiveDetailScreen 링크 컨텍스트 메뉴", () => {
           })
         : Promise.resolve(linksResponse([sampleLink])),
     );
+
+  const detailCallCount = () =>
+    mockGet.mock.calls.filter(([url]) => url === "/links/42").length;
+
+  test("링크 공유를 고르면 원문 URL 을 조회해 공유한다", async () => {
+    mockDetailGet();
 
     await renderScreen();
     await openContextMenu();
@@ -444,18 +464,37 @@ describe("ArchiveDetailScreen 링크 컨텍스트 메뉴", () => {
     );
   });
 
+  // iOS 사파리는 사용자 제스처와 같은 태스크에서 부른 share() 만 허용한다. 조회를 기다렸다
+  // 공유하면 거부당하므로 메뉴를 여는 시점에 미리 받아두고, 공유는 캐시에서 꺼내 바로 시작한다.
+  test("메뉴를 열 때 공유에 쓸 원문 URL 을 미리 받아둔다", async () => {
+    mockDetailGet();
+
+    await renderScreen();
+    await openContextMenu();
+
+    await waitFor(() => expect(detailCallCount()).toBe(1));
+  });
+
+  test("링크 공유는 미리 받아둔 URL 을 다시 조회하지 않고 쓴다", async () => {
+    mockDetailGet();
+
+    await renderScreen();
+    await openContextMenu();
+    await waitFor(() => expect(detailCallCount()).toBe(1));
+
+    const dismiss = captureDismiss();
+    await fireEvent.press(screen.getByText("링크 공유"));
+    await act(async () => dismiss());
+
+    await waitFor(() =>
+      expect(mockShareUrl).toHaveBeenCalledWith("https://toss.tech/article/1"),
+    );
+    expect(detailCallCount()).toBe(1);
+  });
+
   test("공유 대신 복사됐으면 스낵바로 알린다", async () => {
     mockShareUrl.mockResolvedValue("copied");
-    mockGet.mockImplementation((url: string) =>
-      url === "/links/42"
-        ? Promise.resolve({
-            data: {
-              success: true,
-              data: { linkId: 42, url: "https://toss.tech/article/1" },
-            },
-          })
-        : Promise.resolve(linksResponse([sampleLink])),
-    );
+    mockDetailGet();
 
     await renderScreen();
     await openContextMenu();

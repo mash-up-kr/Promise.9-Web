@@ -91,16 +91,26 @@ export function ArchiveDetailScreen() {
   };
 
   const handleMove = (linkIds: number[]) => {
+    // 옮긴 링크는 이 폴더에서 사라지므로 선택을 남겨두면 보이지 않는 링크가 선택된 채로 남는다.
+    setSelectedIds(null);
     router.push(moveLinksHref(linkIds, toUserFolderId(id)));
   };
 
+  // 목록 응답엔 원문 url 이 없어 상세를 따로 조회한다. 공유를 누른 뒤에 조회하면
+  // 사용자 제스처와 같은 태스크를 벗어나 iOS 사파리가 share() 를 거부하므로,
+  // 메뉴가 열리는 시점에 미리 받아둔다.
+  const prefetchLinkUrl = (linkId: number) => {
+    queryClient.prefetchQuery(linkQueries.detail(String(linkId)));
+  };
+
   const handleShare = async (linkId: number) => {
+    const detailQuery = linkQueries.detail(String(linkId));
     try {
-      // 목록 응답엔 원문 url 이 없어 상세를 한 번 조회한다(이미 받아둔 게 있으면 캐시가 준다).
-      const { url } = await queryClient.fetchQuery(
-        linkQueries.detail(String(linkId)),
-      );
-      const result = await shareUrl(url);
+      const cached = queryClient.getQueryData(detailQuery.queryKey);
+      // 캐시에 있으면 await 없이 곧바로 공유를 시작한다(제스처와 같은 태스크).
+      const result = await (cached
+        ? shareUrl(cached.url)
+        : queryClient.fetchQuery(detailQuery).then(({ url }) => shareUrl(url)));
       if (result === "copied") {
         show({ message: "링크 주소를 복사했어요." });
       }
@@ -194,6 +204,7 @@ export function ArchiveDetailScreen() {
         selectedIds={selectedIds}
         onOpenLink={(linkId) => router.push(linkDetailHref(String(linkId)))}
         onToggleSelection={toggleSelection}
+        onMenuOpen={prefetchLinkUrl}
         onMove={(linkId) => handleMove([linkId])}
         onShare={handleShare}
         onDelete={(linkId) => setIdsToDelete([linkId])}
@@ -268,6 +279,8 @@ interface ArchiveDetailBodyProps {
   selectedIds: number[] | null;
   onOpenLink: (linkId: number) => void;
   onToggleSelection: (linkId: number) => void;
+  /** 컨텍스트 메뉴가 열릴 때 — 공유에 쓸 원문 URL 을 미리 받아둔다. */
+  onMenuOpen: (linkId: number) => void;
   onMove: (linkId: number) => void;
   onShare: (linkId: number) => void;
   onDelete: (linkId: number) => void;
@@ -371,6 +384,7 @@ function LinkGridItem({
   selectedIds,
   onOpenLink,
   onToggleSelection,
+  onMenuOpen,
   onMove,
   onShare,
   onDelete,
@@ -401,6 +415,7 @@ function LinkGridItem({
     <LinkContextMenu
       link={link}
       onOpenLink={() => onOpenLink(link.linkId)}
+      onOpen={() => onMenuOpen(link.linkId)}
       onMove={() => onMove(link.linkId)}
       onShare={() => onShare(link.linkId)}
       onDelete={() => onDelete(link.linkId)}
