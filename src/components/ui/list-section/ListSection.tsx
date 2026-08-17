@@ -30,7 +30,7 @@ export function ListSection({ title, action, children }: ListSectionProps) {
             accessibilityLabel={action.label}
             onPress={action.onPress}
           >
-            <Icon iconNode={Plus} size={24} className="text-old-icon-accent" />
+            <Icon iconNode={Plus} size={24} className="text-icon-accent" />
           </Pressable>
         ) : null}
       </View>
