@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import Animated, { SlideInDown, SlideOutDown } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeOutDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTimeout } from "react-simplikit";
 
@@ -15,8 +15,9 @@ import { Snackbar, type SnackbarAction } from "./Snackbar";
 
 export interface SnackbarOptions {
   message: string;
+  icon?: ReactNode;
   action?: SnackbarAction;
-  // 자동 dismiss 까지 ms. 기본 4000.
+  // 자동 dismiss 까지 ms. 기본 2500.
   duration?: number;
 }
 
@@ -25,7 +26,7 @@ interface SnackbarContextValue {
   hide: () => void;
 }
 
-const DEFAULT_DURATION = 4000;
+const DEFAULT_DURATION = 2500;
 
 const SnackbarContext = createContext<SnackbarContextValue | null>(null);
 
@@ -89,14 +90,20 @@ function SnackbarHost({
 
   return (
     <Animated.View
-      entering={SlideInDown.duration(250)}
-      exiting={SlideOutDown.duration(200)}
+      // Figma: enter y 80→0·opacity 0→1 / exit y 0→40·opacity 1→0, spring(stiffness 420, damping 38).
+      // exit 하강 거리는 FadeOutDown 기본값을 따름 — 정확히 40px 로 맞추려면 Keyframe 커스텀 필요, 육안 확인 후 조정.
+      entering={FadeInDown.springify()
+        .damping(38)
+        .stiffness(420)
+        .withInitialValues({ transform: [{ translateY: 80 }], opacity: 0 })}
+      exiting={FadeOutDown.springify().damping(38).stiffness(420)}
       pointerEvents="box-none"
       className="absolute inset-x-0 px-4"
       style={{ bottom: insetBottom + 16 }}
     >
       <Snackbar
         message={options.message}
+        icon={options.icon}
         action={
           options.action
             ? {

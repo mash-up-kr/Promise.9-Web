@@ -29,8 +29,8 @@ const addButtonStyles = tv({
   base: "h-8 items-center justify-center rounded-[12px] px-3",
   variants: {
     disabled: {
-      true: "bg-blue-700",
-      false: "bg-blue-500",
+      true: "bg-old-blue-700",
+      false: "bg-old-blue-500",
     },
   },
 });
@@ -143,7 +143,7 @@ export function TagEditor({ tags, onAddTag, onRemoveTag }: TagEditorProps) {
         <View className="w-full gap-4">
           <View className="flex-row items-center gap-2">
             <Text variant="heading-3">태그</Text>
-            <Text variant="caption-1" className="text-blue-500">
+            <Text variant="caption-1" className="text-old-blue-500">
               {tags.length}/{MAX_TAGS}
             </Text>
           </View>

@@ -1,10 +1,10 @@
 import { Children, type ReactElement, type ReactNode } from "react";
 import { View } from "react-native";
 
-// 아이템 사이 구분선. 카드 배경(thumbnail) 위에 16px 인셋된 divider 라인을 얹는다.
+// 아이템 사이 구분선. 카드 배경(list) 위에 16px 인셋된 divider 라인을 얹는다.
 function Divider() {
   return (
-    <View testID="folder-divider" className="h-px bg-background-thumbnail">
+    <View testID="folder-divider" className="h-px bg-background-list">
       <View className="mx-4 h-px bg-border-divider" />
     </View>
   );

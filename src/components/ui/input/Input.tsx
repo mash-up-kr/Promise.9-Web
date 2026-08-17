@@ -18,7 +18,7 @@ export const inputStyles = tv({
   base: "flex-row items-center",
   variants: {
     variant: {
-      pill: "h-10 flex-1 rounded-full bg-background-input px-3",
+      pill: "h-10 flex-1 rounded-full bg-gray-800 px-3",
       field: "min-h-13 w-full rounded-[20px] bg-opacity-white-10 p-4",
     },
   },
@@ -38,7 +38,7 @@ export const inputFieldStyles = tv({
   variants: {
     variant: {
       field: "font-pretendard text-body-2-reading",
-      pill: "font-pretendard-medium text-heading-3 tracking-[-0.16px]",
+      pill: "font-pretendard-medium text-heading-3-medium",
     },
   },
 });
@@ -108,14 +108,14 @@ export function InputField({
           accessibilityRole="button"
           accessibilityLabel="입력 지우기"
           onPress={() => onChangeText?.("")}
-          // Figma clear icon: white-50 원 + 배경색(#26262b) X
+          // Figma clear icon: white-50 원 + 배경색(gray-800) X
           className="size-4 rounded-full bg-opacity-white-50"
         >
           <Icon
             iconNode={X}
             size={10}
             strokeWidth={1.5}
-            className="text-background-input"
+            className="text-gray-800"
           />
         </InputSlot>
       )}

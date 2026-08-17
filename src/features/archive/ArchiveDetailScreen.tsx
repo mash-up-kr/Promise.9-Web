@@ -1,11 +1,13 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
+import Animated from "react-native-reanimated";
 
 import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { Header } from "@/components/ui/header/Header";
 import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
+import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { LinkTile } from "@/components/ui/link-card/LinkTile";
 import { Text } from "@/components/ui/text/Text";
 import { linkDetailHref } from "@/constants/routes.constants";
@@ -37,6 +39,7 @@ export function ArchiveDetailScreen() {
         options={{
           header: () => (
             <Header
+              scrollScope="archive-detail"
               left={<HeaderBackButton />}
               title={resolveTitle(id, name)}
               right={<HeaderActions />}
@@ -76,7 +79,7 @@ function ArchiveDetailBody({ id }: { id?: string }) {
             링크를 불러오지 못했어요.
           </Text>
           <Pressable accessibilityRole="button" onPress={reset}>
-            <Text variant="label-1" className="text-icon-accent">
+            <Text variant="label-1" className="text-old-icon-accent">
               다시 시도
             </Text>
           </Pressable>
@@ -89,6 +92,7 @@ function ArchiveDetailBody({ id }: { id?: string }) {
 }
 
 function ArchiveDetailContent({ folderId }: { folderId: string }) {
+  const scrollHandler = useHeaderAwareScrollHandler("archive-detail");
   const router = useRouter();
   const { data: links } = useSuspenseQuery(folderLinkQueries.list(folderId));
 
@@ -103,9 +107,11 @@ function ArchiveDetailContent({ folderId }: { folderId: string }) {
   }
 
   return (
-    <ScrollView
+    <Animated.ScrollView
       className="flex-1 bg-background-base"
       showsVerticalScrollIndicator={false}
+      onScroll={scrollHandler}
+      scrollEventThrottle={16}
     >
       <View className="flex-row flex-wrap justify-between gap-y-5 px-5 pt-2 pb-6">
         {links.map((link) => (
@@ -116,6 +122,6 @@ function ArchiveDetailContent({ folderId }: { folderId: string }) {
           />
         ))}
       </View>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }

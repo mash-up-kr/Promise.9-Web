@@ -37,7 +37,7 @@ export function AiSummarySection({ summary }: AiSummarySectionProps) {
           <Icon
             iconNode={Sparkle}
             size={14}
-            className="text-icon-accent"
+            className="text-old-icon-accent"
             fill="#0093FF"
           />
           <Text variant="heading-3">AI 요약으로 미리보기</Text>

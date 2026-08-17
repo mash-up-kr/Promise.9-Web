@@ -5,8 +5,8 @@ import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Popover } from "@/components/ui/popover/Popover";
 import { Text } from "@/components/ui/text/Text";
 
-// Figma: safe-area 상단 +7px, 화면 우측 9px 여백, 너비 220px (node 13:5000).
-const MENU_ANCHOR = { top: 7, right: 9 };
+// Figma: 화면 우측 9px 여백, 너비 220px (node 13:5000). 세로는 Popover 가 트리거 아래로 붙인다.
+const MENU_ANCHOR = { right: 9 };
 const MENU_WIDTH = 220;
 
 export interface ArchiveMoreMenuProps {

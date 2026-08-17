@@ -3,8 +3,8 @@ import { Search, Settings } from "lucide-react-native";
 
 import { Header } from "@/components/ui/header/Header";
 import { HeaderActions } from "@/components/ui/header/HeaderActions";
-import { Heading } from "@/components/ui/heading/Heading";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
+import { Logo } from "@/components/ui/logo/Logo";
 import { TabBar } from "@/components/ui/tab-bar/TabBar";
 import { ROUTES } from "@/constants/routes.constants";
 
@@ -18,7 +18,8 @@ export default function TabsLayout() {
         // 헤더는 투명 프로스트라 콘텐츠가 그 아래로 스크롤되게 한다(화면별 paddingTop=useHeaderHeight).
         headerTransparent: true,
         // 시스템 라이트 모드에서 투명 씬 아래 밝은 배경이 비치지 않게 다크로 칠한다.
-        sceneStyle: { backgroundColor: "#0e0e13" },
+        // 신규 시안 base(gray-900) — sceneStyle 은 className 을 받지 못해 raw hex.
+        sceneStyle: { backgroundColor: "#1a1a1a" },
         header: ({ options }) => (
           <Header title={options.title} right={<HeaderActions />} />
         ),
@@ -30,8 +31,8 @@ export default function TabsLayout() {
           title: "홈",
           header: () => (
             <Header
-              // 서비스 워드마크 로고(svg)가 확정되면 임시 텍스트를 로고로 교체 예정
-              left={<Heading>Link-dingdong</Heading>}
+              scrollScope="home"
+              left={<Logo />}
               right={
                 <>
                   <IconButton

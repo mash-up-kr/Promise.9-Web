@@ -8,7 +8,7 @@ import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-
+import { HeaderScrollProvider } from "@/components/ui/header/HeaderScrollProvider";
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
 import { queryClient } from "@/lib/queryClient";
@@ -26,8 +26,9 @@ const transparentBackgroundTheme = {
   colors: { ...DefaultTheme.colors, background: "transparent" },
 };
 
-// 바텀시트 라우트(create-link · create-folder) 공통 옵션.
-// 전 OS 투명 모달로 열고, 시트 크롬(backdrop·그래버·detent·키보드)은 gorhom BottomSheet 가 그린다.
+// 오버레이 라우트(create-link · create-folder · edit-folder) 공통 옵션 — 전 OS 투명 모달로 연다.
+// 그 위에 무엇을 그릴지는 화면이 정한다: create-link 는 gorhom 바텀시트(backdrop·그래버·detent·
+// 키보드까지 그린다), 폴더 생성·편집은 화면 중앙 카드(FolderFormSheet).
 const sheetScreenOptions = {
   presentation: "transparentModal" as const,
   headerShown: false,
@@ -65,30 +66,36 @@ export default function RootLayout() {
               style={{ maxWidth: CONTENT_MAX_WIDTH }}
             >
               <SnackbarProvider>
-                <ThemeProvider value={transparentBackgroundTheme}>
-                  <Stack
-                    screenOptions={{
-                      contentStyle: { backgroundColor: "transparent" },
-                    }}
-                  >
-                    <Stack.Screen
-                      name="(tabs)"
-                      options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                      name="(auth)"
-                      options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                      name="create-link"
-                      options={sheetScreenOptions}
-                    />
-                    <Stack.Screen
-                      name="create-folder"
-                      options={sheetScreenOptions}
-                    />
-                  </Stack>
-                </ThemeProvider>
+                <HeaderScrollProvider>
+                  <ThemeProvider value={transparentBackgroundTheme}>
+                    <Stack
+                      screenOptions={{
+                        contentStyle: { backgroundColor: "transparent" },
+                      }}
+                    >
+                      <Stack.Screen
+                        name="(tabs)"
+                        options={{ headerShown: false }}
+                      />
+                      <Stack.Screen
+                        name="(auth)"
+                        options={{ headerShown: false }}
+                      />
+                      <Stack.Screen
+                        name="create-link"
+                        options={sheetScreenOptions}
+                      />
+                      <Stack.Screen
+                        name="create-folder"
+                        options={sheetScreenOptions}
+                      />
+                      <Stack.Screen
+                        name="edit-folder"
+                        options={sheetScreenOptions}
+                      />
+                    </Stack>
+                  </ThemeProvider>
+                </HeaderScrollProvider>
               </SnackbarProvider>
             </View>
           </KeyboardProvider>

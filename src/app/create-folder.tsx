@@ -1,5 +1,5 @@
-import { CreateFolderSheet } from "@/features/archive/CreateFolderSheet";
+import { FolderFormSheet } from "@/features/archive/FolderFormSheet";
 
 export default function Route() {
-  return <CreateFolderSheet />;
+  return <FolderFormSheet mode="create" />;
 }

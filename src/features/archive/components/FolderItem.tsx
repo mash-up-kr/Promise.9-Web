@@ -1,6 +1,7 @@
 import { FOLDER_TONE_HEX } from "@shared/folder/folder.constants";
 import type { FolderColor } from "@shared/types/link.types";
-import { ChevronRight } from "lucide-react-native";
+import { ChevronRight, Ellipsis } from "lucide-react-native";
+import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { FolderIcon } from "@/components/ui/icon/FolderIcon";
 import { Icon } from "@/components/ui/icon/Icon";
@@ -21,7 +22,7 @@ export function folderToneFill(tone: FolderColor): string {
 }
 
 const FOLDER_ITEM_CLASS =
-  "h-[52px] flex-row items-center justify-between bg-background-thumbnail px-4 py-3";
+  "h-[52px] flex-row items-center justify-between bg-background-list px-4 py-3";
 
 export interface FolderItemProps {
   name: string;
@@ -29,6 +30,13 @@ export interface FolderItemProps {
   count?: number;
   tone?: FolderColor;
   onPress?: () => void;
+  /** 내 폴더에서 컨텍스트 메뉴(편집·삭제)를 여는 롱프레스. 기본 폴더에는 없다. */
+  onLongPress?: () => void;
+  /**
+   * 컨텍스트 메뉴를 여는 "..." 버튼. 포인터를 올린 동안에만 보이므로 웹에서만 넘긴다
+   * (모바일은 롱프레스). 넘기지 않으면 버튼 자리 자체가 없다.
+   */
+  onMorePress?: () => void;
 }
 
 export function FolderItem({
@@ -36,33 +44,69 @@ export function FolderItem({
   count,
   tone = "gray",
   onPress,
+  onLongPress,
+  onMorePress,
 }: FolderItemProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
+    <View
       className={FOLDER_ITEM_CLASS}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
     >
-      <View className="flex-row items-center gap-3">
+      {/*
+        행 전체를 여는 히트 영역. 내용을 감싸지 않고 "뒤에" 깐다 — 웹에서는 Pressable 안의
+        Pressable 이 눌리지 않기 때문이다(바깥 Pressable 이 포인터 이벤트를 가져간다).
+        "..." 가 시안대로 개수 앞 인라인에 있어야 해서, 대신 이 히트 영역을 형제로 내렸다.
+      */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={name}
+        onPress={onPress}
+        onLongPress={onLongPress}
+        className="absolute inset-0 active:bg-background-list-selected"
+      />
+
+      {/* 내용은 포인터를 통과시켜 뒤의 히트 영역이 받게 한다. */}
+      <View pointerEvents="none" className="flex-row items-center gap-3">
         <FolderIcon color={folderToneFill(tone)} size={28} />
         <Text variant="body-2-normal" className="text-text-normal">
           {name}
         </Text>
       </View>
-      <View className="flex-row items-center gap-1">
-        {count === undefined ? (
-          <Skeleton testID="folder-count-skeleton" className="h-4 w-6" />
-        ) : (
-          <Text variant="body-2-normal" className="text-text-alternative">
-            {count}
-          </Text>
-        )}
-        <Icon
-          iconNode={ChevronRight}
-          size={16}
-          className="text-icon-assistive"
-        />
+      {/* Figma 행 구조: Left · More Button · Right(개수+chevron). "..." 는 hover 때만 낀다. */}
+      <View pointerEvents="box-none" className="flex-row items-center gap-2.5">
+        {onMorePress && isHovered ? <MoreButton onPress={onMorePress} /> : null}
+        <View pointerEvents="none" className="flex-row items-center gap-1">
+          {count === undefined ? (
+            <Skeleton testID="folder-count-skeleton" className="h-4 w-6" />
+          ) : (
+            <Text variant="body-2-normal" className="text-text-alternative">
+              {count}
+            </Text>
+          )}
+          <Icon
+            iconNode={ChevronRight}
+            size={16}
+            className="text-icon-assistive"
+          />
+        </View>
       </View>
+    </View>
+  );
+}
+
+// Figma "More Button": 20 원형 gray-600 + 12 ellipsis.
+function MoreButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="폴더 메뉴 열기"
+      onPress={onPress}
+      className="size-5 items-center justify-center rounded-full bg-gray-600"
+    >
+      <Icon iconNode={Ellipsis} size={12} className="text-icon-normal" />
     </Pressable>
   );
 }

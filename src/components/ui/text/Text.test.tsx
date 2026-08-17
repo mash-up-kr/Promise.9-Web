@@ -88,6 +88,13 @@ describe("Text", () => {
     );
   });
 
+  test("variant=heading-3-medium 이 타이포 유틸리티와 medium 폰트를 함께 적용한다", async () => {
+    await render(<Text variant="heading-3-medium">검색</Text>);
+    const cls = screen.getByText("검색").props.className;
+    expect(cls).toContain("text-heading-3-medium");
+    expect(cls).toContain("font-pretendard-medium");
+  });
+
   test("variant(크기)와 색상 override 가 함께 적용된다", async () => {
     await render(
       <Text variant="title" className="text-text-assistive">

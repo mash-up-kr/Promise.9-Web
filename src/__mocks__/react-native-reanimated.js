@@ -86,6 +86,7 @@ const Animated = {
 };
 
 const interpolate = NOOP;
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const interpolateColor = NOOP;
 
 // Layout animation 빌더(entering/exiting: ZoomIn/FadeIn 등)는 device 에서만 실제
@@ -139,6 +140,7 @@ module.exports = {
   runOnUI,
   // interpolation
   interpolate,
+  clamp,
   interpolateColor,
   Extrapolation: { CLAMP: "clamp", EXTEND: "extend", IDENTITY: "identity" },
   Extrapolate: { CLAMP: "clamp", EXTEND: "extend", IDENTITY: "identity" },
@@ -168,6 +170,8 @@ module.exports = {
   // layout animation 빌더 stub (entering/exiting)
   FadeIn: layoutAnimationStub,
   FadeOut: layoutAnimationStub,
+  FadeInDown: layoutAnimationStub,
+  FadeOutDown: layoutAnimationStub,
   ZoomIn: layoutAnimationStub,
   ZoomOut: layoutAnimationStub,
   SlideInDown: layoutAnimationStub,

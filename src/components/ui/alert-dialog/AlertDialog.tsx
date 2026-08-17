@@ -1,15 +1,16 @@
-import { BlurView } from "expo-blur";
-import type { ReactNode } from "react";
+import type { PropsWithChildren, ReactNode } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
-import Animated, { ZoomIn } from "react-native-reanimated";
+import Animated, { withSpring } from "react-native-reanimated";
 
+import { ActionButton } from "@/components/ui/action-button/ActionButton";
+import { Dialog } from "@/components/ui/dialog/Dialog";
 import { Text } from "@/components/ui/text/Text";
-import { tv } from "@/lib/tv";
 
 import { createAlertDialog } from "./createAlertDialog";
 
 // 오버레이 호스트 = RN Modal (gluestack Overlay 의 useRNModal 방식 · Popover 선례와 동일).
 // 닫힘 시 언마운트해 잔여 렌더를 남기지 않는다.
+// 가운데 정렬은 Dialog 에 맡긴다 — dim 은 아래 Backdrop 이 따로 그리므로 onDismiss 는 넘기지 않는다.
 function Overlay({
   visible,
   onRequestClose,
@@ -28,9 +29,7 @@ function Overlay({
       animationType="fade"
       onRequestClose={onRequestClose}
     >
-      <View className="flex-1 items-center justify-center px-6">
-        {children}
-      </View>
+      <Dialog>{children}</Dialog>
     </Modal>
   );
 }
@@ -42,40 +41,38 @@ function Backdrop({ onPress }: { onPress?: () => void }) {
       accessibilityLabel="닫기"
       onPress={onPress}
       style={StyleSheet.absoluteFill}
-      className="bg-opacity-black-50"
+      className="bg-opacity-black-70"
     />
   );
 }
 
 const Core = createAlertDialog({ Overlay, Backdrop });
 
-// Figma Alert 카드 = Popover 와 동일한 글래스 레시피
-// (①블러 → ②반투명 틴트 → ③내용 → ④inset 하이라이트).
-function AlertDialogContent({ children }: { children: ReactNode }) {
+// 시안 DeleteDialog 주석: enter opacity 0 + scale 0.86→1, spring 520/34 mass 0.7.
+// (exit 스펙은 Modal 이 닫히며 즉시 언마운트되는 구조라 적용하지 않는다.)
+const DIALOG_SPRING = { stiffness: 520, damping: 34, mass: 0.7 };
+
+function enterDialog() {
+  "worklet";
+  return {
+    initialValues: { opacity: 0, transform: [{ scale: 0.86 }] },
+    animations: {
+      opacity: withSpring(1, DIALOG_SPRING),
+      transform: [{ scale: withSpring(1, DIALOG_SPRING) }],
+    },
+  };
+}
+
+// Figma Alert Dialog: 플랫 gray-800 카드 + white-05 헤어라인 보더.
+function AlertDialogContent({ children }: PropsWithChildren) {
   return (
     <Animated.View
-      entering={ZoomIn.duration(200)}
+      entering={enterDialog}
       accessibilityViewIsModal
       accessibilityRole="alert"
-      className="w-[304px] gap-5 overflow-hidden rounded-[36px] px-4 pt-5 pb-4"
+      className="w-[304px] gap-5 overflow-hidden rounded-[36px] border border-opacity-white-05 bg-gray-800 px-4 pt-5 pb-4"
     >
-      <BlurView
-        intensity={30}
-        tint="dark"
-        pointerEvents="none"
-        style={StyleSheet.absoluteFill}
-      />
-      <View
-        pointerEvents="none"
-        style={StyleSheet.absoluteFill}
-        className="bg-[rgba(101,101,107,0.1)]"
-      />
       {children}
-      <View
-        pointerEvents="none"
-        style={StyleSheet.absoluteFill}
-        className="rounded-[36px] shadow-[inset_1px_1px_1px_0_var(--color-opacity-white-10),inset_3px_3px_38px_0_rgba(0,0,0,0.31),inset_0px_0px_2px_0_var(--color-opacity-white-40)]"
-      />
     </Animated.View>
   );
 }
@@ -128,31 +125,19 @@ export function AlertDialog({
   );
 }
 
-const alertButtonStyles = tv({
-  base: "h-11 flex-1 flex-row items-center justify-center rounded-full px-4 py-2.5",
-  variants: {
-    variant: {
-      secondary: "bg-gray-600",
-      destructive: "bg-[rgba(168,55,50,0.3)]",
-    },
-  },
-});
-
-const alertButtonLabelStyles = tv({
-  base: "font-pretendard-medium text-heading-3 tracking-[-0.16px]",
-  variants: {
-    variant: {
-      secondary: "text-text-normal",
-      destructive: "text-[#ec5656]",
-    },
-  },
-});
-
 export interface AlertDialogButtonProps {
   label: string;
-  variant: "secondary" | "destructive";
+  variant: "primary" | "secondary" | "destructive";
   onPress: () => void;
 }
+
+// 시안 Action Button Medium 을 그대로 쓰고, 알림 액션이 늘 원하는 반반 배치(flex-1)만 얹는다.
+// 스킨의 assistive 를 알림 문맥의 이름(secondary)으로만 바꿔 부른다.
+const ACTION_VARIANT = {
+  primary: "primary",
+  secondary: "assistive",
+  destructive: "destructive",
+} as const;
 
 export function AlertDialogButton({
   label,
@@ -160,12 +145,12 @@ export function AlertDialogButton({
   onPress,
 }: AlertDialogButtonProps) {
   return (
-    <Pressable
-      accessibilityRole="button"
+    <ActionButton
+      variant={ACTION_VARIANT[variant]}
+      className="flex-1"
       onPress={onPress}
-      className={alertButtonStyles({ variant })}
     >
-      <Text className={alertButtonLabelStyles({ variant })}>{label}</Text>
-    </Pressable>
+      {label}
+    </ActionButton>
   );
 }

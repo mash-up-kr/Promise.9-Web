@@ -3,4 +3,6 @@
 appId: com.mashup.promise9
 ---
 - launchApp
-- assertVisible: "최근 저장"
+# iOS 는 섹션 헤더 Pressable 라벨("최근 저장 전체 보기")이 자식 텍스트를 흡수하므로
+# 접두 정규식으로 양 플랫폼을 매칭한다 (Maestro 는 전체 일치 정규식).
+- assertVisible: "최근 저장.*"
