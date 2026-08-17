@@ -40,7 +40,11 @@ export default function TabsLayout() {
                     accessibilityLabel="검색"
                     onPress={() => router.navigate(ROUTES.SEARCH)}
                   />
-                  <IconButton iconNode={Settings} accessibilityLabel="설정" />
+                  <IconButton
+                    iconNode={Settings}
+                    accessibilityLabel="설정"
+                    onPress={() => router.navigate(ROUTES.SETTINGS)}
+                  />
                 </>
               }
             />
