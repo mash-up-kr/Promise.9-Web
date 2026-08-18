@@ -11,7 +11,7 @@ import { WithdrawGraphic } from "./components/WithdrawGraphic";
 import { useWithdraw } from "./hooks/useWithdraw";
 
 export function WithdrawScreen() {
-  const withdraw = useWithdraw();
+  const { withdraw, isPending } = useWithdraw();
   const insets = useSafeAreaInsets();
 
   return (
@@ -40,6 +40,8 @@ export function WithdrawScreen() {
           variant="destructive"
           className="w-full"
           onPress={withdraw}
+          isLoading={isPending}
+          disabled={isPending}
         >
           탈퇴하기
         </ActionButton>

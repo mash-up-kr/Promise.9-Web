@@ -1,13 +1,11 @@
-jest.mock("@shared/api", () => ({ setAccessToken: jest.fn() }));
+const mockWithdraw = jest.fn();
+jest.mock("./hooks/useWithdraw", () => ({
+  useWithdraw: () => ({ withdraw: mockWithdraw, isPending: false }),
+}));
 
-const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({
   Stack: { Screen: () => null },
-  useRouter: () => ({
-    replace: mockReplace,
-    canGoBack: () => true,
-    back: jest.fn(),
-  }),
+  useRouter: () => ({ canGoBack: () => true, back: jest.fn() }),
 }));
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
@@ -29,7 +27,7 @@ const renderScreen = () =>
 
 describe("WithdrawScreen", () => {
   beforeEach(() => {
-    mockReplace.mockClear();
+    mockWithdraw.mockClear();
   });
 
   test("경고 문구와 탈퇴 버튼을 렌더한다", async () => {
@@ -41,9 +39,9 @@ describe("WithdrawScreen", () => {
     expect(screen.getByText("탈퇴하기")).toBeOnTheScreen();
   });
 
-  test("탈퇴하기를 누르면 로그인 화면으로 이동한다", async () => {
+  test("탈퇴하기를 누르면 탈퇴를 실행한다", async () => {
     await renderScreen();
     fireEvent.press(screen.getByText("탈퇴하기"));
-    expect(mockReplace).toHaveBeenCalledWith("/(auth)/login");
+    expect(mockWithdraw).toHaveBeenCalledTimes(1);
   });
 });
