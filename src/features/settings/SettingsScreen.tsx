@@ -40,11 +40,10 @@ export function SettingsScreen() {
   // 하단 플로팅 탭바(pill 60 + safe-area)에 가리지 않도록 여백을 준다.
   const bottomPadding = Math.max(insets.bottom, 20) + 60 + 16;
 
-  const logout = useLogout();
+  const { logout, isPending: isLoggingOut } = useLogout();
   const [isLogoutOpen, setLogoutOpen] = useState(false);
   const closeLogout = () => setLogoutOpen(false);
   const confirmLogout = () => {
-    closeLogout();
     logout();
   };
 
@@ -113,11 +112,13 @@ export function SettingsScreen() {
               label="취소"
               variant="secondary"
               onPress={closeLogout}
+              disabled={isLoggingOut}
             />
             <AlertDialogButton
               label="로그아웃"
               variant="primary"
               onPress={confirmLogout}
+              disabled={isLoggingOut}
             />
           </>
         }

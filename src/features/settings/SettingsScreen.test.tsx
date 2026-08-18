@@ -1,7 +1,8 @@
 // client.ts 는 import 시 EXPO_PUBLIC_API_BASE_URL 를 요구하므로 @shared/api 를 mock 한다.
 jest.mock("@shared/api", () => ({
   apiClient: { get: jest.fn(), post: jest.fn() },
-  setAccessToken: jest.fn(),
+  getRefreshToken: jest.fn(() => Promise.resolve(null)),
+  clearTokens: jest.fn(),
 }));
 
 // 버전 표시는 app.json version 에서 온다 — 테스트에선 고정한다.
@@ -144,6 +145,8 @@ describe("SettingsScreen", () => {
     // 행 라벨과 다이얼로그 버튼 둘 다 "로그아웃" — 다이얼로그 버튼(나중 렌더)을 누른다.
     const logoutTexts = screen.getAllByText("로그아웃");
     fireEvent.press(logoutTexts[logoutTexts.length - 1]);
-    expect(mockReplace).toHaveBeenCalledWith("/(auth)/login");
+    await waitFor(() =>
+      expect(mockReplace).toHaveBeenCalledWith("/(auth)/login"),
+    );
   });
 });
