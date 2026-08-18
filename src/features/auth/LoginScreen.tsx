@@ -1,8 +1,8 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Heading } from "@/components/ui/heading/Heading";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { ROUTES } from "@/constants/routes.constants";
 
@@ -12,6 +12,8 @@ import {
   isUnsupportedProviderError,
   SocialLoginCancelledError,
 } from "./auth.errors";
+import { AgreementText } from "./components/AgreementText";
+import { LoginGraphic } from "./components/LoginGraphic";
 import { SocialLoginButton } from "./components/SocialLoginButton";
 import { useSocialAuth } from "./hooks/useSocialAuth";
 
@@ -19,6 +21,7 @@ const LOGIN_FAILED_MESSAGE = "로그인에 실패했어요. 다시 시도해주�
 
 export function LoginScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { show } = useSnackbar();
   const { getIdToken } = useSocialAuth();
   const { mutate } = useSocialLoginMutation();
@@ -60,20 +63,40 @@ export function LoginScreen() {
   };
 
   return (
-    <View className="flex-1 items-center justify-center gap-8 p-6">
-      <Heading size="2xl">로그인</Heading>
-      <View className="w-full gap-3">
-        {Object.entries(SOCIAL_PROVIDERS)
-          .filter(([, config]) => config.enabled)
-          .map(([provider, config]) => (
+    <View
+      className="flex-1 bg-background-base"
+      style={{
+        paddingTop: insets.top,
+        paddingBottom: Math.max(insets.bottom, 16),
+      }}
+    >
+      {/* 히어로(캐릭터+로고+서브타이틀)는 남는 공간 중앙에, 버튼·약관은 하단에 고정. */}
+      <View className="flex-1 justify-center px-5">
+        <LoginGraphic />
+      </View>
+
+      <View className="gap-3 px-5">
+        {Object.entries(SOCIAL_PROVIDERS).map(([key, config]) => {
+          const provider = key as SocialProvider;
+          return (
             <SocialLoginButton
               key={provider}
-              provider={provider as SocialProvider}
+              provider={provider}
               label={config.label}
               onPress={handleSocialLogin}
-              disabled={pendingProvider !== null}
+              loading={pendingProvider === provider}
+              // 미지원(카카오·애플)은 항상 비활성. 그 외엔 다른 로그인 진행 중일 때만 비활성.
+              disabled={
+                !config.enabled ||
+                (pendingProvider !== null && pendingProvider !== provider)
+              }
             />
-          ))}
+          );
+        })}
+      </View>
+
+      <View className="mt-6 px-5">
+        <AgreementText />
       </View>
     </View>
   );

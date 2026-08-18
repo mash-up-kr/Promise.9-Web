@@ -92,13 +92,29 @@ describe("LoginScreen", () => {
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = originalWebClientId;
   });
 
-  test("활성화된 provider 버튼만 렌더한다", async () => {
+  test("소셜 버튼 3개를 모두 노출하되, 미지원 provider 는 비활성으로 둔다", async () => {
     await renderScreen();
 
-    expect(screen.getByRole("button", { name: "구글로 로그인" })).toBeTruthy();
-    expect(
-      screen.queryByRole("button", { name: "카카오로 로그인" }),
-    ).toBeNull();
+    // 시안대로 3개 모두 노출한다.
+    const google = screen.getByRole("button", { name: "Google로 계속하기" });
+    const kakao = screen.getByRole("button", { name: "카카오로 계속하기" });
+    const apple = screen.getByRole("button", { name: "Apple로 계속하기" });
+
+    // 구글만 활성, 아직 서버 미구현인 카카오·애플은 비활성(disabled).
+    expect(google.props.accessibilityState.disabled).toBe(false);
+    expect(kakao.props.accessibilityState.disabled).toBe(true);
+    expect(apple.props.accessibilityState.disabled).toBe(true);
+  });
+
+  test("미지원(카카오) 버튼을 눌러도 로그인 로직이 실행되지 않는다", async () => {
+    await renderScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "카카오로 계속하기" }),
+    );
+
+    expect(mockSignIn).not.toHaveBeenCalled();
+    expect(mockPost).not.toHaveBeenCalled();
   });
 
   test("구글 로그인 성공 시 idToken 으로 서버 로그인하고 홈으로 이동한다", async () => {
@@ -112,7 +128,7 @@ describe("LoginScreen", () => {
     await renderScreen();
 
     await fireEvent.press(
-      screen.getByRole("button", { name: "구글로 로그인" }),
+      screen.getByRole("button", { name: "Google로 계속하기" }),
     );
 
     await waitFor(() =>
@@ -129,7 +145,7 @@ describe("LoginScreen", () => {
     await renderScreen();
 
     await fireEvent.press(
-      screen.getByRole("button", { name: "구글로 로그인" }),
+      screen.getByRole("button", { name: "Google로 계속하기" }),
     );
 
     expect(mockPost).not.toHaveBeenCalled();
@@ -141,7 +157,7 @@ describe("LoginScreen", () => {
     await renderScreen();
 
     await fireEvent.press(
-      screen.getByRole("button", { name: "구글로 로그인" }),
+      screen.getByRole("button", { name: "Google로 계속하기" }),
     );
 
     expect(
@@ -158,7 +174,7 @@ describe("LoginScreen", () => {
     await renderScreen();
 
     await fireEvent.press(
-      screen.getByRole("button", { name: "구글로 로그인" }),
+      screen.getByRole("button", { name: "Google로 계속하기" }),
     );
 
     expect(
@@ -175,7 +191,7 @@ describe("LoginScreen", () => {
     await renderScreen();
 
     await fireEvent.press(
-      screen.getByRole("button", { name: "구글로 로그인" }),
+      screen.getByRole("button", { name: "Google로 계속하기" }),
     );
 
     expect(
@@ -195,11 +211,11 @@ describe("LoginScreen", () => {
 
     // signIn 이 아직 pending 이라 onPress 의 Promise 도 끝나지 않는다 — act() 가 감싸는
     // fireEvent.press 를 await 하면 테스트가 함께 멈추므로, 여기서만 fire-and-forget 으로 누른다.
-    fireEvent.press(screen.getByRole("button", { name: "구글로 로그인" }));
+    fireEvent.press(screen.getByRole("button", { name: "Google로 계속하기" }));
 
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "구글로 로그인" }).props
+        screen.getByRole("button", { name: "Google로 계속하기" }).props
           .accessibilityState.disabled,
       ).toBe(true),
     );
@@ -209,7 +225,7 @@ describe("LoginScreen", () => {
     resolveSignIn({ type: "cancelled", data: null });
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "구글로 로그인" }).props
+        screen.getByRole("button", { name: "Google로 계속하기" }).props
           .accessibilityState.disabled,
       ).toBe(false),
     );
