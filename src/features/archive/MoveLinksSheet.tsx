@@ -41,14 +41,14 @@ export function MoveLinksSheet() {
 
   return (
     <SheetScreen onClose={closeSheet}>
-      <MoveLinksSheetBody />
+      <MoveLinksSheetContent />
     </SheetScreen>
   );
 }
 
 // 취소·저장은 라우트를 바로 제거하지 않고 시트 닫힘 애니메이션을 거친다
 // (useSheetDismiss 는 시트 자손에서만 쓸 수 있어 본문을 분리).
-function MoveLinksSheetBody() {
+function MoveLinksSheetContent() {
   const dismiss = useSheetDismiss();
   const router = useRouter();
   const { show } = useSnackbar();
