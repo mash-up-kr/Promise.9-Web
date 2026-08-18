@@ -1,10 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { ArchiveDetailMoreMenu } from "./ArchiveDetailMoreMenu";
+import { ArchiveDetailPopover } from "./ArchiveDetailPopover";
 
 const renderMenu = (
-  props?: Partial<Parameters<typeof ArchiveDetailMoreMenu>[0]>,
+  props?: Partial<Parameters<typeof ArchiveDetailPopover>[0]>,
 ) =>
   render(
     <SafeAreaProvider
@@ -13,7 +13,7 @@ const renderMenu = (
         insets: { top: 47, left: 0, right: 0, bottom: 34 },
       }}
     >
-      <ArchiveDetailMoreMenu
+      <ArchiveDetailPopover
         sort="latest"
         onSortChange={jest.fn()}
         onSelectMode={jest.fn()}
@@ -24,7 +24,7 @@ const renderMenu = (
 
 const openMenu = () => fireEvent.press(screen.getByLabelText("더보기"));
 
-describe("ArchiveDetailMoreMenu", () => {
+describe("ArchiveDetailPopover", () => {
   test("처음에는 메뉴가 닫혀 있다", async () => {
     await renderMenu();
     expect(screen.queryByText("선택하기")).toBeNull();

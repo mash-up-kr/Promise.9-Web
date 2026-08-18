@@ -37,7 +37,7 @@ import { shareUrl } from "@/utils/share";
 import { folderLinkQueries, isFolderRouteId } from "./api/folder-links.queries";
 import { SYSTEM_FOLDERS, TRASH_FOLDER } from "./archive.constants";
 import type { LinkSortOption } from "./archive.types";
-import { ArchiveDetailMoreMenu } from "./components/ArchiveDetailMoreMenu";
+import { ArchiveDetailPopover } from "./components/ArchiveDetailPopover";
 import { EmptyLinks } from "./components/EmptyLinks";
 import { LinkContextMenu } from "./components/LinkContextMenu";
 
@@ -183,7 +183,7 @@ export function ArchiveDetailScreen() {
               onPress={() => router.navigate(ROUTES.SEARCH)}
             />
           )}
-          <ArchiveDetailMoreMenu
+          <ArchiveDetailPopover
             sort={sort}
             variant={isTrash ? "trash" : "default"}
             onSortChange={setSort}

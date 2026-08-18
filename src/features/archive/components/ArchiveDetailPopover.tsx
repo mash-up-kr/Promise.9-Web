@@ -30,7 +30,7 @@ const SELECT_MENU_ITEM = {
   trash: { icon: Undo2, label: "복구하기" },
 } as const;
 
-export interface ArchiveDetailMoreMenuProps {
+export interface ArchiveDetailPopoverProps {
   sort: LinkSortOption;
   /** 기본 `default`. 최근 삭제 폴더는 `trash`. */
   variant?: keyof typeof SELECT_MENU_ITEM;
@@ -40,12 +40,12 @@ export interface ArchiveDetailMoreMenuProps {
 }
 
 /** 폴더 상세 헤더 "더보기" 드롭다운 — 선택하기 / 정렬(최신순·오래된 순). */
-export function ArchiveDetailMoreMenu({
+export function ArchiveDetailPopover({
   sort,
   variant = "default",
   onSortChange,
   onSelectMode,
-}: ArchiveDetailMoreMenuProps) {
+}: ArchiveDetailPopoverProps) {
   const selectItem = SELECT_MENU_ITEM[variant];
 
   // 정렬 서브메뉴 펼침 여부. 메뉴를 닫으면 접어 다음에 열 때 처음 상태로 시작한다.
