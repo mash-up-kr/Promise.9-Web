@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-// provider 계약 — Swagger POST /auth/social 기준. 서버는 현재 google 만 지원하고
-// kakao 는 요청 계약만 열어 둔 상태(TODO, errorCode 950004). 애플 추가 시 여기에 항목만 늘린다.
-export const socialProviderSchema = z.enum(["google", "kakao"]);
+// provider 계약 — Swagger POST /auth/social 기준. 서버는 현재 google 만 지원한다.
+// kakao·apple 은 요청 계약만 열어 둔 상태(서버 미구현 → errorCode 950004). UI 버튼은 비활성(SOCIAL_PROVIDERS).
+export const socialProviderSchema = z.enum(["google", "kakao", "apple"]);
 export type SocialProvider = z.infer<typeof socialProviderSchema>;
 
 export const socialLoginRequestSchema = z.object({

@@ -13,13 +13,22 @@ describe("socialLoginRequestSchema", () => {
     ).not.toThrow();
   });
 
-  it("provider 가 google/kakao 가 아니면 실패한다", () => {
+  it("계약에 없는 provider 는 실패한다", () => {
+    expect(() =>
+      socialLoginRequestSchema.parse({
+        provider: "naver",
+        idToken: "mock-id-token",
+      }),
+    ).toThrow();
+  });
+
+  it("apple 도 계약상 유효하다(UI 는 비활성이나 스키마는 허용)", () => {
     expect(() =>
       socialLoginRequestSchema.parse({
         provider: "apple",
         idToken: "mock-id-token",
       }),
-    ).toThrow();
+    ).not.toThrow();
   });
 });
 

@@ -63,6 +63,9 @@ export function useSocialAuth() {
           return getGoogleIdToken();
         case "kakao":
           return getKakaoIdToken();
+        case "apple":
+          // 애플 로그인은 UI 만 준비(SOCIAL_PROVIDERS 비활성) — 서버 계약·SDK 연동 전까지 호출되지 않는다.
+          throw new Error("애플 로그인은 아직 지원하지 않습니다.");
       }
     },
     [],
