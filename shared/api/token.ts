@@ -1,15 +1,14 @@
 /**
  * 액세스 토큰 저장소 (메모리).
  *
- * 로그인·토큰 저장 연동(#auth) 전까지 임시 마스터 토큰(`EXPO_PUBLIC_API_MASTER_TOKEN`,
- * 서버 MASTER_ACCESS_TOKEN 과 동일)을 초기값으로 시드한다. 정식 구현 시 로그인 성공 콜백이
- * `setAccessToken` 을 호출하고, surface 별 영속 저장소(앱·웹 expo-secure-store /
- * 익스텐션 chrome.storage.local)로 교체한다.
+ * 로그인(`setTokens`)·재발급(`refreshAccessToken`)이 값을 채운다. 초기값은 항상 `null` —
+ * 예전엔 마스터 토큰(`EXPO_PUBLIC_API_MASTER_TOKEN`)을 시드했으나, 메모리 ATK 가 없을 때
+ * 앱이 조용히 마스터 계정으로 인증되는 누수(리로드 후 실유저 세션이 마스터로 뒤바뀜)가 있어 제거했다.
+ * 부팅 후 ATK 가 없으면 첫 보호 요청이 401 → refresh 인터셉터가 영속 RTK 로 실 세션을 복원한다.
  *
  * `getAccessToken` 이 async 인 이유: secure-store 등 비동기 저장소로 교체해도 호출부가 바뀌지 않도록.
  */
-let accessToken: string | null =
-  process.env.EXPO_PUBLIC_API_MASTER_TOKEN ?? null;
+let accessToken: string | null = null;
 
 export function setAccessToken(token: string | null): void {
   accessToken = token;
