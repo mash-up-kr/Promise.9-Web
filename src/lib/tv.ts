@@ -23,6 +23,7 @@ const TYPOGRAPHY_PRESETS = [
   "label-2-semibold",
   "caption-1",
   "caption-2",
+  "caption-3",
 ];
 
 const TEXT_COLORS = [

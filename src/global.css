@@ -234,6 +234,10 @@
   --text-caption-2--line-height: calc(14 / 12);
   --text-caption-2--font-weight: 400;
 
+  --text-caption-3: 11px;
+  --text-caption-3--line-height: calc(20 / 11);
+  --text-caption-3--font-weight: 400;
+
   /* ── OLD: 구 시안 토큰 (OCP 보존) ──
    * 신규 시안 전환 전 화면이 아직 쓰는 구 토큰. 새 코드에서 사용 금지,
    * 화면별 마이그레이션이 끝나면 제거한다. */
