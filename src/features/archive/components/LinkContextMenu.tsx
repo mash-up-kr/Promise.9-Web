@@ -1,12 +1,11 @@
 import type { Link } from "@shared/types/link.types";
 import { FolderInput, Share, Trash2, Undo2 } from "lucide-react-native";
 import { useRef, useState } from "react";
-import { Pressable, View } from "react-native";
-import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
+import { View } from "react-native";
 import { LinkTile } from "@/components/ui/link-card/LinkTile";
 import { MoreButton } from "@/components/ui/more-button/MoreButton";
 import { Popover } from "@/components/ui/popover/Popover";
-import { Text } from "@/components/ui/text/Text";
+import { PopoverMenuItem } from "@/components/ui/popover/PopoverMenuItem";
 import { isWeb } from "@/constants/platform.constants";
 
 // Figma "More Menu"(node 46:5817): 폭 170. 위치는 누른 카드(20,126) 기준 (87,155) 이므로
@@ -82,7 +81,7 @@ export function LinkContextMenu(props: LinkContextMenuProps) {
       {(close) =>
         props.variant === "trash" ? (
           <View className="flex-col gap-4">
-            <MenuItem
+            <PopoverMenuItem
               icon={Undo2}
               label="복구하기"
               onPress={() => selectAction(close, props.onRestore)}
@@ -90,20 +89,20 @@ export function LinkContextMenu(props: LinkContextMenuProps) {
           </View>
         ) : (
           <View className="flex-col gap-4">
-            <MenuItem
+            <PopoverMenuItem
               icon={FolderInput}
               label="폴더 이동"
               onPress={() => selectAction(close, props.onMove)}
             />
-            <MenuItem
+            <PopoverMenuItem
               icon={Share}
               label="링크 공유"
               onPress={() => selectAction(close, props.onShare)}
             />
-            <MenuItem
+            <PopoverMenuItem
               icon={Trash2}
               label="삭제"
-              destructive
+              isDestructive
               onPress={() => selectAction(close, props.onDelete)}
             />
           </View>
@@ -146,34 +145,5 @@ function LinkTrigger({ link, onOpenLink, onOpenMenu }: LinkTriggerProps) {
         />
       ) : null}
     </View>
-  );
-}
-
-interface MenuItemProps {
-  icon: IconComponent;
-  label: string;
-  destructive?: boolean;
-  onPress: () => void;
-}
-
-function MenuItem({ icon, label, destructive, onPress }: MenuItemProps) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      className="w-full flex-row items-center gap-3 px-5"
-    >
-      <Icon
-        iconNode={icon}
-        size={20}
-        className={destructive ? "text-action-destructive" : "text-icon-normal"}
-      />
-      <Text
-        variant="body-2-normal"
-        className={destructive ? "text-action-destructive" : "text-text-strong"}
-      >
-        {label}
-      </Text>
-    </Pressable>
   );
 }

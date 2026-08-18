@@ -10,9 +10,10 @@ import {
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 
-import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
+import { Icon } from "@/components/ui/icon/Icon";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Popover } from "@/components/ui/popover/Popover";
+import { PopoverMenuItem } from "@/components/ui/popover/PopoverMenuItem";
 import { Text } from "@/components/ui/text/Text";
 
 import { LINK_SORT_OPTIONS } from "../archive.constants";
@@ -69,7 +70,7 @@ export function ArchiveDetailMoreMenu({
     >
       {(close) => (
         <View className="flex-col gap-4">
-          <MenuItem
+          <PopoverMenuItem
             icon={selectItem.icon}
             label={selectItem.label}
             onPress={() => {
@@ -77,7 +78,7 @@ export function ArchiveDetailMoreMenu({
               onSelectMode();
             }}
           />
-          <MenuItem
+          <PopoverMenuItem
             icon={ArrowUpDown}
             label="정렬"
             isHighlighted={isSortExpanded}
@@ -105,40 +106,6 @@ export function ArchiveDetailMoreMenu({
         </View>
       )}
     </Popover>
-  );
-}
-
-interface MenuItemProps {
-  icon: IconComponent;
-  label: string;
-  /** 정렬 서브메뉴가 펼쳐진 동안 부모 행을 눌린 것처럼 유지한다(Figma gray-600). */
-  isHighlighted?: boolean;
-  trailing?: React.ReactNode;
-  onPress: () => void;
-}
-
-function MenuItem({
-  icon,
-  label,
-  isHighlighted = false,
-  trailing,
-  onPress,
-}: MenuItemProps) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      className={`w-full flex-row items-center gap-3 px-5 ${
-        isHighlighted ? "bg-gray-600 py-1" : ""
-      }`}
-    >
-      <Icon iconNode={icon} size={20} className="text-icon-normal" />
-      <Text variant="body-2-normal" className="flex-1 text-text-strong">
-        {label}
-      </Text>
-      {trailing}
-    </Pressable>
   );
 }
 
