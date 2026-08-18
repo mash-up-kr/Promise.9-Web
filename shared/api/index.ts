@@ -4,6 +4,14 @@ export type {
   ErrorResponse,
   SuccessResponse,
 } from "./api.types";
+export {
+  type SocialLoginRequest,
+  type SocialLoginResponse,
+  type SocialProvider,
+  socialLoginRequestSchema,
+  socialLoginResponseSchema,
+  socialProviderSchema,
+} from "./auth.contracts";
 export { apiClient } from "./client";
 export {
   ApiError,
@@ -17,4 +25,12 @@ export {
   TimeoutError,
   UnauthorizedError,
 } from "./errors";
-export { getAccessToken, setAccessToken } from "./token";
+export {
+  clearTokens,
+  getAccessToken,
+  getRefreshToken,
+  setAccessToken,
+  setTokenPersistence,
+  setTokens,
+  type TokenPersistence,
+} from "./token";

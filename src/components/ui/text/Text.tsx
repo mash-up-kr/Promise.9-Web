@@ -21,6 +21,7 @@ const variantPresets = {
   "label-2-semibold": "text-label-2-semibold font-pretendard-semibold",
   "caption-1": "text-caption-1 font-pretendard",
   "caption-2": "text-caption-2 font-pretendard",
+  "caption-3": "text-caption-3 font-pretendard",
 } as const;
 
 const textStyles = tv({

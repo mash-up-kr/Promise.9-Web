@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>로그인 처리 중</title>
+  </head>
+  <body
+    style="
+      font-family:
+        -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 24px;
+      color: #444;
+    "
+  >
+    <p id="status">로그인 처리 중입니다. 이 창은 곧 닫힙니다.</p>
+    <script>
+      // 구글 OIDC implicit 팝업의 redirect_uri.
+      // 앱 번들을 태우지 않으려고 expo-router 라우트가 아니라 public/ 정적 파일로 둔다
+      // (public/ 아래는 expo export 시 dist/ 로 그대로 복사된다).
+      //
+      // id_token 은 fragment(#)로 돌아오므로 서버 로그·Referer 에 남지 않는다.
+      // 값을 화면에 그리거나 저장하지 않고, 연 쪽(useSocialAuth.web.ts)으로만 넘기고 닫는다.
+      (function () {
+        var params = new URLSearchParams(window.location.hash.slice(1));
+        var status = document.getElementById("status");
+
+        // COOP(Cross-Origin-Opener-Policy)가 켜져 있으면 opener 연결이 끊겨 결과를 전달할 수 없다.
+        // 그때는 창을 닫지 말고 무엇이 잘못됐는지 남겨야 사용자가 빈 창을 보고 헤매지 않는다.
+        if (!window.opener) {
+          status.textContent =
+            "로그인 결과를 앱으로 전달하지 못했습니다. 이 창을 닫고 다시 시도해주세요.";
+          return;
+        }
+
+        window.opener.postMessage(
+          {
+            source: "promise9-google-auth",
+            idToken: params.get("id_token"),
+            state: params.get("state"),
+            error: params.get("error"),
+          },
+          // 팝업을 연 쪽과 같은 origin 으로만 보낸다 — 다른 창이 가로채지 못하게.
+          window.location.origin,
+        );
+
+        // 토큰이 주소창·히스토리에 남지 않게 지운다.
+        window.location.hash = "";
+        window.close();
+
+        // close() 는 COOP 등으로 막힐 수 있다. 그때 빈 화면(about:blank)처럼 보이지 않도록 안내를 남긴다.
+        setTimeout(function () {
+          status.textContent = "로그인이 완료되었습니다. 이 창을 닫아주세요.";
+        }, 300);
+      })();
+    </script>
+  </body>
+</html>
