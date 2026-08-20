@@ -143,12 +143,12 @@ export function ArchiveScreen() {
         // 기본 폴더는 이름·순서가 고정이라 응답을 기다리지 않고 그대로 보여주고,
         // 서버에서 오는 링크 수와 내 폴더 목록만 스켈레톤으로 채운다.
         pending={
-          <ArchiveScrollBody bottomPadding={listBottomPadding}>
+          <ArchiveScrollContent bottomPadding={listBottomPadding}>
             <BasicFolderSection onOpenFolder={handleOpenFolder} />
             <FolderSection title="내 폴더">
               <FolderListSkeleton />
             </FolderSection>
-          </ArchiveScrollBody>
+          </ArchiveScrollContent>
         }
         fallback={({ reset }) => (
           <View className="flex-1 items-center justify-center gap-3 px-5">
@@ -284,7 +284,7 @@ function ArchiveFolders({
   }
 
   return (
-    <ArchiveScrollBody bottomPadding={bottomPadding}>
+    <ArchiveScrollContent bottomPadding={bottomPadding}>
       {basicSection}
       <FolderSection
         title="내 폴더"
@@ -310,7 +310,7 @@ function ArchiveFolders({
           </FolderGroup>
         )}
       </FolderSection>
-    </ArchiveScrollBody>
+    </ArchiveScrollContent>
   );
 }
 
@@ -343,7 +343,7 @@ function BasicFolderSection({
 }
 
 /** 로딩·일반 모드가 공유하는 스크롤 본문 껍데기. */
-function ArchiveScrollBody({
+function ArchiveScrollContent({
   bottomPadding,
   children,
 }: {

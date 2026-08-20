@@ -1,4 +1,18 @@
+import { EMPTY_LINKS_MESSAGES } from "./archive.constants";
 import type { ArchiveFolder } from "./archive.types";
+
+export interface EmptyLinksMessage {
+  title: string;
+  description: string;
+}
+
+/** 보관함 라우트 id → 빈 상태 문구. 시안이 없는 사용자 폴더는 전체 폴더 문구를 쓴다. */
+export function resolveEmptyLinksMessage(folderId: string): EmptyLinksMessage {
+  return (
+    EMPTY_LINKS_MESSAGES[folderId as keyof typeof EMPTY_LINKS_MESSAGES] ??
+    EMPTY_LINKS_MESSAGES.all
+  );
+}
 
 /**
  * 서버 폴더 목록에 편집 중인 정렬 순서를 적용한다.
