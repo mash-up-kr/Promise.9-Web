@@ -43,8 +43,14 @@ export function SettingsScreen() {
   const { logout, isPending: isLoggingOut } = useLogout();
   const [isLogoutOpen, setLogoutOpen] = useState(false);
   const closeLogout = () => setLogoutOpen(false);
-  const confirmLogout = () => {
-    logout();
+  // logout() 은 내부에서 모든 에러를 삼키고 항상 로그인 화면으로 이동하지만(화면이
+  // 언마운트됨), 그 흐름이 바뀌어도 다이얼로그가 열린 채 남지 않도록 방어적으로 닫는다.
+  const confirmLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      closeLogout();
+    }
   };
 
   return (
