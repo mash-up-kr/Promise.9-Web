@@ -1,3 +1,5 @@
+import { clamp } from "es-toolkit";
+
 export interface PopoverTriggerRect {
   /** 트리거의 화면 절대 좌표. */
   top: number;
@@ -92,25 +94,21 @@ export function resolvePopoverOffsetPosition({
     return { top: safeAreaTop + offset.top, left: margin + offset.left };
   }
 
+  // 패널 크기를 모르는 축은 상한을 Infinity 로 둬 밀어넣기만 건너뛴다(하한은 그대로 지킨다).
   return {
     top: clamp(
       trigger.top + offset.top,
       safeAreaTop,
-      panelHeight === null ? null : windowHeight - safeAreaBottom - panelHeight,
+      panelHeight === null
+        ? Number.POSITIVE_INFINITY
+        : windowHeight - safeAreaBottom - panelHeight,
     ),
     left: clamp(
       trigger.left + offset.left,
       margin,
-      panelWidth === null ? null : windowWidth - margin - panelWidth,
+      panelWidth === null
+        ? Number.POSITIVE_INFINITY
+        : windowWidth - margin - panelWidth,
     ),
   };
-}
-
-/** max 가 min 보다 작은(들어갈 자리가 없는) 화면에서는 min 쪽을 지킨다. */
-function clamp(value: number, min: number, max: number | null): number {
-  if (max === null) {
-    return Math.max(min, value);
-  }
-
-  return Math.max(min, Math.min(value, max));
 }

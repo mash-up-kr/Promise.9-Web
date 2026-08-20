@@ -37,7 +37,7 @@ import { shareUrl } from "@/utils/share";
 import { folderLinkQueries, isFolderRouteId } from "./api/folder-links.queries";
 import { SYSTEM_FOLDERS, TRASH_FOLDER } from "./archive.constants";
 import type { LinkSortOption } from "./archive.types";
-import { ArchiveDetailMoreMenu } from "./components/ArchiveDetailMoreMenu";
+import { ArchiveDetailPopover } from "./components/ArchiveDetailPopover";
 import { EmptyLinks } from "./components/EmptyLinks";
 import { LinkContextMenu } from "./components/LinkContextMenu";
 
@@ -183,7 +183,7 @@ export function ArchiveDetailScreen() {
               onPress={() => router.navigate(ROUTES.SEARCH)}
             />
           )}
-          <ArchiveDetailMoreMenu
+          <ArchiveDetailPopover
             sort={sort}
             variant={isTrash ? "trash" : "default"}
             onSortChange={setSort}
@@ -197,7 +197,7 @@ export function ArchiveDetailScreen() {
   return (
     <View className="flex-1">
       <Stack.Screen options={{ header: () => header }} />
-      <ArchiveDetailBody
+      <ArchiveDetailContent
         id={id}
         sort={sort}
         isTrash={isTrash}
@@ -270,7 +270,7 @@ export function ArchiveDetailScreen() {
   );
 }
 
-interface ArchiveDetailBodyProps {
+interface ArchiveDetailContentProps {
   id?: string;
   sort: LinkSortOption;
   /** 최근 삭제 폴더 — 카드 메뉴가 복구 하나뿐이다. */
@@ -287,7 +287,11 @@ interface ArchiveDetailBodyProps {
   onRestore: (linkId: number) => void;
 }
 
-function ArchiveDetailBody({ id, sort, ...listProps }: ArchiveDetailBodyProps) {
+function ArchiveDetailContent({
+  id,
+  sort,
+  ...listProps
+}: ArchiveDetailContentProps) {
   // 잘못된 id 는 조회 이전 분기라 경계 밖에 남는다 — useSuspenseQuery 는 끌 수 없어서
   // 여기서 막지 않으면 NaN 파라미터가 서버로 새어나간다.
   if (!isFolderRouteId(id)) {
@@ -321,23 +325,23 @@ function ArchiveDetailBody({ id, sort, ...listProps }: ArchiveDetailBodyProps) {
         </CenteredMessage>
       )}
     >
-      <ArchiveDetailContent folderId={id} sort={sort} {...listProps} />
+      <ArchiveDetailLinkList folderId={id} sort={sort} {...listProps} />
     </AsyncBoundary>
   );
 }
 
-interface ArchiveDetailContentProps
-  extends Omit<ArchiveDetailBodyProps, "id" | "sort"> {
+interface ArchiveDetailLinkListProps
+  extends Omit<ArchiveDetailContentProps, "id" | "sort"> {
   folderId: string;
   sort: LinkSortOption;
 }
 
-function ArchiveDetailContent({
+function ArchiveDetailLinkList({
   folderId,
   sort,
   selectedIds,
   ...itemProps
-}: ArchiveDetailContentProps) {
+}: ArchiveDetailLinkListProps) {
   const scrollHandler = useHeaderAwareScrollHandler("archive-detail");
   const { data: links } = useSuspenseQuery(
     folderLinkQueries.list(folderId, sort),
@@ -373,7 +377,7 @@ function ArchiveDetailContent({
 }
 
 interface LinkGridItemProps
-  extends Omit<ArchiveDetailContentProps, "folderId" | "sort"> {
+  extends Omit<ArchiveDetailLinkListProps, "folderId" | "sort"> {
   link: Link;
 }
 

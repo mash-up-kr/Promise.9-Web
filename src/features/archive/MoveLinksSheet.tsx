@@ -6,8 +6,6 @@ import { View } from "react-native";
 import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
-import { ListGroup } from "@/components/ui/list-group/ListGroup";
-import { ListSection } from "@/components/ui/list-section/ListSection";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
@@ -18,6 +16,8 @@ import { useUpdateLinkFolderMutation } from "@/features/link/api/link.queries";
 import { folderQueries } from "./api/folder.queries";
 import { UNCATEGORIZED_FOLDER } from "./archive.constants";
 import type { ArchiveFolder } from "./archive.types";
+import { FolderGroup } from "./components/FolderGroup";
+import { FolderSection } from "./components/FolderSection";
 import { FolderSelectItem } from "./components/FolderSelectItem";
 
 /**
@@ -41,14 +41,14 @@ export function MoveLinksSheet() {
 
   return (
     <SheetScreen onClose={closeSheet}>
-      <MoveLinksSheetBody />
+      <MoveLinksSheetContent />
     </SheetScreen>
   );
 }
 
 // 취소·저장은 라우트를 바로 제거하지 않고 시트 닫힘 애니메이션을 거친다
 // (useSheetDismiss 는 시트 자손에서만 쓸 수 있어 본문을 분리).
-function MoveLinksSheetBody() {
+function MoveLinksSheetContent() {
   const dismiss = useSheetDismiss();
   const router = useRouter();
   const { show } = useSnackbar();
@@ -172,21 +172,21 @@ function FolderPicker({
         isConfirmDisabled={selectedFolderId === null || isSaveDisabled}
       />
       {/* 시트가 이미 가로 여백을 가져 섹션은 여백 없이 붙인다. */}
-      <ListSection title="기본 폴더" inset={false}>
-        <ListGroup>
+      <FolderSection title="기본 폴더" inset={false}>
+        <FolderGroup>
           <FolderSelectItem
             name={UNCATEGORIZED_FOLDER.name}
             isSelected={selectedFolderId === UNCATEGORIZED_FOLDER.id}
             onPress={() => onSelect(UNCATEGORIZED_FOLDER.id)}
           />
-        </ListGroup>
-      </ListSection>
-      <ListSection
+        </FolderGroup>
+      </FolderSection>
+      <FolderSection
         title="내 폴더"
         inset={false}
         action={{ label: "새 폴더 만들기", onPress: onAddFolder }}
       >
-        <ListGroup>
+        <FolderGroup>
           {data.myFolders.map((folder) => (
             <FolderSelectItem
               key={folder.id}
@@ -196,8 +196,8 @@ function FolderPicker({
               onPress={() => onSelect(folder.id)}
             />
           ))}
-        </ListGroup>
-      </ListSection>
+        </FolderGroup>
+      </FolderSection>
     </>
   );
 }
