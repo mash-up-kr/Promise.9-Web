@@ -74,6 +74,12 @@ export const test = base.extend({
 
     if (MASTER_TOKEN && API_BASE_URL) {
       await page.route(`${API_BASE_URL}/**`, async (route) => {
+        // 브라우저가 자동 생성하는 CORS 프리플라이트(OPTIONS)는 건드리지 않고 그대로
+        // 흘려보낸다 — 여길 가로채 헤더를 바꾸면 요청이 응답 없이 멈춘다(직접 확인함).
+        if (route.request().method() === "OPTIONS") {
+          await route.continue();
+          return;
+        }
         await route.continue({
           headers: {
             ...route.request().headers(),
