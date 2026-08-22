@@ -188,11 +188,13 @@ describe("HomeScreen", () => {
     spy.mockRestore();
   });
 
-  test("다시 볼 링크와 많이 저장한 키워드 섹션을 보여준다", async () => {
+  // 리마인드·키워드는 서버가 아직 데이터를 못 줘서 항상 조건 미충족 — 시안 정책대로 섹션째 숨는다.
+  test("서버 미제공 섹션(다시 볼 링크·많이 저장한 키워드)은 그리지 않는다", async () => {
     await renderScreen();
+    await screen.findByText("최근 저장");
 
-    expect(await screen.findByText("다시 볼 링크")).toBeOnTheScreen();
-    expect(screen.getByText("많이 저장한 키워드")).toBeOnTheScreen();
+    expect(screen.queryByText("다시 볼 링크")).not.toBeOnTheScreen();
+    expect(screen.queryByText("많이 저장한 키워드")).not.toBeOnTheScreen();
   });
 
   // 시안 정책: 자주 보는 폴더는 최대 2개.

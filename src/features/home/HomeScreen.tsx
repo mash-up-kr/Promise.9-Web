@@ -35,8 +35,6 @@ import { HomeSkeleton } from "./components/HomeSkeleton";
 import { KeywordSection } from "./components/KeywordSection";
 import { RecentSaveSection } from "./components/RecentSaveSection";
 import { RemindSection } from "./components/RemindSection";
-import { HOME_KEYWORDS, HOME_REMIND_LINKS } from "./home.mocks";
-import { selectRemindLinks, selectTopKeywords } from "./home.utils";
 
 export function HomeScreen() {
   return (
@@ -109,8 +107,11 @@ function HomeSections() {
       }
     >
       <VStack className="gap-12 pt-5 pb-8">
-        <RemindSection links={selectRemindLinks(HOME_REMIND_LINKS)} />
-        <KeywordSection keywords={selectTopKeywords(HOME_KEYWORDS)} />
+        {/* 서버 미제공 구간 — 리마인드는 GET /links 에 reminderAt 이 없고, 키워드는
+            GET /recommendations 가 미머지다. 빈 배열이면 정책대로 섹션째 숨는다.
+            데이터 소스가 생기면 여기만 쿼리로 교체한다(선정 정책은 home.utils). */}
+        <RemindSection links={[]} />
+        <KeywordSection keywords={[]} />
         <RecentSaveSection links={recentLinks} />
         <VStack className="gap-4">
           <Text variant="heading-1" className="px-5 text-text-strong">
