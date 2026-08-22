@@ -6,7 +6,7 @@ import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { Icon } from "@/components/ui/icon/Icon";
 import { Skeleton } from "@/components/ui/skeleton/Skeleton";
 import { Text } from "@/components/ui/text/Text";
-import { linkQueries } from "@/features/link/api/link.queries";
+import { linkQueries } from "@/entities/link/link.queries";
 
 const FAILED_TITLE = "링크 정보를 가져오지 못했어요.";
 const FAILED_DESCRIPTION = "잠시 후에 다시 시도해 주세요.";

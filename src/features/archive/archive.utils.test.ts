@@ -1,5 +1,5 @@
 import type { ArchiveFolder } from "./archive.types";
-import { applyFolderOrder } from "./archive.utils";
+import { applyFolderOrder, toArchiveFolderData } from "./archive.utils";
 
 const folder = (id: string): ArchiveFolder => ({
   id,
@@ -51,5 +51,49 @@ describe("applyFolderOrder", () => {
     expect(applyFolderOrder(folders, ["9", "2", "1"]).map((f) => f.id)).toEqual(
       ["2", "1"],
     );
+  });
+});
+
+describe("toArchiveFolderData", () => {
+  const response = {
+    systemFolders: {
+      all: { linkCount: 10 },
+      uncategorized: { linkCount: 2 },
+      favorite: { linkCount: 0 },
+      recentlyDeleted: { linkCount: 1 },
+    },
+    folders: [
+      {
+        folderId: 3,
+        folderName: "디자인",
+        color: "#61a8ef",
+        linkCount: 5,
+        lastSavedAt: null,
+      },
+      {
+        folderId: 7,
+        folderName: "기타",
+        color: "#000000",
+        linkCount: 0,
+        lastSavedAt: null,
+      },
+    ],
+  };
+
+  // 기본 폴더의 이름·순서는 정적 상수이므로 서버에서 오는 건 카운트뿐이다.
+  test("systemFolders 를 countKey 별 링크 수로 변환한다", () => {
+    expect(toArchiveFolderData(response).systemFolderCounts).toEqual({
+      all: 10,
+      uncategorized: 2,
+      favorite: 0,
+      recentlyDeleted: 1,
+    });
+  });
+
+  test("사용자 폴더의 hex color 를 tone 으로 변환하고 기본색은 gray 로 폴백한다", () => {
+    expect(toArchiveFolderData(response).myFolders).toEqual([
+      { id: "3", name: "디자인", count: 5, tone: "blue" },
+      { id: "7", name: "기타", count: 0, tone: "gray" },
+    ]);
   });
 });

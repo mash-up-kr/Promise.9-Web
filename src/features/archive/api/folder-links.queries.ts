@@ -1,49 +1,6 @@
-import { apiClient, type SuccessResponse } from "@shared/api";
-import type { Link } from "@shared/types/link.types";
-import { queryOptions } from "@tanstack/react-query";
-import { z } from "zod";
+import { type LinkListParams, linkQueries } from "@/entities/link/link.queries";
 
 import { SYSTEM_FOLDERS } from "../archive.constants";
-
-// 스키마와 shared 타입의 드리프트는 명시적 반환 타입을 가진 toLink 가 잡는다.
-const linkTagSchema = z.looseObject({
-  tagId: z.number(),
-  name: z.string(),
-  sourceType: z.enum(["user", "rule", "ai"]),
-  sortOrder: z.number().nullable(),
-});
-
-// GET /links 목록 아이템 — title·source 는 OG 미수집 시 null 일 수 있다.
-const linkListItemSchema = z.looseObject({
-  linkId: z.number(),
-  title: z.string().nullable(),
-  source: z.string().nullable(),
-  representativeTag: linkTagSchema.nullable(),
-  thumbnailUrl: z.string().nullable(),
-  savedAt: z.string(),
-});
-
-/**
- * GET /links 응답 스키마.
- *
- * looseObject 라 모르는 키는 버리지 않고 통과시킨다 — 서버가 필드를 추가해도 깨지지 않고,
- * 캐시에 원본이 남아 그 필드를 쓸 때 스키마만 넓히면 된다(strip 이면 이미 지워져 재요청해야 한다).
- * 반대로 계약이 어긋나면(타입 불일치·필수 필드 누락) 화면에서 조용히 undefined 가 퍼지는 대신
- * queryFn 에서 바로 던져 에러 상태로 간다.
- */
-export const linkListResponseSchema = z.looseObject({
-  links: z.array(linkListItemSchema),
-  pagination: z.looseObject({
-    nextCursor: z.string().nullable(),
-    hasNext: z.boolean(),
-    limit: z.number(),
-  }),
-});
-
-type LinkListItem = z.infer<typeof linkListItemSchema>;
-type LinkListResponse = z.infer<typeof linkListResponseSchema>;
-
-type LinkListParams = Record<string, string | number | boolean>;
 
 /**
  * 보관함 라우트 id 가 조회 가능한 폴더를 가리키는지.
@@ -73,41 +30,7 @@ export function toLinkListParams(folderId: string): LinkListParams {
   }
 }
 
-/** 서버 링크 아이템 → UI Link. nullable 한 title·source 는 빈 문자열로 폴백한다. */
-export function toLink(item: LinkListItem): Link {
-  return {
-    linkId: item.linkId,
-    title: item.title ?? "",
-    source: item.source ?? "",
-    thumbnailUrl: item.thumbnailUrl,
-    savedAt: item.savedAt,
-    representativeTag: item.representativeTag,
-  };
-}
-
-const folderLinkKeys = {
-  root: () => ["folder-links"] as const,
-  list: (folderId: string) => [...folderLinkKeys.root(), folderId] as const,
-};
-
-// 모듈 스코프에 둬야 호출마다 같은 참조라 react-query 가 데이터가 그대로일 때 재계산을 건너뛴다.
-const selectLinks = (data: LinkListResponse): Link[] => data.links.map(toLink);
-
 export const folderLinkQueries = {
-  keys: folderLinkKeys,
-  // 폴더(시스템/사용자) 내 링크 목록. 페이지네이션은 후속 — 우선 첫 페이지만 표시한다.
-  list: (folderId: string) =>
-    queryOptions({
-      queryKey: folderLinkKeys.list(folderId),
-      // 캐시에는 검증된 서버 응답을 그대로 두고, UI 모델 변환은 select 가 맡는다.
-      queryFn: async ({ signal }) => {
-        const { data } = await apiClient.get<SuccessResponse<unknown>>(
-          "/links",
-          { params: toLinkListParams(folderId), signal },
-        );
-
-        return linkListResponseSchema.parse(data.data);
-      },
-      select: selectLinks,
-    }),
+  // 보관함은 라우트 id 만 알고, 목록 조회 자체는 링크 목록 쿼리가 소유한다.
+  list: (folderId: string) => linkQueries.list(toLinkListParams(folderId)),
 };

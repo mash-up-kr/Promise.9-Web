@@ -10,11 +10,11 @@ import { Dialog } from "@/components/ui/dialog/Dialog";
 import { Input, InputField } from "@/components/ui/input/Input";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { Text } from "@/components/ui/text/Text";
-
+import { isDuplicateFolderNameError } from "@/entities/folder/folder.errors";
 import {
   useCreateFolderMutation,
   useUpdateFolderMutation,
-} from "./api/folder.queries";
+} from "@/entities/folder/folder.queries";
 import { FOLDER_COLOR_OPTIONS } from "./archive.constants";
 import {
   type CreateFolderInput,
@@ -22,7 +22,6 @@ import {
 } from "./archive.contracts";
 import { DuplicateFolderNameAlert } from "./components/DuplicateFolderNameAlert";
 import { FolderColorPicker } from "./components/FolderColorPicker";
-import { isDuplicateFolderNameError } from "./folder.errors";
 
 export type FolderFormMode = "create" | "edit";
 

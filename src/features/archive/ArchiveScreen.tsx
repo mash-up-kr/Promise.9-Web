@@ -20,14 +20,15 @@ import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwa
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { Text } from "@/components/ui/text/Text";
+import { isFolderOrderMismatchError } from "@/entities/folder/folder.errors";
 import {
   folderQueries,
   useDeleteFolderMutation,
   useReorderFoldersMutation,
-} from "./api/folder.queries";
+} from "@/entities/folder/folder.queries";
 import { SYSTEM_FOLDERS } from "./archive.constants";
 import type { ArchiveFolder, SystemFolderKey } from "./archive.types";
-import { applyFolderOrder } from "./archive.utils";
+import { applyFolderOrder, toArchiveFolderData } from "./archive.utils";
 import { ArchiveMoreMenu } from "./components/ArchiveMoreMenu";
 import { FolderContextMenu } from "./components/FolderContextMenu";
 import { FolderGroup } from "./components/FolderGroup";
@@ -36,7 +37,6 @@ import { FolderListSkeleton } from "./components/FolderListSkeleton";
 import { FolderSection } from "./components/FolderSection";
 import { NewFolderButton } from "./components/NewFolderButton";
 import { SortableFolderList } from "./components/SortableFolderList";
-import { isFolderOrderMismatchError } from "./folder.errors";
 
 type OpenFolderHandler = (id: string, name: string) => void;
 
@@ -221,7 +221,10 @@ function ArchiveFolders({
   onEditFolder,
   onDeleteFolder,
 }: ArchiveFoldersProps) {
-  const { data } = useSuspenseQuery(folderQueries.list());
+  const { data } = useSuspenseQuery({
+    ...folderQueries.list(),
+    select: toArchiveFolderData,
+  });
 
   // 서버 데이터를 복사하지 않고 순서(id)만 들고 있다가 렌더 시 적용한다. 편집 중 재조회가
   // 일어나도 사용자가 드래그한 순서가 유지되고, 저장 후엔 순서를 비워 서버 값이 정답이 된다.

@@ -1,4 +1,12 @@
-import type { ArchiveFolder } from "./archive.types";
+import { hexToFolderTone } from "@shared/folder/folder.constants";
+
+import type { FolderListResponse } from "@/entities/folder/folder.queries";
+
+import type {
+  ArchiveFolder,
+  ArchiveFolderData,
+  SystemFolderKey,
+} from "./archive.types";
 
 /**
  * 서버 폴더 목록에 편집 중인 정렬 순서를 적용한다.
@@ -32,4 +40,26 @@ export function applyFolderOrder(
   ordered.sort((a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0));
 
   return [...ordered, ...appended];
+}
+
+/** GET /folders 응답을 보관함 UI 모델로 변환한다. 목록 쿼리의 `select` 로 쓴다. */
+export function toArchiveFolderData(
+  res: FolderListResponse,
+): ArchiveFolderData {
+  // 기본 폴더의 표시명·순서는 SYSTEM_FOLDERS 가 갖고 있으므로 링크 수만 뽑는다.
+  const systemFolderCounts: Record<SystemFolderKey, number> = {
+    all: res.systemFolders.all.linkCount,
+    uncategorized: res.systemFolders.uncategorized.linkCount,
+    favorite: res.systemFolders.favorite.linkCount,
+    recentlyDeleted: res.systemFolders.recentlyDeleted.linkCount,
+  };
+
+  const myFolders: ArchiveFolder[] = res.folders.map((folder) => ({
+    id: String(folder.folderId),
+    name: folder.folderName,
+    count: folder.linkCount,
+    tone: hexToFolderTone(folder.color),
+  }));
+
+  return { systemFolderCounts, myFolders };
 }
