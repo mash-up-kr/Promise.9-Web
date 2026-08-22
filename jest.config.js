@@ -7,6 +7,9 @@ module.exports = {
   // .claude/ 는 에이전트 worktree(.claude/worktrees/)가 생겨 테스트가 중복 실행되므로 제외한다.
   testPathIgnorePatterns: ["/node_modules/", "/e2e/", "/.claude/"],
   moduleNameMapper: {
+    // jest-expo 는 tsconfig 의 `@/*` 만 보고 `@/(.*)` → `src/$1` 매퍼를 만들어서
+    // 더 구체적인 `@/assets/*` → `assets/*` 를 덮어쓴다. 그보다 먼저 잡아준다.
+    "^@/assets/(.*)$": "<rootDir>/assets/$1",
     // reanimated 4.x 는 react-native-worklets 네이티브 초기화를 필요로 하므로
     // jest 환경에서는 자체 stub 으로 대체한다.
     "^react-native-reanimated$":
