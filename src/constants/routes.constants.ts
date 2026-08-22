@@ -17,3 +17,11 @@ export function archiveDetailHref(id: string) {
 export function linkDetailHref(id: string) {
   return { pathname: "/link/[id]", params: { id } } as const satisfies Href;
 }
+
+/** 키워드를 넣은 검색 화면 — 검색 화면이 `q` 파라미터를 읽어 결과를 바로 보여준다. */
+export function searchHref(keyword: string) {
+  return {
+    pathname: "/search",
+    params: { q: keyword },
+  } as const satisfies Href;
+}

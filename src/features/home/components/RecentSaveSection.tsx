@@ -52,6 +52,7 @@ export function RecentSaveSection({ links }: RecentSaveSectionProps) {
                 <LinkListItem
                   key={link.linkId}
                   link={link}
+                  showMeta={false}
                   onPress={() =>
                     router.push(linkDetailHref(String(link.linkId)))
                   }
