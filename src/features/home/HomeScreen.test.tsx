@@ -75,11 +75,12 @@ const folderListData = {
   },
 };
 
-const renderScreen = () => {
+const renderScreen = async () => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
+  // RNTL 14 의 render 는 async 라 여기서 기다려야 호출부의 await 가 실제 렌더를 기다린다.
+  const view = await render(
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider
         initialMetrics={{
@@ -93,6 +94,7 @@ const renderScreen = () => {
       </SafeAreaProvider>
     </QueryClientProvider>,
   );
+  return { ...view, queryClient };
 };
 
 describe("HomeScreen", () => {
@@ -231,6 +233,22 @@ describe("HomeScreen", () => {
     await pullToRefresh();
 
     expect(mockGet.mock.calls.length).toBeGreaterThan(callsBeforeRefresh);
+  });
+
+  // 당겨서 새로고침하지 않아도(화면 재진입 등 자동 재조회) 실패는 알려야 한다.
+  test("자동 재조회가 실패해도 화면을 유지하고 스낵바로 알린다", async () => {
+    const { queryClient } = await renderScreen();
+    await screen.findByText("최근 저장");
+    mockGet.mockRejectedValue(new Error("network"));
+
+    await act(async () => {
+      await queryClient.refetchQueries();
+    });
+
+    expect(
+      await screen.findByText("오프라인 상태예요. 연결 후 다시 시도해주세요."),
+    ).toBeOnTheScreen();
+    expect(screen.getByText("최근 저장")).toBeOnTheScreen();
   });
 
   // 시안 정책: 캐시가 있으면 화면을 그대로 두고 스낵바로만 알린다.

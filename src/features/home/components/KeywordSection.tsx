@@ -11,6 +11,9 @@ import { searchHref } from "@/constants/routes.constants";
 
 import type { HomeKeyword } from "../home.types";
 
+/** 시안 정책 — 한 줄 6개. 균등 분할이 아니라 줄당 상한이라 3개면 한 줄로 남는다. */
+const KEYWORDS_PER_ROW = 6;
+
 interface KeywordSectionProps {
   keywords: HomeKeyword[];
 }
@@ -24,7 +27,7 @@ export function KeywordSection({ keywords }: KeywordSectionProps) {
     return null;
   }
 
-  const rows = chunk(keywords, Math.ceil(keywords.length / 2));
+  const rows = chunk(keywords, KEYWORDS_PER_ROW);
 
   return (
     <VStack className="gap-4">
@@ -34,7 +37,7 @@ export function KeywordSection({ keywords }: KeywordSectionProps) {
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <VStack className="gap-2 px-5">
           {rows.map((row) => (
-            <HStack key={row[0].name} className="gap-1.5">
+            <HStack key={row[0].name} testID="keyword-row" className="gap-1.5">
               {row.map((keyword) => (
                 <Chip
                   key={keyword.name}

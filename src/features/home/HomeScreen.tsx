@@ -5,7 +5,12 @@ import {
 } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Folder } from "lucide-react-native";
-import { type PropsWithChildren, useCallback, useState } from "react";
+import {
+  type PropsWithChildren,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { RefreshControl, View } from "react-native";
 import Animated from "react-native-reanimated";
 
@@ -49,16 +54,26 @@ function HomeSections() {
   const scrollHandler = useHeaderAwareScrollHandler("home");
   const { isRefreshing, refresh } = useHomeRefresh();
 
-  const { data: recentLinks } = useSuspenseQuery(homeQueries.recentLinks());
-  const { data: frequentFolders } = useSuspenseQuery(
-    homeQueries.frequentFolders(),
-  );
+  const recentLinksQuery = useSuspenseQuery(homeQueries.recentLinks());
+  const frequentFoldersQuery = useSuspenseQuery(homeQueries.frequentFolders());
+  const recentLinks = recentLinksQuery.data;
+  const frequentFolders = frequentFoldersQuery.data;
   // 폴더 수만큼 병렬 조회 — 서버에 홈 전용 집계 API 가 없어 폴더별로 GET /links 를 부른다.
   const folderLinks = useSuspenseQueries({
     queries: frequentFolders.map((folder) =>
       homeQueries.folderLinks(folder.folderId),
     ),
   });
+
+  // 캐시가 있어 던지지 않은 실패는 여기서 받아 알린다(당겨서 새로고침·자동 재조회 공통).
+  useOfflineSnackbar(
+    [
+      recentLinksQuery.error,
+      frequentFoldersQuery.error,
+      ...folderLinks.map((query) => query.error),
+    ],
+    refresh,
+  );
 
   // 저장된 링크가 하나도 없으면 섹션을 하나도 그리지 않고 화면 전체를 안내로 채운다(시안).
   if (recentLinks.length === 0) {
@@ -127,35 +142,42 @@ function HomeSections() {
  */
 function useHomeRefresh() {
   const queryClient = useQueryClient();
-  const { show } = useSnackbar();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
-    try {
-      await Promise.all([
-        queryClient.refetchQueries(
-          { queryKey: linkQueries.keys.lists() },
-          { throwOnError: true },
-        ),
-        queryClient.refetchQueries(
-          { queryKey: folderQueries.keys.root() },
-          { throwOnError: true },
-        ),
-      ]);
-    } catch {
-      show(
-        snackbarPresets.offline(
-          "오프라인 상태예요. 연결 후 다시 시도해주세요.",
-          refresh,
-        ),
-      );
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [queryClient, show]);
+    // 실패는 쿼리 에러 상태로 남고 useOfflineSnackbar 가 알린다 — 여기서 따로 잡지 않는다.
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: linkQueries.keys.lists() }),
+      queryClient.refetchQueries({ queryKey: folderQueries.keys.root() }),
+    ]);
+    setIsRefreshing(false);
+  }, [queryClient]);
 
   return { isRefreshing, refresh };
+}
+
+/**
+ * 캐시가 있어 에러 화면으로 던지지 않은 조회 실패를 스낵바로 알린다.
+ *
+ * 정책상 캐시가 있으면 화면은 그대로 두되 실패 사실은 알려야 한다. 알리지 않으면 사용자가
+ * 낡은 데이터를 최신으로 오해한다. 재시도가 또 실패하면 새 Error 라 다시 뜬다.
+ */
+function useOfflineSnackbar(errors: (Error | null)[], onRetry: () => void) {
+  const { show } = useSnackbar();
+  const failure = errors.find(Boolean) ?? null;
+
+  useEffect(() => {
+    if (!failure) {
+      return;
+    }
+    show(
+      snackbarPresets.offline(
+        "오프라인 상태예요. 연결 후 다시 시도해주세요.",
+        onRetry,
+      ),
+    );
+  }, [failure, show, onRetry]);
 }
 
 /** 헤더가 투명 오버레이라 전체 화면 안내는 헤더 높이만큼 내려서 가운데 정렬한다. */
