@@ -5,4 +5,8 @@ appId: com.mashup.promise9
 - launchApp
 # iOS 는 섹션 헤더 Pressable 라벨("최근 저장 전체 보기")이 자식 텍스트를 흡수하므로
 # 접두 정규식으로 양 플랫폼을 매칭한다 (Maestro 는 전체 일치 정규식).
-- assertVisible: "최근 저장.*"
+# dev client 재시작 후 번들 로드가 Android 에뮬레이터에서 20초를 넘겨,
+# 기본 assert 대기로는 홈 렌더 전에 실패한다 → 명시적 대기.
+- extendedWaitUntil:
+    visible: "최근 저장.*"
+    timeout: 60000
