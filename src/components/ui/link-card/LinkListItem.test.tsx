@@ -28,6 +28,15 @@ describe("LinkListItem", () => {
     expect(screen.getByText("어제")).toBeOnTheScreen();
   });
 
+  // 홈 시안은 List Card 의 Meta 라인을 끈 인스턴스를 쓴다.
+  test("showMeta 가 false 면 태그·저장 시기를 감춘다", async () => {
+    await render(<LinkListItem link={link} showMeta={false} />);
+
+    expect(screen.getByText(link.title)).toBeOnTheScreen();
+    expect(screen.queryByText("커리어")).not.toBeOnTheScreen();
+    expect(screen.queryByText("어제")).not.toBeOnTheScreen();
+  });
+
   test("제목 버튼을 누르면 onPress 를 호출한다", async () => {
     const onPress = jest.fn();
     await render(<LinkListItem link={link} onPress={onPress} />);
