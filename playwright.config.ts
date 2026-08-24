@@ -14,6 +14,9 @@ const BASE_URL = `http://localhost:${PORT}`;
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/*.spec.ts",
+  // webServer 가 뜬 뒤, 병렬 워커가 시작되기 전에 번들을 한 번 미리 데운다
+  // (근거·상세: ./e2e/global-setup.ts 주석 참고).
+  globalSetup: "./e2e/global-setup.ts",
   // 단언 실패 시 깔끔하게 종료
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
