@@ -5,7 +5,7 @@ export type { SocialProvider } from "@shared/api";
 
 export interface SocialProviderConfig {
   label: string;
-  // 서버·SDK 연동이 끝난 provider 만 true. false 면 버튼은 노출하되 비활성(카카오·애플: 서버 미구현).
+  // 서버·SDK 연동이 끝난 provider 만 true. 애플은 iOS 네이티브만 지원(아래 isIOS 로).
   enabled: boolean;
 }
 
@@ -13,7 +13,7 @@ export interface SocialProviderConfig {
 // 컴파일 에러로 잡힌다. 배열이었다면 빠뜨려도 타입 통과라 화면에서만 조용히 샌다.
 // 키 순서 = 화면 노출 순서(시안: 카카오 → 구글 → 애플). enabled=false 는 노출하되 비활성(disabled).
 export const SOCIAL_PROVIDERS = {
-  kakao: { label: "카카오로 계속하기", enabled: false },
+  kakao: { label: "카카오로 계속하기", enabled: true },
   google: { label: "Google로 계속하기", enabled: true },
   apple: { label: "Apple로 계속하기", enabled: false },
 } satisfies Record<SocialProvider, SocialProviderConfig>;

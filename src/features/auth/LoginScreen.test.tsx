@@ -13,6 +13,7 @@ jest.mock("@shared/api", () => {
 });
 
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { login as kakaoLogin } from "@react-native-seoul/kakao-login";
 import { ApiError, apiClient } from "@shared/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -37,6 +38,7 @@ import { LoginScreen } from "./LoginScreen";
 
 const mockPost = apiClient.post as jest.Mock;
 const mockSignIn = GoogleSignin.signIn as jest.Mock;
+const mockKakaoLogin = kakaoLogin as jest.Mock;
 
 const metrics: Metrics = {
   frame: { x: 0, y: 0, width: 375, height: 812 },
@@ -84,6 +86,7 @@ describe("LoginScreen", () => {
     mockReplace.mockClear();
     mockPost.mockReset();
     mockSignIn.mockReset();
+    mockKakaoLogin.mockReset();
     // useSocialAuth 의 구글 경로는 webClientId 가 있어야 진행된다.
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = "test-web-client-id";
   });
@@ -92,7 +95,7 @@ describe("LoginScreen", () => {
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = originalWebClientId;
   });
 
-  test("소셜 버튼 3개를 모두 노출하되, 미지원 provider 는 비활성으로 둔다", async () => {
+  test("소셜 버튼 3개를 노출하고, 지원 provider(구글·카카오)를 활성화한다", async () => {
     await renderScreen();
 
     // 시안대로 3개 모두 노출한다.
@@ -100,21 +103,41 @@ describe("LoginScreen", () => {
     const kakao = screen.getByRole("button", { name: "카카오로 계속하기" });
     const apple = screen.getByRole("button", { name: "Apple로 계속하기" });
 
-    // 구글만 활성, 아직 서버 미구현인 카카오·애플은 비활성(disabled).
+    // 구글·카카오는 활성. 애플은 iOS 만 지원하나 이 테스트 환경(Platform.OS==="ios")에선
+    // Task 5 활성화 전까지 비활성이다.
     expect(google.props.accessibilityState.disabled).toBe(false);
-    expect(kakao.props.accessibilityState.disabled).toBe(true);
+    expect(kakao.props.accessibilityState.disabled).toBe(false);
     expect(apple.props.accessibilityState.disabled).toBe(true);
   });
 
-  test("미지원(카카오) 버튼을 눌러도 로그인 로직이 실행되지 않는다", async () => {
+  test("카카오 로그인 성공 시 idToken 으로 서버 로그인하고 홈으로 이동한다", async () => {
+    mockKakaoLogin.mockResolvedValue({
+      idToken: "kakao-id-token",
+      accessToken: "a",
+      refreshToken: "r",
+      accessTokenExpiresAt: new Date(),
+      refreshTokenExpiresAt: new Date(),
+      scopes: [],
+    });
+    mockPost.mockResolvedValue({
+      data: {
+        success: true,
+        data: { accessToken: "at", refreshToken: "rt", isNewUser: false },
+      },
+    });
     await renderScreen();
 
     await fireEvent.press(
       screen.getByRole("button", { name: "카카오로 계속하기" }),
     );
 
-    expect(mockSignIn).not.toHaveBeenCalled();
-    expect(mockPost).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(mockPost).toHaveBeenCalledWith("/auth/social", {
+        provider: "kakao",
+        idToken: "kakao-id-token",
+      }),
+    );
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
   });
 
   test("구글 로그인 성공 시 idToken 으로 서버 로그인하고 홈으로 이동한다", async () => {
