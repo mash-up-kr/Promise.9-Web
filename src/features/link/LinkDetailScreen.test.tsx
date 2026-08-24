@@ -1,8 +1,15 @@
 import { render, screen, userEvent } from "@testing-library/react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
+import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
+import * as share from "@/utils/share";
+
 import { LinkDetailScreen } from "./LinkDetailScreen";
 import { mockLinkDetail, mockRelatedLinks } from "./mock/mockLinkDetail";
+
+const mockBack = jest.fn();
+const mockPush = jest.fn();
+const mockDelete = jest.fn().mockResolvedValue(undefined);
 
 // Stack.Screen 은 헤더를 options.header 로만 받으므로, 기본 목이면 헤더가 렌더되지 않는다.
 // 즐겨찾기 버튼이 헤더에 있어 검증하려면 header 를 실제로 렌더해야 한다.
@@ -13,9 +20,52 @@ jest.mock("expo-router", () => ({
   },
   useLocalSearchParams: () => ({ id: String(mockLinkDetail.linkId) }),
   // 헤더의 HeaderBackButton 이 사용한다.
-  useRouter: () => ({ back: jest.fn(), replace: jest.fn() }),
+  useRouter: () => ({ back: mockBack, push: mockPush, replace: jest.fn() }),
   canGoBack: () => true,
 }));
+
+jest.mock("@/utils/share", () => ({ shareUrl: jest.fn() }));
+jest.mock("@/entities/link/link.queries", () => ({
+  useDeleteLinkMutation: () => ({ mutateAsync: mockDelete }),
+}));
+jest.mock("./components/LinkMoreMenu", () => {
+  const { Pressable, Text } = require("react-native");
+  return {
+    LinkMoreMenu: ({
+      onMove,
+      onShare,
+      onDelete,
+    }: {
+      onMove: () => void;
+      onShare: () => void;
+      onDelete: () => void;
+    }) => (
+      <>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="mock-move"
+          onPress={onMove}
+        >
+          <Text>move</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="mock-share"
+          onPress={onShare}
+        >
+          <Text>share</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="mock-delete"
+          onPress={onDelete}
+        >
+          <Text>delete</Text>
+        </Pressable>
+      </>
+    ),
+  };
+});
 
 // 헤더가 useSafeAreaInsets 를 쓰므로 Provider 가 필요하다 (Header.test.tsx 와 동일한 패턴).
 const metrics: Metrics = {
@@ -26,11 +76,20 @@ const metrics: Metrics = {
 const renderScreen = () =>
   render(
     <SafeAreaProvider initialMetrics={metrics}>
-      <LinkDetailScreen />
+      <SnackbarProvider>
+        <LinkDetailScreen />
+      </SnackbarProvider>
     </SafeAreaProvider>,
   );
 
 describe("LinkDetailScreen", () => {
+  beforeEach(() => {
+    mockBack.mockClear();
+    mockPush.mockClear();
+    mockDelete.mockClear();
+    (share.shareUrl as jest.Mock).mockResolvedValue("copied");
+  });
+
   test("제목·폴더·출처/저장일을 렌더한다", async () => {
     await renderScreen();
     expect(screen.getByText(mockLinkDetail.title)).toBeOnTheScreen();
@@ -75,5 +134,35 @@ describe("LinkDetailScreen", () => {
     for (const item of mockRelatedLinks) {
       expect(screen.getByText(item.title)).toBeOnTheScreen();
     }
+  });
+
+  test("링크 공유 → shareUrl 을 호출하고, 복사면 토스트를 띄운다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+    await user.press(screen.getByLabelText("mock-share"));
+    expect(share.shareUrl).toHaveBeenCalledWith(mockLinkDetail.url);
+    expect(await screen.findByText("링크가 복사됐어요")).toBeOnTheScreen();
+  });
+
+  test("폴더 이동 → move-links 라우트로 이동한다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+    await user.press(screen.getByLabelText("mock-move"));
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.objectContaining({ pathname: "/move-links" }),
+    );
+  });
+
+  test("삭제 → 다이얼로그 확인 시 삭제 후 뒤로 간다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("mock-delete"));
+    expect(screen.getByText("링크를 삭제할까요?")).toBeOnTheScreen();
+
+    await user.press(screen.getByRole("button", { name: "삭제" }));
+    expect(mockDelete).toHaveBeenCalledWith(mockLinkDetail.linkId);
+    await screen.findByText(mockLinkDetail.title); // 리렌더 안정화
+    expect(mockBack).toHaveBeenCalledTimes(1);
   });
 });

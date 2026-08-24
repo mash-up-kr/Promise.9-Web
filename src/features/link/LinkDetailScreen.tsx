@@ -1,18 +1,27 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Stack, useLocalSearchParams } from "expo-router";
-import { Ellipsis, Star } from "lucide-react-native";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Star } from "lucide-react-native";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { ScrollView, View } from "react-native";
-
+import {
+  AlertDialog,
+  AlertDialogButton,
+} from "@/components/ui/alert-dialog/AlertDialog";
 import { Header, useHeaderHeight } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
+import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { Text } from "@/components/ui/text/Text";
+import { moveLinksHref } from "@/constants/routes.constants";
+import { useDeleteLinkMutation } from "@/entities/link/link.queries";
 import { formatCalendarDate } from "@/utils/format";
+import { shareUrl } from "@/utils/share";
 
 import { AiSummarySection } from "./components/AiSummarySection";
 import { FolderBadge } from "./components/FolderBadge";
 import { LinkBackground } from "./components/LinkBackground";
+import { LinkMoreMenu } from "./components/LinkMoreMenu";
 import { LinkThumbnail } from "./components/LinkThumbnail";
 import { MemoField } from "./components/MemoField";
 import { RelatedLinksList } from "./components/RelatedLinksList";
@@ -30,6 +39,35 @@ export function LinkDetailScreen() {
   const { id } = useLocalSearchParams<"/link/[id]">();
   const linkDetail =
     mockLinks.find((link) => link.linkId === Number(id)) ?? mockLinkDetail;
+
+  const router = useRouter();
+  const { show } = useSnackbar();
+  const { mutateAsync: deleteLink } = useDeleteLinkMutation();
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  const handleMove = () => {
+    router.push(
+      moveLinksHref(
+        [linkDetail.linkId],
+        linkDetail.folder ? String(linkDetail.folder.folderId) : undefined,
+      ),
+    );
+  };
+
+  const handleShare = async () => {
+    const result = await shareUrl(linkDetail.url);
+    if (result === "copied") show({ message: "링크가 복사됐어요" });
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleteOpen(false);
+    try {
+      await deleteLink(linkDetail.linkId);
+      router.back();
+    } catch {
+      show({ message: "링크를 삭제하지 못했어요. 다시 시도해주세요." });
+    }
+  };
 
   // 이 화면은 링크 하나를 편집하는 단일 폼이다. 서버로 나가는 값(폴더·메모·즐겨찾기)만
   // 폼이 소유하고, 편집 모드·요약 펼침 같은 화면 조작 상태는 각 컴포넌트가 그대로 가진다.
@@ -69,7 +107,11 @@ export function LinkDetailScreen() {
                       />
                     )}
                   />
-                  <IconButton iconNode={Ellipsis} accessibilityLabel="더보기" />
+                  <LinkMoreMenu
+                    onMove={handleMove}
+                    onShare={handleShare}
+                    onDelete={() => setIsDeleteOpen(true)}
+                  />
                 </>
               }
             />
@@ -135,6 +177,26 @@ export function LinkDetailScreen() {
           </View>
         </ScrollView>
       </View>
+      <AlertDialog
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        title="링크를 삭제할까요?"
+        description="삭제된 링크는 최근 삭제된 항목으로 이동돼요"
+        actions={
+          <>
+            <AlertDialogButton
+              label="취소"
+              variant="secondary"
+              onPress={() => setIsDeleteOpen(false)}
+            />
+            <AlertDialogButton
+              label="삭제"
+              variant="destructive"
+              onPress={handleDeleteConfirm}
+            />
+          </>
+        }
+      />
     </>
   );
 }
