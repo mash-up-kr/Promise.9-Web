@@ -103,17 +103,16 @@ describe("SearchScreen", () => {
     expect(screen.getByText("최근 본 링크")).toBeOnTheScreen();
   });
 
-  test("타이핑이 멈추고 지연시간이 지나면 자동으로 결과를 보여준다", async () => {
+  // 시안 정책: 입력 중 실시간 조회 없음 — 검색 실행(제출·칩) 시점에만 조회한다.
+  test("타이핑만으로는 검색하지 않는다", async () => {
     const user = setupUser();
     await renderScreen();
 
     await user.type(screen.getByPlaceholderText("검색"), "디자인");
-    expect(screen.getByText("최근 검색어")).toBeOnTheScreen();
-
     await debounce();
 
-    expect(screen.queryByText("최근 검색어")).not.toBeOnTheScreen();
-    expectResultLinks();
+    // 얼마를 기다려도 결과로 넘어가지 않는다.
+    expect(screen.getByText("최근 검색어")).toBeOnTheScreen();
   });
 
   test("제출하면 지연 없이 바로 결과를 보여준다", async () => {
@@ -137,16 +136,44 @@ describe("SearchScreen", () => {
     expectResultLinks();
   });
 
-  test("검색어를 모두 지우면 지연 후 초기 섹션으로 돌아간다", async () => {
+  test("검색어를 지우면 즉시 초기 섹션으로 돌아간다", async () => {
     const user = setupUser();
     await renderScreen();
 
     const input = screen.getByPlaceholderText("검색");
     await user.type(input, "디자인", { submitEditing: true });
     await user.clear(input);
-    await debounce();
 
     expect(screen.getByText("최근 검색어")).toBeOnTheScreen();
+  });
+
+  // Figma Filled 상태: X 탭 → 텍스트 초기화 + 기본 화면 복귀.
+  test("클리어 버튼을 누르면 입력과 결과가 함께 사라진다", async () => {
+    const user = setupUser();
+    await renderScreen();
+
+    await user.type(screen.getByPlaceholderText("검색"), "디자인", {
+      submitEditing: true,
+    });
+    await user.press(screen.getByRole("button", { name: "입력 지우기" }));
+
+    expect(screen.getByPlaceholderText("검색")).toHaveDisplayValue("");
+    expect(screen.getByText("최근 검색어")).toBeOnTheScreen();
+  });
+
+  // 시안 정책: 검색 실행 시 최근 검색어에 저장된다(맨 앞, 중복 제거).
+  test("검색을 실행하면 최근 검색어 맨 앞에 저장된다", async () => {
+    const user = setupUser();
+    await renderScreen();
+
+    const input = screen.getByPlaceholderText("검색");
+    await user.type(input, "새 검색어", { submitEditing: true });
+    await user.press(screen.getByRole("button", { name: "입력 지우기" }));
+
+    const chips = screen.getAllByRole("button", {
+      name: /새 검색어|사우나|오늘의집|면접|피그마/,
+    });
+    expect(chips[0]).toHaveAccessibleName("새 검색어");
   });
 
   test("q 파라미터로 진입하면 결과 상태로 시작하고 인풋 값을 복원한다", async () => {

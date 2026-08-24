@@ -2,7 +2,6 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import Animated from "react-native-reanimated";
-import { useDebounce } from "react-simplikit";
 
 import { Header, useHeaderHeight } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
@@ -18,7 +17,7 @@ import {
   RECENT_VIEWED_LINKS,
   SEARCH_RESULT_LINKS,
 } from "./mocks";
-import { SEARCH_DEBOUNCE_MS } from "./search.constants";
+import { addRecentKeyword } from "./search.utils";
 
 interface SearchFormValues {
   keyword: string;
@@ -37,22 +36,24 @@ export function SearchScreen() {
     defaultValues: { keyword: submittedQuery },
   });
 
-  function commitSearch(value: string) {
+  // 시안 정책: 입력 중 실시간 조회 없음 — 검색은 실행(제출·칩) 시점에만 일어난다.
+  function executeSearch(value: string) {
     const trimmed = value.trim();
-    router.setParams({ q: trimmed === "" ? undefined : trimmed });
+    if (trimmed === "") {
+      return;
+    }
+    router.setParams({ q: trimmed });
+    setRecentKeywords((keywords) => addRecentKeyword(keywords, trimmed));
   }
 
-  // 타이핑이 멈추면 자동 검색. 즉시 커밋(제출·칩)은 cancel 로 예약된 커밋을 걷어낸다.
-  const debouncedCommit = useDebounce(commitSearch, SEARCH_DEBOUNCE_MS);
-
-  function commitSearchNow(value: string) {
-    debouncedCommit.cancel();
-    commitSearch(value);
+  // 텍스트를 지우면(클리어 버튼 포함) 즉시 기본 화면으로 돌아간다(시안 Filled → Focused).
+  function resetSearch() {
+    router.setParams({ q: undefined });
   }
 
   function searchKeyword(value: string) {
     setValue("keyword", value);
-    commitSearchNow(value);
+    executeSearch(value);
   }
 
   return (
@@ -75,9 +76,11 @@ export function SearchScreen() {
                       value={value}
                       onChangeText={(text) => {
                         onChange(text);
-                        debouncedCommit(text);
+                        if (text.trim() === "") {
+                          resetSearch();
+                        }
                       }}
-                      onSubmitEditing={() => commitSearchNow(value)}
+                      onSubmitEditing={() => executeSearch(value)}
                     />
                   )}
                 />
