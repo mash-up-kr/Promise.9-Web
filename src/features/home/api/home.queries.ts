@@ -55,34 +55,20 @@ export function selectFrequentFolders(
   return { folders, hasAnyFolder: res.folders.length > 0 };
 }
 
-/**
- * 캐시가 있으면 화면을 유지하고 캐시가 없을 때만 에러 화면으로 던진다(시안 정책).
- *
- * `useSuspenseQuery` 는 기본적으로 모든 에러를 던져서, 새로고침이 실패하면 이미 보고 있던
- * 화면까지 에러로 바뀐다. 캐시가 있는 실패는 스낵바로만 알리는 게 시안이라 조건을 좁힌다.
- */
-const throwOnlyWithoutCache = (
-  _error: Error,
-  query: { state: { data: unknown } },
-) => query.state.data === undefined;
-
 export const homeQueries = {
-  recentLinks: () => ({
-    ...linkQueries.list({
+  recentLinks: () =>
+    linkQueries.list({
       sortBy: "savedAt",
       order: "desc",
       limit: HOME_RECENT_LINK_LIMIT,
     }),
-    throwOnError: throwOnlyWithoutCache,
-  }),
-  folderLinks: (folderId: number) => ({
-    ...linkQueries.list({ folderId, limit: HOME_FOLDER_LINK_LIMIT }),
-    throwOnError: throwOnlyWithoutCache,
-  }),
+  folderLinks: (folderId: number) =>
+    linkQueries.list({ folderId, limit: HOME_FOLDER_LINK_LIMIT }),
   // 보관함과 같은 GET /folders 캐시를 공유하고 select 만 홈용으로 바꾼다.
+  // 시안의 "캐시 있으면 화면 유지, 없을 때만 에러 화면" 은 useSuspenseQuery 의 기본
+  // 동작이다(v5 defaultThrowOnError = 캐시 없을 때만 throw) — 별도 옵션이 필요 없다.
   frequentFolders: () => ({
     ...folderQueries.list(),
     select: selectFrequentFolders,
-    throwOnError: throwOnlyWithoutCache,
   }),
 };
