@@ -1,10 +1,11 @@
 import { FOLDER_TONE_HEX } from "@shared/folder/folder.constants";
 import type { FolderColor } from "@shared/types/link.types";
-import { ChevronRight, Ellipsis } from "lucide-react-native";
+import { ChevronRight } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { FolderIcon } from "@/components/ui/icon/FolderIcon";
 import { Icon } from "@/components/ui/icon/Icon";
+import { MoreButton } from "@/components/ui/more-button/MoreButton";
 import { Skeleton } from "@/components/ui/skeleton/Skeleton";
 import { Text } from "@/components/ui/text/Text";
 
@@ -77,7 +78,12 @@ export function FolderItem({
       </View>
       {/* Figma 행 구조: Left · More Button · Right(개수+chevron). "..." 는 hover 때만 낀다. */}
       <View pointerEvents="box-none" className="flex-row items-center gap-2.5">
-        {onMorePress && isHovered ? <MoreButton onPress={onMorePress} /> : null}
+        {onMorePress && isHovered ? (
+          <MoreButton
+            accessibilityLabel="폴더 메뉴 열기"
+            onPress={onMorePress}
+          />
+        ) : null}
         <View pointerEvents="none" className="flex-row items-center gap-1">
           {count === undefined ? (
             <Skeleton testID="folder-count-skeleton" className="h-4 w-6" />
@@ -94,19 +100,5 @@ export function FolderItem({
         </View>
       </View>
     </View>
-  );
-}
-
-// Figma "More Button": 20 원형 gray-600 + 12 ellipsis.
-function MoreButton({ onPress }: { onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="폴더 메뉴 열기"
-      onPress={onPress}
-      className="size-5 items-center justify-center rounded-full bg-gray-600"
-    >
-      <Icon iconNode={Ellipsis} size={12} className="text-icon-normal" />
-    </Pressable>
   );
 }

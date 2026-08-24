@@ -20,14 +20,15 @@ import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwa
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { Text } from "@/components/ui/text/Text";
+import { isFolderOrderMismatchError } from "@/entities/folder/folder.errors";
 import {
   folderQueries,
   useDeleteFolderMutation,
   useReorderFoldersMutation,
-} from "./api/folder.queries";
+} from "@/entities/folder/folder.queries";
 import { SYSTEM_FOLDERS } from "./archive.constants";
 import type { ArchiveFolder, SystemFolderKey } from "./archive.types";
-import { applyFolderOrder } from "./archive.utils";
+import { applyFolderOrder, toArchiveFolderData } from "./archive.utils";
 import { ArchiveMoreMenu } from "./components/ArchiveMoreMenu";
 import { FolderContextMenu } from "./components/FolderContextMenu";
 import { FolderGroup } from "./components/FolderGroup";
@@ -36,7 +37,6 @@ import { FolderListSkeleton } from "./components/FolderListSkeleton";
 import { FolderSection } from "./components/FolderSection";
 import { NewFolderButton } from "./components/NewFolderButton";
 import { SortableFolderList } from "./components/SortableFolderList";
-import { isFolderOrderMismatchError } from "./folder.errors";
 
 type OpenFolderHandler = (id: string, name: string) => void;
 
@@ -143,12 +143,12 @@ export function ArchiveScreen() {
         // 기본 폴더는 이름·순서가 고정이라 응답을 기다리지 않고 그대로 보여주고,
         // 서버에서 오는 링크 수와 내 폴더 목록만 스켈레톤으로 채운다.
         pending={
-          <ArchiveScrollBody bottomPadding={listBottomPadding}>
+          <ArchiveScrollContent bottomPadding={listBottomPadding}>
             <BasicFolderSection onOpenFolder={handleOpenFolder} />
             <FolderSection title="내 폴더">
               <FolderListSkeleton />
             </FolderSection>
-          </ArchiveScrollBody>
+          </ArchiveScrollContent>
         }
         fallback={({ reset }) => (
           <View className="flex-1 items-center justify-center gap-3 px-5">
@@ -221,7 +221,10 @@ function ArchiveFolders({
   onEditFolder,
   onDeleteFolder,
 }: ArchiveFoldersProps) {
-  const { data } = useSuspenseQuery(folderQueries.list());
+  const { data } = useSuspenseQuery({
+    ...folderQueries.list(),
+    select: toArchiveFolderData,
+  });
 
   // 서버 데이터를 복사하지 않고 순서(id)만 들고 있다가 렌더 시 적용한다. 편집 중 재조회가
   // 일어나도 사용자가 드래그한 순서가 유지되고, 저장 후엔 순서를 비워 서버 값이 정답이 된다.
@@ -284,7 +287,7 @@ function ArchiveFolders({
   }
 
   return (
-    <ArchiveScrollBody bottomPadding={bottomPadding}>
+    <ArchiveScrollContent bottomPadding={bottomPadding}>
       {basicSection}
       <FolderSection
         title="내 폴더"
@@ -310,7 +313,7 @@ function ArchiveFolders({
           </FolderGroup>
         )}
       </FolderSection>
-    </ArchiveScrollBody>
+    </ArchiveScrollContent>
   );
 }
 
@@ -343,7 +346,7 @@ function BasicFolderSection({
 }
 
 /** 로딩·일반 모드가 공유하는 스크롤 본문 껍데기. */
-function ArchiveScrollBody({
+function ArchiveScrollContent({
   bottomPadding,
   children,
 }: {
