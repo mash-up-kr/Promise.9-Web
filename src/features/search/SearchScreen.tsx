@@ -10,7 +10,6 @@ import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwa
 import { VStack } from "@/components/ui/vstack/VStack";
 import { SearchBar } from "@/features/search/components/SearchBar";
 
-import { CategorySection } from "./components/CategorySection";
 import { LinkGrid } from "./components/LinkGrid";
 import { RecentLinksSection } from "./components/RecentLinksSection";
 import { RecentSearchesSection } from "./components/RecentSearchesSection";
@@ -19,7 +18,7 @@ import {
   RECENT_VIEWED_LINKS,
   SEARCH_RESULT_LINKS,
 } from "./mocks";
-import { type Category, SEARCH_DEBOUNCE_MS } from "./search.constants";
+import { SEARCH_DEBOUNCE_MS } from "./search.constants";
 
 interface SearchFormValues {
   keyword: string;
@@ -54,14 +53,6 @@ export function SearchScreen() {
   function searchKeyword(value: string) {
     setValue("keyword", value);
     commitSearchNow(value);
-  }
-
-  function moveToCategories(category?: Category) {
-    if (category) {
-      router.push({ pathname: "/search/categories", params: { category } });
-      return;
-    }
-    router.push({ pathname: "/search/categories" });
   }
 
   return (
@@ -113,10 +104,6 @@ export function SearchScreen() {
               keywords={recentKeywords}
               onPressKeyword={searchKeyword}
               onClearAll={() => setRecentKeywords([])}
-            />
-            <CategorySection
-              onPressCategory={moveToCategories}
-              onPressMore={moveToCategories}
             />
             <RecentLinksSection links={RECENT_VIEWED_LINKS} />
           </VStack>

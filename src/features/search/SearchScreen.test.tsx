@@ -96,11 +96,10 @@ describe("SearchScreen", () => {
     jest.useRealTimers();
   });
 
-  test("최근 검색어·카테고리 둘러보기·최근 본 링크 섹션을 렌더한다", async () => {
+  test("최근 검색어·최근 본 링크 섹션을 렌더한다", async () => {
     await renderScreen();
 
     expect(screen.getByText("최근 검색어")).toBeOnTheScreen();
-    expect(screen.getByText("카테고리 둘러보기")).toBeOnTheScreen();
     expect(screen.getByText("최근 본 링크")).toBeOnTheScreen();
   });
 
@@ -148,7 +147,6 @@ describe("SearchScreen", () => {
     await debounce();
 
     expect(screen.getByText("최근 검색어")).toBeOnTheScreen();
-    expect(screen.getByText("카테고리 둘러보기")).toBeOnTheScreen();
   });
 
   test("q 파라미터로 진입하면 결과 상태로 시작하고 인풋 값을 복원한다", async () => {
@@ -167,26 +165,5 @@ describe("SearchScreen", () => {
     await user.press(screen.getByRole("button", { name: "모두 지우기" }));
 
     expect(screen.queryByText("최근 검색어")).not.toBeOnTheScreen();
-  });
-
-  test("카테고리 칩을 누르면 해당 카테고리의 둘러보기 화면으로 이동한다", async () => {
-    const user = setupUser();
-    await renderScreen();
-
-    await user.press(screen.getByRole("button", { name: "개발" }));
-
-    expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/search/categories",
-      params: { category: "개발" },
-    });
-  });
-
-  test("카테고리 둘러보기 타이틀을 누르면 둘러보기 화면으로 이동한다", async () => {
-    const user = setupUser();
-    await renderScreen();
-
-    await user.press(screen.getByRole("button", { name: "카테고리 둘러보기" }));
-
-    expect(mockPush).toHaveBeenCalledWith({ pathname: "/search/categories" });
   });
 });
