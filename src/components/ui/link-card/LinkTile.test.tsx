@@ -28,6 +28,15 @@ describe("LinkTile", () => {
     expect(screen.getByText("3일 전")).toBeOnTheScreen();
   });
 
+  // 홈·검색 시안은 Content Card 의 Meta 라인을 끈 인스턴스를 쓴다.
+  test("showMeta 가 false 면 태그·저장 시기를 감춘다", async () => {
+    await render(<LinkTile link={link} showMeta={false} />);
+
+    expect(screen.getByText(link.title)).toBeOnTheScreen();
+    expect(screen.queryByText("개발")).not.toBeOnTheScreen();
+    expect(screen.queryByText("3일 전")).not.toBeOnTheScreen();
+  });
+
   test("isSelected 면 선택 표시(체크 뱃지)를 보여준다", async () => {
     await render(<LinkTile link={link} isSelected />);
     expect(screen.getByTestId("link-tile-selected-badge")).toBeOnTheScreen();

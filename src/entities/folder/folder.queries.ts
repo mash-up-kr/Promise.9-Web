@@ -1,7 +1,6 @@
 import { apiClient, type SuccessResponse } from "@shared/api";
 import {
   folderToneToHex,
-  hexToFolderTone,
   type SelectableFolderColor,
 } from "@shared/folder/folder.constants";
 import {
@@ -11,14 +10,10 @@ import {
 } from "@tanstack/react-query";
 import { z } from "zod";
 
-import type { CreateFolderInput } from "../archive.contracts";
-import type {
-  ArchiveFolder,
-  ArchiveFolderData,
-  SystemFolderKey,
-} from "../archive.types";
-import { isFolderOrderMismatchError } from "../folder.errors";
-import { folderLinkQueries } from "./folder-links.queries";
+import { linkKeys } from "@/entities/link/link.keys";
+
+import { isFolderOrderMismatchError } from "./folder.errors";
+import { folderKeys } from "./folder.keys";
 
 const systemFolderCountSchema = z.looseObject({ linkCount: z.number() });
 
@@ -28,6 +23,8 @@ const folderListItemSchema = z.looseObject({
   // 서버 팔레트 hex. 팔레트 밖 값·기본색은 hexToFolderTone 이 gray 로 폴백한다.
   color: z.string(),
   linkCount: z.number(),
+  // 폴더 내 링크를 5초 이상 조회한 누적 횟수. 서버 feature/folder-view-count 머지 전까지는 응답에 없다.
+  viewCount: z.number().optional(),
   lastSavedAt: z.string().nullable(),
 });
 
@@ -36,7 +33,7 @@ const folderListItemSchema = z.looseObject({
  *
  * looseObject 라 모르는 키는 버리지 않고 통과시킨다 — 서버가 필드를 추가해도 깨지지 않고,
  * 캐시에 원본이 남아 그 필드를 쓸 때 스키마만 넓히면 된다(strip 이면 이미 지워져 재요청해야 한다).
- * 기본 폴더가 늘었는데 스키마를 안 넓히면 toArchiveFolderData 가 컴파일에서 잡는다.
+ * 기본 폴더가 늘었는데 스키마를 안 넓히면 소비 측 select 가 컴파일에서 잡는다.
  */
 export const folderListResponseSchema = z.looseObject({
   systemFolders: z.looseObject({
@@ -48,43 +45,19 @@ export const folderListResponseSchema = z.looseObject({
   folders: z.array(folderListItemSchema),
 });
 
-type FolderListResponse = z.infer<typeof folderListResponseSchema>;
-
-const folderKeys = {
-  root: () => ["folder"] as const,
-  list: () => [...folderKeys.root(), "list"] as const,
-};
-
-/** GET /folders 응답을 보관함 UI 모델로 변환한다. */
-export function toArchiveFolderData(
-  res: FolderListResponse,
-): ArchiveFolderData {
-  // 기본 폴더의 표시명·순서는 SYSTEM_FOLDERS 가 갖고 있으므로 링크 수만 뽑는다.
-  const systemFolderCounts: Record<SystemFolderKey, number> = {
-    all: res.systemFolders.all.linkCount,
-    uncategorized: res.systemFolders.uncategorized.linkCount,
-    favorite: res.systemFolders.favorite.linkCount,
-    recentlyDeleted: res.systemFolders.recentlyDeleted.linkCount,
-  };
-
-  const myFolders: ArchiveFolder[] = res.folders.map((folder) => ({
-    id: String(folder.folderId),
-    name: folder.folderName,
-    count: folder.linkCount,
-    tone: hexToFolderTone(folder.color),
-  }));
-
-  return { systemFolderCounts, myFolders };
-}
+export type FolderListResponse = z.infer<typeof folderListResponseSchema>;
 
 export const folderQueries = {
   keys: folderKeys,
-  // 보관함 폴더 목록(시스템 폴더 카운트 + 사용자 폴더).
+  /**
+   * GET /folders — 시스템 폴더 카운트 + 사용자 폴더.
+   *
+   * 캐시에는 검증된 서버 응답을 그대로 두고 화면별 모델 변환은 소비 측 `select` 가 맡는다.
+   * 보관함과 홈이 같은 캐시를 쓰면서 서로 다른 모델을 뽑아 쓴다.
+   */
   list: () =>
     queryOptions({
       queryKey: folderKeys.list(),
-      // 캐시에는 검증된 서버 응답을 그대로 두고, UI 모델 변환은 select 가 맡는다.
-      // toArchiveFolderData 는 모듈 스코프 함수라 참조가 안정적이어서 불필요한 재계산이 없다.
       queryFn: async ({ signal }) => {
         const { data } = await apiClient.get<SuccessResponse<unknown>>(
           "/folders",
@@ -93,7 +66,6 @@ export const folderQueries = {
 
         return folderListResponseSchema.parse(data.data);
       },
-      select: toArchiveFolderData,
     }),
 };
 
@@ -109,6 +81,12 @@ interface CreatedFolder {
   folderName: string;
   color: string;
   createdAt: string;
+}
+
+export interface CreateFolderVariables {
+  folderName: string;
+  /** 팔레트 tone. 전송 시 hex 로 변환한다. */
+  color: SelectableFolderColor;
 }
 
 /** 화면이 들고 있는 폴더 id 순서를 PUT /folders/order 요청 본문으로 변환한다. */
@@ -144,7 +122,7 @@ export function useReorderFoldersMutation() {
 export function useCreateFolderMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ folderName, color }: CreateFolderInput) => {
+    mutationFn: async ({ folderName, color }: CreateFolderVariables) => {
       const { data } = await apiClient.post<SuccessResponse<CreatedFolder>>(
         "/folders",
         { folderName, color: folderToneToHex(color) },
@@ -190,7 +168,7 @@ export function useUpdateFolderMutation() {
 }
 
 // DELETE /folders/{folderId} — 폴더를 삭제하고 목록 캐시를 무효화한다.
-// 폴더에 있던 링크는 서버가 미분류로 옮기므로 폴더 링크 목록 캐시도 함께 버린다.
+// 폴더에 있던 링크는 서버가 미분류로 옮기므로 링크 목록 캐시도 함께 버린다.
 export function useDeleteFolderMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -199,9 +177,7 @@ export function useDeleteFolderMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: folderKeys.root() });
-      queryClient.invalidateQueries({
-        queryKey: folderLinkQueries.keys.root(),
-      });
+      queryClient.invalidateQueries({ queryKey: linkKeys.lists() });
     },
   });
 }

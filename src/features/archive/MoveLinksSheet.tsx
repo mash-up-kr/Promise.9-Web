@@ -11,11 +11,11 @@ import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { Spinner } from "@/components/ui/spinner/Spinner";
 import { Text } from "@/components/ui/text/Text";
-import { useUpdateLinkFolderMutation } from "@/features/link/api/link.queries";
-
-import { folderQueries } from "./api/folder.queries";
+import { folderQueries } from "@/entities/folder/folder.queries";
+import { useUpdateLinkFolderMutation } from "@/entities/link/link.queries";
 import { UNCATEGORIZED_FOLDER } from "./archive.constants";
 import type { ArchiveFolder } from "./archive.types";
+import { toArchiveFolderData } from "./archive.utils";
 import { FolderGroup } from "./components/FolderGroup";
 import { FolderSection } from "./components/FolderSection";
 import { FolderSelectItem } from "./components/FolderSelectItem";
@@ -161,7 +161,10 @@ function FolderPicker({
   onSave,
   onAddFolder,
 }: FolderPickerProps) {
-  const { data } = useSuspenseQuery(folderQueries.list());
+  const { data } = useSuspenseQuery({
+    ...folderQueries.list(),
+    select: toArchiveFolderData,
+  });
 
   return (
     <>
