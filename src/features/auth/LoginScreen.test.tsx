@@ -23,6 +23,7 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 import type { AxiosResponse } from "axios";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
@@ -87,6 +88,7 @@ describe("LoginScreen", () => {
     mockPost.mockReset();
     mockSignIn.mockReset();
     mockKakaoLogin.mockReset();
+    (AppleAuthentication.signInAsync as jest.Mock).mockReset();
     // useSocialAuth 의 구글 경로는 webClientId 가 있어야 진행된다.
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = "test-web-client-id";
   });
@@ -95,7 +97,7 @@ describe("LoginScreen", () => {
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = originalWebClientId;
   });
 
-  test("소셜 버튼 3개를 노출하고, 지원 provider(구글·카카오)를 활성화한다", async () => {
+  test("소셜 버튼 3개를 노출하고, iOS 에선 셋 다 활성화한다", async () => {
     await renderScreen();
 
     // 시안대로 3개 모두 노출한다.
@@ -103,11 +105,11 @@ describe("LoginScreen", () => {
     const kakao = screen.getByRole("button", { name: "카카오로 계속하기" });
     const apple = screen.getByRole("button", { name: "Apple로 계속하기" });
 
-    // 구글·카카오는 활성. 애플은 iOS 만 지원하나 이 테스트 환경(Platform.OS==="ios")에선
-    // Task 5 활성화 전까지 비활성이다.
+    // 구글·카카오는 플랫폼 무관 활성. 애플은 iOS 만 지원 — 이 테스트 환경(Platform.OS==="ios")에선 활성.
+    // (웹·안드로이드 비활성은 auth.constants.test.ts 가 검증한다.)
     expect(google.props.accessibilityState.disabled).toBe(false);
     expect(kakao.props.accessibilityState.disabled).toBe(false);
-    expect(apple.props.accessibilityState.disabled).toBe(true);
+    expect(apple.props.accessibilityState.disabled).toBe(false);
   });
 
   test("카카오 로그인 성공 시 idToken 으로 서버 로그인하고 홈으로 이동한다", async () => {
@@ -135,6 +137,36 @@ describe("LoginScreen", () => {
       expect(mockPost).toHaveBeenCalledWith("/auth/social", {
         provider: "kakao",
         idToken: "kakao-id-token",
+      }),
+    );
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+  });
+
+  test("애플 로그인 성공 시 idToken 으로 서버 로그인하고 홈으로 이동한다", async () => {
+    (AppleAuthentication.signInAsync as jest.Mock).mockResolvedValue({
+      identityToken: "apple-id-token",
+      user: "user-id",
+      email: null,
+      fullName: null,
+      realUserStatus: 1,
+      authorizationCode: "auth-code",
+    });
+    mockPost.mockResolvedValue({
+      data: {
+        success: true,
+        data: { accessToken: "at", refreshToken: "rt", isNewUser: false },
+      },
+    });
+    await renderScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Apple로 계속하기" }),
+    );
+
+    await waitFor(() =>
+      expect(mockPost).toHaveBeenCalledWith("/auth/social", {
+        provider: "apple",
+        idToken: "apple-id-token",
       }),
     );
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));

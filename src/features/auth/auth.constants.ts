@@ -1,5 +1,7 @@
 import type { SocialProvider } from "@shared/api";
 
+import { isIOS } from "@/constants/platform.constants";
+
 // 서버 계약(POST /auth/social)의 provider 타입을 그대로 쓴다 — 여기서 다시 정의하지 않는다.
 export type { SocialProvider } from "@shared/api";
 
@@ -15,5 +17,5 @@ export interface SocialProviderConfig {
 export const SOCIAL_PROVIDERS = {
   kakao: { label: "카카오로 계속하기", enabled: true },
   google: { label: "Google로 계속하기", enabled: true },
-  apple: { label: "Apple로 계속하기", enabled: false },
+  apple: { label: "Apple로 계속하기", enabled: isIOS },
 } satisfies Record<SocialProvider, SocialProviderConfig>;
