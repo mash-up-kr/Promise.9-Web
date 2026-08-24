@@ -26,14 +26,24 @@ const toFolder = (item: FolderListItem): Folder => ({
 const toSavedTime = (lastSavedAt: string | null) =>
   lastSavedAt ? Date.parse(lastSavedAt) : Number.NEGATIVE_INFINITY;
 
+export interface FrequentFolders {
+  /** 자주 열어본 순 상위 N개. 링크가 없는 폴더는 제외 — 제목만 있는 빈 캐러셀을 막는다. */
+  folders: Folder[];
+  /** 사용자 폴더 존재 여부 — "폴더 없음" 빈 상태와 "전부 빈 폴더라 숨김"을 가른다. */
+  hasAnyFolder: boolean;
+}
+
 /**
  * 자주 열어본 폴더 상위 N개.
  *
  * `viewCount` 는 서버가 아직 내려주지 않아(feature/folder-view-count 미머지) 전부 0 으로 묶이고,
  * 그동안은 마지막 저장 시각 최신순으로 폴백한다. 서버가 머지되면 그대로 조회수 순이 된다.
  */
-export function selectFrequentFolders(res: FolderListResponse): Folder[] {
-  return [...res.folders]
+export function selectFrequentFolders(
+  res: FolderListResponse,
+): FrequentFolders {
+  const folders = res.folders
+    .filter((folder) => folder.linkCount > 0)
     .sort(
       (a, b) =>
         (b.viewCount ?? 0) - (a.viewCount ?? 0) ||
@@ -41,6 +51,8 @@ export function selectFrequentFolders(res: FolderListResponse): Folder[] {
     )
     .slice(0, HOME_FREQUENT_FOLDER_LIMIT)
     .map(toFolder);
+
+  return { folders, hasAnyFolder: res.folders.length > 0 };
 }
 
 /**

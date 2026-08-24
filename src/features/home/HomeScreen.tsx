@@ -55,7 +55,7 @@ function HomeSections() {
   const recentLinksQuery = useSuspenseQuery(homeQueries.recentLinks());
   const frequentFoldersQuery = useSuspenseQuery(homeQueries.frequentFolders());
   const recentLinks = recentLinksQuery.data;
-  const frequentFolders = frequentFoldersQuery.data;
+  const { folders: frequentFolders, hasAnyFolder } = frequentFoldersQuery.data;
   // 폴더 수만큼 병렬 조회 — 서버에 홈 전용 집계 API 가 없어 폴더별로 GET /links 를 부른다.
   const folderLinks = useSuspenseQueries({
     queries: frequentFolders.map((folder) =>
@@ -113,24 +113,28 @@ function HomeSections() {
         <RemindSection links={[]} />
         <KeywordSection keywords={[]} />
         <RecentSaveSection links={recentLinks} />
-        <VStack className="gap-4">
-          <Text variant="heading-1" className="px-5 text-text-strong">
-            자주 보는 폴더
-          </Text>
-          {frequentFolders.length === 0 ? (
-            <EmptyFolderState />
-          ) : (
-            <VStack className="gap-10">
-              {frequentFolders.map((folder, index) => (
-                <FolderSection
-                  key={folder.folderId}
-                  folder={folder}
-                  links={folderLinks[index].data}
-                />
-              ))}
-            </VStack>
-          )}
-        </VStack>
+        {/* 폴더는 있는데 전부 비어 있으면 섹션째 숨긴다 — "아직 폴더가 없어요" 는 거짓이 되고,
+            제목만 있는 빈 캐러셀도 시안에 없다(리뷰 피드백). */}
+        {hasAnyFolder && frequentFolders.length === 0 ? null : (
+          <VStack className="gap-4">
+            <Text variant="heading-1" className="px-5 text-text-strong">
+              자주 보는 폴더
+            </Text>
+            {frequentFolders.length === 0 ? (
+              <EmptyFolderState />
+            ) : (
+              <VStack className="gap-10">
+                {frequentFolders.map((folder, index) => (
+                  <FolderSection
+                    key={folder.folderId}
+                    folder={folder}
+                    links={folderLinks[index].data}
+                  />
+                ))}
+              </VStack>
+            )}
+          </VStack>
+        )}
       </VStack>
     </Animated.ScrollView>
   );

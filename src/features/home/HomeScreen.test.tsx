@@ -172,6 +172,33 @@ describe("HomeScreen", () => {
     expect(screen.getByText("최근 저장")).toBeOnTheScreen();
   });
 
+  // "아직 폴더가 없어요" 는 폴더가 실제로 없을 때만 — 전부 빈 폴더면 거짓 안내라 섹션째 숨긴다.
+  test("폴더가 있어도 전부 비어 있으면 자주 보는 폴더 섹션을 숨긴다", async () => {
+    mockGet.mockImplementation(async (url: string) => {
+      if (url === "/folders") {
+        return {
+          data: {
+            success: true,
+            data: {
+              ...folderListData.data.data,
+              folders: folderListData.data.data.folders.map((folder) => ({
+                ...folder,
+                linkCount: 0,
+              })),
+            },
+          },
+        };
+      }
+      return linkListData([link(10, "최근 저장한 링크")]);
+    });
+
+    await renderScreen();
+    await screen.findByText("최근 저장");
+
+    expect(screen.queryByText("자주 보는 폴더")).not.toBeOnTheScreen();
+    expect(screen.queryByText("아직 폴더가 없어요")).not.toBeOnTheScreen();
+  });
+
   test("조회에 실패하면 에러 화면과 다시 불러오기를 보여준다", async () => {
     const spy = jest.spyOn(console, "error").mockImplementation(() => {});
     mockGet.mockRejectedValue(new Error("network"));
