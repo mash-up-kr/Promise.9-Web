@@ -1,10 +1,57 @@
+// client.ts 는 import 시 EXPO_PUBLIC_API_BASE_URL 를 요구하므로 apiClient 만 mock 하고
+// 에러 클래스(NetworkError 등)는 실제 구현을 쓴다.
+jest.mock("@shared/api", () => {
+  const errors = jest.requireActual("@shared/api/errors");
+  return { apiClient: { get: jest.fn() }, ...errors };
+});
+
+import { apiClient, NetworkError } from "@shared/api";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, userEvent } from "@testing-library/react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
-import { SEARCH_RESULT_LINKS } from "./mocks";
 import { SearchScreen } from "./SearchScreen";
 
+const mockGet = apiClient.get as jest.Mock;
 const mockPush = jest.fn();
+
+const link = (linkId: number, title: string) => ({
+  linkId,
+  title,
+  source: "example.com",
+  representativeTag: null,
+  thumbnailUrl: null,
+  savedAt: "2026-08-01T00:00:00.000Z",
+});
+
+const linkListData = (links: ReturnType<typeof link>[]) => ({
+  data: {
+    success: true,
+    data: {
+      links,
+      pagination: { nextCursor: null, hasNext: false, limit: 9 },
+    },
+  },
+});
+
+/** q 검색이면 검색어를 박은 결과를, viewedAt 정렬이면 최근 본 링크를 돌려준다. */
+function routeApi() {
+  mockGet.mockImplementation(
+    async (
+      _url: string,
+      config?: { params?: { q?: string; sortBy?: string } },
+    ) => {
+      const params = config?.params ?? {};
+      if (params.q) {
+        return linkListData([link(1, `결과: ${params.q}`)]);
+      }
+      if (params.sortBy === "viewedAt") {
+        return linkListData([link(10, "어제 본 링크")]);
+      }
+      return linkListData([]);
+    },
+  );
+}
 
 // setParams → useLocalSearchParams 반영을 흉내내는 파라미터 스토어.
 const mockParamsStore = {
@@ -64,12 +111,18 @@ const metrics: Metrics = {
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
 };
 
-const renderScreen = () =>
-  render(
-    <SafeAreaProvider initialMetrics={metrics}>
-      <SearchScreen />
-    </SafeAreaProvider>,
+const renderScreen = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider initialMetrics={metrics}>
+        <SearchScreen />
+      </SafeAreaProvider>
+    </QueryClientProvider>,
   );
+};
 
 const setupUser = () =>
   userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
@@ -79,16 +132,16 @@ const debounce = () =>
     jest.advanceTimersByTime(300);
   });
 
-function expectResultLinks() {
-  for (const link of SEARCH_RESULT_LINKS) {
-    expect(screen.getByText(link.title)).toBeOnTheScreen();
-  }
-}
+const expectResultLinks = async (keyword: string) => {
+  expect(await screen.findByText(`결과: ${keyword}`)).toBeOnTheScreen();
+};
 
 describe("SearchScreen", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     mockPush.mockClear();
+    mockGet.mockReset();
+    routeApi();
     mockParamsStore.reset();
   });
 
@@ -123,7 +176,7 @@ describe("SearchScreen", () => {
       submitEditing: true,
     });
 
-    expectResultLinks();
+    await expectResultLinks("디자인");
   });
 
   test("최근 검색어 칩을 누르면 해당 키워드로 즉시 검색한다", async () => {
@@ -133,7 +186,7 @@ describe("SearchScreen", () => {
     await user.press(screen.getByRole("button", { name: "사우나" }));
 
     expect(screen.getByDisplayValue("사우나")).toBeOnTheScreen();
-    expectResultLinks();
+    await expectResultLinks("사우나");
   });
 
   test("검색어를 지우면 즉시 초기 섹션으로 돌아간다", async () => {
@@ -182,7 +235,7 @@ describe("SearchScreen", () => {
 
     expect(screen.getByDisplayValue("디자인")).toBeOnTheScreen();
     expect(screen.queryByText("최근 검색어")).not.toBeOnTheScreen();
-    expectResultLinks();
+    await expectResultLinks("디자인");
   });
 
   test("'모두 지우기' 를 누르면 최근 검색어 섹션이 사라진다", async () => {
@@ -192,5 +245,63 @@ describe("SearchScreen", () => {
     await user.press(screen.getByRole("button", { name: "모두 지우기" }));
 
     expect(screen.queryByText("최근 검색어")).not.toBeOnTheScreen();
+  });
+
+  test("최근 본 링크를 서버에서 받아 렌더한다", async () => {
+    await renderScreen();
+
+    expect(await screen.findByText("어제 본 링크")).toBeOnTheScreen();
+  });
+
+  test("결과가 없으면 검색어를 박은 빈 상태를 보여준다", async () => {
+    mockGet.mockImplementation(async () => linkListData([]));
+    const user = setupUser();
+    await renderScreen();
+
+    await user.type(screen.getByPlaceholderText("검색"), "없는말", {
+      submitEditing: true,
+    });
+
+    expect(
+      await screen.findByText('"없는말"에 대한 결과가 없어요'),
+    ).toBeOnTheScreen();
+    expect(screen.getByText("다른 키워드로 검색해보세요")).toBeOnTheScreen();
+  });
+
+  test("검색이 실패하면 에러 상태와 다시 불러오기를 보여준다", async () => {
+    const spy = jest.spyOn(console, "error").mockImplementation(() => {});
+    mockGet.mockRejectedValue(new Error("boom"));
+    const user = setupUser();
+    await renderScreen();
+
+    await user.type(screen.getByPlaceholderText("검색"), "디자인", {
+      submitEditing: true,
+    });
+
+    expect(
+      await screen.findByText("일시적인 오류가 발생했어요"),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole("button", { name: "다시 불러오기" }),
+    ).toBeOnTheScreen();
+    spy.mockRestore();
+  });
+
+  // 오프라인(NetworkError)은 일반 에러와 문구·그림이 다르다(시안).
+  test("오프라인이면 연결 안내를 보여준다", async () => {
+    const spy = jest.spyOn(console, "error").mockImplementation(() => {});
+    mockGet.mockRejectedValue(new NetworkError());
+    const user = setupUser();
+    await renderScreen();
+
+    await user.type(screen.getByPlaceholderText("검색"), "디자인", {
+      submitEditing: true,
+    });
+
+    expect(
+      await screen.findByText("인터넷 연결을 확인해주세요"),
+    ).toBeOnTheScreen();
+    expect(screen.getByText("연결 후 다시 시도해보세요")).toBeOnTheScreen();
+    spy.mockRestore();
   });
 });
