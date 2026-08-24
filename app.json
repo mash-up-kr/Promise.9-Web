@@ -49,7 +49,7 @@
       [
         "@react-native-seoul/kakao-login",
         {
-          "kakaoAppKey": "KAKAO_NATIVE_APP_KEY_PLACEHOLDER"
+          "kakaoAppKey": "d0957b9703accce469748d981d81f796"
         }
       ],
       [
