@@ -238,11 +238,15 @@ describe("SearchScreen", () => {
     await expectResultLinks("디자인");
   });
 
-  test("'모두 지우기' 를 누르면 최근 검색어 섹션이 사라진다", async () => {
+  // 시안 모션: 300ms 애니메이션 후 320ms 시점에 트리에서 제거된다.
+  test("'모두 지우기' 를 누르면 애니메이션 뒤 최근 검색어 섹션이 사라진다", async () => {
     const user = setupUser();
     await renderScreen();
 
     await user.press(screen.getByRole("button", { name: "모두 지우기" }));
+    await act(async () => {
+      jest.advanceTimersByTime(320);
+    });
 
     expect(screen.queryByText("최근 검색어")).not.toBeOnTheScreen();
   });
