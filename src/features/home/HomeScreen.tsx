@@ -29,12 +29,16 @@ import { VStack } from "@/components/ui/vstack/VStack";
 import { folderQueries } from "@/entities/folder/folder.queries";
 import { linkQueries } from "@/entities/link/link.queries";
 
-import { homeQueries } from "./api/home.queries";
 import { FolderSection } from "./components/FolderSection";
 import { HomeSkeleton } from "./components/HomeSkeleton";
 import { KeywordSection } from "./components/KeywordSection";
 import { RecentSaveSection } from "./components/RecentSaveSection";
 import { RemindSection } from "./components/RemindSection";
+import {
+  HOME_FOLDER_LINK_LIMIT,
+  HOME_RECENT_LINK_LIMIT,
+  selectFrequentFolders,
+} from "./home.utils";
 
 export function HomeScreen() {
   return (
@@ -52,14 +56,27 @@ function HomeSections() {
   const scrollHandler = useHeaderAwareScrollHandler("home");
   const { isRefreshing, refresh } = useHomeRefresh();
 
-  const recentLinksQuery = useSuspenseQuery(homeQueries.recentLinks());
-  const frequentFoldersQuery = useSuspenseQuery(homeQueries.frequentFolders());
+  const recentLinksQuery = useSuspenseQuery(
+    linkQueries.list({
+      sortBy: "savedAt",
+      order: "desc",
+      limit: HOME_RECENT_LINK_LIMIT,
+    }),
+  );
+  // 보관함과 같은 GET /folders 캐시를 공유하고 select 만 홈용으로 바꾼다.
+  const frequentFoldersQuery = useSuspenseQuery({
+    ...folderQueries.list(),
+    select: selectFrequentFolders,
+  });
   const recentLinks = recentLinksQuery.data;
   const { folders: frequentFolders, hasAnyFolder } = frequentFoldersQuery.data;
   // 폴더 수만큼 병렬 조회 — 서버에 홈 전용 집계 API 가 없어 폴더별로 GET /links 를 부른다.
   const folderLinks = useSuspenseQueries({
     queries: frequentFolders.map((folder) =>
-      homeQueries.folderLinks(folder.folderId),
+      linkQueries.list({
+        folderId: folder.folderId,
+        limit: HOME_FOLDER_LINK_LIMIT,
+      }),
     ),
   });
 

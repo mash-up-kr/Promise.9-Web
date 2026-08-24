@@ -83,7 +83,7 @@
 ## src/ (앱+웹, Expo/RN)
 - `app/` 는 **라우팅 껍데기만**. 화면 로직은 `src/features/<기능>/<Name>Screen.tsx`.
 - `src/features/<기능>/` 안: `components/` `hooks/` `api/` + 화면. 기능 공용 타입·상수는 `<도메인>.types.ts` · `<도메인>.constants.ts`.
-  - `features/<기능>/api/` 는 **엔티티 쿼리를 그 화면 목적에 맞게 조합하는 자리**다(파라미터 조립·화면별 상수). 서버 계약 자체는 `entities/` 가 갖는다.
+  - 엔티티 쿼리의 화면별 조합(파라미터·`select`)은 **호출부에서 직접** 한다 — 한 화면만 쓰는 얇은 쿼리 팩토리를 만들지 않는다. 반복되는 규칙(파라미터 매핑·선정 정책)은 `<도메인>.utils.ts` 의 순수 함수로 뽑는다.
 - 기능 무관 공용 UI 는 `src/components/ui/`.
 - alias: `@/*` → `./src/*`
 

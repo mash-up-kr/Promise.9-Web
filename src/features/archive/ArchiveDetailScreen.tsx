@@ -33,10 +33,9 @@ import {
   useRestoreLinkMutation,
 } from "@/entities/link/link.queries";
 import { shareUrl } from "@/utils/share";
-
-import { folderLinkQueries, isFolderRouteId } from "./api/folder-links.queries";
 import { SYSTEM_FOLDERS, TRASH_FOLDER } from "./archive.constants";
 import type { LinkSortOption } from "./archive.types";
+import { isFolderRouteId, toLinkListParams } from "./archive.utils";
 import { ArchiveDetailPopover } from "./components/ArchiveDetailPopover";
 import { EmptyLinks } from "./components/EmptyLinks";
 import { LinkContextMenu } from "./components/LinkContextMenu";
@@ -344,7 +343,7 @@ function ArchiveDetailLinkList({
 }: ArchiveDetailLinkListProps) {
   const scrollHandler = useHeaderAwareScrollHandler("archive-detail");
   const { data: links } = useSuspenseQuery(
-    folderLinkQueries.list(folderId, sort),
+    linkQueries.list(toLinkListParams(folderId, sort)),
   );
 
   if (links.length === 0) {
