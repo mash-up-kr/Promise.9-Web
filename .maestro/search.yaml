@@ -1,0 +1,14 @@
+# 검색 화면 E2E (네이티브 iOS/Android 공통)
+# 최근 검색어는 목데이터(세션 상태)라 서버 상태와 무관하게 단언할 수 있다.
+appId: com.mashup.promise9
+---
+- launchApp
+# dev client 재시작 후 번들 로드가 Android 에뮬레이터에서 기본 대기를 넘긴다(홈 플로우와 동일).
+- extendedWaitUntil:
+    visible: "링띵동"
+    timeout: 60000
+- openLink: promise9web:///search
+- extendedWaitUntil:
+    visible: "최근 검색어"
+    timeout: 30000
+- assertVisible: "모두 지우기"
