@@ -34,11 +34,8 @@ import { HomeSkeleton } from "./components/HomeSkeleton";
 import { KeywordSection } from "./components/KeywordSection";
 import { RecentSaveSection } from "./components/RecentSaveSection";
 import { RemindSection } from "./components/RemindSection";
-import {
-  HOME_FOLDER_LINK_LIMIT,
-  HOME_RECENT_LINK_LIMIT,
-  selectFrequentFolders,
-} from "./home.utils";
+import { HOME_POLICY } from "./home.constants";
+import { selectFrequentFolders } from "./home.utils";
 
 export function HomeScreen() {
   return (
@@ -60,7 +57,7 @@ function HomeSections() {
     linkQueries.list({
       sortBy: "savedAt",
       order: "desc",
-      limit: HOME_RECENT_LINK_LIMIT,
+      limit: HOME_POLICY.recentSave.maxLinks,
     }),
   );
   // 보관함과 같은 GET /folders 캐시를 공유하고 select 만 홈용으로 바꾼다.
@@ -75,7 +72,7 @@ function HomeSections() {
     queries: frequentFolders.map((folder) =>
       linkQueries.list({
         folderId: folder.folderId,
-        limit: HOME_FOLDER_LINK_LIMIT,
+        limit: HOME_POLICY.frequentFolders.maxLinksPerFolder,
       }),
     ),
   });
@@ -160,7 +157,7 @@ function HomeSections() {
 /**
  * 당겨서 새로고침 — 홈이 쓰는 링크 목록·폴더 목록을 한 번에 다시 불러온다.
  *
- * 실패해도 캐시가 있으면 화면은 그대로 두고(homeQueries 의 throwOnError 정책) 스낵바로만 알린다.
+ * 실패해도 캐시가 있으면 화면은 그대로 두고(useSuspenseQuery v5 기본 동작) 스낵바로만 알린다.
  */
 function useHomeRefresh() {
   const queryClient = useQueryClient();

@@ -9,10 +9,9 @@ import { Text } from "@/components/ui/text/Text";
 import { VStack } from "@/components/ui/vstack/VStack";
 import { searchHref } from "@/constants/routes.constants";
 
-import type { HomeKeyword } from "../home.types";
+import { HOME_POLICY } from "../home.constants";
 
-/** 시안 정책 — 한 줄 6개. 균등 분할이 아니라 줄당 상한이라 3개면 한 줄로 남는다. */
-const KEYWORDS_PER_ROW = 6;
+import type { HomeKeyword } from "../home.types";
 
 interface KeywordSectionProps {
   keywords: HomeKeyword[];
@@ -27,7 +26,7 @@ export function KeywordSection({ keywords }: KeywordSectionProps) {
     return null;
   }
 
-  const rows = chunk(keywords, KEYWORDS_PER_ROW);
+  const rows = chunk(keywords, HOME_POLICY.keywords.perRow);
 
   return (
     <VStack className="gap-4">

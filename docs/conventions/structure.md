@@ -61,7 +61,7 @@
 
 ## shared/ (공유 코어) 규칙
 - **순수 TS만.** `react-native` / `expo-*` / DOM API / `chrome.*` import 절대 금지 (그래야 양쪽 번들러가 빌드 가능).
-- 의존성 최소화. UI 레이어(컴포넌트, react-query 훅)는 여기 두지 않는다 — 표면별 `features/api/` 에서 `shared/api` 를 호출.
+- 의존성 최소화. UI 레이어(컴포넌트, react-query 훅)는 여기 두지 않는다 — 앱/웹은 `entities/` 에서 `shared/api` 를 호출.
 - alias: `@shared/*` → `./shared/*`
 
 ## entities/ (데이터 단위) 규칙
@@ -82,7 +82,7 @@
 
 ## src/ (앱+웹, Expo/RN)
 - `app/` 는 **라우팅 껍데기만**. 화면 로직은 `src/features/<기능>/<Name>Screen.tsx`.
-- `src/features/<기능>/` 안: `components/` `hooks/` `api/` + 화면. 기능 공용 타입·상수는 `<도메인>.types.ts` · `<도메인>.constants.ts`.
+- `src/features/<기능>/` 안: `components/` `hooks/` + 화면. 기능 공용 타입·상수는 `<도메인>.types.ts` · `<도메인>.constants.ts`.
   - 엔티티 쿼리의 화면별 조합(파라미터·`select`)은 **호출부에서 직접** 한다 — 한 화면만 쓰는 얇은 쿼리 팩토리를 만들지 않는다. 반복되는 규칙(파라미터 매핑·선정 정책)은 `<도메인>.utils.ts` 의 순수 함수로 뽑는다.
 - 기능 무관 공용 UI 는 `src/components/ui/`.
 - alias: `@/*` → `./src/*`

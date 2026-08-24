@@ -2,28 +2,14 @@ import type { Folder } from "@shared/types/folder.types";
 
 import type { FolderListResponse } from "@/entities/folder/folder.queries";
 
+import { HOME_POLICY } from "./home.constants";
 import type { HomeKeyword, RemindLink } from "./home.types";
-
-/** 시안 정책 — 다시 볼 링크 최대 9개. */
-export const HOME_REMIND_LINK_LIMIT = 9;
-/** 시안 정책 — 최근 저장 최대 9개. */
-export const HOME_RECENT_LINK_LIMIT = 9;
-/** 시안 정책 — 자주 보는 폴더 최대 2개. */
-export const HOME_FREQUENT_FOLDER_LIMIT = 2;
-/** 시안 정책 — 자주 보는 폴더의 폴더당 링크 최대 9개. */
-export const HOME_FOLDER_LINK_LIMIT = 9;
-/** 시안 정책 — 많이 저장한 키워드 최대 12개(한 줄 6개 × 2줄). */
-export const HOME_KEYWORD_LIMIT = 12;
-/** 시안 정책 — 키워드로 셈하는 최소 링크 수. */
-const KEYWORD_MIN_LINK_COUNT = 3;
-/** 시안 정책 — 섹션을 띄우는 최소 키워드 종류 수. */
-const KEYWORD_MIN_VARIETY = 3;
 
 /** 알림이 가까운 순 상위 N개. 빈 배열이면 호출부가 섹션을 숨긴다. */
 export function selectRemindLinks(links: RemindLink[]): RemindLink[] {
   return [...links]
     .sort((a, b) => Date.parse(a.reminderAt) - Date.parse(b.reminderAt))
-    .slice(0, HOME_REMIND_LINK_LIMIT);
+    .slice(0, HOME_POLICY.remind.maxLinks);
 }
 
 /**
@@ -34,16 +20,16 @@ export function selectRemindLinks(links: RemindLink[]): RemindLink[] {
  */
 export function selectTopKeywords(keywords: HomeKeyword[]): HomeKeyword[] {
   const eligible = keywords.filter(
-    (keyword) => keyword.linkCount >= KEYWORD_MIN_LINK_COUNT,
+    (keyword) => keyword.linkCount >= HOME_POLICY.keywords.minLinksPerTag,
   );
 
-  if (eligible.length < KEYWORD_MIN_VARIETY) {
+  if (eligible.length < HOME_POLICY.keywords.minVariety) {
     return [];
   }
 
   return eligible
     .sort((a, b) => b.linkCount - a.linkCount)
-    .slice(0, HOME_KEYWORD_LIMIT);
+    .slice(0, HOME_POLICY.keywords.max);
 }
 
 type FolderListItem = FolderListResponse["folders"][number];
@@ -82,7 +68,7 @@ export function selectFrequentFolders(
         (b.viewCount ?? 0) - (a.viewCount ?? 0) ||
         toSavedTime(b.lastSavedAt) - toSavedTime(a.lastSavedAt),
     )
-    .slice(0, HOME_FREQUENT_FOLDER_LIMIT)
+    .slice(0, HOME_POLICY.frequentFolders.maxFolders)
     .map(toFolder);
 
   return { folders, hasAnyFolder: res.folders.length > 0 };

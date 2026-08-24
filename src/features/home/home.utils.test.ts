@@ -1,8 +1,6 @@
+import { HOME_POLICY } from "./home.constants";
 import type { HomeKeyword, RemindLink } from "./home.types";
 import {
-  HOME_FREQUENT_FOLDER_LIMIT,
-  HOME_KEYWORD_LIMIT,
-  HOME_REMIND_LINK_LIMIT,
   selectFrequentFolders,
   selectRemindLinks,
   selectTopKeywords,
@@ -34,7 +32,7 @@ describe("selectRemindLinks", () => {
     expect(selected.map((link) => link.linkId)).toEqual([2, 3, 1]);
   });
 
-  it(`최대 ${HOME_REMIND_LINK_LIMIT} 개까지만 남긴다`, () => {
+  it(`최대 ${HOME_POLICY.remind.maxLinks} 개까지만 남긴다`, () => {
     const links = Array.from({ length: 12 }, (_, index) =>
       remindLink(
         index,
@@ -42,7 +40,7 @@ describe("selectRemindLinks", () => {
       ),
     );
 
-    expect(selectRemindLinks(links)).toHaveLength(HOME_REMIND_LINK_LIMIT);
+    expect(selectRemindLinks(links)).toHaveLength(HOME_POLICY.remind.maxLinks);
   });
 
   it("알림이 없으면 빈 배열이다 — 섹션 자체를 숨기는 근거", () => {
@@ -78,12 +76,12 @@ describe("selectTopKeywords", () => {
     );
   });
 
-  it(`최대 ${HOME_KEYWORD_LIMIT} 개까지만 남긴다`, () => {
+  it(`최대 ${HOME_POLICY.keywords.max} 개까지만 남긴다`, () => {
     const keywords = Array.from({ length: 20 }, (_, index) =>
       keyword(`태그 ${index}`, index + 3),
     );
 
-    expect(selectTopKeywords(keywords)).toHaveLength(HOME_KEYWORD_LIMIT);
+    expect(selectTopKeywords(keywords)).toHaveLength(HOME_POLICY.keywords.max);
   });
 });
 
@@ -126,7 +124,7 @@ describe("selectFrequentFolders", () => {
     );
 
     expect(folders.map((f) => f.folderId)).toEqual([2, 3]);
-    expect(folders).toHaveLength(HOME_FREQUENT_FOLDER_LIMIT);
+    expect(folders).toHaveLength(HOME_POLICY.frequentFolders.maxFolders);
   });
 
   // 링크 0개 폴더가 상위에 오면 제목만 있는 빈 캐러셀이 생긴다(리뷰 피드백).
