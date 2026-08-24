@@ -196,6 +196,7 @@ describe("LoginScreen", () => {
   });
 
   test("사용자가 로그인 창을 취소하면 아무 일도 일어나지 않는다", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     mockSignIn.mockResolvedValue({ type: "cancelled", data: null });
     await renderScreen();
 
@@ -205,6 +206,34 @@ describe("LoginScreen", () => {
 
     expect(mockPost).not.toHaveBeenCalled();
     expect(mockReplace).not.toHaveBeenCalled();
+    // 취소는 실패가 아니다 — 개발 콘솔에도 에러로 남기지 않는다.
+    expect(errorSpy).not.toHaveBeenCalledWith(
+      "소셜 로그인 실패",
+      expect.anything(),
+    );
+    errorSpy.mockRestore();
+  });
+
+  // 스낵바는 원인 불문 같은 문구라, 개발자가 실패 원인(미설정 env·팝업 차단·state 불일치 등)을
+  // 알 수 있게 콘솔에 남겨야 한다.
+  test("로그인이 실패하면 개발용으로 원인을 콘솔에 남긴다", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    // idToken 을 못 받아 getIdToken 이 throw 하는 경로(서버 호출 전 실패).
+    mockSignIn.mockResolvedValue(googleSuccess(null));
+    await renderScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Google로 계속하기" }),
+    );
+
+    await waitFor(() =>
+      expect(errorSpy).toHaveBeenCalledWith(
+        "소셜 로그인 실패",
+        expect.any(Error),
+      ),
+    );
+    expect(mockPost).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 
   test("idToken 을 못 받으면 실패 안내를 보여준다", async () => {

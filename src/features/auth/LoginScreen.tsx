@@ -39,6 +39,9 @@ export function LoginScreen() {
       setPendingProvider(null);
       // 사용자가 로그인 창을 직접 닫은 경우 — 실패가 아니므로 조용히 무시한다.
       if (error instanceof SocialLoginCancelledError) return;
+      // 스낵바는 원인 불문 같은 문구라, 실제 원인(미설정 env·팝업 차단·state 불일치 등)을
+      // 개발 콘솔에 남긴다 — 이게 없으면 "왜 실패하는지" 단서가 사라진다.
+      console.error("소셜 로그인 실패", error);
       show({ message: LOGIN_FAILED_MESSAGE });
       return;
     }
