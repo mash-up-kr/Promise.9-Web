@@ -24,5 +24,11 @@ module.exports = {
       "<rootDir>/src/__mocks__/react-native-gesture-handler.js",
     // gorhom 시트는 reanimated/gesture-handler 네이티브에 의존하므로 stub 으로 대체한다.
     "^@gorhom/bottom-sheet$": "<rootDir>/src/__mocks__/@gorhom/bottom-sheet.js",
+    // 구글 로그인 SDK 는 네이티브 모듈이라 jest 환경에서 동작할 수 없다 — jest.fn() stub 으로 대체.
+    "^@react-native-google-signin/google-signin$":
+      "<rootDir>/src/__mocks__/@react-native-google-signin/google-signin.js",
+    // 카카오 로그인 SDK 도 네이티브 모듈이라 jest 환경에서 동작할 수 없다 — jest.fn() stub 으로 대체.
+    "^@react-native-seoul/kakao-login$":
+      "<rootDir>/src/__mocks__/@react-native-seoul/kakao-login.js",
   },
 };

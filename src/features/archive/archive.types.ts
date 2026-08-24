@@ -1,6 +1,6 @@
 import type { FolderColor } from "@shared/types/link.types";
 
-import type { SYSTEM_FOLDERS } from "./archive.constants";
+import type { LINK_SORT_OPTIONS, SYSTEM_FOLDERS } from "./archive.constants";
 
 /**
  * 보관함 폴더 목록 항목 (UI 전용).
@@ -14,6 +14,9 @@ export interface ArchiveFolder {
   count: number;
   tone: FolderColor;
 }
+
+/** 폴더 상세 링크 정렬 기준 — 더보기 메뉴의 "정렬" 서브메뉴 값. */
+export type LinkSortOption = (typeof LINK_SORT_OPTIONS)[number]["value"];
 
 /** 기본 폴더 카운트 키 — GET /folders `systemFolders` 응답 키와 1:1. */
 export type SystemFolderKey = (typeof SYSTEM_FOLDERS)[number]["countKey"];

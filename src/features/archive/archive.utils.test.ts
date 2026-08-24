@@ -1,5 +1,9 @@
 import type { ArchiveFolder } from "./archive.types";
-import { applyFolderOrder, toArchiveFolderData } from "./archive.utils";
+import {
+  applyFolderOrder,
+  resolveEmptyLinksMessage,
+  toArchiveFolderData,
+} from "./archive.utils";
 
 const folder = (id: string): ArchiveFolder => ({
   id,
@@ -95,5 +99,30 @@ describe("toArchiveFolderData", () => {
       { id: "3", name: "디자인", count: 5, tone: "blue" },
       { id: "7", name: "기타", count: 0, tone: "gray" },
     ]);
+  });
+});
+
+describe("resolveEmptyLinksMessage", () => {
+  test("기본 폴더마다 시안 문구를 준다", () => {
+    expect(resolveEmptyLinksMessage("all").title).toBe(
+      "아직 저장된 링크가 없어요",
+    );
+    expect(resolveEmptyLinksMessage("uncategorized").title).toBe(
+      "분류되지 않은 링크가 없어요",
+    );
+    expect(resolveEmptyLinksMessage("favorites")).toEqual({
+      title: "즐겨찾기한 링크가 없어요",
+      description: "자주 보고 싶은 링크를 즐겨찾기 해보세요",
+    });
+    expect(resolveEmptyLinksMessage("trash").description).toBe(
+      "삭제된 링크는 30일 동안 보관돼요",
+    );
+  });
+
+  // 사용자 폴더는 시안에 빈 상태가 없어 전체 폴더 문구로 폴백한다.
+  test("사용자 폴더는 전체 폴더 문구를 쓴다", () => {
+    expect(resolveEmptyLinksMessage("7")).toEqual(
+      resolveEmptyLinksMessage("all"),
+    );
   });
 });

@@ -10,9 +10,10 @@ import {
 } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { linkQueries } from "@/entities/link/link.queries";
+import { linkKeys } from "@/entities/link/link.keys";
 
 import { isFolderOrderMismatchError } from "./folder.errors";
+import { folderKeys } from "./folder.keys";
 
 const systemFolderCountSchema = z.looseObject({ linkCount: z.number() });
 
@@ -45,11 +46,6 @@ export const folderListResponseSchema = z.looseObject({
 });
 
 export type FolderListResponse = z.infer<typeof folderListResponseSchema>;
-
-const folderKeys = {
-  root: () => ["folder"] as const,
-  list: () => [...folderKeys.root(), "list"] as const,
-};
 
 export const folderQueries = {
   keys: folderKeys,
@@ -181,9 +177,7 @@ export function useDeleteFolderMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: folderKeys.root() });
-      queryClient.invalidateQueries({
-        queryKey: linkQueries.keys.lists(),
-      });
+      queryClient.invalidateQueries({ queryKey: linkKeys.lists() });
     },
   });
 }
