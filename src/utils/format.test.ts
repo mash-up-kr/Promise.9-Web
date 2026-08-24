@@ -1,4 +1,8 @@
-import { formatCalendarDate, formatRelativeDate } from "./format";
+import {
+  formatCalendarDate,
+  formatMonthDay,
+  formatRelativeDate,
+} from "./format";
 
 // 링크 저장일 표시 정책 (홈·검색 공통). base 는 조회 시각.
 describe("formatRelativeDate", () => {
@@ -49,5 +53,15 @@ describe("formatCalendarDate", () => {
   test("UTC 자정 시각도 로컬 타임존에 따라 날짜가 밀리지 않는다", () => {
     expect(formatCalendarDate("2026-01-01T00:00:00.000Z")).toBe("2026.01.01");
     expect(formatCalendarDate("2026-12-31T23:59:59.999Z")).toBe("2026.12.31");
+  });
+});
+
+describe("formatMonthDay", () => {
+  test("연도를 빼고 월·일만 보여준다", () => {
+    expect(formatMonthDay("2026-08-10T00:00:00.000Z")).toBe("8월 10일");
+  });
+
+  test("한 자리 월·일은 0 을 붙이지 않는다", () => {
+    expect(formatMonthDay("2026-01-05T00:00:00.000Z")).toBe("1월 5일");
   });
 });

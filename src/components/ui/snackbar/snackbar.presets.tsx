@@ -25,8 +25,8 @@ export const snackbarPresets = {
     icon: <FrownIcon />,
     action: { label: "다시 시도", onPress: onRetry },
   }),
-  offline: (onRetry: () => void): SnackbarOptions => ({
-    message: "오프라인 상태예요. 연결되면 저장할게요.",
+  offline: (message: string, onRetry: () => void): SnackbarOptions => ({
+    message,
     icon: <WifiOffIcon />,
     action: { label: "다시 시도", onPress: onRetry },
   }),

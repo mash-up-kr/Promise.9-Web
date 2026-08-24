@@ -32,7 +32,8 @@ jobs:
       - name: Run web E2E
         run: pnpm test:e2e
         env:
-          # shared/api/client.ts 가 모듈 로드 시 이 값을 요구한다(미설정 시 throw → 앱 크래시).
+          # E2E 는 API 응답을 Playwright 라우트로 고정하지만 shared/api/client.ts 가
+          # 모듈 로드 시 이 값을 요구한다(미설정 시 throw → 앱 크래시). secret 으로 주입.
           EXPO_PUBLIC_API_BASE_URL: ${{ secrets.EXPO_PUBLIC_API_BASE_URL }}
           # e2e/fixtures.ts 가 Playwright 프로세스 안에서만 사용 — API 요청 헤더에만 주입되고
           # 앱 번들에는 절대 들어가지 않는다(EXPO_PUBLIC_ 접두사가 아니라 인라인 대상도 아님).

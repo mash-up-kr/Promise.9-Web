@@ -38,12 +38,13 @@ async function renderMutation<T>(useMutationHook: () => T) {
   return { result, invalidate };
 }
 
-// 링크가 다른 폴더로 가거나 삭제되면 폴더별 링크 목록과 폴더 카운트가 함께 낡는다.
+// 링크가 다른 폴더로 가거나 삭제되면 링크 목록과 폴더 카운트가 함께 낡는다.
+// 폴더별 링크 목록은 별도 캐시가 아니라 링크 목록 캐시(linkKeys.lists())의 일부다.
 const expectFolderCachesInvalidated = (invalidate: jest.SpyInstance) =>
   waitFor(() =>
     expect(
       invalidate.mock.calls.map(([options]) => options?.queryKey?.[0]),
-    ).toEqual(expect.arrayContaining(["folder-links", "folder"])),
+    ).toEqual(expect.arrayContaining(["link", "folder"])),
   );
 
 describe("useUpdateLinkFolderMutation", () => {
