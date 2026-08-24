@@ -229,6 +229,7 @@ describe("LoginScreen", () => {
     await waitFor(() =>
       expect(errorSpy).toHaveBeenCalledWith(
         "소셜 로그인 실패",
+        "google",
         expect.any(Error),
       ),
     );
@@ -250,7 +251,8 @@ describe("LoginScreen", () => {
     expect(mockPost).not.toHaveBeenCalled();
   });
 
-  test("서버 로그인이 실패하면(errorCode 950003) 안내를 보여준다", async () => {
+  test("서버 로그인이 실패하면(errorCode 950003) 안내를 보여주고 원인을 콘솔에 남긴다", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     mockSignIn.mockResolvedValue(googleSuccess());
     mockPost.mockRejectedValue(
       apiError(401, AUTH_ERROR_CODE.SOCIAL_TOKEN_VERIFICATION_FAILED),
@@ -265,6 +267,15 @@ describe("LoginScreen", () => {
       await screen.findByText("로그인에 실패했어요. 다시 시도해주세요."),
     ).toBeOnTheScreen();
     expect(mockReplace).not.toHaveBeenCalled();
+    // 서버 검증 실패(mutate onError)도 원인 불문 같은 토스트라, 콘솔에 provider·원인을 남겨야 한다.
+    await waitFor(() =>
+      expect(errorSpy).toHaveBeenCalledWith(
+        "소셜 로그인 실패",
+        "google",
+        expect.anything(),
+      ),
+    );
+    errorSpy.mockRestore();
   });
 
   test("지원하지 않는 provider 면(errorCode 950004) 별도 안내를 보여준다", async () => {
