@@ -43,26 +43,6 @@ describe("LinkDetailScreen", () => {
     expect(screen.getByText("AI 요약으로 미리보기")).toBeOnTheScreen();
   });
 
-  test("태그 추가 → 화면에 새 태그 칩이 반영된다", async () => {
-    const user = userEvent.setup();
-    await renderScreen();
-    await user.press(screen.getByRole("button", { name: "태그 추가" }));
-    await user.type(
-      screen.getByPlaceholderText("태그를 입력해 주세요"),
-      "회고",
-    );
-    await user.press(screen.getByRole("button", { name: "추가" }));
-    expect(screen.getByText("#회고")).toBeOnTheScreen();
-  });
-
-  test("태그 삭제 → 화면에서 해당 칩이 사라진다", async () => {
-    const user = userEvent.setup();
-    await renderScreen();
-    await user.press(screen.getByRole("button", { name: "태그 추가" }));
-    await user.press(screen.getByLabelText("IT 삭제"));
-    expect(screen.queryByText("#IT")).toBeNull();
-  });
-
   test("메모 입력값이 controlled state로 반영된다", async () => {
     const user = userEvent.setup();
     await renderScreen();

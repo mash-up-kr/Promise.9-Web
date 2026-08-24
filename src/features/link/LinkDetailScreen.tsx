@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { LinkTag } from "@shared/types/link.types";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Ellipsis, Star } from "lucide-react-native";
 import { Controller, useForm } from "react-hook-form";
@@ -17,7 +16,6 @@ import { LinkBackground } from "./components/LinkBackground";
 import { LinkThumbnail } from "./components/LinkThumbnail";
 import { MemoField } from "./components/MemoField";
 import { RelatedLinksList } from "./components/RelatedLinksList";
-import { TagEditor } from "./components/TagEditor";
 import { type LinkDetailForm, linkDetailFormSchema } from "./link.contracts";
 import {
   mockLinkDetail,
@@ -27,34 +25,20 @@ import {
 // 백엔드 연동 전까지 상세 조회 가능한 목업 링크.
 const mockLinks = [mockLinkDetail, mockLinkDetailUnclassified];
 
-// TODO(#33): 태그 추가/삭제가 서버 호출(POST/DELETE /links/{linkId}/tags)로 바뀌면
-//  아래 두 함수는 사라진다 — tagId 를 서버가 내려주므로 임시 id 생성도 함께 없어진다.
-function appendTag(tags: LinkTag[], name: string): LinkTag[] {
-  return [
-    ...tags,
-    { tagId: Date.now(), name, sourceType: "user", sortOrder: tags.length },
-  ];
-}
-
-function removeTagById(tags: LinkTag[], tagId: number): LinkTag[] {
-  return tags.filter((tag) => tag.tagId !== tagId);
-}
-
 export function LinkDetailScreen() {
   const headerHeight = useHeaderHeight();
   const { id } = useLocalSearchParams<"/link/[id]">();
   const linkDetail =
     mockLinks.find((link) => link.linkId === Number(id)) ?? mockLinkDetail;
 
-  // 이 화면은 링크 하나를 편집하는 단일 폼이다. 서버로 나가는 값(폴더·태그·메모·즐겨찾기)만
+  // 이 화면은 링크 하나를 편집하는 단일 폼이다. 서버로 나가는 값(폴더·메모·즐겨찾기)만
   // 폼이 소유하고, 편집 모드·요약 펼침 같은 화면 조작 상태는 각 컴포넌트가 그대로 가진다.
-  // TODO(#33): 저장 연동. 필드 변경 감지(watch) → PATCH /links/{linkId}(folder·memo·isFavorite)
-  //  + POST/DELETE /links/{linkId}/tags(태그). 비동기 조회로 바뀌면 defaultValues 대신 reset 필요.
+  // TODO(#33): 저장 연동. 필드 변경 감지(watch) → PATCH /links/{linkId}(folder·memo·isFavorite).
+  //  비동기 조회로 바뀌면 defaultValues 대신 reset 필요.
   const { control } = useForm<LinkDetailForm>({
     resolver: zodResolver(linkDetailFormSchema),
     defaultValues: {
       folder: linkDetail.folder,
-      tags: linkDetail.tags ?? [],
       memo: linkDetail.memo ?? "",
       isFavorite: linkDetail.isFavorite,
     },
@@ -134,24 +118,6 @@ export function LinkDetailScreen() {
 
           <View className="px-5">
             <AiSummarySection summary={linkDetail.aiSummary ?? ""} />
-          </View>
-
-          <View className="px-5">
-            <Controller
-              control={control}
-              name="tags"
-              render={({ field }) => (
-                <TagEditor
-                  tags={field.value}
-                  onAddTag={(name) =>
-                    field.onChange(appendTag(field.value, name))
-                  }
-                  onRemoveTag={(tagId) =>
-                    field.onChange(removeTagById(field.value, tagId))
-                  }
-                />
-              )}
-            />
           </View>
 
           <View className="px-5">
