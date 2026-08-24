@@ -90,6 +90,9 @@ export function SearchScreen() {
       <Stack.Screen
         options={{
           headerTransparent: true,
+          // Android 에서 ScrollView 의 bg 클래스가 이 라우트에선 칠해지지 않아 흰 배경이
+          // 드러난다 — 탭 sceneStyle 과 같은 방식으로 씬을 직접 칠한다(raw hex, 신규 base).
+          contentStyle: { backgroundColor: "#1a1a1a" },
           header: () => (
             <Header
               scrollScope="search"
