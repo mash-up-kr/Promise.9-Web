@@ -156,16 +156,33 @@ describe("SearchScreen", () => {
     expect(screen.getByText("최근 본 링크")).toBeOnTheScreen();
   });
 
-  // 시안 정책: 입력 중 실시간 조회 없음 — 검색 실행(제출·칩) 시점에만 조회한다.
-  test("타이핑만으로는 검색하지 않는다", async () => {
+  test("타이핑이 멈추고 지연시간이 지나면 자동으로 결과를 보여준다", async () => {
     const user = setupUser();
     await renderScreen();
 
     await user.type(screen.getByPlaceholderText("검색"), "디자인");
+    expect(screen.getByText("최근 검색어")).toBeOnTheScreen();
+
     await debounce();
 
-    // 얼마를 기다려도 결과로 넘어가지 않는다.
+    await expectResultLinks("디자인");
+  });
+
+  // 최근 검색어 저장은 명시적 실행(제출·칩) 시점에만 — 자동 검색은 저장하지 않는다.
+  test("자동 검색은 최근 검색어에 저장하지 않는다", async () => {
+    const user = setupUser();
+    await renderScreen();
+
+    const input = screen.getByPlaceholderText("검색");
+    await user.type(input, "디자인");
+    await debounce();
+    await expectResultLinks("디자인");
+    await user.clear(input);
+
     expect(screen.getByText("최근 검색어")).toBeOnTheScreen();
+    expect(
+      screen.queryByRole("button", { name: "디자인" }),
+    ).not.toBeOnTheScreen();
   });
 
   test("제출하면 지연 없이 바로 결과를 보여준다", async () => {

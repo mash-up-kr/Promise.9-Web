@@ -1,8 +1,9 @@
 import { isHttpError, NetworkError } from "@shared/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { isString } from "es-toolkit";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { View } from "react-native";
 import Animated, {
   Easing,
@@ -12,6 +13,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { useDebounce } from "react-simplikit";
 
 import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
@@ -29,7 +31,7 @@ import { LinkGrid } from "./components/LinkGrid";
 import { RecentLinksSection } from "./components/RecentLinksSection";
 import { RecentSearchesSection } from "./components/RecentSearchesSection";
 import { RECENT_SEARCH_KEYWORDS } from "./mocks";
-import { SEARCH_POLICY } from "./search.constants";
+import { SEARCH_DEBOUNCE_MS, SEARCH_POLICY } from "./search.constants";
 import { addRecentKeyword } from "./search.utils";
 
 // 시안 모션 — 기본↔결과 크로스페이드, 로딩 후 결과 페이드인.
@@ -55,26 +57,43 @@ export function SearchScreen() {
   const scrollHandler = useHeaderAwareScrollHandler("search");
   const { q } = useLocalSearchParams<{ q?: string }>();
   // 커밋된 검색어는 URL 이 단일 진실원 — 새로고침·딥링크에도 결과 상태가 복원된다
-  const submittedQuery = typeof q === "string" ? q : "";
+  const submittedQuery = isString(q) ? q : "";
   const [recentKeywords, setRecentKeywords] = useState(RECENT_SEARCH_KEYWORDS);
 
   const { control, setValue } = useForm<SearchFormValues>({
     defaultValues: { keyword: submittedQuery },
   });
+  const keyword = useWatch({ control, name: "keyword" });
 
-  // 시안 정책: 입력 중 실시간 조회 없음 — 검색은 실행(제출·칩) 시점에만 일어난다.
+  const debouncedCommit = useDebounce(
+    (value: string) => router.setParams({ q: value }),
+    SEARCH_DEBOUNCE_MS,
+  );
+
+  // 타이핑이 멈추면 자동 검색, 입력을 지우면(클리어 버튼 포함) 즉시 기본 화면으로 복귀.
+  useEffect(() => {
+    const trimmed = keyword.trim();
+    if (trimmed === submittedQuery) {
+      debouncedCommit.cancel();
+      return;
+    }
+    if (trimmed === "") {
+      debouncedCommit.cancel();
+      router.setParams({ q: undefined });
+      return;
+    }
+    debouncedCommit(trimmed);
+  }, [keyword, submittedQuery, debouncedCommit, router]);
+
+  // 즉시 실행(제출·칩)만 최근 검색어에 저장한다.
   function executeSearch(value: string) {
     const trimmed = value.trim();
     if (trimmed === "") {
       return;
     }
+    debouncedCommit.cancel();
     router.setParams({ q: trimmed });
     setRecentKeywords((keywords) => addRecentKeyword(keywords, trimmed));
-  }
-
-  // 텍스트를 지우면(클리어 버튼 포함) 즉시 기본 화면으로 돌아간다(시안 Filled → Focused).
-  function resetSearch() {
-    router.setParams({ q: undefined });
   }
 
   function searchKeyword(value: string) {
@@ -103,12 +122,7 @@ export function SearchScreen() {
                       // 검색 화면 진입 즉시 입력 가능하도록 자동 포커스
                       autoFocus
                       value={value}
-                      onChangeText={(text) => {
-                        onChange(text);
-                        if (text.trim() === "") {
-                          resetSearch();
-                        }
-                      }}
+                      onChangeText={onChange}
                       onSubmitEditing={() => executeSearch(value)}
                     />
                   )}
