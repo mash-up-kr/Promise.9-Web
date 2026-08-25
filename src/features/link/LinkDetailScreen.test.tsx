@@ -16,6 +16,13 @@ const mockPush = jest.fn();
 const mockDelete = jest.fn().mockResolvedValue(undefined);
 // 라우트 id — 테스트별로 미분류(101) 등으로 바꿔 넣는다(mock 접두사라 jest.mock 팩토리에서 참조 가능).
 const mockRoute = { id: String(mockLinkDetail.linkId) };
+// 상세 데이터 — useSuspenseQuery 목이 돌려준다. 테스트별로 current 를 바꿔 주입한다.
+const mockDetailData = { current: mockLinkDetail };
+
+jest.mock("@tanstack/react-query", () => ({
+  ...jest.requireActual("@tanstack/react-query"),
+  useSuspenseQuery: () => ({ data: mockDetailData.current }),
+}));
 
 // Stack.Screen 은 헤더를 options.header 로만 받으므로, 기본 목이면 헤더가 렌더되지 않는다.
 // 즐겨찾기 버튼이 헤더에 있어 검증하려면 header 를 실제로 렌더해야 한다.
@@ -31,7 +38,11 @@ jest.mock("expo-router", () => ({
 }));
 
 jest.mock("@/utils/share", () => ({ shareUrl: jest.fn() }));
+// useSuspenseQuery 목이 인자를 무시하므로 linkQueries.detail 은 호출만 되면 되는 스텁이면 충분.
 jest.mock("@/entities/link/link.queries", () => ({
+  linkQueries: {
+    detail: () => ({ queryKey: ["link", "detail"], queryFn: async () => {} }),
+  },
   useDeleteLinkMutation: () => ({ mutateAsync: mockDelete }),
 }));
 jest.mock("./components/LinkMoreMenu", () => {
@@ -95,6 +106,7 @@ describe("LinkDetailScreen", () => {
     mockDelete.mockClear();
     (share.shareUrl as jest.Mock).mockResolvedValue("copied");
     mockRoute.id = String(mockLinkDetail.linkId);
+    mockDetailData.current = mockLinkDetail;
   });
 
   test("지정 폴더 칩을 누르면 해당 폴더 상세로 이동한다", async () => {
@@ -112,7 +124,7 @@ describe("LinkDetailScreen", () => {
   });
 
   test("미분류에서 '폴더선택'을 누르면 폴더 선택 시트로 이동한다", async () => {
-    mockRoute.id = String(mockLinkDetailUnclassified.linkId);
+    mockDetailData.current = mockLinkDetailUnclassified;
     const user = userEvent.setup();
     await renderScreen();
     await user.press(screen.getByText("폴더선택"));

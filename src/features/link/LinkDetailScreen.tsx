@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Star } from "lucide-react-native";
 import { useState } from "react";
@@ -8,13 +9,18 @@ import {
   AlertDialog,
   AlertDialogButton,
 } from "@/components/ui/alert-dialog/AlertDialog";
+import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { Header, useHeaderHeight } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
+import { Spinner } from "@/components/ui/spinner/Spinner";
 import { Text } from "@/components/ui/text/Text";
 import { archiveDetailHref, moveLinksHref } from "@/constants/routes.constants";
-import { useDeleteLinkMutation } from "@/entities/link/link.queries";
+import {
+  linkQueries,
+  useDeleteLinkMutation,
+} from "@/entities/link/link.queries";
 import { formatCalendarDate } from "@/utils/format";
 import { shareUrl } from "@/utils/share";
 
@@ -28,19 +34,50 @@ import { LinkThumbnail } from "./components/LinkThumbnail";
 import { MemoField } from "./components/MemoField";
 import { RelatedLinksList } from "./components/RelatedLinksList";
 import { type LinkDetailForm, linkDetailFormSchema } from "./link.contracts";
-import {
-  mockLinkDetail,
-  mockLinkDetailUnclassified,
-} from "./mock/mockLinkDetail";
 
-// 백엔드 연동 전까지 상세 조회 가능한 목업 링크.
-const mockLinks = [mockLinkDetail, mockLinkDetailUnclassified];
+// 로딩 — 화면 가운데 스피너.
+function LinkDetailPending() {
+  return (
+    <View className="flex-1 items-center justify-center bg-background-base">
+      <Spinner size="medium" tone="on-dark" />
+    </View>
+  );
+}
+
+// 에러 — 재시도.
+function LinkDetailError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <View className="flex-1 items-center justify-center gap-3 bg-background-base px-5">
+      <Text variant="body-2-reading" className="text-text-alternative">
+        링크를 불러오지 못했어요.
+      </Text>
+      <Text
+        accessibilityRole="button"
+        onPress={onRetry}
+        variant="label-1"
+        className="text-old-icon-accent"
+      >
+        다시 시도
+      </Text>
+    </View>
+  );
+}
 
 export function LinkDetailScreen() {
+  return (
+    <AsyncBoundary
+      pending={<LinkDetailPending />}
+      fallback={({ reset }) => <LinkDetailError onRetry={reset} />}
+    >
+      <LinkDetailContent />
+    </AsyncBoundary>
+  );
+}
+
+function LinkDetailContent() {
   const headerHeight = useHeaderHeight();
   const { id } = useLocalSearchParams<"/link/[id]">();
-  const linkDetail =
-    mockLinks.find((link) => link.linkId === Number(id)) ?? mockLinkDetail;
+  const { data: linkDetail } = useSuspenseQuery(linkQueries.detail(id));
 
   const router = useRouter();
   const { show } = useSnackbar();
@@ -84,12 +121,10 @@ export function LinkDetailScreen() {
   };
 
   // 이 화면은 링크 하나를 편집하는 단일 폼이다. 서버로 나가는 값(폴더·메모·즐겨찾기)만
-  // 폼이 소유하고, 편집 모드·요약 펼침 같은 화면 조작 상태는 각 컴포넌트가 그대로 가진다.
-  // TODO(#33): 저장 연동. 필드 변경 감지(watch) → PATCH /links/{linkId}(folder·memo·isFavorite).
-  //  비동기 조회로 바뀌면 defaultValues 대신 reset 필요.
+  // 폼이 소유한다. `values` 로 서버 데이터를 싣어, 저장 후 refetch·폴더 이동 시 폼이 최신값을 따른다.
   const { control } = useForm<LinkDetailForm>({
     resolver: zodResolver(linkDetailFormSchema),
-    defaultValues: {
+    values: {
       folder: linkDetail.folder,
       memo: linkDetail.memo ?? "",
       isFavorite: linkDetail.isFavorite,
