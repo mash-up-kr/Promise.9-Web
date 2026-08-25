@@ -28,8 +28,16 @@ const CALLBACK_MESSAGE_SOURCE = "promise9-google-auth";
 const CALLBACK_PATH = "/auth/google-callback.html";
 
 const POPUP_FEATURES = "popup,width=480,height=640";
-/** 사용자가 팝업을 그냥 닫은 걸 감지하는 주기(ms). */
-const POPUP_CLOSED_POLL_MS = 400;
+/**
+ * 응답이 올 때까지 기다리는 최대 시간(ms). 초과하면 취소로 보고 조용히 종료한다.
+ *
+ * 팝업이 구글/카카오(COOP: same-origin)로 이동하면 opener 관계가 끊겨, Chrome 은 그 팝업의
+ * `popup.closed` 를 (예외가 아니라) `true` 로 돌려준다. 그래서 `.closed` 폴링으로는 로그인 진행
+ * 중과 사용자가 닫은 상태를 구분할 수 없다(동의 화면을 거치느라 오래 걸리는 계정이 "취소됨"으로
+ * 오판돼 로그인이 조용히 실패한다). `.closed` 를 보지 않고, 응답이 끝내 오지 않을 때만 이 타임아웃으로
+ * 종료한다 — 동의·2단계 인증 등으로 오래 걸려도 넉넉하도록 길게 잡는다.
+ */
+const LOGIN_POPUP_TIMEOUT_MS = 3 * 60 * 1000;
 
 interface GoogleCallbackMessage {
   source: string;
@@ -127,25 +135,17 @@ async function getGoogleIdToken(): Promise<string> {
   }
 
   return new Promise<string>((resolve, reject) => {
-    const closedTimer = setInterval(() => {
-      // COOP(Cross-Origin-Opener-Policy)가 켜진 환경에선 popup.closed 접근이 막힌다.
-      // 그 경우 취소 감지는 포기하고 postMessage 결과만 기다린다 — 성공한 로그인을
-      // "취소됨"으로 잘못 끝내는 것보다 낫다.
-      let isClosed: boolean;
-      try {
-        isClosed = popup.closed;
-      } catch {
-        clearInterval(closedTimer);
-        return;
-      }
-      if (!isClosed) return;
+    // COOP 로 popup.closed 를 신뢰할 수 없어(위 LOGIN_POPUP_TIMEOUT_MS 참고) 취소 감지를
+    // 폴링 대신 타임아웃으로 한다. 응답이 오지 않으면 사용자가 닫은 것으로 보고 조용히 종료한다.
+    const timeoutTimer = setTimeout(() => {
       cleanup();
+      popup?.close();
       reject(new SocialLoginCancelledError());
-    }, POPUP_CLOSED_POLL_MS);
+    }, LOGIN_POPUP_TIMEOUT_MS);
 
     function cleanup() {
       window.removeEventListener("message", handleMessage);
-      clearInterval(closedTimer);
+      clearTimeout(timeoutTimer);
     }
 
     function handleMessage(event: MessageEvent) {
@@ -203,23 +203,16 @@ async function getKakaoIdToken(): Promise<string> {
   }
 
   const code = await new Promise<string>((resolve, reject) => {
-    const closedTimer = setInterval(() => {
-      // COOP 환경에선 popup.closed 접근이 막힌다 — 그땐 취소 감지를 포기하고 메시지만 기다린다.
-      let isClosed: boolean;
-      try {
-        isClosed = popup.closed;
-      } catch {
-        clearInterval(closedTimer);
-        return;
-      }
-      if (!isClosed) return;
+    // 구글 웹과 동일 — COOP 로 popup.closed 를 신뢰할 수 없어 취소 감지를 타임아웃으로 한다.
+    const timeoutTimer = setTimeout(() => {
       cleanup();
+      popup?.close();
       reject(new SocialLoginCancelledError());
-    }, POPUP_CLOSED_POLL_MS);
+    }, LOGIN_POPUP_TIMEOUT_MS);
 
     function cleanup() {
       window.removeEventListener("message", handleMessage);
-      clearInterval(closedTimer);
+      clearTimeout(timeoutTimer);
     }
 
     function handleMessage(event: MessageEvent) {
