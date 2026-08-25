@@ -18,7 +18,10 @@ import { useDeleteLinkMutation } from "@/entities/link/link.queries";
 import { formatCalendarDate } from "@/utils/format";
 import { shareUrl } from "@/utils/share";
 
-import { AiSummarySection } from "./components/AiSummarySection";
+import {
+  AiSummarySection,
+  shouldShowAiSummary,
+} from "./components/AiSummarySection";
 import { FolderBadge } from "./components/FolderBadge";
 import { LinkBackground } from "./components/LinkBackground";
 import { LinkMoreMenu } from "./components/LinkMoreMenu";
@@ -158,9 +161,17 @@ export function LinkDetailScreen() {
             </Text>
           </View>
 
-          <View className="px-5">
-            <AiSummarySection summary={linkDetail.aiSummary ?? ""} />
-          </View>
+          {shouldShowAiSummary(
+            linkDetail.processingStatus,
+            linkDetail.aiSummary,
+          ) && (
+            <View className="px-5">
+              <AiSummarySection
+                status={linkDetail.processingStatus}
+                summary={linkDetail.aiSummary}
+              />
+            </View>
+          )}
 
           <View className="px-5">
             <Controller
