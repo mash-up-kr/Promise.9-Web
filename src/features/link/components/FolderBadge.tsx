@@ -32,14 +32,17 @@ export interface FolderBadgeProps {
   /** 소속 폴더. null 이면 "미분류" fallback 을 그린다. */
   folder: LinkFolderRef | null;
   folderColor?: FolderColor;
-  /** "폴더선택"(미분류) 탭 시 폴더 선택 진입. 실제 플로우는 별도 이슈. */
-  onPress?: () => void;
+  /** 미분류의 "폴더선택" 탭 시 — 폴더 선택 시트 진입. */
+  onSelectFolder?: () => void;
+  /** 지정 폴더 칩 탭 시 — 해당 폴더 상세로 이동. */
+  onOpenFolder?: () => void;
 }
 
 export function FolderBadge({
   folder,
   folderColor,
-  onPress,
+  onSelectFolder,
+  onOpenFolder,
 }: FolderBadgeProps) {
   // 미분류: 투명 배지("미분류") + 우측 "폴더선택"
   if (folder == null) {
@@ -53,7 +56,7 @@ export function FolderBadge({
         </View>
         <Pressable
           accessibilityRole="button"
-          onPress={onPress}
+          onPress={onSelectFolder}
           className="flex-row items-center"
         >
           <Text variant="label-2-semibold" className="text-old-icon-accent">
@@ -70,17 +73,22 @@ export function FolderBadge({
     );
   }
 
-  // 폴더 지정: 컬러 배지
+  // 폴더 지정: 컬러 배지(탭 시 폴더 상세로 이동)
   const style =
     (folderColor && FOLDER_STYLE[folderColor]) ?? DEFAULT_FOLDER_STYLE;
   return (
     <View className="w-full flex-row items-center">
-      <View className={badgeStyles({ class: style.badge })}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${folder.folderName} 폴더 열기`}
+        onPress={onOpenFolder}
+        className={badgeStyles({ class: style.badge })}
+      >
         <FolderIcon color={style.iconColor} />
         <Text variant="label-2-semibold" className={style.label}>
           {folder.folderName}
         </Text>
-      </View>
+      </Pressable>
     </View>
   );
 }

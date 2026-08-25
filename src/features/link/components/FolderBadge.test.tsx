@@ -18,10 +18,23 @@ describe("FolderBadge", () => {
     expect(screen.getByText("폴더선택")).toBeOnTheScreen();
   });
 
-  test("미분류 상태에서 '폴더선택'을 누르면 onPress 가 호출된다", async () => {
-    const onPress = jest.fn();
-    await render(<FolderBadge folder={null} onPress={onPress} />);
+  test("미분류 상태에서 '폴더선택'을 누르면 onSelectFolder 가 호출된다", async () => {
+    const onSelectFolder = jest.fn();
+    await render(<FolderBadge folder={null} onSelectFolder={onSelectFolder} />);
     fireEvent.press(screen.getByText("폴더선택"));
-    expect(onPress).toHaveBeenCalledTimes(1);
+    expect(onSelectFolder).toHaveBeenCalledTimes(1);
+  });
+
+  test("지정 폴더 칩을 누르면 onOpenFolder 가 호출된다", async () => {
+    const onOpenFolder = jest.fn();
+    await render(
+      <FolderBadge
+        folder={FOLDER}
+        folderColor="purple"
+        onOpenFolder={onOpenFolder}
+      />,
+    );
+    fireEvent.press(screen.getByRole("button", { name: "디자인 폴더 열기" }));
+    expect(onOpenFolder).toHaveBeenCalledTimes(1);
   });
 });

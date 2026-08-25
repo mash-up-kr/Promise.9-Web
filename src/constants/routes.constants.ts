@@ -20,12 +20,17 @@ export function archiveDetailHref(id: string) {
  * 대상 링크는 쉼표로 이어 붙여 넘긴다 — 컨텍스트 메뉴(1개)와 선택 모드(N개)가 같은 시트를 연다.
  * `currentFolderId` 는 사용자 폴더 상세에서만 있다(시스템 폴더는 이동 대상이 아니다).
  */
-export function moveLinksHref(linkIds: number[], currentFolderId?: string) {
+export function moveLinksHref(
+  linkIds: number[],
+  currentFolderId?: string,
+  title?: string,
+) {
   return {
     pathname: "/move-links",
     params: {
       ids: linkIds.join(","),
       ...(currentFolderId && { folderId: currentFolderId }),
+      ...(title && { title }),
     },
   } as const satisfies Href;
 }

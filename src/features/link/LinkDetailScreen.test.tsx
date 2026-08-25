@@ -5,11 +5,17 @@ import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import * as share from "@/utils/share";
 
 import { LinkDetailScreen } from "./LinkDetailScreen";
-import { mockLinkDetail, mockRelatedLinks } from "./mock/mockLinkDetail";
+import {
+  mockLinkDetail,
+  mockLinkDetailUnclassified,
+  mockRelatedLinks,
+} from "./mock/mockLinkDetail";
 
 const mockBack = jest.fn();
 const mockPush = jest.fn();
 const mockDelete = jest.fn().mockResolvedValue(undefined);
+// 라우트 id — 테스트별로 미분류(101) 등으로 바꿔 넣는다(mock 접두사라 jest.mock 팩토리에서 참조 가능).
+const mockRoute = { id: String(mockLinkDetail.linkId) };
 
 // Stack.Screen 은 헤더를 options.header 로만 받으므로, 기본 목이면 헤더가 렌더되지 않는다.
 // 즐겨찾기 버튼이 헤더에 있어 검증하려면 header 를 실제로 렌더해야 한다.
@@ -18,7 +24,7 @@ jest.mock("expo-router", () => ({
     Screen: ({ options }: { options?: { header?: () => React.ReactNode } }) =>
       options?.header?.() ?? null,
   },
-  useLocalSearchParams: () => ({ id: String(mockLinkDetail.linkId) }),
+  useLocalSearchParams: () => ({ id: mockRoute.id }),
   // 헤더의 HeaderBackButton 이 사용한다.
   useRouter: () => ({ back: mockBack, push: mockPush, replace: jest.fn() }),
   canGoBack: () => true,
@@ -88,6 +94,34 @@ describe("LinkDetailScreen", () => {
     mockPush.mockClear();
     mockDelete.mockClear();
     (share.shareUrl as jest.Mock).mockResolvedValue("copied");
+    mockRoute.id = String(mockLinkDetail.linkId);
+  });
+
+  test("지정 폴더 칩을 누르면 해당 폴더 상세로 이동한다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+    await user.press(screen.getByRole("button", { name: "디자인 폴더 열기" }));
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pathname: "/archive/[id]",
+        params: expect.objectContaining({
+          id: String(mockLinkDetail.folder?.folderId),
+        }),
+      }),
+    );
+  });
+
+  test("미분류에서 '폴더선택'을 누르면 폴더 선택 시트로 이동한다", async () => {
+    mockRoute.id = String(mockLinkDetailUnclassified.linkId);
+    const user = userEvent.setup();
+    await renderScreen();
+    await user.press(screen.getByText("폴더선택"));
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pathname: "/move-links",
+        params: expect.objectContaining({ title: "폴더 선택" }),
+      }),
+    );
   });
 
   test("제목·폴더·출처/저장일을 렌더한다", async () => {

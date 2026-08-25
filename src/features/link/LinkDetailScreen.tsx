@@ -13,7 +13,7 @@ import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { Text } from "@/components/ui/text/Text";
-import { moveLinksHref } from "@/constants/routes.constants";
+import { archiveDetailHref, moveLinksHref } from "@/constants/routes.constants";
 import { useDeleteLinkMutation } from "@/entities/link/link.queries";
 import { formatCalendarDate } from "@/utils/format";
 import { shareUrl } from "@/utils/share";
@@ -47,6 +47,18 @@ export function LinkDetailScreen() {
   const { show } = useSnackbar();
   const { mutateAsync: deleteLink } = useDeleteLinkMutation();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  // 미분류 "폴더선택" → 폴더 선택 시트(타이틀 "폴더 선택")
+  const handleSelectFolder = () => {
+    router.push(moveLinksHref([linkDetail.linkId], undefined, "폴더 선택"));
+  };
+
+  // 지정 폴더 칩 탭 → 해당 폴더 상세로 이동
+  const handleOpenFolder = () => {
+    if (linkDetail.folder) {
+      router.push(archiveDetailHref(String(linkDetail.folder.folderId)));
+    }
+  };
 
   const handleMove = () => {
     router.push(
@@ -140,7 +152,6 @@ export function LinkDetailScreen() {
           </View>
 
           <View className="gap-2 px-5">
-            {/* TODO(#33): onPress → 폴더 선택 플로우(별도 이슈) 연결 */}
             <Controller
               control={control}
               name="folder"
@@ -148,6 +159,8 @@ export function LinkDetailScreen() {
                 <FolderBadge
                   folder={field.value}
                   folderColor={linkDetail.folderColor}
+                  onSelectFolder={handleSelectFolder}
+                  onOpenFolder={handleOpenFolder}
                 />
               )}
             />
