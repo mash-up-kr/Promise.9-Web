@@ -233,13 +233,20 @@ export interface UpdateLinkFolderVariables {
 
 // PATCH /links/{linkId} — 링크를 다른 폴더로 옮긴다. 벌크 API 가 없어 호출부가 선택 개수만큼 부른다.
 export function useUpdateLinkFolderMutation() {
+  const queryClient = useQueryClient();
   const invalidateFolderCaches = useInvalidateFolderCaches();
 
   return useMutation({
     mutationFn: async ({ linkId, folderId }: UpdateLinkFolderVariables) => {
       await apiClient.patch(`/links/${linkId}`, { folderId });
     },
-    onSuccess: invalidateFolderCaches,
+    // 상세 화면이 열려 있으면 폴더가 바로 바뀌도록 그 링크의 detail 도 무효화한다.
+    onSuccess: (_data, { linkId }) => {
+      queryClient.invalidateQueries({
+        queryKey: linkKeys.detail(String(linkId)),
+      });
+      invalidateFolderCaches();
+    },
   });
 }
 

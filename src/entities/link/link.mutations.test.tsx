@@ -79,6 +79,24 @@ describe("useUpdateLinkFolderMutation", () => {
 
     await expectFolderCachesInvalidated(invalidate);
   });
+
+  it("성공하면 옮긴 링크의 상세 캐시도 버린다(상세 화면 즉시 반영)", async () => {
+    const { result, invalidate } = await renderMutation(
+      useUpdateLinkFolderMutation,
+    );
+    result.current.mutate({ linkId: 42, folderId: 3 });
+
+    await waitFor(() =>
+      expect(
+        invalidate.mock.calls.some(
+          ([options]) =>
+            options?.queryKey?.[0] === "link" &&
+            options?.queryKey?.[1] === "detail" &&
+            options?.queryKey?.[2] === "42",
+        ),
+      ).toBe(true),
+    );
+  });
 });
 
 describe("useDeleteLinkMutation", () => {
