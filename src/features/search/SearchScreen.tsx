@@ -32,9 +32,6 @@ import { RECENT_SEARCH_KEYWORDS } from "./mocks";
 import { SEARCH_POLICY } from "./search.constants";
 import { addRecentKeyword } from "./search.utils";
 
-// Figma "Empty State": 콘텐츠 상단에서 155 아래 (보관함 EmptyLinks 와 동일).
-const STATE_TOP_OFFSET = 155;
-
 // 시안 모션 — 기본↔결과 크로스페이드, 로딩 후 결과 페이드인.
 const CONTENT_FADE_MS = 280;
 const RESULT_FADE_IN_MS = 200;
@@ -263,7 +260,7 @@ function ResultsGrid({ query }: SearchResultsProps) {
 
   if (links.length === 0) {
     return (
-      <View style={{ paddingTop: STATE_TOP_OFFSET }}>
+      <View className="flex-1 justify-center">
         <EmptyState
           illustration={<Illustration name="empty-link" />}
           title={`"${query}"에 대한 결과가 없어요`}
@@ -301,7 +298,7 @@ function ResultsError({ error, onRetry }: ResultsErrorProps) {
   const isOffline = isHttpError(error) && error instanceof NetworkError;
 
   return (
-    <View style={{ paddingTop: STATE_TOP_OFFSET }}>
+    <View className="flex-1 justify-center">
       <EmptyState
         illustration={<Illustration name={isOffline ? "offline" : "error"} />}
         title={
