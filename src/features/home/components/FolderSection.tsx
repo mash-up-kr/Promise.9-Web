@@ -45,6 +45,7 @@ export function FolderSection({ folder, links }: FolderSectionProps) {
             <LinkTile
               key={link.linkId}
               link={link}
+              showMeta={false}
               onPress={() => router.push(linkDetailHref(String(link.linkId)))}
             />
           ))}

@@ -10,7 +10,7 @@ import { Input, InputField, InputSlot } from "@/components/ui/input/Input";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
 import { Text } from "@/components/ui/text/Text";
 import { isWeb } from "@/constants/platform.constants";
-import { useCreateLinkMutation } from "@/features/link/api/link.queries";
+import { useCreateLinkMutation } from "@/entities/link/link.queries";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { MemoField } from "@/features/link/components/MemoField";
 import { RemindQuestionSection } from "@/features/link/components/RemindQuestionSection";
@@ -34,7 +34,7 @@ export function CreateLinkSheet() {
 
   return (
     <SheetScreen onClose={closeSheet}>
-      <CreateLinkSheetBody />
+      <CreateLinkSheetContent />
     </SheetScreen>
   );
 }
@@ -42,7 +42,7 @@ export function CreateLinkSheet() {
 // 취소·저장 성공 시 라우트를 바로 제거하지 않고 시트 닫힘 애니메이션을 거친다
 // (useSheetDismiss 는 시트 자손에서만 쓸 수 있어 본문을 분리). 실제 라우트 제거는
 // 닫힘 완료 후 SheetScreen 의 onClose(closeSheet)가 담당한다.
-function CreateLinkSheetBody() {
+function CreateLinkSheetContent() {
   const dismiss = useSheetDismiss();
 
   const { control, handleSubmit, setValue, watch, formState } =

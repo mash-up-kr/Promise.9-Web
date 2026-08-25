@@ -1,50 +1,21 @@
 jest.mock("@shared/api", () => ({ apiClient: { get: jest.fn() } }));
 
-import {
-  folderLinkQueries,
-  isFolderRouteId,
-  linkListResponseSchema,
-  toLink,
-  toLinkListParams,
-} from "./folder-links.queries";
+import { apiClient } from "@shared/api";
 
-describe("isFolderRouteId", () => {
-  it("시스템 폴더 id 를 허용한다", () => {
-    expect(isFolderRouteId("all")).toBe(true);
-    expect(isFolderRouteId("uncategorized")).toBe(true);
-    expect(isFolderRouteId("favorites")).toBe(true);
-    expect(isFolderRouteId("trash")).toBe(true);
-  });
+import { linkListResponseSchema, linkQueries, toLink } from "./link.queries";
 
-  it("양의 정수(사용자 폴더 id)를 허용한다", () => {
-    expect(isFolderRouteId("7")).toBe(true);
-    expect(isFolderRouteId("120")).toBe(true);
-  });
-
-  it("id 가 없거나 숫자로 해석되지 않으면 거부한다", () => {
-    expect(isFolderRouteId(undefined)).toBe(false);
-    expect(isFolderRouteId("")).toBe(false);
-    expect(isFolderRouteId("foo")).toBe(false);
-    expect(isFolderRouteId("1.5")).toBe(false);
-    expect(isFolderRouteId("-3")).toBe(false);
-    expect(isFolderRouteId("0")).toBe(false);
-    // Number("") 나 Number(" ") 는 0 이라 NaN 검사만으론 새어나간다.
-    expect(isFolderRouteId(" ")).toBe(false);
-  });
-});
-
-describe("toLinkListParams", () => {
-  it("시스템 폴더 id 를 /links 필터로 매핑한다", () => {
-    expect(toLinkListParams("all")).toEqual({});
-    expect(toLinkListParams("uncategorized")).toEqual({ unassigned: true });
-    expect(toLinkListParams("favorites")).toEqual({ favorite: true });
-    expect(toLinkListParams("trash")).toEqual({ deleted: true });
-  });
-
-  it("사용자 폴더(숫자 id)는 folderId 로 매핑한다", () => {
-    expect(toLinkListParams("7")).toEqual({ folderId: 7 });
-  });
-});
+const validItem = {
+  linkId: 1,
+  title: "제목",
+  source: "example.com",
+  representativeTag: null,
+  thumbnailUrl: null,
+  savedAt: "2026-07-26T00:00:00.000Z",
+};
+const validResponse = {
+  links: [validItem],
+  pagination: { nextCursor: null, hasNext: false, limit: 9 },
+};
 
 describe("toLink", () => {
   it("nullable 한 title·source 를 빈 문자열로 폴백한다", () => {
@@ -67,19 +38,6 @@ describe("toLink", () => {
     });
   });
 });
-
-const validItem = {
-  linkId: 1,
-  title: "제목",
-  source: "example.com",
-  representativeTag: null,
-  thumbnailUrl: null,
-  savedAt: "2026-07-26T00:00:00.000Z",
-};
-const validResponse = {
-  links: [validItem],
-  pagination: { nextCursor: null, hasNext: false, limit: 20 },
-};
 
 describe("linkListResponseSchema", () => {
   it("정상 응답을 통과시킨다", () => {
@@ -151,9 +109,38 @@ describe("linkListResponseSchema", () => {
   });
 });
 
-describe("folderLinkQueries.list", () => {
+describe("linkQueries.list", () => {
+  it("params 가 다르면 다른 queryKey 를 만든다", () => {
+    expect(linkQueries.list({ folderId: 3 }).queryKey).not.toEqual(
+      linkQueries.list({ sortBy: "savedAt", limit: 9 }).queryKey,
+    );
+  });
+
+  it("queryKey 가 링크 도메인 키 아래에 있다", () => {
+    const [root] = linkQueries.keys.root();
+
+    expect(linkQueries.list({ folderId: 3 }).queryKey[0]).toBe(root);
+  });
+
+  // 서버가 화면별 엔드포인트를 두지 않으므로, 화면 차이는 전부 params 로만 표현된다.
+  it("queryFn 이 /links 에 params 를 그대로 넘긴다", async () => {
+    jest
+      .mocked(apiClient.get)
+      .mockResolvedValue({ data: { data: validResponse } });
+    const params = { sortBy: "savedAt", order: "desc", limit: 9 } as const;
+    const { queryFn } = linkQueries.list(params);
+    const signal = new AbortController().signal;
+
+    await (queryFn as (ctx: { signal: AbortSignal }) => Promise<unknown>)({
+      signal,
+    });
+
+    expect(apiClient.get).toHaveBeenCalledWith("/links", { params, signal });
+  });
+
   it("select 가 응답을 UI Link 목록으로 변환한다", () => {
-    const { select } = folderLinkQueries.list("all");
+    const { select } = linkQueries.list({ folderId: 3 });
+
     expect(select?.(validResponse)).toEqual([
       {
         linkId: 1,
@@ -168,8 +155,8 @@ describe("folderLinkQueries.list", () => {
 
   // select 신원이 렌더마다 바뀌면 react-query 가 매번 재계산한다.
   it("select 는 호출마다 같은 참조를 유지한다", () => {
-    expect(folderLinkQueries.list("all").select).toBe(
-      folderLinkQueries.list("7").select,
+    expect(linkQueries.list({ folderId: 3 }).select).toBe(
+      linkQueries.list({ favorite: true }).select,
     );
   });
 });

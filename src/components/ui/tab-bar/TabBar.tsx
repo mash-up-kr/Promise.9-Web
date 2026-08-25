@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import type { BottomTabBarProps } from "expo-router/js-tabs";
 import { Plus } from "lucide-react-native";
@@ -43,6 +44,13 @@ export const TAB_ICON_COLORS = {
 
 const TAB_FADE_MS = 200;
 
+// Figma: 탭바와 함께 항상 떠 있는 고정 딤. 위쪽 투명 → 아래쪽 배경색(gray-900),
+// 전체 fill opacity 70%, 높이 74. 투명 끝을 "transparent" 대신 같은 색 alpha 0 으로 둬야
+// Android 에서 검게 번지지 않는다.
+const DIM_HEIGHT = 74;
+const DIM_COLORS = ["#1a1a1a00", "#1a1a1a"] as const;
+const DIM_OPACITY = 0.7;
+
 // Nav Tab Item / Save Sheet: 40 원형 gray-500 + 흰색 plus 고정.
 // 누르는 동안은 IconButton 인터랙션(배경 한 단계 밝게 + scale)을 따른다.
 export const plusButtonStyles = tv({
@@ -86,6 +94,19 @@ export function TabBar({ state, navigation }: TabBarProps) {
       className="absolute inset-x-0 bottom-0 items-center"
       style={{ paddingBottom: Math.max(insets.bottom, 20) }}
     >
+      <LinearGradient
+        testID="tab-bar-dim"
+        pointerEvents="none"
+        colors={DIM_COLORS}
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: DIM_HEIGHT,
+          opacity: DIM_OPACITY,
+        }}
+      />
       <View className={tabBarStyles()}>
         <TabBarItem
           item={HOME_TAB}

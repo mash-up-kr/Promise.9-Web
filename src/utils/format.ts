@@ -40,3 +40,13 @@ export function formatRelativeDate(
 export function formatCalendarDate(date: string): string {
   return dayjs.utc(date).format("YYYY.MM.DD");
 }
+
+/**
+ * 연도 없이 월·일만 — 알림 날짜 배지처럼 가까운 날짜를 짧게 보여줄 때 쓴다.
+ *
+ * @example
+ * formatMonthDay("2026-08-10T00:00:00.000Z"); // "8월 10일"
+ */
+export function formatMonthDay(date: string): string {
+  return dayjs.utc(date).format("M월 D일");
+}

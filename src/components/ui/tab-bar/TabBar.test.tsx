@@ -55,6 +55,18 @@ describe("TabBar", () => {
     expect(screen.getByRole("button", { name: "링크 추가" })).toBeOnTheScreen();
   });
 
+  // 시안: 탭바와 함께 항상 떠 있는 고정 딤(스크롤에 영향받지 않는다).
+  test("탭바 뒤에 딤 레이어를 깐다", async () => {
+    await renderWithSafeArea(<TabBar {...makeProps()} />);
+
+    const dim = screen.getByTestId("tab-bar-dim");
+
+    expect(dim).toBeOnTheScreen();
+    expect(dim.props.style).toEqual(
+      expect.objectContaining({ height: 74, opacity: 0.7 }),
+    );
+  });
+
   test("검색·세팅 라우트는 탭바에 노출하지 않는다", async () => {
     await renderWithSafeArea(<TabBar {...makeProps()} />);
     expect(screen.queryByRole("tab", { name: "검색" })).not.toBeOnTheScreen();
