@@ -223,4 +223,21 @@ describe("toLinkDetail", () => {
     expect(d.folder).toEqual({ folderId: 3, folderName: "디자인" });
     expect(d.isFavorite).toBe(true);
   });
+
+  it("서버 folder.color(hex) 를 UI tone 으로 매핑한다", () => {
+    const d = toLinkDetail(
+      linkDetailResponseSchema.parse({
+        ...detailResponse,
+        folder: { folderId: 3, folderName: "디자인", color: "#61a8ef" },
+      }),
+    );
+    expect(d.folderColor).toBe("blue");
+    // folder 객체 자체엔 color 를 흘리지 않는다.
+    expect(d.folder).toEqual({ folderId: 3, folderName: "디자인" });
+  });
+
+  it("folder.color 가 없으면 folderColor 는 undefined 다", () => {
+    const d = toLinkDetail(linkDetailResponseSchema.parse(detailResponse));
+    expect(d.folderColor).toBeUndefined();
+  });
 });

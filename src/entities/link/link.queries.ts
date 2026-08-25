@@ -1,4 +1,5 @@
 import { apiClient, type SuccessResponse } from "@shared/api";
+import { hexToFolderTone } from "@shared/folder/folder.constants";
 import type { Link, LinkDetail, LinkPreview } from "@shared/types/link.types";
 import {
   queryOptions,
@@ -92,7 +93,12 @@ export const linkDetailResponseSchema = z.looseObject({
   linkId: z.number(),
   url: z.string(),
   folder: z
-    .looseObject({ folderId: z.number(), folderName: z.string() })
+    // color 는 서버가 상세 응답에 담아준다(hex). 아직 안 오는 응답도 통과하도록 옵션.
+    .looseObject({
+      folderId: z.number(),
+      folderName: z.string(),
+      color: z.string().nullish(),
+    })
     .nullable(),
   thumbnailUrl: z.string().nullable(),
   title: z.string().nullable(),
@@ -115,7 +121,13 @@ export function toLinkDetail(item: LinkDetailResponse): LinkDetail {
   return {
     linkId: item.linkId,
     url: item.url,
-    folder: item.folder,
+    folder: item.folder
+      ? { folderId: item.folder.folderId, folderName: item.folder.folderName }
+      : null,
+    // 서버가 준 폴더 색(hex) → UI tone. 없으면 undefined(FolderBadge 가 gray 폴백).
+    folderColor: item.folder?.color
+      ? hexToFolderTone(item.folder.color)
+      : undefined,
     thumbnailUrl: item.thumbnailUrl,
     title: item.title ?? "",
     source: item.source ?? "",

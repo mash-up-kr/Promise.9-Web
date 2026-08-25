@@ -1,3 +1,4 @@
+import { FOLDER_TONE_HEX } from "@shared/folder/folder.constants";
 import type { FolderColor, LinkFolderRef } from "@shared/types/link.types";
 import { ChevronRight } from "lucide-react-native";
 import { Pressable, View } from "react-native";
@@ -15,18 +16,79 @@ const UNCLASSIFIED_ICON_COLOR = "#65656B";
 
 type FolderStyle = { badge: string; label: string; iconColor: string };
 
-// 폴더 지정 배지의 기본 스타일. mock 은 purple 만 사용한다.
-const DEFAULT_FOLDER_STYLE: FolderStyle = {
-  badge: "bg-folder-purple-subtle",
-  label: "text-folder-purple-solid",
-  iconColor: "#B282CC",
+// 폴더 색 → 배지 배경(subtle)/텍스트(solid) className + 아이콘 hex.
+// NativeWind 는 동적 클래스(`bg-folder-${tone}-subtle`)를 스캔 못 해 리터럴로 나열한다.
+// gray 는 folder-gray-subtle 토큰이 없어 중립색으로 폴백한다.
+const FOLDER_STYLE: Record<FolderColor, FolderStyle> = {
+  gray: {
+    badge: "bg-opacity-white-10",
+    label: "text-icon-alternative",
+    iconColor: UNCLASSIFIED_ICON_COLOR,
+  },
+  blue: {
+    badge: "bg-folder-blue-subtle",
+    label: "text-folder-blue-solid",
+    iconColor: FOLDER_TONE_HEX.blue,
+  },
+  slate: {
+    badge: "bg-folder-slate-subtle",
+    label: "text-folder-slate-solid",
+    iconColor: FOLDER_TONE_HEX.slate,
+  },
+  purple: {
+    badge: "bg-folder-purple-subtle",
+    label: "text-folder-purple-solid",
+    iconColor: FOLDER_TONE_HEX.purple,
+  },
+  "orange-red": {
+    badge: "bg-folder-orange-red-subtle",
+    label: "text-folder-orange-red-solid",
+    iconColor: FOLDER_TONE_HEX["orange-red"],
+  },
+  green: {
+    badge: "bg-folder-green-subtle",
+    label: "text-folder-green-solid",
+    iconColor: FOLDER_TONE_HEX.green,
+  },
+  teal: {
+    badge: "bg-folder-teal-subtle",
+    label: "text-folder-teal-solid",
+    iconColor: FOLDER_TONE_HEX.teal,
+  },
+  pink: {
+    badge: "bg-folder-pink-subtle",
+    label: "text-folder-pink-solid",
+    iconColor: FOLDER_TONE_HEX.pink,
+  },
+  red: {
+    badge: "bg-folder-red-subtle",
+    label: "text-folder-red-solid",
+    iconColor: FOLDER_TONE_HEX.red,
+  },
+  lime: {
+    badge: "bg-folder-lime-subtle",
+    label: "text-folder-lime-solid",
+    iconColor: FOLDER_TONE_HEX.lime,
+  },
+  "yellow-green": {
+    badge: "bg-folder-yellow-green-subtle",
+    label: "text-folder-yellow-green-solid",
+    iconColor: FOLDER_TONE_HEX["yellow-green"],
+  },
+  yellow: {
+    badge: "bg-folder-yellow-subtle",
+    label: "text-folder-yellow-solid",
+    iconColor: FOLDER_TONE_HEX.yellow,
+  },
+  orange: {
+    badge: "bg-folder-orange-subtle",
+    label: "text-folder-orange-solid",
+    iconColor: FOLDER_TONE_HEX.orange,
+  },
 };
 
-// 폴더 색 → 배지 배경/텍스트 className + 아이콘 hex.
-// TODO(backend): 폴더 색상 스펙 확정 시 나머지 variant 를 채운다(지금은 mock 의 purple 만).
-const FOLDER_STYLE: Partial<Record<FolderColor, FolderStyle>> = {
-  purple: DEFAULT_FOLDER_STYLE,
-};
+// 색 정보가 없을 때(서버 미제공 등) 폴백.
+const DEFAULT_FOLDER_STYLE: FolderStyle = FOLDER_STYLE.gray;
 
 export interface FolderBadgeProps {
   /** 소속 폴더. null 이면 "미분류" fallback 을 그린다. */
