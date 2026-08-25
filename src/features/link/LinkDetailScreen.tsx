@@ -42,7 +42,7 @@ function LinkDetailBackHeader() {
     <Stack.Screen
       options={{
         headerTransparent: true,
-        header: () => <Header background={false} left={<HeaderBackButton />} />,
+        header: () => <Header left={<HeaderBackButton />} />,
       }}
     />
   );
@@ -167,7 +167,6 @@ function LinkDetailContent() {
           headerTransparent: true,
           header: () => (
             <Header
-              background={false}
               left={<HeaderBackButton />}
               right={
                 <>
