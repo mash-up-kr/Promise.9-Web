@@ -10,9 +10,11 @@ const PLACEHOLDER = "저장한 이유나 기억하고 싶은 점을 적어보세
 export interface MemoFieldProps {
   memo: string;
   onChangeMemo: (value: string) => void;
+  /** 포커스 해제 시 — 자동 저장 트리거에 쓴다. */
+  onBlur?: () => void;
 }
 
-export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
+export function MemoField({ memo, onChangeMemo, onBlur }: MemoFieldProps) {
   const inputRef = useRef<TextInput>(null);
 
   // web(react-native-web)의 <textarea>는 내용이 늘어도 자동으로 커지지 않아 직접
@@ -35,6 +37,7 @@ export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
           multiline
           value={memo}
           onChangeText={onChangeMemo}
+          onBlur={onBlur}
           placeholder={PLACEHOLDER}
           maxLength={MEMO_MAX_LENGTH}
           // placeholderTextColor 는 className 으로 못 받아 리터럴로 지정 — #ffffff4d = --color-opacity-white-30

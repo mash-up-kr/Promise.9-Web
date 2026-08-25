@@ -20,6 +20,7 @@ import { archiveDetailHref, moveLinksHref } from "@/constants/routes.constants";
 import {
   linkQueries,
   useDeleteLinkMutation,
+  useUpdateLinkMutation,
 } from "@/entities/link/link.queries";
 import { formatCalendarDate } from "@/utils/format";
 import { shareUrl } from "@/utils/share";
@@ -82,7 +83,21 @@ function LinkDetailContent() {
   const router = useRouter();
   const { show } = useSnackbar();
   const { mutateAsync: deleteLink } = useDeleteLinkMutation();
+  // 변경 시점 저장(추천안): 이탈 이벤트(뒤로가기·홈·강제종료 등)에 의존하지 않아 유실이 없고,
+  // 폴더 이동(MoveLinksSheet)의 "동작 시점 저장"과도 일관된다. 상세: plan/task/task-server-integration.md.
+  const { mutate: updateLink } = useUpdateLinkMutation();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  const handleToggleFavorite = (current: boolean) => {
+    updateLink({ linkId: linkDetail.linkId, isFavorite: !current });
+  };
+
+  const handleMemoBlur = (memo: string) => {
+    // 서버값과 다를 때만 저장 — 열어만 보고 닫으면 요청하지 않는다.
+    if (memo !== (linkDetail.memo ?? "")) {
+      updateLink({ linkId: linkDetail.linkId, memo });
+    }
+  };
 
   // 미분류 "폴더선택" → 폴더 선택 시트(타이틀 "폴더 선택")
   const handleSelectFolder = () => {
@@ -152,7 +167,10 @@ function LinkDetailContent() {
                         accessibilityState={{ selected: field.value }}
                         // 켜짐은 채운 별로 구분한다. 색은 IconButton 의 icon-strong 을 따른다.
                         iconFill={field.value ? "currentColor" : "none"}
-                        onPress={() => field.onChange(!field.value)}
+                        onPress={() => {
+                          handleToggleFavorite(field.value);
+                          field.onChange(!field.value);
+                        }}
                       />
                     )}
                   />
@@ -226,7 +244,11 @@ function LinkDetailContent() {
               control={control}
               name="memo"
               render={({ field }) => (
-                <MemoField memo={field.value} onChangeMemo={field.onChange} />
+                <MemoField
+                  memo={field.value}
+                  onChangeMemo={field.onChange}
+                  onBlur={() => handleMemoBlur(field.value)}
+                />
               )}
             />
           </View>

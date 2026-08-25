@@ -1,4 +1,9 @@
-import { render, screen, userEvent } from "@testing-library/react-native";
+import {
+  fireEvent,
+  render,
+  screen,
+  userEvent,
+} from "@testing-library/react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
@@ -14,6 +19,7 @@ import {
 const mockBack = jest.fn();
 const mockPush = jest.fn();
 const mockDelete = jest.fn().mockResolvedValue(undefined);
+const mockUpdate = jest.fn();
 // 라우트 id — 테스트별로 미분류(101) 등으로 바꿔 넣는다(mock 접두사라 jest.mock 팩토리에서 참조 가능).
 const mockRoute = { id: String(mockLinkDetail.linkId) };
 // 상세 데이터 — useSuspenseQuery 목이 돌려준다. 테스트별로 current 를 바꿔 주입한다.
@@ -44,6 +50,7 @@ jest.mock("@/entities/link/link.queries", () => ({
     detail: () => ({ queryKey: ["link", "detail"], queryFn: async () => {} }),
   },
   useDeleteLinkMutation: () => ({ mutateAsync: mockDelete }),
+  useUpdateLinkMutation: () => ({ mutate: mockUpdate }),
 }));
 jest.mock("./components/LinkMoreMenu", () => {
   const { Pressable, Text } = require("react-native");
@@ -104,9 +111,39 @@ describe("LinkDetailScreen", () => {
     mockBack.mockClear();
     mockPush.mockClear();
     mockDelete.mockClear();
+    mockUpdate.mockClear();
     (share.shareUrl as jest.Mock).mockResolvedValue("copied");
     mockRoute.id = String(mockLinkDetail.linkId);
     mockDetailData.current = mockLinkDetail;
+  });
+
+  test("즐겨찾기 토글 시 isFavorite 를 저장한다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+    // mock 은 isFavorite: false → 토글하면 true 로 저장.
+    await user.press(screen.getByRole("button", { name: "즐겨찾기" }));
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        linkId: mockLinkDetail.linkId,
+        isFavorite: true,
+      }),
+    );
+  });
+
+  test("메모 편집 후 blur 시 memo 를 저장한다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+    const input = screen.getByPlaceholderText(
+      "저장한 이유나 기억하고 싶은 점을 적어보세요",
+    );
+    await user.type(input, "!");
+    fireEvent(input, "blur");
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        linkId: mockLinkDetail.linkId,
+        memo: `${mockLinkDetail.memo}!`,
+      }),
+    );
   });
 
   test("지정 폴더 칩을 누르면 해당 폴더 상세로 이동한다", async () => {
