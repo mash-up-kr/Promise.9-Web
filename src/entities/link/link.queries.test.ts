@@ -240,4 +240,15 @@ describe("toLinkDetail", () => {
     const d = toLinkDetail(linkDetailResponseSchema.parse(detailResponse));
     expect(d.folderColor).toBeUndefined();
   });
+
+  // 서버 문서(docs/api/link.md) 의 실제 예시 hex — 팔레트 밖이면 gray 로 떨어져야 하므로 회귀 방지.
+  it("서버 문서 예시 hex(#d5d76a)를 yellow-green 으로 매핑한다", () => {
+    const d = toLinkDetail(
+      linkDetailResponseSchema.parse({
+        ...detailResponse,
+        folder: { folderId: 3, folderName: "디자인", color: "#d5d76a" },
+      }),
+    );
+    expect(d.folderColor).toBe("yellow-green");
+  });
 });
