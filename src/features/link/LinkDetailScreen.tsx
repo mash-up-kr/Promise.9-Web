@@ -145,8 +145,12 @@ export function LinkDetailScreen() {
           contentInsetAdjustmentBehavior="automatic"
         >
           <View className="px-5">
+            {/* 서버는 현재 대표 이미지를 단수(thumbnailUrl)로 준다 — 배열로 매핑해
+                단수·복수·없음을 모두 커버한다. 서버가 배열을 주면 그대로 넘긴다. */}
             <LinkThumbnail
-              thumbnailUrl={linkDetail.thumbnailUrl ?? ""}
+              imageUrls={
+                linkDetail.thumbnailUrl ? [linkDetail.thumbnailUrl] : []
+              }
               url={linkDetail.url}
             />
           </View>
