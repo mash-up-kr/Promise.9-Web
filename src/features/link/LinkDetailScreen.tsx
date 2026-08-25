@@ -36,10 +36,23 @@ import { MemoField } from "./components/MemoField";
 import { RelatedLinksList } from "./components/RelatedLinksList";
 import { type LinkDetailForm, linkDetailFormSchema } from "./link.contracts";
 
+// 로딩·에러 상태에도 뒤로가기는 유지한다(즐겨찾기·더보기는 데이터가 있어야 해 콘텐츠 상태에서만).
+function LinkDetailBackHeader() {
+  return (
+    <Stack.Screen
+      options={{
+        headerTransparent: true,
+        header: () => <Header background={false} left={<HeaderBackButton />} />,
+      }}
+    />
+  );
+}
+
 // 로딩 — 화면 가운데 스피너.
 function LinkDetailPending() {
   return (
     <View className="flex-1 items-center justify-center bg-background-base">
+      <LinkDetailBackHeader />
       <Spinner size="medium" tone="on-dark" />
     </View>
   );
@@ -49,6 +62,7 @@ function LinkDetailPending() {
 function LinkDetailError({ onRetry }: { onRetry: () => void }) {
   return (
     <View className="flex-1 items-center justify-center gap-3 bg-background-base px-5">
+      <LinkDetailBackHeader />
       <Text variant="body-2-reading" className="text-text-alternative">
         링크를 불러오지 못했어요.
       </Text>
