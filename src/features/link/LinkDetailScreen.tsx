@@ -23,7 +23,6 @@ import {
   shouldShowAiSummary,
 } from "./components/AiSummarySection";
 import { FolderBadge } from "./components/FolderBadge";
-import { LinkBackground } from "./components/LinkBackground";
 import { LinkMoreMenu } from "./components/LinkMoreMenu";
 import { LinkThumbnail } from "./components/LinkThumbnail";
 import { MemoField } from "./components/MemoField";
@@ -133,11 +132,8 @@ export function LinkDetailScreen() {
           ),
         }}
       />
-      <View className="flex-1">
-        <LinkBackground
-          thumbnailUrl={linkDetail.thumbnailUrl ?? ""}
-          dominantColor={linkDetail.dominantColor}
-        />
+      {/* 배경은 다른 화면과 동일한 기본 배경 — 이미지 블러·대표색 추출 없음(Figma 정책 106:12076). */}
+      <View className="flex-1 bg-background-base">
         <ScrollView
           className="flex-1"
           contentContainerClassName="gap-6 pb-8"
