@@ -16,6 +16,7 @@ import {
   useDeleteLinkMutation,
   useRestoreLinkMutation,
   useUpdateLinkFolderMutation,
+  useUpdateLinkMutation,
 } from "./link.queries";
 
 const mockGet = apiClient.get as jest.Mock;
@@ -125,17 +126,73 @@ describe("useRestoreLinkMutation", () => {
 });
 
 describe("linkQueries.detail", () => {
-  it("링크 상세를 조회해 data 를 반환한다", async () => {
+  it("링크 상세를 조회해 UI LinkDetail 로 매핑해 반환한다", async () => {
     mockGet.mockReset().mockResolvedValue({
-      data: { success: true, data: { linkId: 42, url: "https://toss.tech" } },
+      data: {
+        success: true,
+        data: {
+          linkId: 42,
+          url: "https://toss.tech",
+          folder: null,
+          thumbnailUrl: null,
+          title: "제목",
+          source: "toss.tech",
+          publishedAt: null,
+          savedAt: "2026-07-13T00:00:00.000Z",
+          isFavorite: false,
+          viewedAt: null,
+          processingStatus: "SUCCESS",
+          aiSummary: null,
+          tags: [],
+          memo: null,
+          relatedLinks: [],
+        },
+      },
     });
 
     const { queryFn } = linkQueries.detail("42");
-    const detail = await (queryFn as (context: unknown) => Promise<unknown>)({
+    const detail = (await (queryFn as (context: unknown) => Promise<unknown>)({
       signal: undefined,
-    });
+    })) as { linkId: number; url: string; title: string };
 
     expect(mockGet).toHaveBeenCalledWith("/links/42", { signal: undefined });
-    expect(detail).toEqual({ linkId: 42, url: "https://toss.tech" });
+    expect(detail.linkId).toBe(42);
+    expect(detail.url).toBe("https://toss.tech");
+    expect(detail.title).toBe("제목");
+  });
+});
+
+describe("useUpdateLinkMutation", () => {
+  beforeEach(() => {
+    mockPatch.mockReset().mockResolvedValue({ data: { success: true } });
+  });
+
+  it("전달된 필드만 PATCH 로 보낸다(메모)", async () => {
+    const { result } = await renderMutation(useUpdateLinkMutation);
+    result.current.mutate({ linkId: 42, memo: "새 메모" });
+
+    await waitFor(() =>
+      expect(mockPatch).toHaveBeenCalledWith("/links/42", { memo: "새 메모" }),
+    );
+  });
+
+  it("즐겨찾기만 보낼 수 있다", async () => {
+    const { result } = await renderMutation(useUpdateLinkMutation);
+    result.current.mutate({ linkId: 42, isFavorite: true });
+
+    await waitFor(() =>
+      expect(mockPatch).toHaveBeenCalledWith("/links/42", { isFavorite: true }),
+    );
+  });
+
+  it("성공 시 상세·폴더 캐시를 무효화한다", async () => {
+    const { result, invalidate } = await renderMutation(useUpdateLinkMutation);
+    result.current.mutate({ linkId: 42, memo: "x" });
+
+    await waitFor(() =>
+      expect(
+        invalidate.mock.calls.map(([options]) => options?.queryKey?.[0]),
+      ).toEqual(expect.arrayContaining(["link", "folder"])),
+    );
   });
 });

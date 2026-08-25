@@ -255,6 +255,32 @@ export function useRestoreLinkMutation() {
   });
 }
 
+export interface UpdateLinkVariables {
+  linkId: number;
+  /** null 은 미분류로 이동. */
+  folderId?: number | null;
+  memo?: string;
+  isFavorite?: boolean;
+}
+
+// PATCH /links/{linkId} — folder·memo·isFavorite 중 전달된 필드만 변경한다(상세 화면 저장용).
+export function useUpdateLinkMutation() {
+  const queryClient = useQueryClient();
+  const invalidateFolderCaches = useInvalidateFolderCaches();
+
+  return useMutation({
+    mutationFn: async ({ linkId, ...body }: UpdateLinkVariables) => {
+      await apiClient.patch(`/links/${linkId}`, body);
+    },
+    onSuccess: (_data, { linkId }) => {
+      queryClient.invalidateQueries({
+        queryKey: linkKeys.detail(String(linkId)),
+      });
+      invalidateFolderCaches();
+    },
+  });
+}
+
 // DELETE /links/{linkId} — soft delete 라 링크는 "최근 삭제된 링크" 폴더로 옮겨간다.
 export function useDeleteLinkMutation() {
   const invalidateFolderCaches = useInvalidateFolderCaches();
