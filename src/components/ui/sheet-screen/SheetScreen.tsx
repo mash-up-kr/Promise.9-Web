@@ -8,13 +8,24 @@ import type { SheetScreenProps } from "./sheet-screen.types";
 
 // 바텀시트 라우트(새 폴더·링크 저장…)의 공통 레이아웃.
 // 플랫폼별 껍데기는 SheetShell 에 위임하고, 여기선 스크롤·여백 스캐폴드만 담당한다.
-export function SheetScreen({ children, onClose }: SheetScreenProps) {
+export function SheetScreen({
+  children,
+  onClose,
+  header,
+  backdropPressBehavior,
+  isLocked,
+}: SheetScreenProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const close = onClose ?? (() => router.back());
 
   return (
-    <SheetShell onClose={close}>
+    <SheetShell
+      onClose={close}
+      backdropPressBehavior={backdropPressBehavior}
+      isLocked={isLocked}
+    >
+      {header}
       <BottomSheetScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}

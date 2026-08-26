@@ -12,6 +12,10 @@ export interface BottomSheetProps {
   onClose: () => void;
   children: ReactNode;
   snapPoints?: (string | number)[];
+  /** 백드롭 탭 시 동작. "none" 이면 탭으로 닫히지 않는다. 기본 "close". */
+  backdropPressBehavior?: "close" | "none";
+  /** true 면 pan-down 제스처로 닫히지 않는다. 기본 false. */
+  isLocked?: boolean;
 }
 
 // Figma Sheet Container: gray-900 솔리드 + 상단 radius 24 + 위쪽 그림자.
@@ -36,6 +40,8 @@ export function BottomSheet({
   onClose,
   children,
   snapPoints,
+  backdropPressBehavior = "close",
+  isLocked = false,
 }: BottomSheetProps) {
   const ref = useRef<GorhomBottomSheet>(null);
 
@@ -69,11 +75,11 @@ export function BottomSheet({
         {...props}
         appearsOnIndex={0}
         disappearsOnIndex={-1}
-        pressBehavior="close"
+        pressBehavior={backdropPressBehavior}
         opacity={0.6}
       />
     ),
-    [],
+    [backdropPressBehavior],
   );
 
   return (
@@ -82,7 +88,7 @@ export function BottomSheet({
       index={0}
       snapPoints={snapPoints}
       enableDynamicSizing={!snapPoints}
-      enablePanDownToClose
+      enablePanDownToClose={!isLocked}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
