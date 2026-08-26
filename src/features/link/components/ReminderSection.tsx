@@ -16,6 +16,7 @@ import Animated, {
 
 import { Icon } from "@/components/ui/icon/Icon";
 import { Text } from "@/components/ui/text/Text";
+import { isWeb } from "@/constants/platform.constants";
 import { requestReminderPermission } from "@/features/link/reminder.permissions";
 import {
   addDaysDate,
@@ -51,35 +52,28 @@ export function ReminderSection({ value, onChange }: ReminderSectionProps) {
   const [selectedPresetDays, setSelectedPresetDays] = useState<number | null>(
     null,
   );
-  // 주사위로 고른 날짜엔 "랜덤 날짜" 배지를 보여준다(frame-reminder-random 시안) — 프리셋·직접
-  // 선택 시엔 꺼진다.
-  const [isRandomSelected, setIsRandomSelected] = useState(false);
   const [openPicker, setOpenPicker] = useState<"date" | "time" | null>(null);
 
   const handleToggle = (isEnabled: boolean) => {
     if (!isEnabled) {
       setSelectedPresetDays(null);
-      setIsRandomSelected(false);
       onChange(null);
       return;
     }
     requestReminderPermission(); // 결과 무관 — 거부해도 토글 유지(이메일 알림)
     setSelectedPresetDays(1);
-    setIsRandomSelected(false);
     onChange({ date: getTomorrowDate(), ...roundUpToQuarter() });
   };
 
   const handlePreset = (days: number) => {
     if (!value) return;
     setSelectedPresetDays(days);
-    setIsRandomSelected(false);
     onChange({ ...value, date: addDaysDate(days) });
   };
 
   const handleRandom = () => {
     if (!value) return;
     setSelectedPresetDays(null);
-    setIsRandomSelected(true);
     onChange({ ...value, date: addDaysDate(getRandomReminderDays()) });
   };
 
@@ -100,7 +94,6 @@ export function ReminderSection({ value, onChange }: ReminderSectionProps) {
         <ReminderOnCard
           value={value}
           selectedPresetDays={selectedPresetDays}
-          isRandomSelected={isRandomSelected}
           onPreset={handlePreset}
           onRandom={handleRandom}
           onOpenDate={() => setOpenPicker("date")}
@@ -112,7 +105,6 @@ export function ReminderSection({ value, onChange }: ReminderSectionProps) {
           value={value.date}
           onConfirm={(date) => {
             setSelectedPresetDays(null);
-            setIsRandomSelected(false);
             onChange({ ...value, date });
             setOpenPicker(null);
           }}
@@ -147,7 +139,6 @@ function ReminderOffRow() {
 interface ReminderOnCardProps {
   value: ReminderValue;
   selectedPresetDays: number | null;
-  isRandomSelected: boolean;
   onPreset: (days: number) => void;
   onRandom: () => void;
   onOpenDate: () => void;
@@ -157,7 +148,6 @@ interface ReminderOnCardProps {
 function ReminderOnCard({
   value,
   selectedPresetDays,
-  isRandomSelected,
   onPreset,
   onRandom,
   onOpenDate,
@@ -165,16 +155,9 @@ function ReminderOnCard({
 }: ReminderOnCardProps) {
   return (
     <View className="w-full gap-4 rounded-[20px] bg-opacity-white-10 p-4">
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center gap-1.5">
-          <Icon iconNode={Bell} size={14} className="text-text-normal" />
-          <Text variant="body-2-normal">언제 알려드릴까요?</Text>
-        </View>
-        {isRandomSelected && (
-          <View className="rounded-[10px] bg-opacity-black-30 px-3 py-1.5">
-            <Text variant="body-2-normal">랜덤 날짜</Text>
-          </View>
-        )}
+      <View className="flex-row items-center gap-1.5">
+        <Icon iconNode={Bell} size={14} className="text-text-normal" />
+        <Text variant="body-2-normal">언제 알려드릴까요?</Text>
       </View>
       <View className="flex-row items-center gap-2">
         {PRESETS.map((preset) => (
@@ -246,6 +229,8 @@ interface DiceButtonProps {
 function DiceButton({ onPress }: DiceButtonProps) {
   const rotate = useSharedValue(0);
   const scale = useSharedValue(1);
+  // 웹 전용 hover 툴팁 — 네이티브에선 onHoverIn/Out 이 발화하지 않지만, 정책상 명시적으로도 막는다.
+  const [isHovered, setIsHovered] = useState(false);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotate.value}deg` }, { scale: scale.value }],
@@ -271,8 +256,18 @@ function DiceButton({ onPress }: DiceButtonProps) {
       accessibilityRole="button"
       accessibilityLabel="랜덤 날짜"
       onPress={handlePress}
+      onHoverIn={() => isWeb && setIsHovered(true)}
+      onHoverOut={() => setIsHovered(false)}
       className="h-10 w-10 items-center justify-center rounded-full bg-opacity-white-10"
     >
+      {isWeb && isHovered && (
+        <View
+          pointerEvents="none"
+          className="absolute bottom-full mb-2 items-center rounded-[10px] bg-opacity-black-30 px-3 py-1.5"
+        >
+          <Text variant="body-2-normal">랜덤 날짜</Text>
+        </View>
+      )}
       <Animated.View style={animatedStyle}>
         <Icon iconNode={Dices} className="text-text-normal" />
       </Animated.View>

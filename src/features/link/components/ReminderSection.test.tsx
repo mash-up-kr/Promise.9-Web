@@ -95,6 +95,9 @@ it("주사위 탭 → 1~180일 범위 날짜로 변경", async () => {
   const next = onChange.mock.calls[0][0];
   expect(next.date > "2026-08-26").toBe(true);
   expect(next.date <= "2027-02-26").toBe(true);
+  // "랜덤 날짜" 툴팁은 웹 hover 전용 — 네이티브 press 만으론(hover 없이) 노출되지 않는다.
+  // (hover 자체는 jest 환경에서 검증 불가 — 수동 웹 스모크로 확인)
+  expect(screen.queryByText("랜덤 날짜")).toBeNull();
 });
 
 it("최초 토글 on 시 알림 권한을 요청한다", async () => {
