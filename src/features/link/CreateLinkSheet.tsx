@@ -13,7 +13,6 @@ import { isWeb } from "@/constants/platform.constants";
 import { useCreateLinkMutation } from "@/entities/link/link.queries";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { MemoField } from "@/features/link/components/MemoField";
-import { RemindQuestionSection } from "@/features/link/components/RemindQuestionSection";
 import {
   type CreateLinkForm,
   createLinkSchema,
@@ -51,7 +50,6 @@ function CreateLinkSheetContent() {
       mode: "onChange",
       defaultValues: {
         url: "",
-        remindType: undefined,
         memo: "",
         previewUrl: "",
       },
@@ -105,7 +103,7 @@ function CreateLinkSheetContent() {
         url: values.url,
         folderId: null,
         memo: values.memo?.trim() || null,
-        remindType: values.remindType,
+        reminderAt: null,
       },
       { onSuccess: () => dismiss() },
     );
@@ -150,17 +148,6 @@ function CreateLinkSheetContent() {
               </InputSlot>
             )}
           </Input>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="remindType"
-        render={({ field }) => (
-          <RemindQuestionSection
-            value={field.value ?? null}
-            onChange={field.onChange}
-          />
         )}
       />
 

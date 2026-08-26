@@ -78,20 +78,19 @@ describe("CreateLinkSheet", () => {
     });
   });
 
-  test("URL·리마인드 미충족이면 저장 버튼이 비활성이다", async () => {
+  test("URL 미충족이면 저장 버튼이 비활성이다", async () => {
     await renderSheet();
     expect(
       screen.getByLabelText("저장").props.accessibilityState.disabled,
     ).toBe(true);
   });
 
-  test("URL+리마인드 충족 시 저장이 활성화되고 저장하면 시트를 닫는다", async () => {
+  test("URL 충족 시 저장이 활성화되고 저장하면 시트를 닫는다", async () => {
     await renderSheet();
     await fireEvent.changeText(
       screen.getByPlaceholderText("URL"),
       "https://example.com",
     );
-    await fireEvent.press(screen.getByText("곧 활용할게요"));
     await waitFor(() =>
       expect(
         screen.getByLabelText("저장").props.accessibilityState.disabled,
@@ -107,7 +106,6 @@ describe("CreateLinkSheet", () => {
       screen.getByPlaceholderText("URL"),
       "https://example.com",
     );
-    await fireEvent.press(screen.getByText("곧 활용할게요"));
     await waitFor(() =>
       expect(
         screen.getByLabelText("저장").props.accessibilityState.disabled,
@@ -119,7 +117,7 @@ describe("CreateLinkSheet", () => {
         url: "https://example.com",
         folderId: null,
         memo: null,
-        remindType: "soon",
+        reminderAt: null,
       }),
     );
   });
@@ -136,7 +134,6 @@ describe("CreateLinkSheet", () => {
       ),
       "  기억할 것  ",
     );
-    await fireEvent.press(screen.getByText("곧 활용할게요"));
     await waitFor(() =>
       expect(
         screen.getByLabelText("저장").props.accessibilityState.disabled,
@@ -148,7 +145,7 @@ describe("CreateLinkSheet", () => {
         url: "https://example.com",
         folderId: null,
         memo: "기억할 것",
-        remindType: "soon",
+        reminderAt: null,
       }),
     );
   });
@@ -163,7 +160,6 @@ describe("CreateLinkSheet", () => {
       screen.getByPlaceholderText("URL"),
       "https://example.com",
     );
-    await fireEvent.press(screen.getByText("곧 활용할게요"));
     await waitFor(() =>
       expect(
         screen.getByLabelText("저장").props.accessibilityState.disabled,
