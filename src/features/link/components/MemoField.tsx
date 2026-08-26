@@ -45,15 +45,13 @@ export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
           // iOS 상단 여백 이슈 우회
           style={{ verticalAlign: "top", padding: 0 }}
         />
-        {/* 카운터는 입력값이 있을 때만 노출한다(빈 상태=placeholder 만). */}
-        {memo.length > 0 && (
-          <Text
-            variant="caption-2"
-            className="w-full text-right text-text-alternative"
-          >
-            {memo.length}/{MEMO_MAX_LENGTH}
-          </Text>
-        )}
+        {/* 시안: 빈 상태에서도 "0/300" 카운터를 상시 노출한다. */}
+        <Text
+          variant="caption-2"
+          className="w-full text-right text-text-alternative"
+        >
+          {memo.length}/{MEMO_MAX_LENGTH}
+        </Text>
       </View>
     </View>
   );
