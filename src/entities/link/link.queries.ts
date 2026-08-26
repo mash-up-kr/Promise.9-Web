@@ -136,7 +136,6 @@ export const linkQueries = {
 
 export interface CreateLinkPayload {
   url: string;
-  // 저장 시트엔 폴더 선택이 없어 항상 null — 폴더 지정은 링크 상세(PATCH)에서.
   folderId: number | null;
   memo: string | null;
   reminderAt: string | null;

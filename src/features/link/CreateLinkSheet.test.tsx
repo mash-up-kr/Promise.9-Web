@@ -342,6 +342,29 @@ describe("CreateLinkSheet", () => {
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
   });
 
+  test("저장 중에는 취소 버튼을 눌러도 시트가 닫히지 않는다", async () => {
+    let resolvePost: (value: unknown) => void = () => {};
+    mockPost.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolvePost = resolve;
+      }),
+    );
+    await renderSheet();
+    await fillValidUrl();
+    await pressSave();
+
+    await fireEvent.press(screen.getByText("취소"));
+    expect(mockBack).not.toHaveBeenCalled();
+
+    resolvePost({
+      data: {
+        success: true,
+        data: { linkId: 1, url: "https://example.com", savedAt: "" },
+      },
+    });
+    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+  });
+
   test("취소하면 시트를 닫는다", async () => {
     await renderSheet();
     await fireEvent.press(screen.getByText("취소"));

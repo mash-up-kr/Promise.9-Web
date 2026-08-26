@@ -176,7 +176,10 @@ function CreateLinkSheetHeader({
   const dismiss = useSheetDismiss();
 
   return (
-    <View className="bg-gray-900">
+    <View
+      pointerEvents={isConfirmPending ? "none" : "auto"}
+      className="bg-gray-900"
+    >
       <BottomSheetHeader
         title="링크 저장"
         onCancel={dismiss}
