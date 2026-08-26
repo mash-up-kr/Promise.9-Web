@@ -9,6 +9,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from "react-native";
 
@@ -149,7 +150,9 @@ function ThumbnailCarousel({
   url: string;
 }) {
   const [page, setPage] = useState(0);
-  const [width, setWidth] = useState(0);
+  // 초기 폭을 화면 폭으로 추정해 첫 페인트의 width:0 깜빡임을 없앤다. onLayout 이 실제 폭으로 보정한다.
+  const { width: windowWidth } = useWindowDimensions();
+  const [width, setWidth] = useState(windowWidth);
 
   const handleLayout = (event: LayoutChangeEvent) => {
     setWidth(event.nativeEvent.layout.width);
