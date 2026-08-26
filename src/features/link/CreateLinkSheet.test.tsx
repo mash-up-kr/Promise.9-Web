@@ -250,16 +250,14 @@ describe("CreateLinkSheet", () => {
     expect(await screen.findByText("프리뷰 제목")).toBeOnTheScreen();
   });
 
-  test("추출 실패 시 실패 안내 카드를 보여준다", async () => {
+  test("추출 실패 시 도메인 폴백 카드를 보여준다", async () => {
     const spy = jest.spyOn(console, "error").mockImplementation(() => {});
     apiClient.get.mockRejectedValueOnce(new Error("500"));
     await renderSheet();
     const input = screen.getByPlaceholderText("URL");
     await fireEvent.changeText(input, "https://toss.tech/x");
     await fireEvent(input, "blur");
-    expect(
-      await screen.findByText("링크 정보를 가져오지 못했어요."),
-    ).toBeOnTheScreen();
+    expect(await screen.findByText("toss.tech")).toBeOnTheScreen();
     spy.mockRestore();
   });
 
