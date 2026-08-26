@@ -3,7 +3,11 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Star } from "lucide-react-native";
 import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import {
+  Controller,
+  type ControllerRenderProps,
+  useForm,
+} from "react-hook-form";
 import { ScrollView, View } from "react-native";
 import {
   AlertDialog,
@@ -102,14 +106,35 @@ function LinkDetailContent() {
   const { mutate: updateLink } = useUpdateLinkMutation();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  const handleToggleFavorite = (current: boolean) => {
-    updateLink({ linkId: linkDetail.linkId, isFavorite: !current });
+  // 별은 낙관적으로 먼저 뒤집고, PATCH 가 실패하면 원복 + 스낵바로 알린다
+  // (성공 시에만 refetch 되므로, 실패를 삼키면 서버와 어긋난 별이 그대로 남는다).
+  const handleToggleFavorite = (
+    field: ControllerRenderProps<LinkDetailForm, "isFavorite">,
+  ) => {
+    const next = !field.value;
+    field.onChange(next);
+    updateLink(
+      { linkId: linkDetail.linkId, isFavorite: next },
+      {
+        onError: () => {
+          field.onChange(!next);
+          show({ message: "즐겨찾기를 변경하지 못했어요. 다시 시도해주세요." });
+        },
+      },
+    );
   };
 
   const handleMemoBlur = (memo: string) => {
     // 서버값과 다를 때만 저장 — 열어만 보고 닫으면 요청하지 않는다.
     if (memo !== (linkDetail.memo ?? "")) {
-      updateLink({ linkId: linkDetail.linkId, memo });
+      // 메모는 원복하지 않는다 — 사용자가 입력한 텍스트를 유지해 재시도할 수 있게 한다.
+      updateLink(
+        { linkId: linkDetail.linkId, memo },
+        {
+          onError: () =>
+            show({ message: "메모를 저장하지 못했어요. 다시 시도해주세요." }),
+        },
+      );
     }
   };
 
@@ -180,10 +205,7 @@ function LinkDetailContent() {
                         accessibilityState={{ selected: field.value }}
                         // 켜짐은 채운 별로 구분한다. 색은 IconButton 의 icon-strong 을 따른다.
                         iconFill={field.value ? "currentColor" : "none"}
-                        onPress={() => {
-                          handleToggleFavorite(field.value);
-                          field.onChange(!field.value);
-                        }}
+                        onPress={() => handleToggleFavorite(field)}
                       />
                     )}
                   />

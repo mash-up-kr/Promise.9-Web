@@ -3,6 +3,7 @@ import {
   render,
   screen,
   userEvent,
+  waitFor,
 } from "@testing-library/react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -111,7 +112,8 @@ describe("LinkDetailScreen", () => {
     mockBack.mockClear();
     mockPush.mockClear();
     mockDelete.mockClear();
-    mockUpdate.mockClear();
+    // 성공 경로가 기본 — 구현·호출 이력을 함께 비운다(실패 테스트가 심은 onError 구현이 새지 않도록).
+    mockUpdate.mockReset();
     (share.shareUrl as jest.Mock).mockResolvedValue("copied");
     mockRoute.id = String(mockLinkDetail.linkId);
     mockDetailData.current = mockLinkDetail;
@@ -127,6 +129,7 @@ describe("LinkDetailScreen", () => {
         linkId: mockLinkDetail.linkId,
         isFavorite: true,
       }),
+      expect.objectContaining({ onError: expect.any(Function) }),
     );
   });
 
@@ -143,6 +146,45 @@ describe("LinkDetailScreen", () => {
         linkId: mockLinkDetail.linkId,
         memo: `${mockLinkDetail.memo}!`,
       }),
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+  });
+
+  test("즐겨찾기 저장 실패 시 별을 원복하고 스낵바를 띄운다", async () => {
+    // PATCH 가 실패하면 mutate 는 넘겨받은 onError 를 호출한다.
+    mockUpdate.mockImplementation((_vars, opts) => opts?.onError?.());
+    const user = userEvent.setup();
+    await renderScreen();
+    const favoriteButton = () =>
+      screen.getByRole("button", { name: "즐겨찾기" });
+
+    expect(favoriteButton().props.accessibilityState.selected).toBe(false);
+    await user.press(favoriteButton());
+
+    // 낙관적으로 켜졌다가 실패로 원복 → 다시 false.
+    expect(favoriteButton().props.accessibilityState.selected).toBe(false);
+    expect(
+      await screen.findByText(
+        "즐겨찾기를 변경하지 못했어요. 다시 시도해주세요.",
+      ),
+    ).toBeOnTheScreen();
+  });
+
+  test("메모 저장 실패 시 스낵바를 띄운다", async () => {
+    mockUpdate.mockImplementation((_vars, opts) => opts?.onError?.());
+    const user = userEvent.setup();
+    await renderScreen();
+    const input = screen.getByPlaceholderText(
+      "저장한 이유나 기억하고 싶은 점을 적어보세요",
+    );
+    await user.type(input, "!");
+    fireEvent(input, "blur");
+
+    // fireEvent(blur) 는 스낵바 진입 애니메이션을 끝까지 flush 하지 않아, 매 폴링마다 새로 조회한다.
+    await waitFor(() =>
+      expect(
+        screen.getByText("메모를 저장하지 못했어요. 다시 시도해주세요."),
+      ).toBeOnTheScreen(),
     );
   });
 
