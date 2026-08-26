@@ -55,3 +55,13 @@ it("연/월 휠 모드 — 범위 연도만 노출되고 확인 시 해당 월 �
   await user.press(screen.getByRole("button", { name: "확인" }));
   expect(screen.queryByTestId("wheel-year")).toBeNull(); // 캘린더 복귀
 });
+
+it("연/월 휠 서브헤더가 현재 선택값을 반영하고 연도 변경 시 갱신된다", async () => {
+  const { user } = await setup();
+  await user.press(screen.getByRole("button", { name: "연/월 선택" }));
+  expect(screen.getByText("2026년 8월")).toBeTruthy();
+
+  // 2027년은 최댓달이 2월이라 8월은 범위를 벗어나 2월로 클램프된다.
+  await user.press(screen.getByRole("button", { name: "2027년" }));
+  expect(screen.getByText("2027년 2월")).toBeTruthy();
+});

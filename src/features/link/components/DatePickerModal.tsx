@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useState } from "react";
 import { Modal, Pressable, View } from "react-native";
 
@@ -298,22 +298,30 @@ function YearMonthWheel({
   });
 
   return (
-    <View className="flex-row gap-2">
-      <View className="flex-1">
-        <WheelPicker
-          items={yearItems}
-          selectedValue={wheelYear}
-          onChange={onChangeYear}
-          testID="wheel-year"
-        />
+    <View className="gap-4">
+      <View className="flex-row items-center gap-1">
+        <Text variant="heading-3" className="text-text-strong">
+          {wheelYear}년 {wheelMonth}월
+        </Text>
+        <Icon iconNode={ChevronDown} className="text-text-strong" size={16} />
       </View>
-      <View className="flex-1">
-        <WheelPicker
-          items={monthItems}
-          selectedValue={wheelMonth}
-          onChange={onChangeMonth}
-          testID="wheel-month"
-        />
+      <View className="flex-row gap-2">
+        <View className="flex-1">
+          <WheelPicker
+            items={yearItems}
+            selectedValue={wheelYear}
+            onChange={onChangeYear}
+            testID="wheel-year"
+          />
+        </View>
+        <View className="flex-1">
+          <WheelPicker
+            items={monthItems}
+            selectedValue={wheelMonth}
+            onChange={onChangeMonth}
+            testID="wheel-month"
+          />
+        </View>
       </View>
     </View>
   );
