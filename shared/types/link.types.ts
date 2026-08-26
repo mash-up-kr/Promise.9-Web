@@ -69,14 +69,12 @@ export interface LinkDetail extends LinkBase {
   processingStatus: LinkProcessingStatus;
   /** AI 요약. processingStatus 로 처리 중·실패·완료 상태를 구분 */
   aiSummary: string | null;
-  /** 태그 목록. 처리 중이면 null, 처리 완료 후 결과가 없으면 빈 배열 */
-  tags: LinkTag[] | null;
+  /** 태그 목록. 서버가 항상 배열을 보장한다(결과 없으면 빈 배열). */
+  tags: LinkTag[];
   memo: string | null;
   isFavorite: boolean;
-  /** 연관 링크. 처리 중이면 null, 처리 완료 후 결과가 없으면 빈 배열 */
-  relatedLinks: RelatedLink[] | null;
-  /** 썸네일 대표색 — 백엔드 미제공, mock/UI 전용(동적 배경에 사용). */
-  dominantColor?: string;
+  /** 연관 링크. 서버가 항상 배열을 보장한다(결과 없으면 빈 배열). */
+  relatedLinks: RelatedLink[];
 }
 
 /** 연관 링크 카드용 — 서버 RelatedLinkDto 기반. */

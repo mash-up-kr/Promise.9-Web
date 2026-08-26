@@ -289,7 +289,7 @@ function LinkDetailContent() {
           </View>
 
           <View className="mt-6">
-            <RelatedLinksList items={linkDetail.relatedLinks ?? []} />
+            <RelatedLinksList items={linkDetail.relatedLinks} />
           </View>
         </ScrollView>
       </View>
