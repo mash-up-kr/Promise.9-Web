@@ -111,4 +111,14 @@ describe("LinkPreviewCard", () => {
     ).toBeOnTheScreen();
     expect(screen.queryByTestId("link-preview-thumbnail")).toBeNull();
   });
+
+  // 상위(CreateLinkSheet)가 다른 요소와 하나의 카드로 합쳐 보여줄 때 셸(rounded·배경)을 생략한다.
+  test("isBare 이면 셸 없이 내용만 렌더한다", async () => {
+    mockPreviewOnce(preview);
+    await render(<LinkPreviewCard url="https://toss.tech/x" isBare />, {
+      wrapper: wrapper(),
+    });
+    expect(await screen.findByText("프리뷰 제목")).toBeOnTheScreen();
+    expect(screen.queryByTestId("link-preview-card")).toBeNull();
+  });
 });

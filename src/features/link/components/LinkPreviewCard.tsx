@@ -14,11 +14,16 @@ const TIMEOUT_MS = 5000;
 
 export interface LinkPreviewCardProps {
   url: string;
+  /**
+   * true 면 셸(rounded·배경·testID)을 생략하고 내용만 렌더한다 — 상위가 다른 요소와
+   * 하나의 카드로 합쳐 보여줄 때 쓴다(CreateLinkSheet 의 통합 프리뷰+URL 카드). 기본 false(기존 동작).
+   */
+  isBare?: boolean;
 }
 
 // 5초 타임아웃이 pending 상태를 직접 다뤄야 해 Suspense(useSuspenseQuery) 대신
 // 명시적 상태 머신(useQuery)을 쓴다 — 프로젝트 기본은 Suspense 지만 이 카드만 예외.
-export function LinkPreviewCard({ url }: LinkPreviewCardProps) {
+export function LinkPreviewCard({ url, isBare = false }: LinkPreviewCardProps) {
   const { data, isPending, isError, fetchStatus } = useQuery({
     ...linkQueries.preview(url),
     enabled: url.length > 0,
@@ -44,33 +49,39 @@ export function LinkPreviewCard({ url }: LinkPreviewCardProps) {
   const isPaused = fetchStatus === "paused";
 
   if (isPending && !isTimedOut && !isPaused) {
-    return <PreviewSkeleton />;
+    return <PreviewSkeleton isBare={isBare} />;
   }
 
   if ((isPending && (isTimedOut || isPaused)) || isError || !data) {
-    return <PreviewFallback title={domain ?? FALLBACK_TITLE} />;
+    return <PreviewFallback title={domain ?? FALLBACK_TITLE} isBare={isBare} />;
   }
 
   return (
-    <PreviewShell>
+    <PreviewShell isBare={isBare}>
       <ThumbnailSlot thumbnailUrl={data.thumbnailUrl} />
       <PreviewTitle title={data.title ?? domain ?? FALLBACK_TITLE} />
     </PreviewShell>
   );
 }
 
-function PreviewFallback({ title }: { title: string }) {
+function PreviewFallback({
+  title,
+  isBare,
+}: {
+  title: string;
+  isBare: boolean;
+}) {
   return (
-    <PreviewShell>
+    <PreviewShell isBare={isBare}>
       <PlaceholderIcon />
       <PreviewTitle title={title} />
     </PreviewShell>
   );
 }
 
-function PreviewSkeleton() {
+function PreviewSkeleton({ isBare }: { isBare: boolean }) {
   return (
-    <PreviewShell>
+    <PreviewShell isBare={isBare}>
       <Skeleton testID="link-preview-skeleton" className="size-16 rounded-xl" />
       <View className="flex-1 gap-2">
         <Skeleton className="h-4 w-3/4" />
@@ -80,7 +91,19 @@ function PreviewSkeleton() {
   );
 }
 
-function PreviewShell({ children }: { children: ReactNode }) {
+function PreviewShell({
+  children,
+  isBare,
+}: {
+  children: ReactNode;
+  isBare: boolean;
+}) {
+  if (isBare) {
+    return (
+      <View className="w-full flex-row items-center gap-3">{children}</View>
+    );
+  }
+
   return (
     <View
       testID="link-preview-card"

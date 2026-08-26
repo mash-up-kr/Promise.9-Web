@@ -194,7 +194,8 @@ interface UrlPreviewFieldProps {
   watch: UseFormWatch<CreateLinkForm>;
 }
 
-// 시안 통합 카드: LinkPreviewCard(상단, previewUrl 빈 값이면 렌더 없음) + URL 입력(하단).
+// 시안 통합 카드: previewUrl 이 있으면 LinkPreviewCard(셸 없이) + URL 입력을 하나의 라운드
+// 컨테이너로 합치고(frame-skeleton/save-success), 없으면 URL 입력 하나만 보인다(frame-empty).
 function UrlPreviewField({ control, setValue, watch }: UrlPreviewFieldProps) {
   // 클립보드를 자동으로 읽으면 iOS 가 시트를 열 때마다 붙여넣기 권한 팝업을 띄운다.
   // 존재 확인(hasStringAsync)은 팝업이 없으므로 버튼 노출만 결정하고, 실제 읽기는
@@ -203,6 +204,7 @@ function UrlPreviewField({ control, setValue, watch }: UrlPreviewFieldProps) {
   const [canPaste, setCanPaste] = useState(isWeb);
   // 프리뷰는 blur/붙여넣기로 확정된 유효 URL 에 대해서만 조회한다(입력 중엔 idle). previewUrl 은 폼 상태.
   const previewUrl = watch("previewUrl") ?? "";
+  const hasPreview = previewUrl.length > 0;
 
   const commitPreview = (value: string) => {
     const isValid = linkUrlSchema.safeParse(value).success;
@@ -234,39 +236,47 @@ function UrlPreviewField({ control, setValue, watch }: UrlPreviewFieldProps) {
       .catch(console.error);
   };
 
+  const urlField = (
+    <Controller
+      control={control}
+      name="url"
+      render={({ field }) => (
+        <>
+          <InputField
+            placeholder="URL"
+            autoCapitalize="none"
+            keyboardType="url"
+            value={field.value}
+            onChangeText={field.onChange}
+            onBlur={() => {
+              field.onBlur();
+              commitPreview(field.value);
+            }}
+          />
+          {canPaste && !field.value && (
+            <InputSlot
+              accessibilityRole="button"
+              onPress={handlePasteUrl}
+              className="pl-3"
+            >
+              <Text variant="body-2-normal" className="text-old-icon-accent">
+                붙여넣기
+              </Text>
+            </InputSlot>
+          )}
+        </>
+      )}
+    />
+  );
+
+  if (!hasPreview) {
+    return <Input variant="field">{urlField}</Input>;
+  }
+
   return (
-    <View className="w-full gap-2">
-      <LinkPreviewCard url={previewUrl} />
-      <Controller
-        control={control}
-        name="url"
-        render={({ field }) => (
-          <Input variant="field">
-            <InputField
-              placeholder="URL"
-              autoCapitalize="none"
-              keyboardType="url"
-              value={field.value}
-              onChangeText={field.onChange}
-              onBlur={() => {
-                field.onBlur();
-                commitPreview(field.value);
-              }}
-            />
-            {canPaste && !field.value && (
-              <InputSlot
-                accessibilityRole="button"
-                onPress={handlePasteUrl}
-                className="pl-3"
-              >
-                <Text variant="body-2-normal" className="text-old-icon-accent">
-                  붙여넣기
-                </Text>
-              </InputSlot>
-            )}
-          </Input>
-        )}
-      />
+    <View className="w-full gap-3 rounded-[20px] bg-opacity-white-10 p-4">
+      <LinkPreviewCard url={previewUrl} isBare />
+      <View className="flex-row items-center">{urlField}</View>
     </View>
   );
 }
