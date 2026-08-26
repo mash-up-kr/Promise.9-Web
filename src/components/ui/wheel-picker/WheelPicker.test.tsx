@@ -38,4 +38,20 @@ describe("WheelPicker", () => {
     );
     for (const item of ITEMS) expect(screen.getByText(item.label)).toBeTruthy();
   });
+
+  test("빈 items 로 momentumScrollEnd 를 fire 해도 throw 하지 않는다", async () => {
+    const onChange = jest.fn();
+    await render(
+      <WheelPicker
+        items={[]}
+        selectedValue={0}
+        onChange={onChange}
+        testID="wheel"
+      />,
+    );
+    fireEvent(screen.getByTestId("wheel"), "momentumScrollEnd", {
+      nativeEvent: { contentOffset: { y: 0 } },
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });
