@@ -13,7 +13,6 @@ export interface SaveRecord {
 }
 
 const SAVE_KEY = "save";
-const LOGGED_IN_KEY = "loggedIn";
 
 /**
  * 저장 기록은 `storage.session` 에 둔다 — 브라우저를 껐다 켜면 사라지는 게 맞는 값이고,
@@ -51,21 +50,4 @@ export function subscribeSaveRecord(
   chrome.storage.onChanged.addListener(listener);
 
   return () => chrome.storage.onChanged.removeListener(listener);
-}
-
-/**
- * 로그인 여부.
- *
- * ⚠️ 임시 구현: 이번 단계의 인증은 앱/웹과 같은 마스터 토큰(빌드 타임 주입)이라 실제 세션이 없다.
- * 시안의 로그인 화면 흐름만 그대로 태우기 위해 로컬 플래그로 대체한다. 실제 소셜 로그인(#auth)이
- * 붙으면 이 두 함수만 토큰 저장소 기반으로 갈아끼운다.
- */
-export async function readLoggedIn(): Promise<boolean> {
-  const stored = await chrome.storage.local.get(LOGGED_IN_KEY);
-
-  return stored[LOGGED_IN_KEY] === true;
-}
-
-export async function writeLoggedIn(loggedIn: boolean): Promise<void> {
-  await chrome.storage.local.set({ [LOGGED_IN_KEY]: loggedIn });
 }

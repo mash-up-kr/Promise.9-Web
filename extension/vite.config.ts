@@ -47,10 +47,6 @@ export default defineConfig(({ mode }) => {
       "process.env.EXPO_PUBLIC_API_BASE_URL": JSON.stringify(
         env.VITE_API_BASE_URL,
       ),
-      // 로그인 연동 전 임시 인증 수단 — 앱/웹과 같은 마스터 토큰을 쓴다(#auth 에서 제거).
-      "process.env.EXPO_PUBLIC_API_MASTER_TOKEN": JSON.stringify(
-        env.VITE_API_MASTER_TOKEN ?? "",
-      ),
     },
     test: {
       environment: "jsdom",

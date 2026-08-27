@@ -2,6 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
+import { installTokenPersistence } from "@/lib/auth/session";
 import { createExtensionQueryClient } from "@/lib/queryClient";
 import { SidePanelApp } from "@/sidepanel/SidePanelApp";
 import "@/styles/global.css";
@@ -9,6 +10,9 @@ import "@/styles/global.css";
 const queryClient = createExtensionQueryClient();
 
 async function bootstrap() {
+  // API 호출 전에 토큰 저장소를 붙인다 — 401 이 나면 인터셉터가 여기서 리프레시 토큰을 읽는다.
+  installTokenPersistence();
+
   // 확장으로 설치하지 않고 `pnpm dev` 주소를 일반 탭에서 열었을 때만 chrome API 를 흉내 낸다.
   // 프로덕션 빌드에서는 이 분기 자체가 제거된다.
   if (import.meta.env.DEV && typeof chrome?.tabs === "undefined") {

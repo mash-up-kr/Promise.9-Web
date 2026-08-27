@@ -14,6 +14,7 @@ import pkg from "./package.json" with { type: "json" };
  *   아이콘 클릭 시점에만 부여되는 `activeTab` 으로는 탭 전환을 따라갈 수 없다.
  * - `storage`: 저장 진행/결과를 background 와 주고받는다.
  * - `sidePanel`: 패널 열기·동작 설정.
+ * - `identity`: 구글 로그인 창(`launchWebAuthFlow`)을 띄우고 리다이렉트를 회수한다.
  */
 export default defineManifest({
   manifest_version: 3,
@@ -30,7 +31,7 @@ export default defineManifest({
     service_worker: "src/background/index.ts",
     type: "module",
   },
-  permissions: ["tabs", "storage", "sidePanel"],
+  permissions: ["tabs", "storage", "sidePanel", "identity"],
   host_permissions: ["https://api.link-ding-dong.com/*"],
   icons: {
     16: "icons/icon-16.png",
