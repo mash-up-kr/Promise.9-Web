@@ -43,8 +43,8 @@ function AiSummaryHeaderLabel() {
       <Icon
         iconNode={Sparkle}
         size={14}
-        className="text-old-icon-accent"
-        fill="#0093FF"
+        className="text-icon-accent"
+        fill="#FFFF66"
       />
       <Text variant="heading-3">AI 요약으로 미리보기</Text>
     </View>

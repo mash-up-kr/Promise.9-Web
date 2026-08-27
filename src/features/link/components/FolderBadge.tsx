@@ -121,14 +121,14 @@ export function FolderBadge({
           onPress={onSelectFolder}
           className="flex-row items-center"
         >
-          <Text variant="label-2-semibold" className="text-old-icon-accent">
+          <Text variant="label-2-semibold" className="text-yellow-200">
             폴더선택
           </Text>
           <Icon
             iconNode={ChevronRight}
             size={16}
             strokeWidth={1.5}
-            className="text-old-icon-accent"
+            className="text-icon-accent"
           />
         </Pressable>
       </View>
