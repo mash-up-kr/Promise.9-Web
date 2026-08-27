@@ -255,17 +255,34 @@ describe("SearchScreen", () => {
     await expectResultLinks("디자인");
   });
 
-  // 시안 모션: 300ms 애니메이션 후 320ms 시점에 트리에서 제거된다.
-  test("'모두 지우기' 를 누르면 애니메이션 뒤 최근 검색어 섹션이 사라진다", async () => {
+  // 삭제는 탭 즉시 확정된다 — 시안의 300ms 모션은 exiting 연출로 따라온다.
+  test("'모두 지우기' 를 누르면 최근 검색어 섹션이 사라진다", async () => {
     const user = setupUser();
     await renderScreen();
 
     await user.press(screen.getByRole("button", { name: "모두 지우기" }));
+
+    expect(screen.queryByText("최근 검색어")).not.toBeOnTheScreen();
+  });
+
+  // 삭제는 탭 즉시 확정돼야 한다 — 연출이 끝나기 전에 실행한 검색이 나중에 덮여
+  // 사라지면 안 된다.
+  test("'모두 지우기' 직후 검색한 키워드는 유실되지 않는다", async () => {
+    const user = setupUser();
+    await renderScreen();
+
+    await user.press(screen.getByRole("button", { name: "모두 지우기" }));
+    // 시안 제거 시점(320ms)이 오기 전에 새 검색을 실행한다.
+    await user.type(screen.getByPlaceholderText("검색"), "레시피", {
+      submitEditing: true,
+    });
     await act(async () => {
       jest.advanceTimersByTime(320);
     });
 
-    expect(screen.queryByText("최근 검색어")).not.toBeOnTheScreen();
+    await user.press(screen.getByRole("button", { name: "입력 지우기" }));
+
+    expect(screen.getByRole("button", { name: "레시피" })).toBeOnTheScreen();
   });
 
   test("최근 본 링크를 서버에서 받아 렌더한다", async () => {

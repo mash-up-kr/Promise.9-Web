@@ -2,16 +2,15 @@ import { isHttpError, NetworkError } from "@shared/api";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { isString } from "es-toolkit";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { View } from "react-native";
 import Animated, {
   Easing,
   FadeIn,
   FadeOut,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
+  Keyframe,
+  LinearTransition,
 } from "react-native-reanimated";
 import { useDebounce } from "react-simplikit";
 
@@ -38,14 +37,22 @@ import { addRecentKeyword } from "./search.utils";
 const CONTENT_FADE_MS = 280;
 const RESULT_FADE_IN_MS = 200;
 
-// 시안 "모두 지우기": 최근 검색어는 위로 32 뜨며 사라지고, 최근 본 링크가 그 자리(높이+48)로
-// 따라 올라온 뒤 320ms 시점에 트리에서 제거하며 transform 을 리셋한다.
-// height·margin 트랜지션은 레이아웃 재계산 jank 때문에 쓰지 않는다(시안 명시).
+// 시안 "모두 지우기": 최근 검색어는 위로 32 뜨며 사라지고, 최근 본 링크가 그 자리로 따라
+// 올라온다. 데이터는 탭 즉시 비운다 — 제거를 연출 타이머로 미루면 그 사이 실행된 검색이
+// 삭제에 덮여 유실된다. 연출은 언마운트 exiting 과 layout transition 이 따라온다.
 const CLEAR_MS = 300;
-const CLEAR_REMOVE_AT_MS = 320;
 const CLEAR_RECENT_RISE = -32;
-const CLEAR_SECTION_GAP = 48;
 const CLEAR_MOVE_EASING = Easing.bezier(0.4, 0, 0.2, 1);
+const clearRecentExiting = new Keyframe({
+  from: { opacity: 1, transform: [{ translateY: 0 }] },
+  to: {
+    opacity: 0,
+    transform: [{ translateY: CLEAR_RECENT_RISE }],
+    easing: CLEAR_MOVE_EASING,
+  },
+}).duration(CLEAR_MS);
+const clearLinksLayout =
+  LinearTransition.duration(CLEAR_MS).easing(CLEAR_MOVE_EASING);
 
 interface SearchFormValues {
   keyword: string;
@@ -178,58 +185,32 @@ function SearchDefaultContent({
   onPressKeyword,
   onClearKeywords,
 }: SearchDefaultContentProps) {
-  // 이동 거리는 칩 줄 수에 따라 달라져 런타임에 잰다(시안 명시).
-  const recentHeight = useSharedValue(0);
-  const clearProgress = useSharedValue(0);
-  const fadeProgress = useSharedValue(0);
-
-  const recentStyle = useAnimatedStyle(() => ({
-    opacity: 1 - fadeProgress.value,
-    transform: [{ translateY: CLEAR_RECENT_RISE * clearProgress.value }],
-  }));
-  const linksStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateY:
-          -(recentHeight.value + CLEAR_SECTION_GAP) * clearProgress.value,
-      },
-    ],
-  }));
-
-  function handleClearAll() {
-    // transform 만 시안 지정 베지어, opacity 는 기본 이징(시안 구분).
-    clearProgress.value = withTiming(1, {
-      duration: CLEAR_MS,
-      easing: CLEAR_MOVE_EASING,
-    });
-    fadeProgress.value = withTiming(1, { duration: CLEAR_MS });
-    setTimeout(() => {
-      onClearKeywords();
-      // 섹션이 트리에서 빠지면 아래 섹션이 제자리가 되므로 transform 을 리셋한다.
-      clearProgress.value = 0;
-      fadeProgress.value = 0;
-    }, CLEAR_REMOVE_AT_MS);
-  }
+  // exiting 은 언마운트 원인을 구분하지 못해 상시 부여하면 검색 커밋 크로스페이드에서도
+  // 발화한다(웹에서 사라짐이 두 번 보임) — "모두 지우기" 커밋에만 붙이고, 페인트 전
+  // layout effect 에서 곧바로 삭제 커밋을 이어 중간 프레임·레이스 창 없이 제거한다.
+  const [isClearing, setIsClearing] = useState(false);
+  useLayoutEffect(() => {
+    if (!isClearing) {
+      return;
+    }
+    onClearKeywords();
+    setIsClearing(false);
+  }, [isClearing, onClearKeywords]);
 
   return (
     <VStack className="gap-12 px-5 pt-6 pb-8">
       {/* 빈 래퍼가 남으면 gap-12 슬롯이 위 여백으로 남는다 — 검색어가 없으면 래퍼째 뺀다. */}
       {keywords.length > 0 && (
-        <Animated.View
-          style={recentStyle}
-          onLayout={(event) => {
-            recentHeight.value = event.nativeEvent.layout.height;
-          }}
-        >
+        <Animated.View exiting={isClearing ? clearRecentExiting : undefined}>
           <RecentSearchesSection
             keywords={keywords}
             onPressKeyword={onPressKeyword}
-            onClearAll={handleClearAll}
+            onClearAll={() => setIsClearing(true)}
           />
         </Animated.View>
       )}
       {/* 최근 본 링크는 부가 섹션 — 조회 실패로 화면 전체를 막지 않고 조용히 숨긴다. */}
-      <Animated.View style={linksStyle}>
+      <Animated.View layout={clearLinksLayout}>
         <AsyncBoundary pending={null} fallback={null}>
           <RecentViewedLinks />
         </AsyncBoundary>
