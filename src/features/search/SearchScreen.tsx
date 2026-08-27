@@ -3,7 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { isString } from "es-toolkit";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useLayoutEffect, useState } from "react";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { View } from "react-native";
 import Animated, {
   Easing,
@@ -67,10 +67,9 @@ export function SearchScreen() {
   const submittedQuery = isString(q) ? q : "";
   const [recentKeywords, setRecentKeywords] = useState(RECENT_SEARCH_KEYWORDS);
 
-  const { control, setValue } = useForm<SearchFormValues>({
+  const { control, setValue, subscribe } = useForm<SearchFormValues>({
     defaultValues: { keyword: submittedQuery },
   });
-  const keyword = useWatch({ control, name: "keyword" });
 
   const debouncedCommit = useDebounce(
     (value: string) => router.setParams({ q: value }),
@@ -78,19 +77,26 @@ export function SearchScreen() {
   );
 
   // 타이핑이 멈추면 자동 검색, 입력을 지우면(클리어 버튼 포함) 즉시 기본 화면으로 복귀.
+  // useWatch 로 구독하면 키 입력마다 화면 전체가 리렌더된다 — 리렌더 없는 subscribe 를 쓴다.
   useEffect(() => {
-    const trimmed = keyword.trim();
-    if (trimmed === submittedQuery) {
-      debouncedCommit.cancel();
-      return;
-    }
-    if (trimmed === "") {
-      debouncedCommit.cancel();
-      router.setParams({ q: undefined });
-      return;
-    }
-    debouncedCommit(trimmed);
-  }, [keyword, submittedQuery, debouncedCommit, router]);
+    return subscribe({
+      name: "keyword",
+      formState: { values: true },
+      callback: ({ values }) => {
+        const trimmed = (values.keyword ?? "").trim();
+        if (trimmed === submittedQuery) {
+          debouncedCommit.cancel();
+          return;
+        }
+        if (trimmed === "") {
+          debouncedCommit.cancel();
+          router.setParams({ q: undefined });
+          return;
+        }
+        debouncedCommit(trimmed);
+      },
+    });
+  }, [subscribe, submittedQuery, debouncedCommit, router]);
 
   // 즉시 실행(제출·칩)만 최근 검색어에 저장한다.
   function executeSearch(value: string) {
