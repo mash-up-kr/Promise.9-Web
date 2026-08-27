@@ -3,6 +3,11 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { RelatedLinkCard } from "./RelatedLinkCard";
 
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
 const baseLink: RelatedLink = {
   linkId: 1,
   title: "테스트 링크 제목",
@@ -21,8 +26,32 @@ async function fireLoad(width: number, height: number) {
 }
 
 describe("RelatedLinkCard", () => {
+  beforeEach(() => {
+    mockPush.mockClear();
+  });
+
   test("제목을 렌더한다", async () => {
     await render(<RelatedLinkCard link={baseLink} />);
+    expect(screen.getByText(baseLink.title)).toBeOnTheScreen();
+  });
+
+  test("카드를 누르면 해당 링크 상세로 이동한다", async () => {
+    await render(<RelatedLinkCard link={baseLink} />);
+    fireEvent.press(screen.getByRole("button"));
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pathname: "/link/[id]",
+        params: { id: String(baseLink.linkId) },
+      }),
+    );
+  });
+
+  test("썸네일이 없으면(빈 문자열) 이미지를 렌더하지 않는다", async () => {
+    await render(<RelatedLinkCard link={{ ...baseLink, thumbnailUrl: "" }} />);
+    // 빈 URI 로 Image 를 렌더하면 웹에서 빈 <img> 테두리가 생긴다 — 아예 렌더하지 않는다.
+    expect(screen.queryByTestId("related-thumb-image")).toBeNull();
+    expect(screen.queryByTestId("related-thumb-blur")).toBeNull();
+    // 제목은 그대로 보여야 한다.
     expect(screen.getByText(baseLink.title)).toBeOnTheScreen();
   });
 
