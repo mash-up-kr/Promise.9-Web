@@ -82,9 +82,26 @@ src/
 서버 계약(`GET/POST /folders`, `POST /links`)과 디자인 토큰은 앱·웹과 공유한다
 (`shared/entities`, `shared/styles/tokens.css`).
 
+## 구글 로그인 설정
+
+확장 ID 는 `manifest.config.ts` 의 `key` 로 고정돼 있어 **모든 팀원이 같은 ID** 를 쓴다.
+
+```
+확장 ID       mniefhlffindhhfnpkbmndbgjdkdkjml
+리디렉션 URI   https://mniefhlffindhhfnpkbmndbgjdkdkjml.chromiumapp.org/
+```
+
+로그인이 동작하려면 두 가지가 필요하다.
+
+1. Google Cloud Console → 사용자 인증 정보 → **웹 애플리케이션** 클라이언트(앱/웹이 쓰는 것과 동일)
+   → **승인된 리디렉션 URI** 에 위 주소 등록 (한 번만, 전원 공용)
+2. `extension/.env.local` 의 `VITE_GOOGLE_WEB_CLIENT_ID` 에 그 클라이언트 ID 를 채우고 다시 빌드
+
+`extension/key.pem` 은 ID 를 고정하는 개인키다. **gitignore 대상이고 압축해제 로드에는 필요 없다**
+(자체 배포용 `.crx` 서명에만 쓰인다). 팀 비밀번호 관리자 등에 보관한다.
+스토어 배포 시에는 웹 스토어가 자체 ID 를 부여하므로 그때 리디렉션 URI 를 한 번 더 등록해야 한다.
+
 ## 아직 없는 것
 
 - **리마인드**: 서버 `POST /links` 계약에 리마인드 필드가 없어 시안의 날짜·시간 선택은 미구현.
-- **실제 로그인**: 소셜 로그인 연동 전까지 인증은 앱·웹과 같은 마스터 토큰을 쓰고,
-  로그인 화면은 로컬 플래그로만 흐름을 태운다(`src/lib/storage.ts`).
 - **중복 저장 시 '링크 보러가기'**: 서버가 중복 응답에 기존 `linkId` 를 주지 않아 웹앱 홈으로 보낸다.
