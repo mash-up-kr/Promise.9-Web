@@ -1,6 +1,5 @@
+import type { FolderListResponse } from "@shared/entities/folder/folder.queries";
 import type { Folder } from "@shared/types/folder.types";
-
-import type { FolderListResponse } from "@/entities/folder/folder.queries";
 
 import { HOME_POLICY } from "./home.constants";
 import type { HomeKeyword, RemindLink } from "./home.types";

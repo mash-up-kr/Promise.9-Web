@@ -1,3 +1,4 @@
+import type { RemindType } from "@shared/entities/link/link.constants";
 import {
   Radio,
   RadioGroup,
@@ -7,7 +8,6 @@ import {
 } from "@/components/ui/radio/Radio";
 import { Text } from "@/components/ui/text/Text";
 import { VStack } from "@/components/ui/vstack/VStack";
-import type { RemindType } from "@/entities/link/link.constants";
 import { REMIND_OPTIONS } from "@/features/link/link.constants";
 
 export interface RemindQuestionSectionProps {

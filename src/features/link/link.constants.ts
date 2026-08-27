@@ -1,4 +1,7 @@
-import { REMIND_TYPES, type RemindType } from "@/entities/link/link.constants";
+import {
+  REMIND_TYPES,
+  type RemindType,
+} from "@shared/entities/link/link.constants";
 
 /** 리마인드 라벨 */
 export const REMIND_LABELS: Record<RemindType, string> = {

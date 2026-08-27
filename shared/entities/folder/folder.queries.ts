@@ -1,4 +1,5 @@
 import { apiClient, type SuccessResponse } from "@shared/api";
+import { linkKeys } from "@shared/entities/link/link.keys";
 import {
   folderToneToHex,
   type SelectableFolderColor,
@@ -9,8 +10,6 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { z } from "zod";
-
-import { linkKeys } from "@/entities/link/link.keys";
 
 import { isFolderOrderMismatchError } from "./folder.errors";
 import { folderKeys } from "./folder.keys";

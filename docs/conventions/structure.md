@@ -3,7 +3,7 @@
 > **기능 기반(feature-based)** 구조다. FSD 아님 — 레이어/import 린터/public API 격식 없음.
 > 목적: "어디 둘지" 규칙 하나로 3명 + AI 가 일관되게 만들고 **중복을 막는 것**.
 >
-> 다만 FSD 의 **엔티티/유스케이스 분리 개념 하나는 빌려 쓴다** (`src/entities/`). 화면 단위로만 나눴더니
+> 다만 FSD 의 **엔티티/유스케이스 분리 개념 하나는 빌려 쓴다** (`shared/entities/`). 화면 단위로만 나눴더니
 > 여러 화면이 쓰는 서버 계약이 특정 화면 폴더에 갇혀서, 홈이 보관함을 import 하는 식으로 샜기 때문이다.
 > 빌린 건 이 한 가지뿐이고 나머지 FSD 격식(레이어 6종·public API·import 린터)은 도입하지 않는다.
 
@@ -17,9 +17,6 @@
 /                          # Expo 앱+웹 (루트 package.json = Expo)
 ├─ src/
 │   ├─ app/                # expo-router 라우팅 껍데기 (화면은 features에서 import)
-│   ├─ entities/           # 데이터 단위 — 서버 계약(쿼리·스키마·errorCode). 화면을 모른다
-│   │   ├─ link/           #   GET/POST /links ...
-│   │   └─ folder/         #   GET/POST/PATCH/DELETE /folders ...
 │   ├─ features/           # 앱/웹 전용 기능 UI (= 화면·유스케이스 단위)
 │   │   ├─ home/           #   홈
 │   │   ├─ archive/        #   보관함(폴더 목록·폴더 상세)
@@ -36,9 +33,12 @@
 ├─ shared/                 # ⭐ 순수 TS, 세 표면 공용 (RN/DOM/chrome.* 의존 금지)
 │   ├─ types/              #   Link · Folder 등 서버 DTO 기반 타입
 │   ├─ api/                #   HTTP 클라이언트 · 에러 서브클래스 · 토큰
+│   ├─ entities/           #   데이터 단위 — 서버 계약(쿼리·스키마·errorCode). 화면을 모른다
+│   │   ├─ link/           #     GET/POST /links ...
+│   │   └─ folder/         #     GET/POST/PATCH/DELETE /folders ...
 │   └─ folder/             #   폴더 색 팔레트 상수
 │
-└─ extension/              # 크롬 익스텐션 (자체 package.json + 자체 번들러) — 아직 없음
+└─ extension/              # 크롬 익스텐션 (자체 package.json + 자체 번들러)
     └─ src/
         ├─ background/     #   service worker
         ├─ popup/          #   저장 UI
@@ -51,7 +51,7 @@
 
 1. **세 표면 공유 + 순수 TS(RN/DOM/chrome.* 비의존)?** → `shared/`
    - 예: `Link` 타입, 저장 API 클라이언트, 분류/검색 로직, URL 정규화
-2. **서버가 정한 것?** → `src/entities/<도메인>/`
+2. **서버가 정한 것?** → `shared/entities/<도메인>/`
    - 엔드포인트·응답 스키마·쿼리/뮤테이션·캐시 키·서버 errorCode
    - 판별 질문: *"이 값을 우리가 정했나, 서버가 정했나?"* — 서버면 엔티티다.
 3. **앱/웹 전용?** → 기능 전용은 `src/features/<기능>/`, 여러 기능 공용은 `src/components | hooks | utils`
@@ -61,10 +61,13 @@
 
 ## shared/ (공유 코어) 규칙
 - **순수 TS만.** `react-native` / `expo-*` / DOM API / `chrome.*` import 절대 금지 (그래야 양쪽 번들러가 빌드 가능).
-- 의존성 최소화. UI 레이어(컴포넌트, react-query 훅)는 여기 두지 않는다 — 앱/웹은 `entities/` 에서 `shared/api` 를 호출.
+- 의존성 최소화. **컴포넌트(UI)는 여기 두지 않는다** — 표면마다 렌더러가 다르다(RN vs react-dom).
+- **react-query 는 `shared/entities/` 에 한해 허용한다.** 앱·웹·익스텐션이 모두 React + TanStack Query 를
+  쓰므로 서버 계약 레이어를 세 번 만들 이유가 없다. `shared/api`·`shared/types`·`shared/folder` 는 계속
+  react 무관한 순수 TS 로 둔다.
 - alias: `@shared/*` → `./shared/*`
 
-## entities/ (데이터 단위) 규칙
+## shared/entities/ (데이터 단위) 규칙
 
 - **서버 계약만 소유한다** — 엔드포인트·zod 응답 스키마·`queryOptions`·mutation·캐시 키·서버 errorCode.
 - **화면을 모른다.** 화면용 모델 변환(`select`)·폼 검증·표시 문구는 소비하는 `features/` 것이다.
@@ -73,12 +76,15 @@
   useSuspenseQuery({ ...folderQueries.list(), select: toArchiveFolderData })   // 보관함
   useSuspenseQuery({ ...folderQueries.list(), select: selectFrequentFolders }) // 홈
   ```
-- **import 방향은 한 방향** — `features → entities → shared`. 되짚어 올라가지 않는다.
+- **import 방향은 한 방향** — `src/features` · `extension/src` → `shared/entities` → `shared/api`.
+  되짚어 올라가지 않는다. 엔티티는 `src/` 도 `extension/` 도 import 하지 않는다.
 - **`features` 끼리 import 하지 않는다.** 다른 화면의 것이 필요하면 그건 십중팔구 엔티티다.
-- **`entities` 끼리는 캐시 키만 참조한다.** (예: 폴더 삭제 후 링크 목록 무효화 →
+- **엔티티끼리는 캐시 키만 참조한다.** (예: 폴더 삭제 후 링크 목록 무효화 →
   `folder` 가 `linkQueries.keys.lists()` 참조). 로직·모델을 가져다 쓰지는 않는다.
-- `shared/` 와의 구분: 세 표면(앱·웹·익스텐션) 공용 순수 TS 는 `shared/`,
-  react-query 가 붙는 앱/웹 데이터 레이어는 `entities/`.
+- `shared/api` 와의 구분: HTTP 클라이언트·에러 클래스·토큰처럼 **엔드포인트를 모르는** 인프라는 `shared/api`,
+  특정 엔드포인트의 스키마·쿼리·캐시 키는 `shared/entities/<도메인>/`.
+- 프로덕션 코드는 `react` 자체도 import 하지 않는다(`@tanstack/react-query` · `zod` · `@shared/*` 뿐).
+  테스트는 러너가 있는 표면(현재 루트 jest-expo)의 도구를 써도 된다 — 번들에 들어가지 않는다.
 
 ## src/ (앱+웹, Expo/RN)
 - `app/` 는 **라우팅 껍데기만**. 화면 로직은 `src/features/<기능>/<Name>Screen.tsx`.
@@ -88,8 +94,9 @@
 - alias: `@/*` → `./src/*`
 
 ## extension/ (크롬 익스텐션)
-- 자체 `package.json` + 번들러. `shared/` 는 `@shared` 로 import.
+- 자체 `package.json` + 번들러(Vite). `shared/`(엔티티 포함)는 `@shared` 로 import.
 - `background/`(service worker) · `popup/`(저장 UI) · `content/`.
+- 앱/웹의 `src/` 는 import 하지 않는다 — 공유가 필요하면 `shared/` 로 올린다.
 
 ## 공통 규칙
 - **모음 파일은 `<도메인>.<역할>.ts`** — `link.types.ts` · `link.constants.ts` · `link.queries.ts` · `link.contracts.ts`. 전 구역 공통(features·shared 모두): 폴더가 도메인이든 카테고리든 파일명만으로 도메인+역할이 읽히게 한다 (에디터 탭·검색에서 `types.ts` 5개가 열려도 구분되도록).

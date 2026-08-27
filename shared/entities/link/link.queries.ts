@@ -1,4 +1,5 @@
 import { apiClient, type SuccessResponse } from "@shared/api";
+import { folderKeys } from "@shared/entities/folder/folder.keys";
 import type { Link, LinkPreview } from "@shared/types/link.types";
 import {
   queryOptions,
@@ -6,8 +7,6 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { z } from "zod";
-
-import { folderKeys } from "@/entities/folder/folder.keys";
 
 import type { RemindType } from "./link.constants";
 import { linkKeys } from "./link.keys";
@@ -137,30 +136,42 @@ export const linkQueries = {
 
 export interface CreateLinkPayload {
   url: string;
-  // 저장 시트엔 폴더 선택이 없어 항상 null — 폴더 지정은 링크 상세(PATCH)에서.
   folderId: number | null;
   memo: string | null;
-  remindType: RemindType;
+  /**
+   * 서버 문서(`POST /links`)의 요청 바디에는 없는 필드다 — 앱 저장 시트만 보낸다.
+   * 익스텐션에는 아직 리마인드 단계가 없어 선택값으로 둔다(리마인드 계약 확정 시 정리).
+   */
+  remindType?: RemindType;
 }
 
-interface CreatedLink {
+export interface CreatedLink {
   linkId: number;
   url: string;
   savedAt: string;
 }
 
-// POST /links — URL 을 먼저 저장하고 메타·요약·태그·연관링크는 서버가 비동기 처리한다.
+/**
+ * POST /links — URL 을 먼저 저장하고 메타·요약·태그·연관링크는 서버가 비동기 처리한다.
+ *
+ * 훅과 분리된 평범한 함수다 — 익스텐션의 background(service worker)는 React 가 없어
+ * 훅을 쓸 수 없는데, 팝업이 닫혀도 저장이 이어지려면 저장은 거기서 실행돼야 한다.
+ */
+export async function createLink(
+  payload: CreateLinkPayload,
+): Promise<CreatedLink> {
+  const { data } = await apiClient.post<SuccessResponse<CreatedLink>>(
+    "/links",
+    payload,
+  );
+
+  return data.data;
+}
+
 export function useCreateLinkMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: CreateLinkPayload) => {
-      const { data } = await apiClient.post<SuccessResponse<CreatedLink>>(
-        "/links",
-        payload,
-      );
-
-      return data.data;
-    },
+    mutationFn: createLink,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: linkKeys.root() });
     },

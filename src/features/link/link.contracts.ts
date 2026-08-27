@@ -1,7 +1,6 @@
+import { REMIND_TYPES } from "@shared/entities/link/link.constants";
 import type { LinkFolderRef, LinkTag } from "@shared/types/link.types";
 import { z } from "zod";
-
-import { REMIND_TYPES } from "@/entities/link/link.constants";
 
 /** 서버는 1000자까지 허용하지만 Figma 스펙상 300자로 더 좁게 제한한다(의도된 차이). */
 export const MEMO_MAX_LENGTH = 300;

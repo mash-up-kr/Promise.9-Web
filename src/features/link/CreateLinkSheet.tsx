@@ -1,16 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useCreateLinkMutation } from "@shared/entities/link/link.queries";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-
 import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { Input, InputField, InputSlot } from "@/components/ui/input/Input";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
 import { Text } from "@/components/ui/text/Text";
 import { isWeb } from "@/constants/platform.constants";
-import { useCreateLinkMutation } from "@/entities/link/link.queries";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { MemoField } from "@/features/link/components/MemoField";
 import { RemindQuestionSection } from "@/features/link/components/RemindQuestionSection";
