@@ -69,8 +69,37 @@ function createArea(
   };
 }
 
+/**
+ * dev 페이지에서 `storage.local` 은 localStorage 로 흉내 낸다.
+ *
+ * 실제 `chrome.storage.local` 은 새로고침해도 남는데, 메모리 Map 으로 두면 리로드마다
+ * 로그인이 풀려 로그인 이후 화면을 볼 수가 없다. `storage.session` 은 원래 세션 단위라 메모리로 둔다.
+ */
+const LOCAL_STORAGE_KEY = "dev-stub:storage.local";
+
+function loadLocal(): Map<string, unknown> {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+
+    return new Map(Object.entries(raw ? JSON.parse(raw) : {}));
+  } catch {
+    return new Map();
+  }
+}
+
+function saveLocal(store: Map<string, unknown>): void {
+  try {
+    localStorage.setItem(
+      LOCAL_STORAGE_KEY,
+      JSON.stringify(Object.fromEntries(store)),
+    );
+  } catch {
+    // 사파리 프라이빗 모드 등에서 실패할 수 있다 — dev 편의 기능이라 조용히 넘어간다.
+  }
+}
+
 export function installDevChromeStub(): void {
-  const local = new Map<string, unknown>();
+  const local = loadLocal();
   const session = new Map<string, unknown>();
   const storageChange = createEvent<StorageListener>();
   const activated = createEvent<() => void>();
@@ -96,7 +125,7 @@ export function installDevChromeStub(): void {
       onUpdated: updated.event,
     },
     storage: {
-      local: createArea(local, () => undefined),
+      local: createArea(local, () => saveLocal(local)),
       session: createArea(session, notifySession),
       onChanged: storageChange.event,
     },

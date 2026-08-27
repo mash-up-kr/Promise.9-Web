@@ -1,8 +1,12 @@
 import { NetworkError } from "@shared/api/errors";
 import { cleanup, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { SaveScreen } from "@/sidepanel/screens/SaveScreen";
+import {
+  SaveScreen,
+  type SaveScreenProps,
+} from "@/sidepanel/screens/SaveScreen";
 import { installChromeMock } from "@/test/chromeMock";
 import { renderPanel } from "@/test/renderPanel";
 
@@ -21,7 +25,7 @@ const TAB = {
   favIconUrl: undefined,
 };
 
-const renderSaveScreen = () =>
+const renderSaveScreen = (overrides: Partial<SaveScreenProps> = {}) =>
   renderPanel(
     <SaveScreen
       tab={TAB}
@@ -30,9 +34,14 @@ const renderSaveScreen = () =>
       onFolderChange={vi.fn()}
       memo=""
       onMemoChange={vi.fn()}
+      reminderAt={null}
+      onReminderChange={vi.fn()}
+      onPickDate={vi.fn()}
+      onPickTime={vi.fn()}
       isSaving={false}
       onSave={vi.fn()}
       onCreateFolder={vi.fn()}
+      {...overrides}
     />,
   );
 
@@ -59,5 +68,41 @@ describe("SaveScreen", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "저장" })).toBeInTheDocument();
+  });
+});
+
+describe("SaveScreen 리마인드", () => {
+  it("지난 시각이면 저장하지 않고 안내한다", async () => {
+    // 서버가 미래 시각만 받으므로(reminderAt refine) 요청을 보내기 전에 막는다.
+    get.mockRejectedValue(
+      new NetworkError("폴더 조회는 이 테스트의 관심사가 아니다"),
+    );
+    const onSave = vi.fn();
+    const user = userEvent.setup();
+    const past = new Date(Date.now() - 60 * 60 * 1000);
+
+    renderSaveScreen({ reminderAt: past, onSave });
+    await user.click(screen.getByRole("button", { name: "저장" }));
+
+    expect(onSave).not.toHaveBeenCalled();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "선택한 시간이 이미 지났어요",
+    );
+  });
+
+  it("미래 시각이면 ISO 8601 로 실어 보낸다", async () => {
+    get.mockRejectedValue(
+      new NetworkError("폴더 조회는 이 테스트의 관심사가 아니다"),
+    );
+    const onSave = vi.fn();
+    const user = userEvent.setup();
+    const future = new Date(Date.now() + 60 * 60 * 1000);
+
+    renderSaveScreen({ reminderAt: future, onSave });
+    await user.click(screen.getByRole("button", { name: "저장" }));
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ reminderAt: future.toISOString() }),
+    );
   });
 });

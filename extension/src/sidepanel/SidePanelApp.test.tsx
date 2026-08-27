@@ -1,7 +1,7 @@
 import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
+import { installTokenPersistence } from "@/lib/auth/session";
 import { MESSAGE_TYPE } from "@/lib/messages";
 import type { SaveRecord } from "@/lib/storage";
 import { SidePanelApp } from "@/sidepanel/SidePanelApp";
@@ -45,6 +45,8 @@ vi.mock("@shared/api/client", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // 프로덕션에선 진입점(main.tsx)이 붙인다 — 테스트도 같은 저장소를 쓰게 맞춘다.
+  installTokenPersistence();
 });
 
 afterEach(() => {
@@ -73,7 +75,10 @@ describe("SidePanelApp", () => {
   });
 
   it("로그인 후에는 활성 탭 제목이 채워진 저장 화면을 보여준다", async () => {
-    installChromeMock({ tab: SAVABLE_TAB, local: { loggedIn: true } });
+    installChromeMock({
+      tab: SAVABLE_TAB,
+      local: { refreshToken: "stored-refresh-token" },
+    });
 
     renderPanel(<SidePanelApp />);
 
@@ -87,7 +92,7 @@ describe("SidePanelApp", () => {
   it("저장을 누르면 선택한 폴더·메모로 background 에 저장을 요청한다", async () => {
     const chromeMock = installChromeMock({
       tab: SAVABLE_TAB,
-      local: { loggedIn: true },
+      local: { refreshToken: "stored-refresh-token" },
     });
     const user = userEvent.setup();
 
@@ -103,14 +108,70 @@ describe("SidePanelApp", () => {
         url: SAVABLE_TAB.url,
         folderId: 3,
         memo: "회의 전에 다시 보기",
+        // 리마인드를 켜지 않았으면 null 로 보낸다.
+        reminderAt: null,
       },
     });
+  });
+
+  it("리마인드를 켜면 기본값이 내일 오전 9시이고, 그대로 저장된다", async () => {
+    const chromeMock = installChromeMock({
+      tab: SAVABLE_TAB,
+      local: { refreshToken: "stored-refresh-token" },
+    });
+    const user = userEvent.setup();
+
+    renderPanel(<SidePanelApp />);
+    await screen.findByText(SAVABLE_TAB.title);
+
+    await user.click(screen.getByRole("switch", { name: "리마인드" }));
+    // 시안 기본값 — '내일' 프리셋이 선택된 상태로 켜진다.
+    expect(screen.getByRole("button", { name: "내일" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByText("오전 9:00")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "저장" }));
+
+    const [[message]] = chromeMock.sendMessage.mock.calls as [
+      [{ payload: { reminderAt: string | null } }],
+    ];
+    const sent = message.payload.reminderAt;
+    // 서버가 받는 형식: 타임존을 포함한 ISO 8601.
+    expect(sent).not.toBeNull();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    expect(new Date(sent as string).getHours()).toBe(9);
+    expect(new Date(sent as string).getDate()).toBe(tomorrow.getDate());
+  });
+
+  it("리마인드를 끄면 reminderAt 없이 저장한다", async () => {
+    const chromeMock = installChromeMock({
+      tab: SAVABLE_TAB,
+      local: { refreshToken: "stored-refresh-token" },
+    });
+    const user = userEvent.setup();
+
+    renderPanel(<SidePanelApp />);
+    await screen.findByText(SAVABLE_TAB.title);
+
+    const toggle = screen.getByRole("switch", { name: "리마인드" });
+    await user.click(toggle);
+    await user.click(toggle);
+    await user.click(screen.getByRole("button", { name: "저장" }));
+
+    expect(chromeMock.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({ reminderAt: null }),
+      }),
+    );
   });
 
   it("background 가 저장을 끝내면 결과 화면으로 바뀐다", async () => {
     const chromeMock = installChromeMock({
       tab: SAVABLE_TAB,
-      local: { loggedIn: true },
+      local: { refreshToken: "stored-refresh-token" },
     });
 
     renderPanel(<SidePanelApp />);
@@ -123,7 +184,12 @@ describe("SidePanelApp", () => {
         linkId: 42,
         failureCount: 0,
       },
-      request: { url: SAVABLE_TAB.url, folderId: null, memo: null },
+      request: {
+        url: SAVABLE_TAB.url,
+        folderId: null,
+        memo: null,
+        reminderAt: null,
+      },
     };
     chromeMock.emitSessionChange("save", record);
 
@@ -136,7 +202,7 @@ describe("SidePanelApp", () => {
     // 저장 도중 팝업을 닫아도 background 가 결과를 storage 에 남긴다 — 다시 열면 그걸 읽는다.
     installChromeMock({
       tab: SAVABLE_TAB,
-      local: { loggedIn: true },
+      local: { refreshToken: "stored-refresh-token" },
       session: {
         save: {
           session: {
@@ -145,7 +211,12 @@ describe("SidePanelApp", () => {
             linkId: null,
             failureCount: 0,
           },
-          request: { url: SAVABLE_TAB.url, folderId: null, memo: null },
+          request: {
+            url: SAVABLE_TAB.url,
+            folderId: null,
+            memo: null,
+            reminderAt: null,
+          },
         } satisfies SaveRecord,
       },
     });
@@ -158,7 +229,7 @@ describe("SidePanelApp", () => {
   it("저장 성공 후 '링크 보러가기' 는 웹앱의 그 링크를 새 탭으로 연다", async () => {
     const chromeMock = installChromeMock({
       tab: SAVABLE_TAB,
-      local: { loggedIn: true },
+      local: { refreshToken: "stored-refresh-token" },
       session: {
         save: {
           session: {
@@ -167,7 +238,12 @@ describe("SidePanelApp", () => {
             linkId: 42,
             failureCount: 0,
           },
-          request: { url: SAVABLE_TAB.url, folderId: null, memo: null },
+          request: {
+            url: SAVABLE_TAB.url,
+            folderId: null,
+            memo: null,
+            reminderAt: null,
+          },
         } satisfies SaveRecord,
       },
     });
@@ -187,7 +263,7 @@ describe("SidePanelApp", () => {
     // 사이드바는 열린 채 남아 있어서, 대상이 안 따라가면 엉뚱한 링크를 저장하게 된다.
     const chromeMock = installChromeMock({
       tab: SAVABLE_TAB,
-      local: { loggedIn: true },
+      local: { refreshToken: "stored-refresh-token" },
     });
     const user = userEvent.setup();
 
@@ -210,7 +286,7 @@ describe("SidePanelApp", () => {
   it("저장할 수 없는 탭으로 옮기면 안내로 바뀐다", async () => {
     const chromeMock = installChromeMock({
       tab: SAVABLE_TAB,
-      local: { loggedIn: true },
+      local: { refreshToken: "stored-refresh-token" },
     });
 
     renderPanel(<SidePanelApp />);
@@ -227,7 +303,7 @@ describe("SidePanelApp", () => {
   it("다른 탭에서 만든 저장 결과는 따라오지 않는다", async () => {
     installChromeMock({
       tab: SAVABLE_TAB,
-      local: { loggedIn: true },
+      local: { refreshToken: "stored-refresh-token" },
       session: {
         save: {
           session: {
@@ -240,6 +316,7 @@ describe("SidePanelApp", () => {
             url: "https://example.com/other",
             folderId: null,
             memo: null,
+            reminderAt: null,
           },
         } satisfies SaveRecord,
       },

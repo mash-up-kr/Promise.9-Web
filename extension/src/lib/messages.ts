@@ -17,6 +17,8 @@ export interface SaveLinkPayload {
   /** 미분류면 null(서버 계약). */
   folderId: number | null;
   memo: string | null;
+  /** 타임존을 포함한 ISO 8601 미래 시각. null 이면 리마인드 없음. */
+  reminderAt: string | null;
 }
 
 export interface SaveLinkMessage {

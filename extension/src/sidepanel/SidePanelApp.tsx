@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
+import { isLoggedIn } from "@/lib/auth/session";
 import { MESSAGE_TYPE, type SaveLinkPayload } from "@/lib/messages";
+import { addDaysAtDefaultHour } from "@/lib/remind";
 import { isSavableUrl } from "@/lib/savableUrl";
 import type { SavePhase } from "@/lib/saveSession";
 import {
   clearSaveRecord,
-  readLoggedIn,
   readSaveRecord,
   type SaveRecord,
   subscribeSaveRecord,
-  writeLoggedIn,
 } from "@/lib/storage";
 import { useActiveTab } from "@/lib/useActiveTab";
 import { WEB_APP_PATH, webAppUrl } from "@/lib/webApp";
+import { DatePickerScreen } from "@/sidepanel/screens/DatePickerScreen";
 import { LoginScreen } from "@/sidepanel/screens/LoginScreen";
 import { NewFolderScreen } from "@/sidepanel/screens/NewFolderScreen";
 import {
@@ -19,6 +20,7 @@ import {
   ResultScreen,
 } from "@/sidepanel/screens/ResultScreen";
 import { SaveScreen } from "@/sidepanel/screens/SaveScreen";
+import { TimePickerScreen } from "@/sidepanel/screens/TimePickerScreen";
 
 /** 저장 phase → 결과 화면. `saving` 은 결과가 아니라 저장 화면이 그대로 뜬 채 버튼만 잠긴다. */
 const RESULT_KIND: Partial<Record<SavePhase, ResultKind>> = {
@@ -44,14 +46,24 @@ interface Draft {
   url: string | undefined;
   folderId: number | null;
   memo: string;
-  isCreatingFolder: boolean;
+  /** null 이면 리마인드를 끈 상태. */
+  reminderAt: Date | null;
+  /** 저장 화면 위에 겹쳐 여는 하위 화면. */
+  overlay: "none" | "new-folder" | "date" | "time";
 }
 
 const emptyDraft = (url: string | undefined): Draft => ({
   url,
   folderId: null,
   memo: "",
-  isCreatingFolder: false,
+  reminderAt: null,
+  overlay: "none",
+});
+
+/** 하위 화면을 닫고 저장 화면으로 돌아간다. */
+const closeOverlay = (previous: Draft): Draft => ({
+  ...previous,
+  overlay: "none",
 });
 
 export function SidePanelApp() {
@@ -64,7 +76,7 @@ export function SidePanelApp() {
 
     void (async () => {
       const [loggedIn, saveRecord] = await Promise.all([
-        readLoggedIn(),
+        isLoggedIn(),
         readSaveRecord(),
       ]);
       if (!cancelled) setSession({ loggedIn, saveRecord });
@@ -105,9 +117,7 @@ export function SidePanelApp() {
     void chrome.runtime.sendMessage({ type: MESSAGE_TYPE.saveLink, payload });
   }, []);
 
-  const logIn = useCallback(async () => {
-    // 임시: 실제 소셜 로그인(#auth) 전까지는 플래그만 세운다. 인증 자체는 마스터 토큰이 한다.
-    await writeLoggedIn(true);
+  const handleLoggedIn = useCallback(() => {
     setSession((previous) =>
       previous ? { ...previous, loggedIn: true } : previous,
     );
@@ -123,23 +133,46 @@ export function SidePanelApp() {
   }
 
   if (!loggedIn) {
-    return <LoginScreen onLogin={() => void logIn()} />;
+    return <LoginScreen onLoggedIn={handleLoggedIn} />;
   }
 
-  if (current.isCreatingFolder) {
+  if (current.overlay === "new-folder") {
     return (
       <NewFolderScreen
-        onCancel={() =>
-          setDraft((previous) => ({ ...previous, isCreatingFolder: false }))
-        }
+        onCancel={() => setDraft(closeOverlay)}
         onCreated={(createdFolderId) => {
           // 새로 만든 폴더를 그대로 선택 상태로 되돌려준다(시안 정책).
           setDraft((previous) => ({
-            ...previous,
+            ...closeOverlay(previous),
             folderId: createdFolderId,
-            isCreatingFolder: false,
           }));
         }}
+      />
+    );
+  }
+
+  // 날짜·시간 화면은 리마인드가 켜져 있을 때만 열리므로 값이 항상 있다.
+  if (current.overlay === "date" && current.reminderAt) {
+    return (
+      <DatePickerScreen
+        value={current.reminderAt}
+        today={new Date()}
+        onCancel={() => setDraft(closeOverlay)}
+        onConfirm={(reminderAt) =>
+          setDraft((previous) => ({ ...closeOverlay(previous), reminderAt }))
+        }
+      />
+    );
+  }
+
+  if (current.overlay === "time" && current.reminderAt) {
+    return (
+      <TimePickerScreen
+        value={current.reminderAt}
+        onCancel={() => setDraft(closeOverlay)}
+        onConfirm={(reminderAt) =>
+          setDraft((previous) => ({ ...closeOverlay(previous), reminderAt }))
+        }
       />
     );
   }
@@ -189,10 +222,26 @@ export function SidePanelApp() {
       }
       memo={current.memo}
       onMemoChange={(memo) => setDraft((previous) => ({ ...previous, memo }))}
+      reminderAt={current.reminderAt}
+      onReminderChange={(reminderAt) =>
+        setDraft((previous) => ({ ...previous, reminderAt }))
+      }
+      onPickDate={() =>
+        setDraft((previous) => ({
+          ...previous,
+          // 꺼진 상태에서 날짜부터 고르면 리마인드를 켜는 것으로 본다.
+          reminderAt:
+            previous.reminderAt ?? addDaysAtDefaultHour(1, new Date()),
+          overlay: "date",
+        }))
+      }
+      onPickTime={() =>
+        setDraft((previous) => ({ ...previous, overlay: "time" }))
+      }
       isSaving={record?.session.phase === "saving"}
       onSave={startSave}
       onCreateFolder={() =>
-        setDraft((previous) => ({ ...previous, isCreatingFolder: true }))
+        setDraft((previous) => ({ ...previous, overlay: "new-folder" }))
       }
     />
   );

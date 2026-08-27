@@ -139,8 +139,13 @@ export interface CreateLinkPayload {
   folderId: number | null;
   memo: string | null;
   /**
-   * 서버 문서(`POST /links`)의 요청 바디에는 없는 필드다 — 앱 저장 시트만 보낸다.
-   * 익스텐션에는 아직 리마인드 단계가 없어 선택값으로 둔다(리마인드 계약 확정 시 정리).
+   * 리마인드 시각 — 타임존을 포함한 ISO 8601 **미래** 시각(서버 `reminderAt` 검증).
+   * 생략·null 이면 리마인드를 걸지 않는다.
+   */
+  reminderAt?: string | null;
+  /**
+   * ⚠️ 서버가 모르는 필드다. 앱 저장 시트가 아직 보내고 있어 남겨두지만 저장되지 않는다.
+   * 앱도 `reminderAt` 으로 옮겨야 한다.
    */
   remindType?: RemindType;
 }

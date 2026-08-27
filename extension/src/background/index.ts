@@ -1,5 +1,7 @@
 import { createLink } from "@shared/entities/link/link.queries";
 
+import { installTokenPersistence } from "@/lib/auth/session";
+
 import {
   type ExtensionMessage,
   isExtensionMessage,
@@ -21,6 +23,10 @@ import {
  * 결과는 storage 에 남겨 패널이 (열려 있으면 즉시, 닫혀 있었으면 다시 열 때) 읽어간다.
  */
 async function runSave(request: SaveLinkPayload): Promise<void> {
+  // service worker 는 유휴 시 종료됐다 다시 뜨면서 메모리의 액세스 토큰을 잃는다.
+  // 저장소만 다시 붙여두면 첫 401 에서 인터셉터가 리프레시 토큰으로 복원한다.
+  installTokenPersistence();
+
   const previous = await readSaveRecord();
   let record: SaveRecord = {
     session: startSaving(request.url, previous?.session ?? null),
@@ -33,6 +39,7 @@ async function runSave(request: SaveLinkPayload): Promise<void> {
       url: request.url,
       folderId: request.folderId,
       memo: request.memo,
+      reminderAt: request.reminderAt,
     });
     record = {
       ...record,
