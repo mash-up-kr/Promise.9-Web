@@ -1,8 +1,9 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 /**
  * 웹(RN Web) E2E — 홈 화면이 실제 브라우저에서 렌더되는지 검증.
  * RN 의 <Text> 는 RN Web 에서 실제 DOM 텍스트로 렌더되므로 getByText 로 잡힌다.
+ * 홈은 (tabs) 그룹 소속이라 인증 가드를 거친다 — ./fixtures 가 자동으로 통과시킨다.
  *
  * 홈은 서버 데이터를 그리므로 응답을 라우트에서 고정한다 — CI 가 실서버의
  * 데이터 유무·지연에 좌우되면 같은 코드가 계정 상태에 따라 다르게 판정된다.

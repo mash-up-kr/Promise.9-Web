@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 /**
  * 링크 상세 화면 골든 패스 — 요약 펼침 → 태그 추가 → 메모 입력.

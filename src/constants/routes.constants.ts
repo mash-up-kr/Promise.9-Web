@@ -6,7 +6,6 @@ export const ROUTES = {
   ARCHIVE: "/archive",
   SETTINGS: "/settings",
   SEARCH: "/search",
-  SEARCH_CATEGORIES: "/search/categories",
   CREATE_LINK: "/create-link",
 } as const satisfies Record<string, Href>;
 

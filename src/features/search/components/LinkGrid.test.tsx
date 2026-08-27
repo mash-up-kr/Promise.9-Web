@@ -37,4 +37,26 @@ describe("LinkGrid", () => {
       params: { id: "2" },
     });
   });
+
+  // 시안 Content Card 는 검색 결과에서도 메타(태그·저장 시기) 라인을 끈다.
+  test("타일에 메타 라인을 그리지 않는다", async () => {
+    const [link] = makeLinks(1);
+    await render(
+      <LinkGrid
+        links={[
+          {
+            ...link,
+            representativeTag: {
+              tagId: 1,
+              name: "개발",
+              sourceType: "ai",
+              sortOrder: null,
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByText("개발")).not.toBeOnTheScreen();
+  });
 });

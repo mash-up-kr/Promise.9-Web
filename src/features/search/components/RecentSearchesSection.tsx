@@ -1,4 +1,4 @@
-import { Pressable, View } from "react-native";
+import { Pressable, ScrollView } from "react-native";
 
 import { HStack } from "@/components/ui/hstack/HStack";
 import { Text } from "@/components/ui/text/Text";
@@ -32,15 +32,18 @@ export function RecentSearchesSection({
           </Text>
         </Pressable>
       </HStack>
-      <View className="flex-row flex-wrap gap-x-1.5 gap-y-2">
-        {keywords.map((keyword) => (
-          <SearchChip
-            key={keyword}
-            keyword={keyword}
-            onPress={() => onPressKeyword(keyword)}
-          />
-        ))}
-      </View>
+      {/* 시안 ChipList — 줄바꿈 없이 한 줄 가로 스크롤 */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <HStack className="gap-1.5">
+          {keywords.map((keyword) => (
+            <SearchChip
+              key={keyword}
+              keyword={keyword}
+              onPress={() => onPressKeyword(keyword)}
+            />
+          ))}
+        </HStack>
+      </ScrollView>
     </VStack>
   );
 }
