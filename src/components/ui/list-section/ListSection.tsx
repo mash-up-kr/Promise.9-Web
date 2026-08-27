@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/icon/Icon";
 import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
 
-export interface FolderSectionAction {
+export interface ListSectionAction {
   label: string;
   onPress: () => void;
 }
@@ -19,22 +19,23 @@ const sectionStyles = tv({
   defaultVariants: { inset: true },
 });
 
-export interface FolderSectionProps {
+export interface ListSectionProps {
   title: string;
-  action?: FolderSectionAction;
+  action?: ListSectionAction;
   /** 기본 true. 이미 가로 여백을 가진 컨테이너 안에서는 false. */
   inset?: boolean;
   className?: string;
   children: ReactNode;
 }
 
-export function FolderSection({
+// Figma "Section" — 섹션 타이틀 + optional 액션(+) + 그룹. 보관함·설정 공용.
+export function ListSection({
   title,
   action,
   inset,
   className,
   children,
-}: FolderSectionProps) {
+}: ListSectionProps) {
   return (
     <View className={sectionStyles({ inset, class: className })}>
       <View className="flex-row items-center justify-between">

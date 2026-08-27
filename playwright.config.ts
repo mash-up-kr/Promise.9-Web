@@ -4,13 +4,19 @@ import { defineConfig, devices } from "@playwright/test";
  * 웹(RN Web) E2E 설정 — 네이티브 앱 E2E(Maestro)와 분리.
  * 자세한 배경: docs/conventions/testing.md
  */
-// 8081(Metro 기본)은 흔히 겹쳐 비대중 포트로 고정. 충돌 시 E2E_WEB_PORT 로 오버라이드.
-const PORT = Number(process.env.E2E_WEB_PORT ?? 22322);
+// pnpm web 과 같은 포트(8090)를 쓴다 — 서버 CORS 허용목록에 이미 http://localhost:8090
+// 이 등록돼 있어(개발자들이 실 로그인 브라우저 테스트에 씀) 별도 등록 없이 E2E 에서도
+// 마스터 토큰으로 실 API 를 호출할 수 있다. 충돌 시(로컬에서 pnpm web 을 이미 다른
+// 용도로 띄워둔 경우 등) E2E_WEB_PORT 로 오버라이드.
+const PORT = Number(process.env.E2E_WEB_PORT ?? 8090);
 const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/*.spec.ts",
+  // webServer 가 뜬 뒤, 병렬 워커가 시작되기 전에 번들을 한 번 미리 데운다
+  // (근거·상세: ./e2e/global-setup.ts 주석 참고).
+  globalSetup: "./e2e/global-setup.ts",
   // 단언 실패 시 깔끔하게 종료
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

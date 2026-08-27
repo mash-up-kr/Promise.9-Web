@@ -1,9 +1,9 @@
 import { createContext, useContext } from "react";
-import { tv } from "tailwind-variants";
 
 import { Button, type ButtonProps } from "@/components/ui/button/Button";
 import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
 import { Text } from "@/components/ui/text/Text";
+import { tv } from "@/lib/tv";
 
 export type ChipSize = "sm" | "md";
 export type ChipVariant = "outline" | "solid";
