@@ -97,6 +97,22 @@ const layoutAnimationStub = new Proxy(
   { get: () => () => layoutAnimationStub },
 );
 
+// Keyframe 은 class 라 `new Keyframe({...}).duration()` 형태로 쓰인다 — 체이닝만 무해하게 받는다.
+class KeyframeStub {
+  duration() {
+    return this;
+  }
+  delay() {
+    return this;
+  }
+  withCallback() {
+    return this;
+  }
+  reduceMotion() {
+    return this;
+  }
+}
+
 module.exports = {
   __esModule: true,
   default: Animated,
@@ -177,6 +193,7 @@ module.exports = {
   SlideInDown: layoutAnimationStub,
   SlideOutDown: layoutAnimationStub,
   LinearTransition: layoutAnimationStub,
+  Keyframe: KeyframeStub,
   makeMutable: makeSharedValue,
   createWorkletRuntime: NOOP,
   runOnRuntime: NOOP,

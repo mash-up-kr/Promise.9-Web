@@ -5,9 +5,6 @@ import { Illustration } from "@/components/ui/illustration/Illustration";
 
 import { resolveEmptyLinksMessage } from "../archive.utils";
 
-// Figma "Empty State"(46:5696): 일러스트 200×200, 콘텐츠 상단에서 155 아래.
-const TOP_OFFSET = 155;
-
 export interface EmptyLinksProps {
   /** 보관함 라우트 id — 기본 폴더마다 안내 문구가 다르다. */
   folderId: string;
@@ -18,10 +15,7 @@ export function EmptyLinks({ folderId }: EmptyLinksProps) {
   const { title, description } = resolveEmptyLinksMessage(folderId);
 
   return (
-    <View
-      className="flex-1 bg-background-base"
-      style={{ paddingTop: TOP_OFFSET }}
-    >
+    <View className="flex-1 justify-center bg-background-base">
       <EmptyState
         illustration={
           <Illustration

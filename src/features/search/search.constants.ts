@@ -6,24 +6,16 @@
  */
 export const SEARCH_DEBOUNCE_MS = 300;
 
-/** 링크 분류 카테고리 — Figma 시안의 고정 목록. 백엔드 스펙 확정 시 대체한다. */
-export const CATEGORIES = [
-  "AI",
-  "개발",
-  "디자인",
-  "학습",
-  "정보",
-  "커리어",
-  "라이프",
-  "장소",
-  "문화",
-  "쇼핑",
-  "기타",
-] as const;
-
-export type Category = (typeof CATEGORIES)[number];
-
-/** 카테고리 둘러보기 탭 목록 — '전체' 탭이 맨 앞에 온다. */
-export const CATEGORY_TABS = ["전체", ...CATEGORIES] as const;
-
-export type CategoryTab = (typeof CATEGORY_TABS)[number];
+/** 검색 시안 정책 수치 — 노출 조건·최대 개수. */
+export const SEARCH_POLICY = {
+  /** 최근 검색어 */
+  recentKeywords: {
+    /** 최대 저장 개수. 개별 삭제 없음·만료 없음(시안 정책). */
+    max: 10,
+  },
+  /** 최근 본 링크 */
+  recentLinks: {
+    /** 최대 노출 개수 (조회 최신순) */
+    max: 10,
+  },
+} as const;
