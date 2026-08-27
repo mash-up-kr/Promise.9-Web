@@ -41,3 +41,24 @@ export function folderToneToHex(tone: SelectableFolderColor): string {
 export function hexToFolderTone(hex: string): FolderColor {
   return HEX_TO_TONE.get(hex.toLowerCase()) ?? "gray";
 }
+
+/**
+ * 폴더 색 팔레트의 노출 순서 — Figma "새 폴더 만들기" 색상 그리드(2행 × 6열).
+ *
+ * 앱·웹과 익스텐션이 같은 시안의 같은 그리드를 그리므로 순서도 한 곳에서 정한다.
+ * 표면별 렌더 방식(NativeWind 클래스 / inline hex)은 각자 정한다.
+ */
+export const FOLDER_COLOR_OPTIONS = [
+  "slate",
+  "purple",
+  "blue",
+  "teal",
+  "green",
+  "yellow",
+  "orange",
+  "red",
+  "pink",
+  "orange-red",
+  "lime",
+  "yellow-green",
+] as const satisfies readonly SelectableFolderColor[];

@@ -1,21 +1,21 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { isDuplicateFolderNameError } from "@shared/entities/folder/folder.errors";
+import {
+  useCreateFolderMutation,
+  useUpdateFolderMutation,
+} from "@shared/entities/folder/folder.queries";
 import type { SelectableFolderColor } from "@shared/folder/folder.constants";
+import { FOLDER_COLOR_OPTIONS } from "@shared/folder/folder.constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { View } from "react-native";
-
 import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import { Dialog } from "@/components/ui/dialog/Dialog";
 import { Input, InputField } from "@/components/ui/input/Input";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { Text } from "@/components/ui/text/Text";
-import { isDuplicateFolderNameError } from "@/entities/folder/folder.errors";
-import {
-  useCreateFolderMutation,
-  useUpdateFolderMutation,
-} from "@/entities/folder/folder.queries";
-import { FOLDER_COLOR_OPTIONS } from "./archive.constants";
+
 import {
   type CreateFolderInput,
   createFolderSchema,

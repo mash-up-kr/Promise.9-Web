@@ -1,6 +1,5 @@
+import { FOLDER_COLOR_OPTIONS } from "@shared/folder/folder.constants";
 import { z } from "zod";
-
-import { FOLDER_COLOR_OPTIONS } from "./archive.constants";
 
 export const FOLDER_NAME_MAX_LENGTH = 20;
 
