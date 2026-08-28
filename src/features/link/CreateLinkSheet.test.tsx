@@ -181,7 +181,7 @@ describe("CreateLinkSheet", () => {
 
     const user = userEvent.setup();
     await user.press(await screen.findByText("디자인"));
-    fireEvent(screen.getByRole("switch"), "valueChange", true);
+    await user.press(screen.getByRole("switch"));
 
     await pressSave();
 
@@ -478,7 +478,11 @@ describe("CreateLinkSheet", () => {
 
       await renderSheet();
       await fillValidUrl();
-      fireEvent(screen.getByRole("switch"), "valueChange", true);
+
+      const toggleUser = userEvent.setup({
+        advanceTimers: jest.advanceTimersByTime,
+      });
+      await toggleUser.press(screen.getByRole("switch"));
 
       // 토글 on 기본값은 "내일 14:45"(현재+15분 올림) — 그 시각을 지나도록 시스템 시간을 전진시킨다.
       jest.setSystemTime(new Date("2026-08-28T00:00:00"));

@@ -82,7 +82,7 @@ function PreviewFallback({
 function PreviewSkeleton({ isBare }: { isBare: boolean }) {
   return (
     <PreviewShell isBare={isBare}>
-      <Skeleton testID="link-preview-skeleton" className="size-16 rounded-xl" />
+      <Skeleton testID="link-preview-skeleton" className="size-12 rounded-xl" />
       <View className="flex-1 gap-2">
         <Skeleton className="h-4 w-3/4" />
         <Skeleton className="h-4 w-1/2" />
@@ -135,7 +135,7 @@ function ThumbnailSlot({ thumbnailUrl }: { thumbnailUrl: string | null }) {
         testID="link-preview-thumbnail"
         source={{ uri: thumbnailUrl }}
         resizeMode="cover"
-        className="size-16 rounded-xl bg-background-thumbnail"
+        className="size-12 rounded-xl bg-background-thumbnail"
       />
     );
   }
@@ -147,7 +147,7 @@ function PlaceholderIcon() {
   return (
     <View
       testID="link-preview-placeholder"
-      className="size-16 items-center justify-center rounded-xl bg-background-thumbnail"
+      className="size-12 items-center justify-center rounded-xl bg-background-thumbnail"
     >
       <Icon iconNode={Link} size={24} className="text-text-assistive" />
     </View>

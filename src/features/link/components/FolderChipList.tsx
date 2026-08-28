@@ -13,10 +13,14 @@ import { tv } from "@/lib/tv";
 // 미분류 folder 아이콘 색 = folder/gray(#65656b), FolderBadge 와 동일한 Figma 기준.
 const UNCLASSIFIED_ICON_COLOR = "#65656B";
 
+// 시안 Folder Chip / SaveSheet: h40·px12·gap4, 선택=white-10 bg, 비선택=white-05 테두리만.
 const chipStyles = tv({
-  base: "h-10 flex-row items-center gap-1.5 rounded-full px-4",
+  base: "h-10 flex-row items-center gap-1 rounded-full px-3",
   variants: {
-    isSelected: { true: "bg-opacity-white-20", false: "bg-opacity-white-10" },
+    isSelected: {
+      true: "bg-opacity-white-10",
+      false: "border border-opacity-white-05",
+    },
   },
 });
 
@@ -42,20 +46,22 @@ export function FolderChipList({ value, onChange }: FolderChipListProps) {
   }, [folders, onChange]);
 
   return (
-    <View className="gap-2">
+    <View className="gap-3">
       <View className="flex-row items-center justify-between">
-        <Text variant="heading-3">폴더</Text>
+        <Text variant="heading-2" className="text-text-normal">
+          폴더
+        </Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="폴더 추가"
           hitSlop={8}
           onPress={() => router.push("/create-folder")}
         >
-          <Icon iconNode={Plus} size={20} className="text-icon-accent" />
+          <Icon iconNode={Plus} size={24} className="text-icon-accent" />
         </Pressable>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View className="flex-row gap-2">
+        <View className="flex-row gap-1.5">
           <FolderChip
             label="미분류"
             iconColor={UNCLASSIFIED_ICON_COLOR}
@@ -98,10 +104,10 @@ function FolderChip({
       onPress={onPress}
       className={chipStyles({ isSelected })}
     >
-      <FolderIcon color={iconColor} />
+      <FolderIcon size={16} color={iconColor} />
       <Text
         variant="body-2-normal"
-        className={isSelected ? "text-text-strong" : "text-text-assistive"}
+        className={isSelected ? "text-text-strong" : "text-text-alternative"}
       >
         {label}
       </Text>

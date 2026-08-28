@@ -6,8 +6,8 @@ import {
   type Control,
   Controller,
   type UseFormSetValue,
-  type UseFormWatch,
   useForm,
+  useWatch,
 } from "react-hook-form";
 import { View } from "react-native";
 
@@ -43,7 +43,7 @@ const SAVE_SNACKBAR_DURATION = 4000;
 export function CreateLinkSheet() {
   const router = useRouter();
   const { show } = useSnackbar();
-  const { control, handleSubmit, setValue, watch } = useForm<CreateLinkForm>({
+  const { control, handleSubmit, setValue } = useForm<CreateLinkForm>({
     resolver: zodResolver(createLinkSchema),
     mode: "onChange",
     defaultValues: {
@@ -55,7 +55,9 @@ export function CreateLinkSheet() {
     },
   });
   const createLinkMutation = useCreateLinkMutation();
-  const url = watch("url");
+  // watch() 는 안정 참조 prop 경유 시 React Compiler 메모이제이션에 갱신이 막힌다 —
+  // useWatch 는 구독 컴포넌트 자체 상태로 리렌더를 트리거해 컴파일러와 안전하다.
+  const url = useWatch({ control, name: "url" });
   const isSaving = createLinkMutation.isPending;
 
   const closeSheet = () => {
@@ -131,7 +133,7 @@ export function CreateLinkSheet() {
       }
     >
       <View pointerEvents={isSaving ? "none" : "auto"} className="gap-6">
-        <UrlPreviewField control={control} setValue={setValue} watch={watch} />
+        <UrlPreviewField control={control} setValue={setValue} />
         <AsyncBoundary pending={null} fallback={null}>
           <Controller
             control={control}
@@ -194,19 +196,19 @@ function CreateLinkSheetHeader({
 interface UrlPreviewFieldProps {
   control: Control<CreateLinkForm>;
   setValue: UseFormSetValue<CreateLinkForm>;
-  watch: UseFormWatch<CreateLinkForm>;
 }
 
 // 시안 통합 카드: previewUrl 이 있으면 LinkPreviewCard(셸 없이) + URL 입력을 하나의 라운드
 // 컨테이너로 합치고(frame-skeleton/save-success), 없으면 URL 입력 하나만 보인다(frame-empty).
-function UrlPreviewField({ control, setValue, watch }: UrlPreviewFieldProps) {
+function UrlPreviewField({ control, setValue }: UrlPreviewFieldProps) {
   // 클립보드를 자동으로 읽으면 iOS 가 시트를 열 때마다 붙여넣기 권한 팝업을 띄운다.
   // 존재 확인(hasStringAsync)은 팝업이 없으므로 버튼 노출만 결정하고, 실제 읽기는
   // 사용자가 붙여넣기를 눌렀을 때만 한다. 웹은 존재 확인조차 권한 프롬프트를
   // 유발해 버튼을 항상 노출한다.
   const [canPaste, setCanPaste] = useState(isWeb);
   // 프리뷰는 blur/붙여넣기로 확정된 유효 URL 에 대해서만 조회한다(입력 중엔 idle). previewUrl 은 폼 상태.
-  const previewUrl = watch("previewUrl") ?? "";
+  // watch() 는 React Compiler 메모이제이션에 갱신이 막혀 useWatch 로 구독한다.
+  const previewUrl = useWatch({ control, name: "previewUrl" }) ?? "";
   const hasPreview = previewUrl.length > 0;
 
   const commitPreview = (value: string) => {
@@ -262,7 +264,7 @@ function UrlPreviewField({ control, setValue, watch }: UrlPreviewFieldProps) {
               onPress={handlePasteUrl}
               className="pl-3"
             >
-              <Text variant="body-2-normal" className="text-old-icon-accent">
+              <Text variant="label-2-semibold" className="text-action-inverse">
                 붙여넣기
               </Text>
             </InputSlot>
@@ -277,9 +279,12 @@ function UrlPreviewField({ control, setValue, watch }: UrlPreviewFieldProps) {
   }
 
   return (
-    <View className="w-full gap-3 rounded-[20px] bg-opacity-white-10 p-4">
-      <LinkPreviewCard url={previewUrl} isBare />
-      <View className="flex-row items-center">{urlField}</View>
+    <View className="w-full rounded-[20px] bg-opacity-white-10">
+      <View className="px-4 pt-4">
+        <LinkPreviewCard url={previewUrl} isBare />
+        <View className="mt-4 h-px w-full bg-opacity-white-10" />
+      </View>
+      <View className="h-13 flex-row items-center px-4">{urlField}</View>
     </View>
   );
 }

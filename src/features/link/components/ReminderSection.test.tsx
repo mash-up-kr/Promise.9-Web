@@ -1,9 +1,4 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  userEvent,
-} from "@testing-library/react-native";
+import { render, screen, userEvent } from "@testing-library/react-native";
 
 jest.mock("expo-notifications", () => ({
   getPermissionsAsync: jest.fn().mockResolvedValue({ status: "undetermined" }),
@@ -18,18 +13,16 @@ beforeEach(() => {
 });
 afterEach(() => jest.useRealTimers());
 
-// RN Switch 는 react-native-testing-library 의 press() 시퀀스(responderGrant/Release)를
-// onChange 로 연결하지 않는다 — 네이티브 위젯이 실제 토글해 onChange 를 emit 하는 구조라
-// jest 렌더러에선 press() 가 값 변경을 못 일으킨다. fireEvent(el, "valueChange", v) 가
-// RNTL 이 제공하는 Switch 전용 시뮬레이션 경로다(실측: user.press 는 0회 호출로 확인).
-function toggleSwitch(value: boolean) {
-  fireEvent(screen.getByRole("switch"), "valueChange", value);
+// 커스텀 Toggle(Pressable) 은 press 로 토글된다 — fake timers 병용이라 advanceTimers 필수.
+async function toggleSwitch() {
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+  await user.press(screen.getByRole("switch"));
 }
 
 it("토글 on → 내일 + 현재 시간(15분 올림) 기본값", async () => {
   const onChange = jest.fn();
   await render(<ReminderSection value={null} onChange={onChange} />);
-  toggleSwitch(true);
+  await toggleSwitch();
   expect(onChange).toHaveBeenCalledWith({
     date: "2026-08-27",
     hour: 14,
@@ -45,7 +38,7 @@ it("토글 off → null (재활성화 시 기본값으로 초기화되는 근거
       onChange={onChange}
     />,
   );
-  toggleSwitch(false);
+  await toggleSwitch();
   expect(onChange).toHaveBeenCalledWith(null);
 });
 
@@ -103,6 +96,6 @@ it("주사위 탭 → 1~180일 범위 날짜로 변경", async () => {
 it("최초 토글 on 시 알림 권한을 요청한다", async () => {
   const notifications = jest.requireMock("expo-notifications");
   await render(<ReminderSection value={null} onChange={jest.fn()} />);
-  toggleSwitch(true);
+  await toggleSwitch();
   expect(notifications.getPermissionsAsync).toHaveBeenCalled();
 });

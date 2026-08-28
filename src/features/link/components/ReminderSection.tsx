@@ -1,12 +1,6 @@
-import {
-  Bell,
-  Calendar,
-  ChevronRight,
-  Clock,
-  Dices,
-} from "lucide-react-native";
+import { Calendar, ChevronRight, Clock } from "lucide-react-native";
 import { useState } from "react";
-import { Pressable, Switch, View } from "react-native";
+import { Pressable, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -14,8 +8,11 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { BellIcon } from "@/components/ui/icon/BellIcon";
+import { DiceIcon } from "@/components/ui/icon/DiceIcon";
 import { Icon } from "@/components/ui/icon/Icon";
 import { Text } from "@/components/ui/text/Text";
+import { Toggle } from "@/components/ui/toggle/Toggle";
 import { isWeb } from "@/constants/platform.constants";
 import { requestReminderPermission } from "@/features/link/reminder.permissions";
 import {
@@ -39,8 +36,9 @@ const PRESETS = [
   { days: 14, label: "14일 후" },
 ];
 
-const TRACK_COLOR = { true: "#fffe66", false: "#3f3f46" };
-const THUMB_COLOR = "#ffffff";
+// 시안 벨 색 — 아이콘이 fill 기반이라 토큰 className 대신 raw hex 를 쓴다(BellIcon 주석 참고).
+const BELL_ON_COLOR = "#E9E9EB";
+const BELL_OFF_COLOR = "#8A8A93";
 
 export interface ReminderSectionProps {
   value: ReminderValue | null;
@@ -78,14 +76,15 @@ export function ReminderSection({ value, onChange }: ReminderSectionProps) {
   };
 
   return (
-    <View className="w-full gap-4">
+    <View className="w-full gap-3">
       <View className="flex-row items-center justify-between">
-        <Text variant="heading-3">리마인드</Text>
-        <Switch
+        <Text variant="heading-2" className="text-text-normal">
+          리마인드
+        </Text>
+        <Toggle
           value={value !== null}
-          onValueChange={handleToggle}
-          trackColor={TRACK_COLOR}
-          thumbColor={THUMB_COLOR}
+          onChange={handleToggle}
+          accessibilityLabel="리마인드"
         />
       </View>
       {value === null ? (
@@ -127,9 +126,9 @@ export function ReminderSection({ value, onChange }: ReminderSectionProps) {
 
 function ReminderOffRow() {
   return (
-    <View className="flex-row items-center gap-2 rounded-[20px] bg-opacity-white-10 p-4">
-      <Icon iconNode={Bell} className="text-text-assistive" />
-      <Text variant="body-2-normal" className="text-text-assistive">
+    <View className="w-full flex-row items-center gap-2 rounded-[20px] bg-opacity-white-10 p-4">
+      <BellIcon color={BELL_OFF_COLOR} />
+      <Text variant="body-2-normal" className="text-text-alternative">
         잊지 않도록 다시 알려드려요
       </Text>
     </View>
@@ -154,46 +153,65 @@ function ReminderOnCard({
   onOpenTime,
 }: ReminderOnCardProps) {
   return (
-    <View className="w-full gap-4 rounded-[20px] bg-opacity-white-10 p-4">
-      <View className="flex-row items-center gap-1.5">
-        <Icon iconNode={Bell} size={14} className="text-text-normal" />
-        <Text variant="body-2-normal">언제 알려드릴까요?</Text>
-      </View>
-      <View className="flex-row items-center gap-2">
-        {PRESETS.map((preset) => (
-          <PresetChip
-            key={preset.days}
-            label={preset.label}
-            isSelected={selectedPresetDays === preset.days}
-            onPress={() => onPreset(preset.days)}
-          />
-        ))}
-        <DiceButton onPress={onRandom} />
+    <View className="w-full rounded-[20px] bg-opacity-white-10">
+      <View className="gap-4 px-4 pt-4">
+        <View className="flex-row items-center gap-2">
+          <BellIcon color={BELL_ON_COLOR} />
+          <Text variant="body-2-normal" className="text-text-normal">
+            언제 알려드릴까요?
+          </Text>
+        </View>
+        <View className="flex-row flex-wrap items-center gap-1">
+          {PRESETS.map((preset) => (
+            <PresetChip
+              key={preset.days}
+              label={preset.label}
+              isSelected={selectedPresetDays === preset.days}
+              onPress={() => onPreset(preset.days)}
+            />
+          ))}
+          <DiceButton onPress={onRandom} />
+        </View>
+        <View className="h-px w-full bg-opacity-white-10" />
       </View>
       <Pressable
         accessibilityRole="button"
         onPress={onOpenDate}
-        className="flex-row items-center gap-2 web:hover:bg-opacity-white-05"
+        className="h-13 flex-row items-start justify-between px-4 pt-4 web:hover:bg-opacity-white-05"
       >
-        <Icon iconNode={Calendar} className="text-text-normal" />
-        <Text variant="body-2-normal" className="flex-1">
-          {formatReminderDate(value.date)}
-        </Text>
-        <Text variant="caption-1" className="text-icon-accent">
-          {formatRemainingPeriod(value.date)}
-        </Text>
-        <Icon iconNode={ChevronRight} className="text-icon-alternative" />
+        <View className="flex-row items-center gap-2">
+          <Icon iconNode={Calendar} size={16} className="text-icon-normal" />
+          <Text variant="body-2-normal" className="text-text-normal">
+            {formatReminderDate(value.date)}
+          </Text>
+        </View>
+        <View className="flex-row items-center gap-1">
+          <Text variant="body-2-normal" className="text-yellow-100">
+            {formatRemainingPeriod(value.date)}
+          </Text>
+          <Icon
+            iconNode={ChevronRight}
+            size={16}
+            className="text-icon-alternative"
+          />
+        </View>
       </Pressable>
       <Pressable
         accessibilityRole="button"
         onPress={onOpenTime}
-        className="flex-row items-center gap-2 web:hover:bg-opacity-white-05"
+        className="h-13 flex-row items-end justify-between rounded-b-[20px] px-4 pt-2.5 pb-4 web:hover:bg-opacity-white-05"
       >
-        <Icon iconNode={Clock} className="text-text-normal" />
-        <Text variant="body-2-normal" className="flex-1">
-          {formatReminderTime(value.hour, value.minute)}
-        </Text>
-        <Icon iconNode={ChevronRight} className="text-icon-alternative" />
+        <View className="flex-row items-center gap-2">
+          <Icon iconNode={Clock} size={16} className="text-icon-normal" />
+          <Text variant="body-2-normal" className="text-text-normal">
+            {formatReminderTime(value.hour, value.minute)}
+          </Text>
+        </View>
+        <Icon
+          iconNode={ChevronRight}
+          size={16}
+          className="text-icon-alternative"
+        />
       </Pressable>
     </View>
   );
@@ -211,11 +229,16 @@ function PresetChip({ label, isSelected, onPress }: PresetChipProps) {
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      className={`h-10 items-center justify-center rounded-full px-4 ${
-        isSelected ? "bg-opacity-white-20" : "bg-opacity-white-10"
+      className={`h-9 items-center justify-center rounded-full px-3 ${
+        isSelected ? "bg-opacity-white-80" : "bg-opacity-black-30"
       }`}
     >
-      <Text variant="body-2-normal">{label}</Text>
+      <Text
+        variant="label-2-semibold"
+        className={isSelected ? "text-gray-900" : "text-opacity-white-70"}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -258,18 +281,24 @@ function DiceButton({ onPress }: DiceButtonProps) {
       onPress={handlePress}
       onHoverIn={() => isWeb && setIsHovered(true)}
       onHoverOut={() => setIsHovered(false)}
-      className="h-10 w-10 items-center justify-center rounded-full bg-opacity-white-10"
+      className="h-9 items-center justify-center rounded-full bg-opacity-black-30 px-3"
     >
       {isWeb && isHovered && (
         <View
           pointerEvents="none"
-          className="absolute bottom-full mb-2 items-center rounded-[10px] bg-opacity-black-30 px-3 py-1.5"
+          className="absolute bottom-full mb-2 web:w-max items-center rounded-[10px] bg-gray-700 px-3 py-1.5"
         >
-          <Text variant="body-2-normal">랜덤 날짜</Text>
+          <Text
+            variant="label-2-semibold"
+            numberOfLines={1}
+            className="text-text-strong"
+          >
+            랜덤 날짜
+          </Text>
         </View>
       )}
       <Animated.View style={animatedStyle}>
-        <Icon iconNode={Dices} className="text-text-normal" />
+        <DiceIcon />
       </Animated.View>
     </Pressable>
   );
