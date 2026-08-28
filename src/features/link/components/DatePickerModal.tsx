@@ -1,19 +1,101 @@
+import { clamp } from "es-toolkit";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react-native";
-import { useState } from "react";
+import { useReducer } from "react";
 import { Modal, Pressable, View } from "react-native";
+import { SwitchCase } from "react-simplikit";
 
 import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import { Dialog } from "@/components/ui/dialog/Dialog";
 import { Icon } from "@/components/ui/icon/Icon";
 import { Text } from "@/components/ui/text/Text";
 import { WheelPicker } from "@/components/ui/wheel-picker/WheelPicker";
-import {
-  getCalendarWeeks,
-  getReminderDateRange,
-} from "@/features/link/reminder.utils";
+import { getReminderDateRange } from "@/features/link/reminder.utils";
 import { dayjs } from "@/lib/dayjs";
+import { tv } from "@/lib/tv";
+import { getCalendarWeeks } from "@/utils/datetime";
 
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
+
+interface PickerState {
+  mode: "calendar" | "wheel";
+  draftDate: string; // YYYY-MM-DD — 확인 전까지의 선택값
+  viewMonth: string; // YYYY-MM — 캘린더가 보여주는 달
+  wheelYear: number;
+  wheelMonth: number;
+  /** 선택 가능 범위 — 마운트 시점에 고정해 자정 경계에서도 셀 상태가 흔들리지 않게 한다. */
+  range: { min: string; max: string };
+}
+
+type PickerAction =
+  | { type: "moveMonth"; delta: -1 | 1 }
+  | { type: "selectDate"; date: string }
+  | { type: "openWheel" }
+  | { type: "setWheelYear"; year: number }
+  | { type: "setWheelMonth"; month: number }
+  | { type: "confirmWheel" };
+
+function getWheelMonthBounds(state: PickerState, year: number) {
+  const from =
+    year === Number(state.range.min.slice(0, 4))
+      ? Number(state.range.min.slice(5, 7))
+      : 1;
+  const to =
+    year === Number(state.range.max.slice(0, 4))
+      ? Number(state.range.max.slice(5, 7))
+      : 12;
+  return { from, to };
+}
+
+// 상태 전이를 한 곳에 모아 "viewMonth·wheelMonth 는 항상 범위 내" 불변식을 리듀서가 지킨다.
+function pickerReducer(state: PickerState, action: PickerAction): PickerState {
+  switch (action.type) {
+    case "moveMonth": {
+      const next = dayjs(`${state.viewMonth}-01`)
+        .add(action.delta, "month")
+        .format("YYYY-MM");
+      const isInRange =
+        next >= state.range.min.slice(0, 7) &&
+        next <= state.range.max.slice(0, 7);
+      return isInRange ? { ...state, viewMonth: next } : state;
+    }
+    case "selectDate":
+      return { ...state, draftDate: action.date };
+    case "openWheel":
+      return {
+        ...state,
+        mode: "wheel",
+        wheelYear: Number(state.viewMonth.slice(0, 4)),
+        wheelMonth: Number(state.viewMonth.slice(5, 7)),
+      };
+    case "setWheelYear": {
+      const { from, to } = getWheelMonthBounds(state, action.year);
+      return {
+        ...state,
+        wheelYear: action.year,
+        wheelMonth: clamp(state.wheelMonth, from, to),
+      };
+    }
+    case "setWheelMonth":
+      return { ...state, wheelMonth: action.month };
+    case "confirmWheel":
+      return {
+        ...state,
+        mode: "calendar",
+        viewMonth: `${state.wheelYear}-${String(state.wheelMonth).padStart(2, "0")}`,
+      };
+  }
+}
+
+function createInitialState(value: string): PickerState {
+  return {
+    mode: "calendar",
+    draftDate: value,
+    viewMonth: value.slice(0, 7),
+    wheelYear: Number(value.slice(0, 4)),
+    wheelMonth: Number(value.slice(5, 7)),
+    range: getReminderDateRange(),
+  };
+}
 
 export interface DatePickerModalProps {
   value: string;
@@ -26,48 +108,22 @@ export function DatePickerModal({
   onConfirm,
   onClose,
 }: DatePickerModalProps) {
-  const range = getReminderDateRange();
-  const minMonth = range.min.slice(0, 7);
-  const maxMonth = range.max.slice(0, 7);
-  const minYear = Number(range.min.slice(0, 4));
-  const maxYear = Number(range.max.slice(0, 4));
-  const minMonthNum = Number(range.min.slice(5, 7));
-  const maxMonthNum = Number(range.max.slice(5, 7));
-
-  const [mode, setMode] = useState<"calendar" | "wheel">("calendar");
-  const [draftDate, setDraftDate] = useState(value);
-  const [viewMonth, setViewMonth] = useState(value.slice(0, 7));
-  const [wheelYear, setWheelYear] = useState(Number(value.slice(0, 4)));
-  const [wheelMonth, setWheelMonth] = useState(Number(value.slice(5, 7)));
+  const [state, dispatch] = useReducer(
+    pickerReducer,
+    value,
+    createInitialState,
+  );
 
   const today = dayjs().format("YYYY-MM-DD");
-  const isDisabledDate = (date: string) => date < range.min || date > range.max;
-
-  const goMonth = (delta: number) => {
-    const next = dayjs(`${viewMonth}-01`).add(delta, "month").format("YYYY-MM");
-    if (next >= minMonth && next <= maxMonth) setViewMonth(next);
-  };
-
-  const openWheel = () => {
-    setWheelYear(Number(viewMonth.slice(0, 4)));
-    setWheelMonth(Number(viewMonth.slice(5, 7)));
-    setMode("wheel");
-  };
-
-  const changeWheelYear = (year: number) => {
-    setWheelYear(year);
-    const from = year === minYear ? minMonthNum : 1;
-    const to = year === maxYear ? maxMonthNum : 12;
-    setWheelMonth((month) => Math.min(Math.max(month, from), to));
-  };
+  const isDisabledDate = (date: string) =>
+    date < state.range.min || date > state.range.max;
 
   const confirm = () => {
-    if (mode === "calendar") {
-      onConfirm(draftDate);
+    if (state.mode === "calendar") {
+      onConfirm(state.draftDate);
       return;
     }
-    setViewMonth(`${wheelYear}-${String(wheelMonth).padStart(2, "0")}`);
-    setMode("calendar");
+    dispatch({ type: "confirmWheel" });
   };
 
   return (
@@ -83,29 +139,38 @@ export function DatePickerModal({
           <Text variant="heading-2" className="text-center text-text-strong">
             날짜 선택
           </Text>
-          {mode === "calendar" ? (
-            <CalendarView
-              viewMonth={viewMonth}
-              draftDate={draftDate}
-              today={today}
-              isDisabledDate={isDisabledDate}
-              onSelectDate={setDraftDate}
-              onPrevMonth={() => goMonth(-1)}
-              onNextMonth={() => goMonth(1)}
-              onOpenWheel={openWheel}
-            />
-          ) : (
-            <YearMonthWheel
-              minYear={minYear}
-              maxYear={maxYear}
-              minMonthNum={minMonthNum}
-              maxMonthNum={maxMonthNum}
-              wheelYear={wheelYear}
-              wheelMonth={wheelMonth}
-              onChangeYear={changeWheelYear}
-              onChangeMonth={setWheelMonth}
-            />
-          )}
+          <SwitchCase
+            value={state.mode}
+            caseBy={{
+              calendar: () => (
+                <CalendarView
+                  viewMonth={state.viewMonth}
+                  draftDate={state.draftDate}
+                  today={today}
+                  isDisabledDate={isDisabledDate}
+                  onSelectDate={(date) =>
+                    dispatch({ type: "selectDate", date })
+                  }
+                  onPrevMonth={() => dispatch({ type: "moveMonth", delta: -1 })}
+                  onNextMonth={() => dispatch({ type: "moveMonth", delta: 1 })}
+                  onOpenWheel={() => dispatch({ type: "openWheel" })}
+                />
+              ),
+              wheel: () => (
+                <YearMonthWheel
+                  range={state.range}
+                  wheelYear={state.wheelYear}
+                  wheelMonth={state.wheelMonth}
+                  onChangeYear={(year) =>
+                    dispatch({ type: "setWheelYear", year })
+                  }
+                  onChangeMonth={(month) =>
+                    dispatch({ type: "setWheelMonth", month })
+                  }
+                />
+              ),
+            }}
+          />
           <View className="flex-row gap-2">
             <ActionButton
               variant="assistive"
@@ -219,6 +284,31 @@ function CalendarView({
   );
 }
 
+const dateCellStyles = tv({
+  base: "size-9 items-center justify-center rounded-full",
+  variants: {
+    isSelected: { true: "bg-yellow-300", false: "" },
+  },
+});
+
+const dateCellLabelStyles = tv({
+  base: "",
+  variants: {
+    tone: {
+      selected: "text-gray-900",
+      disabled: "text-gray-600",
+      default: "text-text-strong",
+    },
+  },
+});
+
+const todayDotStyles = tv({
+  base: "size-1 rounded-full",
+  variants: {
+    isToday: { true: "bg-yellow-300", false: "bg-transparent" },
+  },
+});
+
 interface DateCellProps {
   date: string;
   isSelected: boolean;
@@ -235,6 +325,7 @@ function DateCell({
   onPress,
 }: DateCellProps) {
   const day = Number(date.slice(8, 10));
+  const tone = isSelected ? "selected" : disabled ? "disabled" : "default";
   return (
     <View className="h-11 flex-1 items-center gap-1">
       <Pressable
@@ -242,33 +333,19 @@ function DateCell({
         accessibilityLabel={`${day}일`}
         disabled={disabled}
         onPress={onPress}
-        className={`size-9 items-center justify-center rounded-full ${isSelected ? "bg-yellow-300" : ""}`}
+        className={dateCellStyles({ isSelected })}
       >
-        <Text
-          variant="body-2-normal"
-          className={
-            isSelected
-              ? "text-gray-900"
-              : disabled
-                ? "text-gray-600"
-                : "text-text-strong"
-          }
-        >
+        <Text variant="body-2-normal" className={dateCellLabelStyles({ tone })}>
           {day}
         </Text>
       </Pressable>
-      <View
-        className={`size-1 rounded-full ${isToday ? "bg-yellow-300" : "bg-transparent"}`}
-      />
+      <View className={todayDotStyles({ isToday })} />
     </View>
   );
 }
 
 interface YearMonthWheelProps {
-  minYear: number;
-  maxYear: number;
-  minMonthNum: number;
-  maxMonthNum: number;
+  range: { min: string; max: string };
   wheelYear: number;
   wheelMonth: number;
   onChangeYear: (year: number) => void;
@@ -276,22 +353,21 @@ interface YearMonthWheelProps {
 }
 
 function YearMonthWheel({
-  minYear,
-  maxYear,
-  minMonthNum,
-  maxMonthNum,
+  range,
   wheelYear,
   wheelMonth,
   onChangeYear,
   onChangeMonth,
 }: YearMonthWheelProps) {
+  const minYear = Number(range.min.slice(0, 4));
+  const maxYear = Number(range.max.slice(0, 4));
   const yearItems = Array.from({ length: maxYear - minYear + 1 }, (_, i) => {
     const year = minYear + i;
     return { value: year, label: `${year}년` };
   });
 
-  const monthFrom = wheelYear === minYear ? minMonthNum : 1;
-  const monthTo = wheelYear === maxYear ? maxMonthNum : 12;
+  const monthFrom = wheelYear === minYear ? Number(range.min.slice(5, 7)) : 1;
+  const monthTo = wheelYear === maxYear ? Number(range.max.slice(5, 7)) : 12;
   const monthItems = Array.from({ length: monthTo - monthFrom + 1 }, (_, i) => {
     const month = monthFrom + i;
     return { value: month, label: `${month}월` };
