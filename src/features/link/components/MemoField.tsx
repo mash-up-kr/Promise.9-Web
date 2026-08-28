@@ -27,8 +27,10 @@ export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
   }, [memo]);
 
   return (
-    <View className="gap-2">
-      <Text variant="heading-3">메모</Text>
+    <View className="gap-3">
+      <Text variant="heading-2" className="text-text-normal">
+        메모
+      </Text>
       <View className="w-full gap-3 rounded-[20px] bg-opacity-white-10 p-4">
         <TextInput
           ref={inputRef}
@@ -41,19 +43,17 @@ export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
           placeholderTextColor="#ffffff4d"
           // TODO: 저장 트리거(디바운스/blur) 정책은 백엔드 연동 확정 후 결정 —
           // 지금은 상위 계획 스코프(mock + 로컬 state)에 따라 키 입력마다 즉시 반영한다.
-          className="min-h-5 w-full font-pretendard text-body-2-reading text-text-normal web:outline-none"
+          className="min-h-10 w-full font-pretendard text-body-2-reading text-text-normal web:outline-none"
           // iOS 상단 여백 이슈 우회
           style={{ verticalAlign: "top", padding: 0 }}
         />
-        {/* 카운터는 입력값이 있을 때만 노출한다(빈 상태=placeholder 만). */}
-        {memo.length > 0 && (
-          <Text
-            variant="caption-2"
-            className="w-full text-right text-text-alternative"
-          >
-            {memo.length}/{MEMO_MAX_LENGTH}
-          </Text>
-        )}
+        {/* 시안: 빈 상태에서도 "0/300" 카운터를 상시 노출한다. */}
+        <Text
+          variant="caption-2"
+          className="w-full text-right text-text-alternative"
+        >
+          {memo.length}/{MEMO_MAX_LENGTH}
+        </Text>
       </View>
     </View>
   );
