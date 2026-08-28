@@ -32,12 +32,15 @@ export function LinkPreviewCard({ url, isBare = false }: LinkPreviewCardProps) {
   });
   const [isTimedOut, setIsTimedOut] = useState(false);
 
-  useEffect(() => {
-    setIsTimedOut(false);
-    if (url.length === 0) return;
-    const timer = setTimeout(() => setIsTimedOut(true), TIMEOUT_MS);
-    return () => clearTimeout(timer);
-  }, [url]);
+  useEffect(
+    function startPreviewTimeout() {
+      setIsTimedOut(false);
+      if (url.length === 0) return;
+      const timer = setTimeout(() => setIsTimedOut(true), TIMEOUT_MS);
+      return () => clearTimeout(timer);
+    },
+    [url],
+  );
 
   if (url.length === 0) {
     return null;

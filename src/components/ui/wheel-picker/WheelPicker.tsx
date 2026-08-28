@@ -1,3 +1,4 @@
+import { clamp } from "es-toolkit";
 import { useEffect, useRef } from "react";
 import {
   type NativeScrollEvent,
@@ -27,8 +28,7 @@ export interface WheelPickerProps<T extends string | number> {
 }
 
 export function offsetToIndex(offsetY: number, itemCount: number): number {
-  const index = Math.round(offsetY / WHEEL_ITEM_HEIGHT);
-  return Math.min(Math.max(index, 0), itemCount - 1);
+  return clamp(Math.round(offsetY / WHEEL_ITEM_HEIGHT), 0, itemCount - 1);
 }
 
 export function WheelPicker<T extends string | number>({
@@ -45,15 +45,17 @@ export function WheelPicker<T extends string | number>({
   );
 
   // 외부에서 selectedValue 가 바뀌면(초기 진입 포함) 해당 위치로 정렬한다.
-  useEffect(() => {
-    scrollRef.current?.scrollTo({
-      y: selectedIndex * WHEEL_ITEM_HEIGHT,
-      animated: false,
-    });
-  }, [selectedIndex]);
+  useEffect(
+    function syncScrollToSelected() {
+      scrollRef.current?.scrollTo({
+        y: selectedIndex * WHEEL_ITEM_HEIGHT,
+        animated: false,
+      });
+    },
+    [selectedIndex],
+  );
 
-  // cleanup: web 스냅 디바운스 타이머 정리
-  useEffect(() => {
+  useEffect(function clearWebSnapTimerOnUnmount() {
     return () => {
       if (webSnapTimer.current) clearTimeout(webSnapTimer.current);
     };

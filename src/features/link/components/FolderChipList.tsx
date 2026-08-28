@@ -36,14 +36,17 @@ export function FolderChipList({ value, onChange }: FolderChipListProps) {
 
   // 시트가 열린 동안 목록에 새로 나타난 폴더는 방금 생성된 것 — 자동 선택(시안 정책).
   const knownIdsRef = useRef<Set<number> | null>(null);
-  useEffect(() => {
-    const ids = new Set(folders.map((folder) => folder.folderId));
-    const known = knownIdsRef.current;
-    knownIdsRef.current = ids;
-    if (!known) return;
-    const created = folders.find((folder) => !known.has(folder.folderId));
-    if (created) onChange(created.folderId);
-  }, [folders, onChange]);
+  useEffect(
+    function autoSelectCreatedFolder() {
+      const ids = new Set(folders.map((folder) => folder.folderId));
+      const known = knownIdsRef.current;
+      knownIdsRef.current = ids;
+      if (!known) return;
+      const created = folders.find((folder) => !known.has(folder.folderId));
+      if (created) onChange(created.folderId);
+    },
+    [folders, onChange],
+  );
 
   return (
     <View className="gap-3">
