@@ -5,11 +5,7 @@ import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import { Dialog } from "@/components/ui/dialog/Dialog";
 import { Text } from "@/components/ui/text/Text";
 import { WheelPicker } from "@/components/ui/wheel-picker/WheelPicker";
-import {
-  type Meridiem,
-  to12Hour,
-  to24Hour,
-} from "@/features/link/reminder.utils";
+import { type Meridiem, to12Hour, to24Hour } from "@/utils/datetime";
 
 const MERIDIEM_ITEMS = [
   { value: "오전", label: "오전" },

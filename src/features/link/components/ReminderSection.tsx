@@ -16,15 +16,18 @@ import { Toggle } from "@/components/ui/toggle/Toggle";
 import { isWeb } from "@/constants/platform.constants";
 import { requestReminderPermission } from "@/features/link/reminder.permissions";
 import {
-  addDaysDate,
   formatRemainingPeriod,
   formatReminderDate,
   formatReminderTime,
   getRandomReminderDays,
-  getTomorrowDate,
   type ReminderValue,
-  roundUpToQuarter,
 } from "@/features/link/reminder.utils";
+import { tv } from "@/lib/tv";
+import {
+  addDaysDate,
+  getTomorrowDate,
+  roundUpToQuarter,
+} from "@/utils/datetime";
 
 import { DatePickerModal } from "./DatePickerModal";
 import { TimePickerModal } from "./TimePickerModal";
@@ -35,6 +38,20 @@ const PRESETS = [
   { days: 7, label: "7일 후" },
   { days: 14, label: "14일 후" },
 ];
+
+const presetChipStyles = tv({
+  base: "h-9 items-center justify-center rounded-full px-3",
+  variants: {
+    isSelected: { true: "bg-opacity-white-80", false: "bg-opacity-black-30" },
+  },
+});
+
+const presetChipLabelStyles = tv({
+  base: "",
+  variants: {
+    isSelected: { true: "text-gray-900", false: "text-opacity-white-70" },
+  },
+});
 
 // 시안 벨 색 — 아이콘이 fill 기반이라 토큰 className 대신 raw hex 를 쓴다(BellIcon 주석 참고).
 const BELL_ON_COLOR = "#E9E9EB";
@@ -229,13 +246,11 @@ function PresetChip({ label, isSelected, onPress }: PresetChipProps) {
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      className={`h-9 items-center justify-center rounded-full px-3 ${
-        isSelected ? "bg-opacity-white-80" : "bg-opacity-black-30"
-      }`}
+      className={presetChipStyles({ isSelected })}
     >
       <Text
         variant="label-2-semibold"
-        className={isSelected ? "text-gray-900" : "text-opacity-white-70"}
+        className={presetChipLabelStyles({ isSelected })}
       >
         {label}
       </Text>
