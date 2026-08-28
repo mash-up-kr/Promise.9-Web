@@ -7,6 +7,7 @@ import GorhomBottomSheet, {
 import type { ReactNode } from "react";
 import { useCallback, useRef } from "react";
 import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export interface BottomSheetProps {
   onClose: () => void;
@@ -44,6 +45,8 @@ export function BottomSheet({
   isLocked = false,
 }: BottomSheetProps) {
   const ref = useRef<GorhomBottomSheet>(null);
+  // 시안 정책: 시트는 콘텐츠만큼 자라되 상단 Safe Area 바로 아래까지만 덮는다.
+  const insets = useSafeAreaInsets();
 
   // 시안 FolderSheet 주석: enter/exit spring 420/40.
   // overshootClamping: 목표 지점을 지나쳐 되튕기는(통통 튀는) 동작을 제거한다.
@@ -88,6 +91,7 @@ export function BottomSheet({
       index={0}
       snapPoints={snapPoints}
       enableDynamicSizing={!snapPoints}
+      topInset={insets.top}
       enablePanDownToClose={!isLocked}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
