@@ -1,3 +1,4 @@
+import { AlertCircleIcon } from "@/components/ui/icon/AlertCircleIcon";
 import { CheckCircleIcon } from "@/components/ui/icon/CheckCircleIcon";
 import { WifiOffIcon } from "@/components/ui/icon/WifiOffIcon";
 
@@ -15,6 +16,21 @@ describe("snackbarPresets", () => {
   test("success 에 onView 를 넘기면 '보기' 액션이 붙는다", () => {
     const onView = jest.fn();
     const options = snackbarPresets.success("디자인에 저장됨", onView);
+    expect(options.action?.label).toBe("보기");
+    options.action?.onPress();
+    expect(onView).toHaveBeenCalledTimes(1);
+  });
+
+  test("duplicate 는 아이콘이 있고 onView 없이도 액션 없이 만들 수 있다", () => {
+    const options = snackbarPresets.duplicate("이미 저장한 링크예요");
+    expect(options.message).toBe("이미 저장한 링크예요");
+    expect((options.icon as React.ReactElement).type).toBe(AlertCircleIcon);
+    expect(options.action).toBeUndefined();
+  });
+
+  test("duplicate 에 onView 를 넘기면 '보기' 액션이 붙는다", () => {
+    const onView = jest.fn();
+    const options = snackbarPresets.duplicate("이미 저장한 링크예요", onView);
     expect(options.action?.label).toBe("보기");
     options.action?.onPress();
     expect(onView).toHaveBeenCalledTimes(1);

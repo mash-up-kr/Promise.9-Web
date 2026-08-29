@@ -5,7 +5,8 @@ module.exports = {
   passWithNoTests: true,
   // E2E(Playwright, e2e/*.spec.ts)는 jest 가 아니라 playwright 가 실행한다.
   // .claude/ 는 에이전트 worktree(.claude/worktrees/)가 생겨 테스트가 중복 실행되므로 제외한다.
-  testPathIgnorePatterns: ["/node_modules/", "/e2e/", "/.claude/"],
+  // rootDir 기준이어야 worktree 안에서 실행할 때 자기 테스트까지 무시하지 않는다.
+  testPathIgnorePatterns: ["/node_modules/", "/e2e/", "<rootDir>/.claude/"],
   moduleNameMapper: {
     // jest-expo 는 tsconfig 의 `@/*` 만 보고 `@/(.*)` → `src/$1` 매퍼를 만들어서
     // 더 구체적인 `@/assets/*` → `assets/*` 를 덮어쓴다. 그보다 먼저 잡아준다.

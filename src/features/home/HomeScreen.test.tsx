@@ -19,13 +19,18 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-const link = (linkId: number, title: string) => ({
+const link = (
+  linkId: number,
+  title: string,
+  reminderAt: string | null = null,
+) => ({
   linkId,
   title,
   source: "example.com",
   representativeTag: null,
   thumbnailUrl: null,
   savedAt: "2026-08-10T00:00:00.000Z",
+  reminderAt,
 });
 
 const linkListData = (links: ReturnType<typeof link>[]) => ({
@@ -75,6 +80,59 @@ const folderListData = {
   },
 };
 
+type LinkListParams = { folderId?: number; reminder?: boolean };
+type LinksByParams = (
+  params: LinkListParams,
+) => ReturnType<typeof linkListData>;
+
+// GET /links 는 화면 차이를 params 로만 표현한다 — 최근 저장·다시 볼 링크·폴더별을 여기서 가른다.
+const defaultLinks: LinksByParams = ({ folderId, reminder }) => {
+  if (reminder) return linkListData([]);
+  if (folderId === undefined)
+    return linkListData([link(10, "최근 저장한 링크")]);
+  return linkListData([link(folderId, `폴더 ${folderId} 링크`)]);
+};
+
+const recommendationData = (
+  items:
+    | {
+        key: string;
+        type: "folder" | "tag";
+        label: string;
+        linkCount: number;
+        lastViewedAt: string | null;
+      }[]
+    | null,
+) => ({ data: { success: true, data: items === null ? null : { items } } });
+
+const keyword = (label: string, linkCount: number) => ({
+  key: `tag:${label}`,
+  type: "tag" as const,
+  label,
+  linkCount,
+  lastViewedAt: null,
+});
+
+interface MockApiOptions {
+  folders?: typeof folderListData;
+  links?: LinksByParams;
+  recommendations?: ReturnType<typeof recommendationData>;
+}
+
+const mockApi = ({
+  folders = folderListData,
+  links = defaultLinks,
+  recommendations = recommendationData(null),
+}: MockApiOptions = {}) => {
+  mockGet.mockImplementation(
+    async (url: string, config?: { params?: LinkListParams }) => {
+      if (url === "/folders") return folders;
+      if (url === "/recommendations") return recommendations;
+      return links(config?.params ?? {});
+    },
+  );
+};
+
 const renderScreen = async () => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -101,17 +159,7 @@ describe("HomeScreen", () => {
   beforeEach(() => {
     mockPush.mockClear();
     mockGet.mockReset();
-    mockGet.mockImplementation(
-      async (url: string, config?: { params?: { folderId?: number } }) => {
-        if (url === "/folders") return folderListData;
-
-        const folderId = config?.params?.folderId;
-        if (folderId === undefined) {
-          return linkListData([link(10, "최근 저장한 링크")]);
-        }
-        return linkListData([link(folderId, `폴더 ${folderId} 링크`)]);
-      },
-    );
+    mockApi();
   });
 
   test("최근 저장과 자주 보는 폴더 섹션 타이틀을 보여준다", async () => {
@@ -129,10 +177,7 @@ describe("HomeScreen", () => {
 
   // 시안 정책: 저장된 링크가 하나도 없으면 헤더만 남기고 화면 전체를 대체한다.
   test("링크가 하나도 없으면 전체 빈 상태를 보여준다", async () => {
-    mockGet.mockImplementation(async (url: string) => {
-      if (url === "/folders") return folderListData;
-      return linkListData([]);
-    });
+    mockApi({ links: () => linkListData([]) });
 
     await renderScreen();
 
@@ -147,16 +192,13 @@ describe("HomeScreen", () => {
 
   // 시안 정책: 폴더 0개는 화면 전체가 아니라 자주 보는 폴더 자리만 대체한다.
   test("폴더가 없으면 그 섹션 자리에만 빈 상태와 새 폴더 만들기를 보여준다", async () => {
-    mockGet.mockImplementation(async (url: string) => {
-      if (url === "/folders") {
-        return {
-          data: {
-            success: true,
-            data: { ...folderListData.data.data, folders: [] },
-          },
-        };
-      }
-      return linkListData([link(10, "최근 저장한 링크")]);
+    mockApi({
+      folders: {
+        data: {
+          success: true,
+          data: { ...folderListData.data.data, folders: [] },
+        },
+      },
     });
 
     await renderScreen();
@@ -174,22 +216,19 @@ describe("HomeScreen", () => {
 
   // "아직 폴더가 없어요" 는 폴더가 실제로 없을 때만 — 전부 빈 폴더면 거짓 안내라 섹션째 숨긴다.
   test("폴더가 있어도 전부 비어 있으면 자주 보는 폴더 섹션을 숨긴다", async () => {
-    mockGet.mockImplementation(async (url: string) => {
-      if (url === "/folders") {
-        return {
+    mockApi({
+      folders: {
+        data: {
+          success: true,
           data: {
-            success: true,
-            data: {
-              ...folderListData.data.data,
-              folders: folderListData.data.data.folders.map((folder) => ({
-                ...folder,
-                linkCount: 0,
-              })),
-            },
+            ...folderListData.data.data,
+            folders: folderListData.data.data.folders.map((folder) => ({
+              ...folder,
+              linkCount: 0,
+            })),
           },
-        };
-      }
-      return linkListData([link(10, "최근 저장한 링크")]);
+        },
+      },
     });
 
     await renderScreen();
@@ -215,12 +254,72 @@ describe("HomeScreen", () => {
     spy.mockRestore();
   });
 
-  // 리마인드·키워드는 서버가 아직 데이터를 못 줘서 항상 조건 미충족 — 시안 정책대로 섹션째 숨는다.
-  test("서버 미제공 섹션(다시 볼 링크·많이 저장한 키워드)은 그리지 않는다", async () => {
+  // 서버 문서의 홈 요청 그대로 — 정렬(알림 가까운 순)·상한을 서버에 맡긴다.
+  test("다시 볼 링크는 reminder=true 로 알림 가까운 순 9개를 요청한다", async () => {
+    await renderScreen();
+    await screen.findByText("최근 저장");
+
+    expect(mockGet).toHaveBeenCalledWith(
+      "/links",
+      expect.objectContaining({
+        params: {
+          reminder: true,
+          sortBy: "reminderAt",
+          order: "asc",
+          limit: 9,
+        },
+      }),
+    );
+  });
+
+  test("알림을 설정한 링크가 있으면 다시 볼 링크 섹션에 알림 날짜와 함께 보여준다", async () => {
+    mockApi({
+      links: (params) =>
+        params.reminder
+          ? linkListData([
+              link(20, "다시 볼 사우나 링크", "2026-08-10T00:00:00.000Z"),
+            ])
+          : defaultLinks(params),
+    });
+
+    await renderScreen();
+
+    expect(await screen.findByText("다시 볼 링크")).toBeOnTheScreen();
+    expect(screen.getByText("다시 볼 사우나 링크")).toBeOnTheScreen();
+    expect(screen.getByText("8월 10일")).toBeOnTheScreen();
+  });
+
+  // 시안 정책: 알림을 설정한 링크가 없으면 섹션째 숨긴다.
+  test("알림을 설정한 링크가 없으면 다시 볼 링크 섹션을 숨긴다", async () => {
     await renderScreen();
     await screen.findByText("최근 저장");
 
     expect(screen.queryByText("다시 볼 링크")).not.toBeOnTheScreen();
+  });
+
+  test("추천 키워드가 있으면 많이 저장한 키워드 섹션에 칩으로 보여준다", async () => {
+    mockApi({
+      recommendations: recommendationData([
+        keyword("운동", 5),
+        keyword("자기소개서", 4),
+        keyword("프론트엔드", 3),
+      ]),
+    });
+
+    await renderScreen();
+
+    expect(await screen.findByText("많이 저장한 키워드")).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "운동" })).toBeOnTheScreen();
+    expect(
+      screen.getByRole("button", { name: "프론트엔드" }),
+    ).toBeOnTheScreen();
+  });
+
+  // 후보(링크 3개 이상인 폴더·태그)가 2개 이하면 서버가 data 를 null 로 준다 — 시안 정책대로 섹션째 숨긴다.
+  test("추천 후보가 모자라 서버가 null 을 주면 많이 저장한 키워드 섹션을 숨긴다", async () => {
+    await renderScreen();
+    await screen.findByText("최근 저장");
+
     expect(screen.queryByText("많이 저장한 키워드")).not.toBeOnTheScreen();
   });
 
@@ -257,11 +356,21 @@ describe("HomeScreen", () => {
   test("당겨서 새로고침하면 전 섹션을 다시 불러온다", async () => {
     await renderScreen();
     await screen.findByText("최근 저장");
-    const callsBeforeRefresh = mockGet.mock.calls.length;
+    const countCalls = (url: string) =>
+      mockGet.mock.calls.filter(([calledUrl]) => calledUrl === url).length;
+    const before = {
+      links: countCalls("/links"),
+      folders: countCalls("/folders"),
+      recommendations: countCalls("/recommendations"),
+    };
 
     await pullToRefresh();
 
-    expect(mockGet.mock.calls.length).toBeGreaterThan(callsBeforeRefresh);
+    expect(countCalls("/links")).toBeGreaterThan(before.links);
+    expect(countCalls("/folders")).toBeGreaterThan(before.folders);
+    expect(countCalls("/recommendations")).toBeGreaterThan(
+      before.recommendations,
+    );
   });
 
   // 당겨서 새로고침하지 않아도(화면 재진입 등 자동 재조회) 실패는 알려야 한다.

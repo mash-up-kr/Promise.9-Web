@@ -28,6 +28,7 @@ import { VStack } from "@/components/ui/vstack/VStack";
 
 import { folderQueries } from "@/entities/folder/folder.queries";
 import { linkQueries } from "@/entities/link/link.queries";
+import { recommendationQueries } from "@/entities/recommendation/recommendation.queries";
 
 import { FolderSection } from "./components/FolderSection";
 import { HomeSkeleton } from "./components/HomeSkeleton";
@@ -35,7 +36,11 @@ import { KeywordSection } from "./components/KeywordSection";
 import { RecentSaveSection } from "./components/RecentSaveSection";
 import { RemindSection } from "./components/RemindSection";
 import { HOME_POLICY } from "./home.constants";
-import { selectFrequentFolders } from "./home.utils";
+import {
+  selectFrequentFolders,
+  selectRemindLinks,
+  selectTopKeywords,
+} from "./home.utils";
 
 export function HomeScreen() {
   return (
@@ -53,6 +58,20 @@ function HomeSections() {
   const scrollHandler = useHeaderAwareScrollHandler("home");
   const { isRefreshing, refresh } = useHomeRefresh();
 
+  // 서버 문서의 홈 요청 그대로 — 정렬(알림 가까운 순)·상한을 서버에 맡기고 select 만 홈용으로 바꾼다.
+  const remindLinksQuery = useSuspenseQuery({
+    ...linkQueries.list({
+      reminder: true,
+      sortBy: "reminderAt",
+      order: "asc",
+      limit: HOME_POLICY.remind.maxLinks,
+    }),
+    select: selectRemindLinks,
+  });
+  const keywordsQuery = useSuspenseQuery({
+    ...recommendationQueries.list({ limit: HOME_POLICY.keywords.max }),
+    select: selectTopKeywords,
+  });
   const recentLinksQuery = useSuspenseQuery(
     linkQueries.list({
       sortBy: "savedAt",
@@ -80,6 +99,8 @@ function HomeSections() {
   // 캐시가 있어 던지지 않은 실패는 여기서 받아 알린다(당겨서 새로고침·자동 재조회 공통).
   useOfflineSnackbar(
     [
+      remindLinksQuery.error,
+      keywordsQuery.error,
       recentLinksQuery.error,
       frequentFoldersQuery.error,
       ...folderLinks.map((query) => query.error),
@@ -121,11 +142,9 @@ function HomeSections() {
       }
     >
       <VStack className="gap-12 pt-5 pb-8">
-        {/* 서버 미제공 구간 — 리마인드는 GET /links 에 reminderAt 이 없고, 키워드는
-            GET /recommendations 가 미머지다. 빈 배열이면 정책대로 섹션째 숨는다.
-            데이터 소스가 생기면 여기만 쿼리로 교체한다(선정 정책은 home.utils). */}
-        <RemindSection links={[]} />
-        <KeywordSection keywords={[]} />
+        {/* 둘 다 빈 배열이면 시안 정책대로 섹션째 숨는다(RemindSection·KeywordSection 내부). */}
+        <RemindSection links={remindLinksQuery.data} />
+        <KeywordSection keywords={keywordsQuery.data} />
         <RecentSaveSection links={recentLinks} />
         {/* 폴더는 있는데 전부 비어 있으면 섹션째 숨긴다 — "아직 폴더가 없어요" 는 거짓이 되고,
             제목만 있는 빈 캐러셀도 시안에 없다(리뷰 피드백). */}
@@ -155,7 +174,7 @@ function HomeSections() {
 }
 
 /**
- * 당겨서 새로고침 — 홈이 쓰는 링크 목록·폴더 목록을 한 번에 다시 불러온다.
+ * 당겨서 새로고침 — 홈이 쓰는 링크 목록·폴더 목록·추천 키워드를 한 번에 다시 불러온다.
  *
  * 실패해도 캐시가 있으면 화면은 그대로 두고(useSuspenseQuery v5 기본 동작) 스낵바로만 알린다.
  */
@@ -169,6 +188,9 @@ function useHomeRefresh() {
     await Promise.all([
       queryClient.refetchQueries({ queryKey: linkQueries.keys.lists() }),
       queryClient.refetchQueries({ queryKey: folderQueries.keys.root() }),
+      queryClient.refetchQueries({
+        queryKey: recommendationQueries.keys.root(),
+      }),
     ]);
     setIsRefreshing(false);
   }, [queryClient]);

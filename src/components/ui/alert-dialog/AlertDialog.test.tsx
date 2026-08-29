@@ -88,4 +88,18 @@ describe("AlertDialog", () => {
     );
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  test("disabled 인 액션 버튼은 눌러도 onPress 가 호출되지 않는다", async () => {
+    const onPress = jest.fn();
+    await render(
+      <AlertDialogButton
+        label="로그아웃"
+        variant="primary"
+        onPress={onPress}
+        disabled
+      />,
+    );
+    fireEvent.press(screen.getByText("로그아웃"));
+    expect(onPress).not.toHaveBeenCalled();
+  });
 });

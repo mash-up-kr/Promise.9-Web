@@ -6,6 +6,8 @@ import { View } from "react-native";
 import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
+import { ListGroup } from "@/components/ui/list-group/ListGroup";
+import { ListSection } from "@/components/ui/list-section/ListSection";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
@@ -16,8 +18,6 @@ import { useUpdateLinkFolderMutation } from "@/entities/link/link.queries";
 import { UNCATEGORIZED_FOLDER } from "./archive.constants";
 import type { ArchiveFolder } from "./archive.types";
 import { toArchiveFolderData } from "./archive.utils";
-import { FolderGroup } from "./components/FolderGroup";
-import { FolderSection } from "./components/FolderSection";
 import { FolderSelectItem } from "./components/FolderSelectItem";
 
 /**
@@ -181,21 +181,21 @@ function FolderPicker({
         isConfirmDisabled={selectedFolderId === null || isSaveDisabled}
       />
       {/* 시트가 이미 가로 여백을 가져 섹션은 여백 없이 붙인다. */}
-      <FolderSection title="기본 폴더" inset={false}>
-        <FolderGroup>
+      <ListSection title="기본 폴더" inset={false}>
+        <ListGroup>
           <FolderSelectItem
             name={UNCATEGORIZED_FOLDER.name}
             isSelected={selectedFolderId === UNCATEGORIZED_FOLDER.id}
             onPress={() => onSelect(UNCATEGORIZED_FOLDER.id)}
           />
-        </FolderGroup>
-      </FolderSection>
-      <FolderSection
+        </ListGroup>
+      </ListSection>
+      <ListSection
         title="내 폴더"
         inset={false}
         action={{ label: "새 폴더 만들기", onPress: onAddFolder }}
       >
-        <FolderGroup>
+        <ListGroup>
           {data.myFolders.map((folder) => (
             <FolderSelectItem
               key={folder.id}
@@ -205,8 +205,8 @@ function FolderPicker({
               onPress={() => onSelect(folder.id)}
             />
           ))}
-        </FolderGroup>
-      </FolderSection>
+        </ListGroup>
+      </ListSection>
     </>
   );
 }

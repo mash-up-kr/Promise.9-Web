@@ -10,7 +10,6 @@ import { z } from "zod";
 
 import { folderKeys } from "@/entities/folder/folder.keys";
 
-import type { RemindType } from "./link.constants";
 import { linkKeys } from "./link.keys";
 
 // 스키마와 shared 타입의 드리프트는 명시적 반환 타입을 가진 toLink 가 잡는다.
@@ -29,6 +28,8 @@ const linkListItemSchema = z.looseObject({
   representativeTag: linkTagSchema.nullable(),
   thumbnailUrl: z.string().nullable(),
   savedAt: z.string(),
+  // 홈 "다시 볼 링크" 가 알림 날짜 배지로 쓴다. 설정하지 않았으면 null.
+  reminderAt: z.string().nullable(),
 });
 
 /**
@@ -49,7 +50,7 @@ export const linkListResponseSchema = z.looseObject({
 });
 
 export type LinkListItem = z.infer<typeof linkListItemSchema>;
-type LinkListResponse = z.infer<typeof linkListResponseSchema>;
+export type LinkListResponse = z.infer<typeof linkListResponseSchema>;
 
 /**
  * GET /links query 조합.
@@ -62,9 +63,12 @@ export interface LinkListParams {
   folderId?: number;
   unassigned?: boolean;
   favorite?: boolean;
+  /** true 면 리마인드를 설정한 링크만 (지난 시각 포함). q 와 함께 쓸 수 없다. */
+  reminder?: boolean;
   deleted?: boolean;
   q?: string;
-  sortBy?: "savedAt" | "viewedAt" | "deletedAt";
+  /** viewedAt·reminderAt 은 그 시각이 설정된 링크만 대상 — null 인 링크는 결과에서 빠진다. */
+  sortBy?: "savedAt" | "viewedAt" | "reminderAt" | "deletedAt";
   order?: "asc" | "desc";
   limit?: number;
   cursor?: string;
@@ -197,10 +201,9 @@ export const linkQueries = {
 
 export interface CreateLinkPayload {
   url: string;
-  // 저장 시트엔 폴더 선택이 없어 항상 null — 폴더 지정은 링크 상세(PATCH)에서.
   folderId: number | null;
   memo: string | null;
-  remindType: RemindType;
+  reminderAt: string | null;
 }
 
 interface CreatedLink {

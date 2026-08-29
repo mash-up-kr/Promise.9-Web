@@ -15,10 +15,10 @@ export const snackbarPresets = {
     icon: <CheckCircleIcon />,
     ...(onView && { action: { label: "보기", onPress: onView } }),
   }),
-  duplicate: (message: string, onView: () => void): SnackbarOptions => ({
+  duplicate: (message: string, onView?: () => void): SnackbarOptions => ({
     message,
     icon: <AlertCircleIcon />,
-    action: { label: "보기", onPress: onView },
+    ...(onView && { action: { label: "보기", onPress: onView } }),
   }),
   failed: (message: string, onRetry: () => void): SnackbarOptions => ({
     message,

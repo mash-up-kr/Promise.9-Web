@@ -5,6 +5,7 @@ import { Image } from "expo-image";
 const SOURCES = {
   "empty-link": require("@/assets/images/illustration/empty-link.png"),
   error: require("@/assets/images/illustration/error.png"),
+  offline: require("@/assets/images/illustration/offline.png"),
 };
 
 export type IllustrationName = keyof typeof SOURCES;

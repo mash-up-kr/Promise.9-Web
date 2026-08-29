@@ -84,9 +84,9 @@ export interface RelatedLink {
   thumbnailUrl: string;
 }
 
-/** GET /links/preview 응답 — 저장 전 OG 메타데이터(표시 전용). */
+/** GET /links/preview 응답 — 저장 전 OG 메타데이터(표시 전용). title 은 og:title 추출 실패 시 null. */
 export interface LinkPreview {
-  title: string;
+  title: string | null;
   source: string;
   thumbnailUrl: string | null;
   description?: string;
