@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,12 +15,15 @@ import {
 import { AgreementText } from "./components/AgreementText";
 import { LoginGraphic } from "./components/LoginGraphic";
 import { SocialLoginButton } from "./components/SocialLoginButton";
+import { isExtensionReturn, sendIdTokenToExtension } from "./extensionHandoff";
 import { useSocialAuth } from "./hooks/useSocialAuth";
 
 const LOGIN_FAILED_MESSAGE = "로그인에 실패했어요. 다시 시도해주세요.";
 
 export function LoginScreen() {
   const router = useRouter();
+  // 크롬 익스텐션이 열었으면 `?return=extension` 이 붙어 온다 — 로그인 결과를 익스텐션에도 넘긴다.
+  const { return: returnTo } = useLocalSearchParams<{ return?: string }>();
   const insets = useSafeAreaInsets();
   const { show } = useSnackbar();
   const { getIdToken } = useSocialAuth();
@@ -41,6 +44,11 @@ export function LoginScreen() {
       if (error instanceof SocialLoginCancelledError) return;
       show({ message: LOGIN_FAILED_MESSAGE });
       return;
+    }
+
+    // 익스텐션 인계는 웹 로그인과 독립이다 — 결과를 기다리지도, 실패를 화면에 알리지도 않는다.
+    if (isExtensionReturn(returnTo)) {
+      void sendIdTokenToExtension({ provider, idToken });
     }
 
     mutate(

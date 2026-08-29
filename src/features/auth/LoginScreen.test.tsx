@@ -29,8 +29,10 @@ import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { AUTH_ERROR_CODE } from "./auth.errors";
 
 const mockReplace = jest.fn();
+const mockParams = jest.fn<Record<string, string>, []>(() => ({}));
 jest.mock("expo-router", () => ({
   useRouter: () => ({ replace: mockReplace }),
+  useLocalSearchParams: () => mockParams(),
 }));
 
 import { LoginScreen } from "./LoginScreen";
@@ -82,6 +84,7 @@ describe("LoginScreen", () => {
 
   beforeEach(() => {
     mockReplace.mockClear();
+    mockParams.mockReturnValue({});
     mockPost.mockReset();
     mockSignIn.mockReset();
     // useSocialAuth 의 구글 경로는 webClientId 가 있어야 진행된다.
@@ -229,5 +232,62 @@ describe("LoginScreen", () => {
           .accessibilityState.disabled,
       ).toBe(false),
     );
+  });
+
+  describe("크롬 익스텐션 인계", () => {
+    const originalExtensionId = process.env.EXPO_PUBLIC_EXTENSION_ID;
+    const chromeGlobal = globalThis as { chrome?: unknown };
+    const sendMessage = jest.fn().mockResolvedValue({ ok: true });
+
+    beforeEach(() => {
+      process.env.EXPO_PUBLIC_EXTENSION_ID = "ext-id";
+      chromeGlobal.chrome = { runtime: { sendMessage } };
+      sendMessage.mockClear();
+      mockSignIn.mockResolvedValue(googleSuccess());
+      mockPost.mockResolvedValue({
+        data: {
+          success: true,
+          data: { accessToken: "at", refreshToken: "rt", isNewUser: false },
+        },
+      });
+    });
+
+    afterEach(() => {
+      process.env.EXPO_PUBLIC_EXTENSION_ID = originalExtensionId;
+      delete chromeGlobal.chrome;
+    });
+
+    test("?return=extension 이면 idToken 을 익스텐션에도 넘기고 웹 로그인도 그대로 한다", async () => {
+      mockParams.mockReturnValue({ return: "extension" });
+      await renderScreen();
+
+      await fireEvent.press(
+        screen.getByRole("button", { name: "Google로 계속하기" }),
+      );
+
+      await waitFor(() =>
+        expect(sendMessage).toHaveBeenCalledWith(
+          "ext-id",
+          expect.objectContaining({
+            provider: "google",
+            idToken: "mock-id-token",
+          }),
+        ),
+      );
+      // 익스텐션에 넘겼다고 웹 로그인을 건너뛰지 않는다 — 두 표면은 각자 세션을 갖는다.
+      await waitFor(() => expect(mockPost).toHaveBeenCalled());
+      await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+    });
+
+    test("return 쿼리가 없으면 익스텐션에 아무것도 보내지 않는다", async () => {
+      await renderScreen();
+
+      await fireEvent.press(
+        screen.getByRole("button", { name: "Google로 계속하기" }),
+      );
+
+      await waitFor(() => expect(mockPost).toHaveBeenCalled());
+      expect(sendMessage).not.toHaveBeenCalled();
+    });
   });
 });
