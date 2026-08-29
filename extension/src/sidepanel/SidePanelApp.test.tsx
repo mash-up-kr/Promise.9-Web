@@ -74,6 +74,34 @@ describe("SidePanelApp", () => {
     expect(await screen.findByText("로그인을 해주세요")).toBeInTheDocument();
   });
 
+  it("로그인 버튼은 웹앱 로그인 페이지를 새 탭으로 연다", async () => {
+    // 익스텐션엔 로그인 UI 가 없다 — 웹에 있는 소셜 로그인을 그대로 쓴다.
+    const chromeMock = installChromeMock({ tab: SAVABLE_TAB });
+    const user = userEvent.setup();
+
+    renderPanel(<SidePanelApp />);
+    await user.click(await screen.findByRole("button", { name: "로그인" }));
+
+    expect(chromeMock.createTab).toHaveBeenCalledWith({
+      url: "https://link-ding-dong.com/login?return=extension",
+    });
+    expect(
+      screen.getByText("열린 탭에서 로그인하면 여기로 바로 이어져요"),
+    ).toBeInTheDocument();
+  });
+
+  it("웹앱에서 로그인이 끝나 토큰이 저장되면 저장 화면으로 넘어간다", async () => {
+    // 로그인은 다른 탭 → background 에서 끝난다. 패널은 저장소 변경으로만 알 수 있다.
+    const chromeMock = installChromeMock({ tab: SAVABLE_TAB });
+
+    renderPanel(<SidePanelApp />);
+    await screen.findByText("로그인을 해주세요");
+
+    chromeMock.emitLocalChange("refreshToken", "fresh-refresh-token");
+
+    expect(await screen.findByText(SAVABLE_TAB.title)).toBeInTheDocument();
+  });
+
   it("로그인 후에는 활성 탭 제목이 채워진 저장 화면을 보여준다", async () => {
     installChromeMock({
       tab: SAVABLE_TAB,

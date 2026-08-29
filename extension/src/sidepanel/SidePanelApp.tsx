@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { isLoggedIn } from "@/lib/auth/session";
+import { isLoggedIn, subscribeLoggedIn } from "@/lib/auth/session";
 import { MESSAGE_TYPE, type SaveLinkPayload } from "@/lib/messages";
 import { addDaysAtDefaultHour } from "@/lib/remind";
 import { isSavableUrl } from "@/lib/savableUrl";
@@ -83,15 +83,22 @@ export function SidePanelApp() {
     })();
 
     // 저장은 background 에서 돌기 때문에 결과는 storage 변경으로 도착한다.
-    const unsubscribe = subscribeSaveRecord((saveRecord) => {
+    const unsubscribeSave = subscribeSaveRecord((saveRecord) => {
       setSession((previous) =>
         previous ? { ...previous, saveRecord } : previous,
+      );
+    });
+    // 로그인도 마찬가지 — 웹앱 탭 → background 에서 끝나고 저장소 변경으로만 알 수 있다.
+    const unsubscribeLogin = subscribeLoggedIn((loggedIn) => {
+      setSession((previous) =>
+        previous ? { ...previous, loggedIn } : previous,
       );
     });
 
     return () => {
       cancelled = true;
-      unsubscribe();
+      unsubscribeSave();
+      unsubscribeLogin();
     };
   }, []);
 
@@ -117,12 +124,6 @@ export function SidePanelApp() {
     void chrome.runtime.sendMessage({ type: MESSAGE_TYPE.saveLink, payload });
   }, []);
 
-  const handleLoggedIn = useCallback(() => {
-    setSession((previous) =>
-      previous ? { ...previous, loggedIn: true } : previous,
-    );
-  }, []);
-
   // 활성 탭·로그인 상태를 읽는 동안. chrome 로컬 조회라 사실상 한 프레임이다.
   if (!tab || !session) return null;
 
@@ -133,7 +134,7 @@ export function SidePanelApp() {
   }
 
   if (!loggedIn) {
-    return <LoginScreen onLoggedIn={handleLoggedIn} />;
+    return <LoginScreen />;
   }
 
   if (current.overlay === "new-folder") {

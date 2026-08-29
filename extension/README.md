@@ -81,24 +81,32 @@ src/
 서버 계약(`GET/POST /folders`, `POST /links`)과 디자인 토큰은 앱·웹과 공유한다
 (`shared/entities`, `shared/styles/tokens.css`).
 
-## 구글 로그인 설정
+## 로그인 — 웹앱에 위임
 
-확장 ID 는 `manifest.config.ts` 의 `key` 로 고정돼 있어 **모든 팀원이 같은 ID** 를 쓴다.
+익스텐션에는 로그인 UI 가 없다. 로그인 버튼은 웹앱 `/login?return=extension` 을 새 탭으로 열고,
+웹앱이 소셜 로그인으로 받은 idToken 을 `chrome.runtime.sendMessage(확장 ID, …)` 로 넘겨준다.
+익스텐션 background 가 그 idToken 으로 `POST /auth/social` 을 호출해 **자기 토큰 쌍**을 받고,
+웹앱 탭을 닫는다. (Pocket · Instapaper · Raindrop 과 같은 방식.)
 
-```
-확장 ID       mniefhlffindhhfnpkbmndbgjdkdkjml
-리디렉션 URI   https://mniefhlffindhhfnpkbmndbgjdkdkjml.chromiumapp.org/
-```
+- 웹의 리프레시 토큰을 복사하지 않는 이유: 서버가 Refresh Token Rotation 을 써서 같은 토큰을
+  두 표면이 나눠 가지면 한쪽이 갱신할 때 다른 쪽이 로그아웃된다.
+- 메시지 계약은 `shared/extension/extensionLogin.contracts.ts` 하나를 웹·익스텐션이 같이 쓴다.
+- 구글 클라이언트 ID · Cloud Console 등록이 **익스텐션에는 필요 없다** — 구글 인증은 웹앱이 한다.
 
-로그인이 동작하려면 두 가지가 필요하다.
+이 흐름이 동작하려면 세 가지가 맞아야 한다.
 
-1. Google Cloud Console → 사용자 인증 정보 → **웹 애플리케이션** 클라이언트(앱/웹이 쓰는 것과 동일)
-   → **승인된 리디렉션 URI** 에 위 주소 등록 (한 번만, 전원 공용)
-2. `extension/.env.local` 의 `VITE_GOOGLE_WEB_CLIENT_ID` 에 그 클라이언트 ID 를 채우고 다시 빌드
+| 어디 | 무엇 | 왜 |
+| --- | --- | --- |
+| `manifest.config.ts` | `key` 로 확장 ID 고정 (`mniefhlffindhhfnpkbmndbgjdkdkjml`) | 웹앱이 보낼 대상 ID 가 사람마다 달라지면 안 된다 |
+| `manifest.config.ts` | `externally_connectable.matches` 에 웹앱 도메인 | 그 도메인 페이지만 이 익스텐션에 메시지를 보낼 수 있다 |
+| 루트 `.env.local` | `EXPO_PUBLIC_EXTENSION_ID` = 위 ID | 웹앱이 `sendMessage` 에 넘길 대상 |
 
 `extension/key.pem` 은 ID 를 고정하는 개인키다. **gitignore 대상이고 압축해제 로드에는 필요 없다**
 (자체 배포용 `.crx` 서명에만 쓰인다). 팀 비밀번호 관리자 등에 보관한다.
-스토어 배포 시에는 웹 스토어가 자체 ID 를 부여하므로 그때 리디렉션 URI 를 한 번 더 등록해야 한다.
+스토어 배포 시에는 웹 스토어가 자체 ID 를 부여하므로 `EXPO_PUBLIC_EXTENSION_ID` 를 그 값으로 바꾼다.
+
+로컬 웹앱(`localhost:8090`)에서는 인계가 되지 않는다 — `externally_connectable` 이 배포 도메인만
+허용한다. 로그인 확인은 배포된 웹앱으로 한다.
 
 ## 아직 없는 것
 

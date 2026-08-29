@@ -1,28 +1,27 @@
 import characterImage from "@assets/images/login-character.png";
-import { useMutation } from "@tanstack/react-query";
-import { GoogleAuthCancelledError } from "@/lib/auth/googleAuth";
-import { logInWithGoogle } from "@/lib/auth/session";
+import { useState } from "react";
+
+import { openWebLogin } from "@/lib/auth/session";
 import { ActionButton } from "@/sidepanel/components/ActionButton";
 import { EnterHint } from "@/sidepanel/components/EnterHint";
 import { useEnterShortcut } from "@/sidepanel/hooks/useEnterShortcut";
 
-export interface LoginScreenProps {
-  onLoggedIn: () => void;
-}
-
-/** 시안 `chrome-extension / login`. */
-export function LoginScreen({ onLoggedIn }: LoginScreenProps) {
-  const login = useMutation({
-    mutationFn: logInWithGoogle,
-    onSuccess: onLoggedIn,
-  });
+/**
+ * 시안 `chrome-extension / login`.
+ *
+ * 로그인 자체는 여기서 하지 않는다 — 웹앱 로그인 페이지를 새 탭으로 열고, 웹앱이 결과를
+ * background 에 넘기면 저장소가 바뀌면서 SidePanelApp 이 저장 화면으로 전환한다.
+ * 그래서 이 화면은 "열었다" 는 상태만 갖고, 성공 콜백을 기다리지 않는다.
+ */
+export function LoginScreen() {
+  const [hasOpened, setHasOpened] = useState(false);
 
   const start = () => {
-    if (login.isPending) return;
-    login.mutate();
+    setHasOpened(true);
+    void openWebLogin();
   };
 
-  useEnterShortcut(start, !login.isPending);
+  useEnterShortcut(start);
 
   return (
     <div className="flex h-full flex-col justify-center px-8 py-6">
@@ -37,32 +36,17 @@ export function LoginScreen({ onLoggedIn }: LoginScreenProps) {
           로그인을 해주세요
         </h1>
         <p className="mt-1.5 text-center text-body-2-reading text-text-alternative">
-          이 링크를 저장하려면 링딩동 로그인이 필요해요
+          {hasOpened
+            ? "열린 탭에서 로그인하면 여기로 바로 이어져요"
+            : "이 링크를 저장하려면 링딩동 로그인이 필요해요"}
         </p>
-
-        {login.isError ? (
-          <p
-            role="alert"
-            className="mt-3 text-center text-action-destructive text-body-3"
-          >
-            {loginErrorMessage(login.error)}
-          </p>
-        ) : null}
-
         <div className="mt-6">
-          <ActionButton onClick={start} disabled={login.isPending}>
-            {login.isPending ? "로그인 중…" : "Google로 계속하기"}
+          <ActionButton onClick={start}>
+            {hasOpened ? "로그인 탭 다시 열기" : "로그인"}
           </ActionButton>
           <EnterHint />
         </div>
       </div>
     </div>
   );
-}
-
-/** 서버·SDK 사정은 화면 문구로 옮긴다. 취소는 실패가 아니라 조용히 넘긴다. */
-function loginErrorMessage(error: unknown): string | null {
-  if (error instanceof GoogleAuthCancelledError) return null;
-
-  return "로그인하지 못했어요. 잠시 후 다시 시도해주세요";
 }

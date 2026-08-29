@@ -27,6 +27,8 @@ export interface ChromeMock {
   emitTabUpdated: () => void;
   /** 언마운트 후 리스너가 남아 있는지 확인용. */
   tabListenerCount: () => number;
+  /** background 가 로그인을 끝내 storage.local 에 토큰을 쓴 상황. */
+  emitLocalChange: (key: string, newValue: unknown) => void;
 }
 
 type StorageListener = (
@@ -88,6 +90,7 @@ export function installChromeMock(options: ChromeMockOptions = {}): ChromeMock {
     tabs: {
       query: vi.fn(async () => [activeTab]),
       create: createTab,
+      remove: vi.fn(async () => undefined),
       onActivated: activated.event,
       onUpdated: updated.event,
     },
@@ -99,6 +102,7 @@ export function installChromeMock(options: ChromeMockOptions = {}): ChromeMock {
     runtime: {
       sendMessage,
       onMessage: { addListener: vi.fn() },
+      onMessageExternal: { addListener: vi.fn() },
     },
   });
 
@@ -122,5 +126,11 @@ export function installChromeMock(options: ChromeMockOptions = {}): ChromeMock {
     },
     tabListenerCount: () =>
       activated.listeners.length + updated.listeners.length,
+    emitLocalChange: (key, newValue) => {
+      local.set(key, newValue);
+      for (const listener of [...storageChange.listeners]) {
+        listener({ [key]: { newValue } }, "local");
+      }
+    },
   };
 }

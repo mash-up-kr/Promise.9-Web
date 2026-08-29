@@ -1,5 +1,6 @@
 import { createLink } from "@shared/entities/link/link.queries";
 
+import { handleLoginHandoff } from "@/lib/auth/handoff";
 import { installTokenPersistence } from "@/lib/auth/session";
 
 import {
@@ -88,3 +89,28 @@ chrome.runtime.onMessage.addListener((message: unknown) => {
 chrome.runtime.onInstalled.addListener(() => {
   void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 });
+
+/**
+ * 웹앱 탭에서 오는 로그인 인계.
+ *
+ * 익스텐션은 로그인 UI 가 없다 — 패널이 웹앱 `/login?return=extension` 을 새 탭으로 열고,
+ * 웹앱이 소셜 로그인으로 받은 idToken 을 `chrome.runtime.sendMessage(확장ID, …)` 로 보내면
+ * 여기서 받아 이 익스텐션의 세션을 만든다. 끝나면 그 탭은 닫아 사용자를 원래 페이지로 돌려보낸다.
+ */
+chrome.runtime.onMessageExternal.addListener(
+  (message: unknown, sender, sendResponse) => {
+    installTokenPersistence();
+
+    void handleLoginHandoff(message, sender.url).then((result) => {
+      sendResponse(result);
+
+      // 로그인이 끝났으면 웹앱 탭은 볼일이 없다. 패널은 storage 변경으로 알아서 바뀐다.
+      if (result.ok && sender.tab?.id !== undefined) {
+        void chrome.tabs.remove(sender.tab.id);
+      }
+    });
+
+    // 비동기로 응답하겠다는 표시 — 없으면 sendResponse 채널이 즉시 닫힌다.
+    return true;
+  },
+);

@@ -27,3 +27,27 @@ export const chromeTokenPersistence: TokenPersistence = {
     await chrome.storage.local.set({ [REFRESH_TOKEN_KEY]: token });
   },
 };
+
+/**
+ * 리프레시 토큰 변경을 구독한다.
+ *
+ * 로그인은 background 에서 끝나고 패널은 다른 문서라, 같은 저장소를 보는 것으로만 알 수 있다.
+ * `storage.onChanged` 는 모든 확장 컨텍스트에 전파된다.
+ */
+export function subscribeRefreshToken(
+  onChange: (token: string | null) => void,
+): () => void {
+  const listener = (
+    changes: Record<string, chrome.storage.StorageChange>,
+    areaName: string,
+  ) => {
+    if (areaName !== "local" || !(REFRESH_TOKEN_KEY in changes)) return;
+    onChange(
+      (changes[REFRESH_TOKEN_KEY]?.newValue as string | undefined) ?? null,
+    );
+  };
+
+  chrome.storage.onChanged.addListener(listener);
+
+  return () => chrome.storage.onChanged.removeListener(listener);
+}

@@ -1,3 +1,8 @@
+import {
+  EXTENSION_LOGIN_RETURN_PARAM,
+  EXTENSION_LOGIN_RETURN_VALUE,
+} from "@shared/extension/extensionLogin.contracts";
+
 /** 배포된 웹앱. 스테이징 등을 볼 때만 `VITE_WEB_APP_BASE_URL` 로 덮어쓴다. */
 const DEFAULT_BASE_URL = "https://link-ding-dong.com";
 
@@ -11,6 +16,11 @@ export const WEB_APP_PATH = {
   home: "/",
   /** `src/app/link/[id].tsx` */
   linkDetail: (linkId: number) => `/link/${linkId}`,
+  /**
+   * `src/app/(auth)/login.tsx` — `return=extension` 이 있으면 웹앱이 로그인 결과를
+   * 이 익스텐션에 넘긴다(shared/extension/extensionLogin.contracts).
+   */
+  extensionLogin: `/login?${EXTENSION_LOGIN_RETURN_PARAM}=${EXTENSION_LOGIN_RETURN_VALUE}`,
 } as const;
 
 export function webAppUrl(path: string): string {
