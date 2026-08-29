@@ -10,16 +10,12 @@ export const HOME_POLICY = {
     /** 최대 노출 링크 수 (알림 날짜 가까운 순) */
     maxLinks: 9,
   },
-  /** 많이 저장한 키워드 */
+  /** 많이 저장한 키워드 — 노출 조건(링크 3개 이상인 후보 3개 이상)은 서버(GET /recommendations)가 판단한다 */
   keywords: {
-    /** 최대 노출 개수 */
+    /** 최대 노출 개수 (서버 limit) */
     max: 12,
     /** 한 줄에 놓는 칩 수 — 균등 분할이 아니라 줄당 상한 */
     perRow: 6,
-    /** 키워드로 셈하는 태그당 최소 링크 수 */
-    minLinksPerTag: 3,
-    /** 섹션을 띄우는 최소 키워드 종류 수 */
-    minVariety: 3,
   },
   /** 최근 저장 */
   recentSave: {

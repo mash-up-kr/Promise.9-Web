@@ -19,11 +19,23 @@ const linkListResponse = {
         representativeTag: null,
         thumbnailUrl: null,
         savedAt: "2026-08-01T00:00:00.000Z",
+        reminderAt: null,
       },
     ],
     pagination: { nextCursor: null, hasNext: false, limit: 9 },
   },
 };
+
+const emptyLinkListResponse = {
+  success: true,
+  data: {
+    links: [],
+    pagination: { nextCursor: null, hasNext: false, limit: 9 },
+  },
+};
+
+// 추천 후보(링크 3개 이상인 폴더·태그)가 2개 이하일 때의 서버 계약 — 키워드 섹션 숨김 경로.
+const recommendationResponse = { success: true, data: null };
 
 const folderListResponse = {
   success: true,
@@ -47,11 +59,19 @@ const folderListResponse = {
 };
 
 test.beforeEach(async ({ page }) => {
-  await page.route(/\/links(\?|$)/, (route) =>
-    route.fulfill({ json: linkListResponse }),
-  );
+  await page.route(/\/links(\?|$)/, (route) => {
+    const url = new URL(route.request().url());
+    // 다시 볼 링크(reminder=true)는 빈 목록 → 섹션 숨김 경로도 함께 탄다.
+    if (url.searchParams.get("reminder") === "true") {
+      return route.fulfill({ json: emptyLinkListResponse });
+    }
+    return route.fulfill({ json: linkListResponse });
+  });
   await page.route(/\/folders(\?|$)/, (route) =>
     route.fulfill({ json: folderListResponse }),
+  );
+  await page.route(/\/recommendations(\?|$)/, (route) =>
+    route.fulfill({ json: recommendationResponse }),
   );
 });
 

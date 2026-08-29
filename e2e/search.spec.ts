@@ -15,6 +15,7 @@ const searchResultResponse = {
         representativeTag: null,
         thumbnailUrl: null,
         savedAt: "2026-08-01T00:00:00.000Z",
+        reminderAt: null,
       },
     ],
     pagination: { nextCursor: null, hasNext: false, limit: 9 },
