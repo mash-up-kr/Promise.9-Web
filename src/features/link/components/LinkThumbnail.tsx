@@ -15,6 +15,18 @@ import {
 
 import { GlassView } from "@/components/ui/glass-view/GlassView";
 import { Icon } from "@/components/ui/icon/Icon";
+import { tv } from "@/lib/tv";
+
+// 페이지 인디케이터 닷 — 현재 페이지만 불투명(100), 나머지는 30%.
+const indicatorDot = tv({
+  base: "size-[5px] rounded-full",
+  variants: {
+    active: {
+      true: "bg-opacity-white-100",
+      false: "bg-opacity-white-30",
+    },
+  },
+});
 
 // 대표 이미지는 원본 비율을 따른다: 가로형은 부모 컨테이너 가로폭 100%(좌우 패딩은
 // 상위에서 처리), 세로형은 240 고정.
@@ -197,9 +209,7 @@ function ThumbnailCarousel({
           <View
             key={uri}
             testID="thumb-indicator"
-            className={`size-[5px] rounded-full ${
-              index === page ? "bg-opacity-white-100" : "bg-opacity-white-30"
-            }`}
+            className={indicatorDot({ active: index === page })}
           />
         ))}
       </View>
