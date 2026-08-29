@@ -11,6 +11,7 @@ const validItem = {
   representativeTag: null,
   thumbnailUrl: null,
   savedAt: "2026-07-26T00:00:00.000Z",
+  reminderAt: null,
 };
 const validResponse = {
   links: [validItem],
@@ -27,6 +28,7 @@ describe("toLink", () => {
         representativeTag: null,
         thumbnailUrl: null,
         savedAt: "2026-07-26T00:00:00.000Z",
+        reminderAt: null,
       }),
     ).toEqual({
       linkId: 1,
@@ -60,6 +62,15 @@ describe("linkListResponseSchema", () => {
       ],
     };
     expect(linkListResponseSchema.safeParse(withTag).success).toBe(true);
+  });
+
+  // 홈 "다시 볼 링크" 가 목록 응답의 reminderAt 으로 알림 날짜 배지를 그린다.
+  it("리마인드 시각이 있는 응답을 통과시킨다", () => {
+    const withReminder = {
+      ...validResponse,
+      links: [{ ...validItem, reminderAt: "2026-08-20T12:00:00.000Z" }],
+    };
+    expect(linkListResponseSchema.safeParse(withReminder).success).toBe(true);
   });
 
   it("필드 타입이 계약과 다르면 거부한다", () => {

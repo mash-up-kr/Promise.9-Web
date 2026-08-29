@@ -22,6 +22,7 @@ const link = (linkId: number, title: string) => ({
   representativeTag: null,
   thumbnailUrl: null,
   savedAt: "2026-08-01T00:00:00.000Z",
+  reminderAt: null,
 });
 
 const linkListData = (links: ReturnType<typeof link>[]) => ({

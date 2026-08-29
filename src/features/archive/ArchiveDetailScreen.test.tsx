@@ -65,6 +65,7 @@ const sampleLink = {
   representativeTag: null,
   thumbnailUrl: null,
   savedAt: "2026-07-26T00:00:00.000Z",
+  reminderAt: null,
 };
 
 const otherLink = {
