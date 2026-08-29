@@ -53,10 +53,10 @@ jest.mock("@/entities/link/link.queries", () => ({
   useDeleteLinkMutation: () => ({ mutateAsync: mockDelete }),
   useUpdateLinkMutation: () => ({ mutate: mockUpdate }),
 }));
-jest.mock("./components/LinkMoreMenu", () => {
+jest.mock("./components/LinkPopover", () => {
   const { Pressable, Text } = require("react-native");
   return {
-    LinkMoreMenu: ({
+    LinkPopover: ({
       onMove,
       onShare,
       onDelete,

@@ -10,13 +10,13 @@ import { PopoverMenuItem } from "@/components/ui/popover/PopoverMenuItem";
 const MENU_WIDTH = 200;
 const MENU_ANCHOR = { right: 12 } as const;
 
-export interface LinkMoreMenuProps {
+export interface LinkPopoverProps {
   onMove: () => void;
   onShare: () => void;
   onDelete: () => void;
 }
 
-export function LinkMoreMenu({ onMove, onShare, onDelete }: LinkMoreMenuProps) {
+export function LinkPopover({ onMove, onShare, onDelete }: LinkPopoverProps) {
   // 이동 시트·삭제 다이얼로그는 또 다른 Modal 이라 팝오버가 닫히는 도중 띄우면 iOS 에서 안 뜬다.
   // 고른 동작을 담아뒀다가 팝오버가 완전히 닫힌 뒤 실행한다(LinkContextMenu 와 동일).
   const pendingRef = useRef<(() => void) | null>(null);

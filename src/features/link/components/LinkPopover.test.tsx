@@ -1,9 +1,9 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { LinkMoreMenu } from "./LinkMoreMenu";
+import { LinkPopover } from "./LinkPopover";
 
-const renderMenu = (props?: Partial<Parameters<typeof LinkMoreMenu>[0]>) =>
+const renderMenu = (props?: Partial<Parameters<typeof LinkPopover>[0]>) =>
   render(
     <SafeAreaProvider
       initialMetrics={{
@@ -11,7 +11,7 @@ const renderMenu = (props?: Partial<Parameters<typeof LinkMoreMenu>[0]>) =>
         insets: { top: 47, left: 0, right: 0, bottom: 34 },
       }}
     >
-      <LinkMoreMenu
+      <LinkPopover
         onMove={jest.fn()}
         onShare={jest.fn()}
         onDelete={jest.fn()}
@@ -26,7 +26,7 @@ const renderMenu = (props?: Partial<Parameters<typeof LinkMoreMenu>[0]>) =>
 const captureDismiss = (): (() => void) =>
   screen.getByTestId("popover-overlay").props.onDismiss;
 
-describe("LinkMoreMenu", () => {
+describe("LinkPopover", () => {
   test("처음에는 메뉴가 닫혀 있다", async () => {
     await renderMenu();
     expect(screen.queryByText("링크 공유")).toBeNull();

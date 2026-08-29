@@ -34,7 +34,7 @@ import {
   shouldShowAiSummary,
 } from "./components/AiSummarySection";
 import { FolderBadge } from "./components/FolderBadge";
-import { LinkMoreMenu } from "./components/LinkMoreMenu";
+import { LinkPopover } from "./components/LinkPopover";
 import { LinkThumbnail } from "./components/LinkThumbnail";
 import { MemoField } from "./components/MemoField";
 import { RelatedLinksList } from "./components/RelatedLinksList";
@@ -209,7 +209,7 @@ function LinkDetailContent() {
                       />
                     )}
                   />
-                  <LinkMoreMenu
+                  <LinkPopover
                     onMove={handleMove}
                     onShare={handleShare}
                     onDelete={() => setIsDeleteOpen(true)}
