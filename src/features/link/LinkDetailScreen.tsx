@@ -1,60 +1,183 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { LinkTag } from "@shared/types/link.types";
-import { Stack, useLocalSearchParams } from "expo-router";
-import { Ellipsis, Star } from "lucide-react-native";
-import { Controller, useForm } from "react-hook-form";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Star } from "lucide-react-native";
+import { useState } from "react";
+import {
+  Controller,
+  type ControllerRenderProps,
+  useForm,
+} from "react-hook-form";
 import { ScrollView, View } from "react-native";
-
+import {
+  AlertDialog,
+  AlertDialogButton,
+} from "@/components/ui/alert-dialog/AlertDialog";
+import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { Header, useHeaderHeight } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
+import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
+import { Spinner } from "@/components/ui/spinner/Spinner";
 import { Text } from "@/components/ui/text/Text";
+import { archiveDetailHref, moveLinksHref } from "@/constants/routes.constants";
+import {
+  linkQueries,
+  useDeleteLinkMutation,
+  useUpdateLinkMutation,
+} from "@/entities/link/link.queries";
 import { formatCalendarDate } from "@/utils/format";
+import { shareUrl } from "@/utils/share";
 
 import { AiSummarySection } from "./components/AiSummarySection";
 import { FolderBadge } from "./components/FolderBadge";
-import { LinkBackground } from "./components/LinkBackground";
+import { LinkPopover } from "./components/LinkPopover";
 import { LinkThumbnail } from "./components/LinkThumbnail";
 import { MemoField } from "./components/MemoField";
 import { RelatedLinksList } from "./components/RelatedLinksList";
-import { TagEditor } from "./components/TagEditor";
 import { type LinkDetailForm, linkDetailFormSchema } from "./link.contracts";
-import {
-  mockLinkDetail,
-  mockLinkDetailUnclassified,
-} from "./mock/mockLinkDetail";
+import { shouldShowAiSummary } from "./link.utils";
 
-// 백엔드 연동 전까지 상세 조회 가능한 목업 링크.
-const mockLinks = [mockLinkDetail, mockLinkDetailUnclassified];
-
-// TODO(#33): 태그 추가/삭제가 서버 호출(POST/DELETE /links/{linkId}/tags)로 바뀌면
-//  아래 두 함수는 사라진다 — tagId 를 서버가 내려주므로 임시 id 생성도 함께 없어진다.
-function appendTag(tags: LinkTag[], name: string): LinkTag[] {
-  return [
-    ...tags,
-    { tagId: Date.now(), name, sourceType: "user", sortOrder: tags.length },
-  ];
+// 로딩·에러 상태에도 뒤로가기는 유지한다(즐겨찾기·더보기는 데이터가 있어야 해 콘텐츠 상태에서만).
+function LinkDetailBackHeader() {
+  return (
+    <Stack.Screen
+      options={{
+        headerTransparent: true,
+        header: () => <Header left={<HeaderBackButton />} />,
+      }}
+    />
+  );
 }
 
-function removeTagById(tags: LinkTag[], tagId: number): LinkTag[] {
-  return tags.filter((tag) => tag.tagId !== tagId);
+// 로딩 — 화면 가운데 스피너.
+function LinkDetailPending() {
+  return (
+    <View className="flex-1 items-center justify-center bg-background-base">
+      <LinkDetailBackHeader />
+      <Spinner size="medium" tone="on-dark" />
+    </View>
+  );
+}
+
+// 에러 — 재시도.
+function LinkDetailError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <View className="flex-1 items-center justify-center gap-3 bg-background-base px-5">
+      <LinkDetailBackHeader />
+      <Text variant="body-2-reading" className="text-text-alternative">
+        링크를 불러오지 못했어요.
+      </Text>
+      <Text
+        accessibilityRole="button"
+        onPress={onRetry}
+        variant="label-1"
+        className="text-old-icon-accent"
+      >
+        다시 시도
+      </Text>
+    </View>
+  );
 }
 
 export function LinkDetailScreen() {
+  return (
+    <AsyncBoundary
+      pending={<LinkDetailPending />}
+      fallback={({ reset }) => <LinkDetailError onRetry={reset} />}
+    >
+      <LinkDetailContent />
+    </AsyncBoundary>
+  );
+}
+
+function LinkDetailContent() {
   const headerHeight = useHeaderHeight();
   const { id } = useLocalSearchParams<"/link/[id]">();
-  const linkDetail =
-    mockLinks.find((link) => link.linkId === Number(id)) ?? mockLinkDetail;
+  const { data: linkDetail } = useSuspenseQuery(linkQueries.detail(id));
 
-  // 이 화면은 링크 하나를 편집하는 단일 폼이다. 서버로 나가는 값(폴더·태그·메모·즐겨찾기)만
-  // 폼이 소유하고, 편집 모드·요약 펼침 같은 화면 조작 상태는 각 컴포넌트가 그대로 가진다.
-  // TODO(#33): 저장 연동. 필드 변경 감지(watch) → PATCH /links/{linkId}(folder·memo·isFavorite)
-  //  + POST/DELETE /links/{linkId}/tags(태그). 비동기 조회로 바뀌면 defaultValues 대신 reset 필요.
+  const router = useRouter();
+  const { show } = useSnackbar();
+  const { mutateAsync: deleteLink } = useDeleteLinkMutation();
+  // 변경 시점 저장(추천안): 이탈 이벤트(뒤로가기·홈·강제종료 등)에 의존하지 않아 유실이 없고,
+  // 폴더 이동(MoveLinksSheet)의 "동작 시점 저장"과도 일관된다. 상세: plan/task/task-server-integration.md.
+  const { mutate: updateLink } = useUpdateLinkMutation();
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  // 별은 낙관적으로 먼저 뒤집고, PATCH 가 실패하면 원복 + 스낵바로 알린다
+  // (성공 시에만 refetch 되므로, 실패를 삼키면 서버와 어긋난 별이 그대로 남는다).
+  const handleToggleFavorite = (
+    field: ControllerRenderProps<LinkDetailForm, "isFavorite">,
+  ) => {
+    const next = !field.value;
+    field.onChange(next);
+    updateLink(
+      { linkId: linkDetail.linkId, isFavorite: next },
+      {
+        onError: () => {
+          field.onChange(!next);
+          show({ message: "즐겨찾기를 변경하지 못했어요. 다시 시도해주세요." });
+        },
+      },
+    );
+  };
+
+  const handleMemoBlur = (memo: string) => {
+    // 서버값과 다를 때만 저장 — 열어만 보고 닫으면 요청하지 않는다.
+    if (memo !== (linkDetail.memo ?? "")) {
+      // 메모는 원복하지 않는다 — 사용자가 입력한 텍스트를 유지해 재시도할 수 있게 한다.
+      updateLink(
+        { linkId: linkDetail.linkId, memo },
+        {
+          onError: () =>
+            show({ message: "메모를 저장하지 못했어요. 다시 시도해주세요." }),
+        },
+      );
+    }
+  };
+
+  // 미분류 "폴더선택" → 폴더 선택 시트(타이틀 "폴더 선택")
+  const handleSelectFolder = () => {
+    router.push(moveLinksHref([linkDetail.linkId], undefined, "폴더 선택"));
+  };
+
+  // 지정 폴더 칩 탭 → 해당 폴더 상세로 이동
+  const handleOpenFolder = () => {
+    if (linkDetail.folder) {
+      router.push(archiveDetailHref(String(linkDetail.folder.folderId)));
+    }
+  };
+
+  const handleMove = () => {
+    router.push(
+      moveLinksHref(
+        [linkDetail.linkId],
+        linkDetail.folder ? String(linkDetail.folder.folderId) : undefined,
+      ),
+    );
+  };
+
+  const handleShare = async () => {
+    const result = await shareUrl(linkDetail.url);
+    if (result === "copied") show({ message: "링크가 복사됐어요" });
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleteOpen(false);
+    try {
+      await deleteLink(linkDetail.linkId);
+      router.back();
+    } catch {
+      show({ message: "링크를 삭제하지 못했어요. 다시 시도해주세요." });
+    }
+  };
+
+  // 이 화면은 링크 하나를 편집하는 단일 폼이다. 서버로 나가는 값(폴더·메모·즐겨찾기)만
+  // 폼이 소유한다. `values` 로 서버 데이터를 싣어, 저장 후 refetch·폴더 이동 시 폼이 최신값을 따른다.
   const { control } = useForm<LinkDetailForm>({
     resolver: zodResolver(linkDetailFormSchema),
-    defaultValues: {
+    values: {
       folder: linkDetail.folder,
-      tags: linkDetail.tags ?? [],
       memo: linkDetail.memo ?? "",
       isFavorite: linkDetail.isFavorite,
     },
@@ -67,7 +190,6 @@ export function LinkDetailScreen() {
           headerTransparent: true,
           header: () => (
             <Header
-              background={false}
               left={<HeaderBackButton />}
               right={
                 <>
@@ -81,22 +203,23 @@ export function LinkDetailScreen() {
                         accessibilityState={{ selected: field.value }}
                         // 켜짐은 채운 별로 구분한다. 색은 IconButton 의 icon-strong 을 따른다.
                         iconFill={field.value ? "currentColor" : "none"}
-                        onPress={() => field.onChange(!field.value)}
+                        onPress={() => handleToggleFavorite(field)}
                       />
                     )}
                   />
-                  <IconButton iconNode={Ellipsis} accessibilityLabel="더보기" />
+                  <LinkPopover
+                    onMove={handleMove}
+                    onShare={handleShare}
+                    onDelete={() => setIsDeleteOpen(true)}
+                  />
                 </>
               }
             />
           ),
         }}
       />
-      <View className="flex-1">
-        <LinkBackground
-          thumbnailUrl={linkDetail.thumbnailUrl ?? ""}
-          dominantColor={linkDetail.dominantColor}
-        />
+      {/* 배경은 다른 화면과 동일한 기본 배경 — 이미지 블러·대표색 추출 없음(Figma 정책 106:12076). */}
+      <View className="flex-1 bg-background-base">
         <ScrollView
           className="flex-1"
           contentContainerClassName="gap-6 pb-8"
@@ -104,14 +227,17 @@ export function LinkDetailScreen() {
           contentInsetAdjustmentBehavior="automatic"
         >
           <View className="px-5">
+            {/* 서버는 현재 대표 이미지를 단수(thumbnailUrl)로 준다 — 배열로 매핑해
+                단수·복수·없음을 모두 커버한다. 서버가 배열을 주면 그대로 넘긴다. */}
             <LinkThumbnail
-              thumbnailUrl={linkDetail.thumbnailUrl ?? ""}
+              imageUrls={
+                linkDetail.thumbnailUrl ? [linkDetail.thumbnailUrl] : []
+              }
               url={linkDetail.url}
             />
           </View>
 
           <View className="gap-2 px-5">
-            {/* TODO(#33): onPress → 폴더 선택 플로우(별도 이슈) 연결 */}
             <Controller
               control={control}
               name="folder"
@@ -119,6 +245,8 @@ export function LinkDetailScreen() {
                 <FolderBadge
                   folder={field.value}
                   folderColor={linkDetail.folderColor}
+                  onSelectFolder={handleSelectFolder}
+                  onOpenFolder={handleOpenFolder}
                 />
               )}
             />
@@ -132,43 +260,57 @@ export function LinkDetailScreen() {
             </Text>
           </View>
 
-          <View className="px-5">
-            <AiSummarySection summary={linkDetail.aiSummary ?? ""} />
-          </View>
-
-          <View className="px-5">
-            <Controller
-              control={control}
-              name="tags"
-              render={({ field }) => (
-                <TagEditor
-                  tags={field.value}
-                  onAddTag={(name) =>
-                    field.onChange(appendTag(field.value, name))
-                  }
-                  onRemoveTag={(tagId) =>
-                    field.onChange(removeTagById(field.value, tagId))
-                  }
-                />
-              )}
-            />
-          </View>
+          {shouldShowAiSummary(
+            linkDetail.processingStatus,
+            linkDetail.aiSummary,
+          ) && (
+            <View className="px-5">
+              <AiSummarySection
+                status={linkDetail.processingStatus}
+                summary={linkDetail.aiSummary}
+              />
+            </View>
+          )}
 
           <View className="px-5">
             <Controller
               control={control}
               name="memo"
               render={({ field }) => (
-                <MemoField memo={field.value} onChangeMemo={field.onChange} />
+                <MemoField
+                  memo={field.value}
+                  onChangeMemo={field.onChange}
+                  onBlur={() => handleMemoBlur(field.value)}
+                />
               )}
             />
           </View>
 
           <View className="mt-6">
-            <RelatedLinksList items={linkDetail.relatedLinks ?? []} />
+            <RelatedLinksList items={linkDetail.relatedLinks} />
           </View>
         </ScrollView>
       </View>
+      <AlertDialog
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        title="링크를 삭제할까요?"
+        description="삭제된 링크는 최근 삭제된 항목으로 이동돼요"
+        actions={
+          <>
+            <AlertDialogButton
+              label="취소"
+              variant="secondary"
+              onPress={() => setIsDeleteOpen(false)}
+            />
+            <AlertDialogButton
+              label="삭제"
+              variant="destructive"
+              onPress={handleDeleteConfirm}
+            />
+          </>
+        }
+      />
     </>
   );
 }

@@ -1,10 +1,13 @@
 import MaskedView from "@react-native-masked-view/masked-view";
+import type { LinkProcessingStatus } from "@shared/types/link.types";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronDown, ChevronUp, Sparkle } from "lucide-react-native";
 import { useState } from "react";
 import { Platform, Pressable, View } from "react-native";
 import { Icon } from "@/components/ui/icon/Icon";
+import { Spinner } from "@/components/ui/spinner/Spinner";
 import { Text } from "@/components/ui/text/Text";
+import { shouldShowAiSummary } from "../link.utils";
 
 const COLLAPSED_HEIGHT = 116;
 const FADE_HEIGHT = 40;
@@ -18,11 +21,51 @@ const MASK_FADE_START = 1 - FADE_HEIGHT / COLLAPSED_HEIGHT;
 // (변수 보간 시 인식 못 해 유틸리티가 생성되지 않음) — #e9e9eb = --color-text-normal.
 
 export interface AiSummarySectionProps {
-  summary: string;
+  status: LinkProcessingStatus;
+  summary: string | null;
 }
 
-export function AiSummarySection({ summary }: AiSummarySectionProps) {
+// 헤더(Sparkle + 라벨) — 완료·로딩 상태가 공유한다.
+function AiSummaryHeaderLabel() {
+  return (
+    <View className="flex-row items-center gap-1.5">
+      {/* fill 은 Icon 의 className→color 매핑 대상이 아니라 토큰 값을 리터럴로 맞춰준다 */}
+      <Icon
+        iconNode={Sparkle}
+        size={14}
+        className="text-icon-accent"
+        fill="#FFFF66"
+      />
+      <Text variant="heading-3">AI 요약으로 미리보기</Text>
+    </View>
+  );
+}
+
+export function AiSummarySection({ status, summary }: AiSummarySectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // 실패·미지원(요약 없음)이면 영역 자체를 그리지 않는다.
+  if (!shouldShowAiSummary(status, summary)) {
+    return null;
+  }
+
+  // 준비 중 — 펼침 없이 스피너 + 안내 문구.
+  if (status === "PENDING") {
+    return (
+      <View className="gap-4 rounded-[20px] bg-opacity-white-05 p-4">
+        <AiSummaryHeaderLabel />
+        <View className="items-center gap-2 py-2">
+          <Spinner tone="on-dark" />
+          <Text variant="body-2-reading" className="text-text-alternative">
+            요약을 준비 중이에요
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // 여기부터 summary 는 존재(shouldShowAiSummary 로 보장).
+  const summaryText = summary ?? "";
 
   return (
     <View className="gap-4 rounded-[20px] bg-opacity-white-05 p-4">
@@ -32,16 +75,7 @@ export function AiSummarySection({ summary }: AiSummarySectionProps) {
         onPress={() => setIsExpanded((prev) => !prev)}
         className="flex-row items-center justify-between"
       >
-        <View className="flex-row items-center gap-1.5">
-          {/* fill 은 Icon 의 className→color 매핑 대상이 아니라 토큰 값을 리터럴로 맞춰준다 */}
-          <Icon
-            iconNode={Sparkle}
-            size={14}
-            className="text-old-icon-accent"
-            fill="#0093FF"
-          />
-          <Text variant="heading-3">AI 요약으로 미리보기</Text>
-        </View>
+        <AiSummaryHeaderLabel />
         <Icon
           iconNode={isExpanded ? ChevronUp : ChevronDown}
           size={16}
@@ -50,14 +84,14 @@ export function AiSummarySection({ summary }: AiSummarySectionProps) {
         />
       </Pressable>
       {isExpanded ? (
-        <Text variant="body-2-reading">{summary}</Text>
+        <Text variant="body-2-reading">{summaryText}</Text>
       ) : Platform.OS === "web" ? (
         <Text
           variant="body-2-reading"
           className="bg-linear-to-b from-[#e9e9eb] to-transparent bg-clip-text text-transparent"
           style={{ maxHeight: COLLAPSED_HEIGHT, overflow: "hidden" }}
         >
-          {summary}
+          {summaryText}
         </Text>
       ) : (
         <MaskedView
@@ -70,7 +104,7 @@ export function AiSummarySection({ summary }: AiSummarySectionProps) {
             />
           }
         >
-          <Text variant="body-2-reading">{summary}</Text>
+          <Text variant="body-2-reading">{summaryText}</Text>
         </MaskedView>
       )}
     </View>

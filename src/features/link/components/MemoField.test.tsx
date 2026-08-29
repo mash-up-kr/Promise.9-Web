@@ -37,7 +37,7 @@ describe("MemoField", () => {
     expect(onChangeMemo).toHaveBeenCalledWith("첫 줄\n둘째 줄");
   });
 
-  test("memo 가 비어 있어도 '0/300' 카운터를 상시 노출한다", async () => {
+  test("memo 가 비어 있어도 글자 수 카운터를 '0/300' 으로 항상 노출한다", async () => {
     await render(<MemoField memo="" onChangeMemo={jest.fn()} />);
     expect(screen.getByText("0/300")).toBeOnTheScreen();
   });

@@ -1,5 +1,6 @@
 import { apiClient, type SuccessResponse } from "@shared/api";
-import type { Link, LinkPreview } from "@shared/types/link.types";
+import { hexToFolderTone } from "@shared/folder/folder.constants";
+import type { Link, LinkDetail, LinkPreview } from "@shared/types/link.types";
 import {
   queryOptions,
   useMutation,
@@ -85,10 +86,69 @@ export function toLink(item: LinkListItem): Link {
   };
 }
 
-/** 링크 상세 응답 중 화면이 쓰는 부분. 나머지 필드는 상세 화면 연동 때 넓힌다. */
-export interface LinkDetail {
-  linkId: number;
-  url: string;
+const relatedLinkResponseSchema = z.looseObject({
+  linkId: z.number(),
+  title: z.string().nullable(),
+  thumbnailUrl: z.string().nullable(),
+});
+
+/** GET /links/{id} 상세 응답 스키마. looseObject 라 서버가 필드를 추가해도 통과한다. */
+export const linkDetailResponseSchema = z.looseObject({
+  linkId: z.number(),
+  url: z.string(),
+  folder: z
+    // color 는 서버가 상세 응답에 담아준다(hex). 아직 안 오는 응답도 통과하도록 옵션.
+    .looseObject({
+      folderId: z.number(),
+      folderName: z.string(),
+      color: z.string().nullish(),
+    })
+    .nullable(),
+  thumbnailUrl: z.string().nullable(),
+  title: z.string().nullable(),
+  source: z.string().nullable(),
+  publishedAt: z.string().nullable(),
+  savedAt: z.string(),
+  isFavorite: z.boolean(),
+  viewedAt: z.string().nullable(),
+  processingStatus: z.enum(["PENDING", "SUCCESS", "NEEDS_REVIEW", "FAILED"]),
+  aiSummary: z.string().nullable(),
+  tags: z.array(linkTagSchema),
+  memo: z.string().nullable(),
+  relatedLinks: z.array(relatedLinkResponseSchema),
+});
+
+export type LinkDetailResponse = z.infer<typeof linkDetailResponseSchema>;
+
+/** 서버 상세 응답 → UI LinkDetail. nullable title·source·relatedLink 썸네일을 빈 문자열로 폴백. */
+export function toLinkDetail(item: LinkDetailResponse): LinkDetail {
+  return {
+    linkId: item.linkId,
+    url: item.url,
+    folder: item.folder
+      ? { folderId: item.folder.folderId, folderName: item.folder.folderName }
+      : null,
+    // 서버가 준 폴더 색(hex) → UI tone. 없으면 undefined(FolderBadge 가 gray 폴백).
+    folderColor: item.folder?.color
+      ? hexToFolderTone(item.folder.color)
+      : undefined,
+    thumbnailUrl: item.thumbnailUrl,
+    title: item.title ?? "",
+    source: item.source ?? "",
+    publishedAt: item.publishedAt,
+    savedAt: item.savedAt,
+    isFavorite: item.isFavorite,
+    viewedAt: item.viewedAt,
+    processingStatus: item.processingStatus,
+    aiSummary: item.aiSummary,
+    tags: item.tags,
+    memo: item.memo,
+    relatedLinks: item.relatedLinks.map((related) => ({
+      linkId: related.linkId,
+      title: related.title ?? "",
+      thumbnailUrl: related.thumbnailUrl ?? "",
+    })),
+  };
 }
 
 // 모듈 스코프에 둬야 호출마다 같은 참조라 react-query 가 데이터가 그대로일 때 재계산을 건너뛴다.
@@ -124,17 +184,17 @@ export const linkQueries = {
       },
       select: selectLinks,
     }),
-  // 링크 상세. 목록 응답엔 원문 url 이 없어 공유·복사는 이 조회를 한 번 거친다.
+  // 링크 상세. queryFn 이 서버 응답을 검증·매핑해 UI LinkDetail 을 반환한다.
   detail: (linkId: string) =>
     queryOptions({
       queryKey: linkKeys.detail(linkId),
       queryFn: async ({ signal }) => {
-        const { data } = await apiClient.get<SuccessResponse<LinkDetail>>(
+        const { data } = await apiClient.get<SuccessResponse<unknown>>(
           `/links/${linkId}`,
           { signal },
         );
 
-        return data.data;
+        return toLinkDetail(linkDetailResponseSchema.parse(data.data));
       },
     }),
 };
@@ -188,13 +248,20 @@ export interface UpdateLinkFolderVariables {
 
 // PATCH /links/{linkId} — 링크를 다른 폴더로 옮긴다. 벌크 API 가 없어 호출부가 선택 개수만큼 부른다.
 export function useUpdateLinkFolderMutation() {
+  const queryClient = useQueryClient();
   const invalidateFolderCaches = useInvalidateFolderCaches();
 
   return useMutation({
     mutationFn: async ({ linkId, folderId }: UpdateLinkFolderVariables) => {
       await apiClient.patch(`/links/${linkId}`, { folderId });
     },
-    onSuccess: invalidateFolderCaches,
+    // 상세 화면이 열려 있으면 폴더가 바로 바뀌도록 그 링크의 detail 도 무효화한다.
+    onSuccess: (_data, { linkId }) => {
+      queryClient.invalidateQueries({
+        queryKey: linkKeys.detail(String(linkId)),
+      });
+      invalidateFolderCaches();
+    },
   });
 }
 
@@ -207,6 +274,32 @@ export function useRestoreLinkMutation() {
       await apiClient.post(`/links/${linkId}/restore`);
     },
     onSuccess: invalidateFolderCaches,
+  });
+}
+
+export interface UpdateLinkVariables {
+  linkId: number;
+  /** null 은 미분류로 이동. */
+  folderId?: number | null;
+  memo?: string;
+  isFavorite?: boolean;
+}
+
+// PATCH /links/{linkId} — folder·memo·isFavorite 중 전달된 필드만 변경한다(상세 화면 저장용).
+export function useUpdateLinkMutation() {
+  const queryClient = useQueryClient();
+  const invalidateFolderCaches = useInvalidateFolderCaches();
+
+  return useMutation({
+    mutationFn: async ({ linkId, ...body }: UpdateLinkVariables) => {
+      await apiClient.patch(`/links/${linkId}`, body);
+    },
+    onSuccess: (_data, { linkId }) => {
+      queryClient.invalidateQueries({
+        queryKey: linkKeys.detail(String(linkId)),
+      });
+      invalidateFolderCaches();
+    },
   });
 }
 

@@ -1,8 +1,35 @@
-import { render, screen, userEvent } from "@testing-library/react-native";
+import {
+  fireEvent,
+  render,
+  screen,
+  userEvent,
+  waitFor,
+} from "@testing-library/react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
+import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
+import * as share from "@/utils/share";
+
 import { LinkDetailScreen } from "./LinkDetailScreen";
-import { mockLinkDetail, mockRelatedLinks } from "./mock/mockLinkDetail";
+import {
+  mockLinkDetail,
+  mockLinkDetailUnclassified,
+  mockRelatedLinks,
+} from "./mock/mockLinkDetail";
+
+const mockBack = jest.fn();
+const mockPush = jest.fn();
+const mockDelete = jest.fn().mockResolvedValue(undefined);
+const mockUpdate = jest.fn();
+// 라우트 id — 테스트별로 미분류(101) 등으로 바꿔 넣는다(mock 접두사라 jest.mock 팩토리에서 참조 가능).
+const mockRoute = { id: String(mockLinkDetail.linkId) };
+// 상세 데이터 — useSuspenseQuery 목이 돌려준다. 테스트별로 current 를 바꿔 주입한다.
+const mockDetailData = { current: mockLinkDetail };
+
+jest.mock("@tanstack/react-query", () => ({
+  ...jest.requireActual("@tanstack/react-query"),
+  useSuspenseQuery: () => ({ data: mockDetailData.current }),
+}));
 
 // Stack.Screen 은 헤더를 options.header 로만 받으므로, 기본 목이면 헤더가 렌더되지 않는다.
 // 즐겨찾기 버튼이 헤더에 있어 검증하려면 header 를 실제로 렌더해야 한다.
@@ -11,11 +38,59 @@ jest.mock("expo-router", () => ({
     Screen: ({ options }: { options?: { header?: () => React.ReactNode } }) =>
       options?.header?.() ?? null,
   },
-  useLocalSearchParams: () => ({ id: String(mockLinkDetail.linkId) }),
+  useLocalSearchParams: () => ({ id: mockRoute.id }),
   // 헤더의 HeaderBackButton 이 사용한다.
-  useRouter: () => ({ back: jest.fn(), replace: jest.fn() }),
+  useRouter: () => ({ back: mockBack, push: mockPush, replace: jest.fn() }),
   canGoBack: () => true,
 }));
+
+jest.mock("@/utils/share", () => ({ shareUrl: jest.fn() }));
+// useSuspenseQuery 목이 인자를 무시하므로 linkQueries.detail 은 호출만 되면 되는 스텁이면 충분.
+jest.mock("@/entities/link/link.queries", () => ({
+  linkQueries: {
+    detail: () => ({ queryKey: ["link", "detail"], queryFn: async () => {} }),
+  },
+  useDeleteLinkMutation: () => ({ mutateAsync: mockDelete }),
+  useUpdateLinkMutation: () => ({ mutate: mockUpdate }),
+}));
+jest.mock("./components/LinkPopover", () => {
+  const { Pressable, Text } = require("react-native");
+  return {
+    LinkPopover: ({
+      onMove,
+      onShare,
+      onDelete,
+    }: {
+      onMove: () => void;
+      onShare: () => void;
+      onDelete: () => void;
+    }) => (
+      <>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="mock-move"
+          onPress={onMove}
+        >
+          <Text>move</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="mock-share"
+          onPress={onShare}
+        >
+          <Text>share</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="mock-delete"
+          onPress={onDelete}
+        >
+          <Text>delete</Text>
+        </Pressable>
+      </>
+    ),
+  };
+});
 
 // 헤더가 useSafeAreaInsets 를 쓰므로 Provider 가 필요하다 (Header.test.tsx 와 동일한 패턴).
 const metrics: Metrics = {
@@ -26,11 +101,120 @@ const metrics: Metrics = {
 const renderScreen = () =>
   render(
     <SafeAreaProvider initialMetrics={metrics}>
-      <LinkDetailScreen />
+      <SnackbarProvider>
+        <LinkDetailScreen />
+      </SnackbarProvider>
     </SafeAreaProvider>,
   );
 
 describe("LinkDetailScreen", () => {
+  beforeEach(() => {
+    mockBack.mockClear();
+    mockPush.mockClear();
+    mockDelete.mockClear();
+    // 성공 경로가 기본 — 구현·호출 이력을 함께 비운다(실패 테스트가 심은 onError 구현이 새지 않도록).
+    mockUpdate.mockReset();
+    (share.shareUrl as jest.Mock).mockResolvedValue("copied");
+    mockRoute.id = String(mockLinkDetail.linkId);
+    mockDetailData.current = mockLinkDetail;
+  });
+
+  test("즐겨찾기 토글 시 isFavorite 를 저장한다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+    // mock 은 isFavorite: false → 토글하면 true 로 저장.
+    await user.press(screen.getByRole("button", { name: "즐겨찾기" }));
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        linkId: mockLinkDetail.linkId,
+        isFavorite: true,
+      }),
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+  });
+
+  test("메모 편집 후 blur 시 memo 를 저장한다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+    const input = screen.getByPlaceholderText(
+      "저장한 이유나 기억하고 싶은 점을 적어보세요",
+    );
+    await user.type(input, "!");
+    fireEvent(input, "blur");
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        linkId: mockLinkDetail.linkId,
+        memo: `${mockLinkDetail.memo}!`,
+      }),
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+  });
+
+  test("즐겨찾기 저장 실패 시 별을 원복하고 스낵바를 띄운다", async () => {
+    // PATCH 가 실패하면 mutate 는 넘겨받은 onError 를 호출한다.
+    mockUpdate.mockImplementation((_vars, opts) => opts?.onError?.());
+    const user = userEvent.setup();
+    await renderScreen();
+    const favoriteButton = () =>
+      screen.getByRole("button", { name: "즐겨찾기" });
+
+    expect(favoriteButton().props.accessibilityState.selected).toBe(false);
+    await user.press(favoriteButton());
+
+    // 낙관적으로 켜졌다가 실패로 원복 → 다시 false.
+    expect(favoriteButton().props.accessibilityState.selected).toBe(false);
+    expect(
+      await screen.findByText(
+        "즐겨찾기를 변경하지 못했어요. 다시 시도해주세요.",
+      ),
+    ).toBeOnTheScreen();
+  });
+
+  test("메모 저장 실패 시 스낵바를 띄운다", async () => {
+    mockUpdate.mockImplementation((_vars, opts) => opts?.onError?.());
+    const user = userEvent.setup();
+    await renderScreen();
+    const input = screen.getByPlaceholderText(
+      "저장한 이유나 기억하고 싶은 점을 적어보세요",
+    );
+    await user.type(input, "!");
+    fireEvent(input, "blur");
+
+    // fireEvent(blur) 는 스낵바 진입 애니메이션을 끝까지 flush 하지 않아, 매 폴링마다 새로 조회한다.
+    await waitFor(() =>
+      expect(
+        screen.getByText("메모를 저장하지 못했어요. 다시 시도해주세요."),
+      ).toBeOnTheScreen(),
+    );
+  });
+
+  test("지정 폴더 칩을 누르면 해당 폴더 상세로 이동한다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+    await user.press(screen.getByRole("button", { name: "디자인 폴더 열기" }));
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pathname: "/archive/[id]",
+        params: expect.objectContaining({
+          id: String(mockLinkDetail.folder?.folderId),
+        }),
+      }),
+    );
+  });
+
+  test("미분류에서 '폴더선택'을 누르면 폴더 선택 시트로 이동한다", async () => {
+    mockDetailData.current = mockLinkDetailUnclassified;
+    const user = userEvent.setup();
+    await renderScreen();
+    await user.press(screen.getByText("폴더선택"));
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pathname: "/move-links",
+        params: expect.objectContaining({ title: "폴더 선택" }),
+      }),
+    );
+  });
+
   test("제목·폴더·출처/저장일을 렌더한다", async () => {
     await renderScreen();
     expect(screen.getByText(mockLinkDetail.title)).toBeOnTheScreen();
@@ -41,26 +225,6 @@ describe("LinkDetailScreen", () => {
   test("AI 요약 섹션을 렌더한다", async () => {
     await renderScreen();
     expect(screen.getByText("AI 요약으로 미리보기")).toBeOnTheScreen();
-  });
-
-  test("태그 추가 → 화면에 새 태그 칩이 반영된다", async () => {
-    const user = userEvent.setup();
-    await renderScreen();
-    await user.press(screen.getByRole("button", { name: "태그 추가" }));
-    await user.type(
-      screen.getByPlaceholderText("태그를 입력해 주세요"),
-      "회고",
-    );
-    await user.press(screen.getByRole("button", { name: "추가" }));
-    expect(screen.getByText("#회고")).toBeOnTheScreen();
-  });
-
-  test("태그 삭제 → 화면에서 해당 칩이 사라진다", async () => {
-    const user = userEvent.setup();
-    await renderScreen();
-    await user.press(screen.getByRole("button", { name: "태그 추가" }));
-    await user.press(screen.getByLabelText("IT 삭제"));
-    expect(screen.queryByText("#IT")).toBeNull();
   });
 
   test("메모 입력값이 controlled state로 반영된다", async () => {
@@ -95,5 +259,35 @@ describe("LinkDetailScreen", () => {
     for (const item of mockRelatedLinks) {
       expect(screen.getByText(item.title)).toBeOnTheScreen();
     }
+  });
+
+  test("링크 공유 → shareUrl 을 호출하고, 복사면 토스트를 띄운다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+    await user.press(screen.getByLabelText("mock-share"));
+    expect(share.shareUrl).toHaveBeenCalledWith(mockLinkDetail.url);
+    expect(await screen.findByText("링크가 복사됐어요")).toBeOnTheScreen();
+  });
+
+  test("폴더 이동 → move-links 라우트로 이동한다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+    await user.press(screen.getByLabelText("mock-move"));
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.objectContaining({ pathname: "/move-links" }),
+    );
+  });
+
+  test("삭제 → 다이얼로그 확인 시 삭제 후 뒤로 간다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("mock-delete"));
+    expect(screen.getByText("링크를 삭제할까요?")).toBeOnTheScreen();
+
+    await user.press(screen.getByRole("button", { name: "삭제" }));
+    expect(mockDelete).toHaveBeenCalledWith(mockLinkDetail.linkId);
+    await screen.findByText(mockLinkDetail.title); // 리렌더 안정화
+    expect(mockBack).toHaveBeenCalledTimes(1);
   });
 });

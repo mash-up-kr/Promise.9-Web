@@ -54,11 +54,14 @@ function MoveLinksSheetContent() {
   const { show } = useSnackbar();
   const { mutateAsync: moveLink } = useUpdateLinkFolderMutation();
 
-  const { ids, folderId } = useLocalSearchParams<{
+  const { ids, folderId, title } = useLocalSearchParams<{
     ids?: string;
     folderId?: string;
+    title?: string;
   }>();
   const linkIds = parseLinkIds(ids);
+  // 진입에 따라 타이틀이 다르다 — 링크 상세 "폴더선택"은 "폴더 선택", 그 외는 "폴더 이동".
+  const headerTitle = title ?? "폴더 이동";
 
   // 목적지 폴더(보관함 라우트 id). 링크가 원래 있던 폴더를 미리 골라둔 채로 연다.
   const [targetFolderId, setTargetFolderId] = useState<string | null>(
@@ -103,7 +106,7 @@ function MoveLinksSheetContent() {
   // 폴더 목록을 기다리는 동안에도 취소는 눌려야 하므로 저장만 잠근 헤더를 함께 보여준다.
   const placeholderHeader = (
     <BottomSheetHeader
-      title="폴더 이동"
+      title={headerTitle}
       onCancel={dismiss}
       onConfirm={() => {}}
       isConfirmDisabled
@@ -132,6 +135,7 @@ function MoveLinksSheetContent() {
       }
     >
       <FolderPicker
+        title={headerTitle}
         selectedFolderId={targetFolderId}
         isSaveDisabled={isSaveDisabled}
         onSelect={setTargetFolderId}
@@ -144,6 +148,7 @@ function MoveLinksSheetContent() {
 }
 
 interface FolderPickerProps {
+  title: string;
   selectedFolderId: string | null;
   /** 이동 중이거나 옮길 링크가 없으면 폴더를 골랐어도 저장할 수 없다. */
   isSaveDisabled: boolean;
@@ -154,6 +159,7 @@ interface FolderPickerProps {
 }
 
 function FolderPicker({
+  title,
   selectedFolderId,
   isSaveDisabled,
   onSelect,
@@ -169,7 +175,7 @@ function FolderPicker({
   return (
     <>
       <BottomSheetHeader
-        title="폴더 이동"
+        title={title}
         onCancel={onCancel}
         onConfirm={() => onSave(data.myFolders)}
         isConfirmDisabled={selectedFolderId === null || isSaveDisabled}
