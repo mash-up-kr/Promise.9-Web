@@ -29,16 +29,14 @@ import {
 import { formatCalendarDate } from "@/utils/format";
 import { shareUrl } from "@/utils/share";
 
-import {
-  AiSummarySection,
-  shouldShowAiSummary,
-} from "./components/AiSummarySection";
+import { AiSummarySection } from "./components/AiSummarySection";
 import { FolderBadge } from "./components/FolderBadge";
 import { LinkPopover } from "./components/LinkPopover";
 import { LinkThumbnail } from "./components/LinkThumbnail";
 import { MemoField } from "./components/MemoField";
 import { RelatedLinksList } from "./components/RelatedLinksList";
 import { type LinkDetailForm, linkDetailFormSchema } from "./link.contracts";
+import { shouldShowAiSummary } from "./link.utils";
 
 // 로딩·에러 상태에도 뒤로가기는 유지한다(즐겨찾기·더보기는 데이터가 있어야 해 콘텐츠 상태에서만).
 function LinkDetailBackHeader() {

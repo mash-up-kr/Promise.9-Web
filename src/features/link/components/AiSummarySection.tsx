@@ -7,6 +7,7 @@ import { Platform, Pressable, View } from "react-native";
 import { Icon } from "@/components/ui/icon/Icon";
 import { Spinner } from "@/components/ui/spinner/Spinner";
 import { Text } from "@/components/ui/text/Text";
+import { shouldShowAiSummary } from "../link.utils";
 
 const COLLAPSED_HEIGHT = 116;
 const FADE_HEIGHT = 40;
@@ -22,17 +23,6 @@ const MASK_FADE_START = 1 - FADE_HEIGHT / COLLAPSED_HEIGHT;
 export interface AiSummarySectionProps {
   status: LinkProcessingStatus;
   summary: string | null;
-}
-
-/**
- * AI 요약 영역 노출 여부 — 처리 중이거나 요약 텍스트가 있을 때만 보인다.
- * 실패·미지원(요약 없음)이면 영역 자체를 숨긴다(정책). 스크린이 래퍼 조건부 렌더에 재사용한다.
- */
-export function shouldShowAiSummary(
-  status: LinkProcessingStatus,
-  summary: string | null,
-): boolean {
-  return status === "PENDING" || (summary != null && summary.trim() !== "");
 }
 
 // 헤더(Sparkle + 라벨) — 완료·로딩 상태가 공유한다.
