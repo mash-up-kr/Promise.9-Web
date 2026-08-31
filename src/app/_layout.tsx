@@ -3,7 +3,6 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -11,6 +10,9 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { HeaderScrollProvider } from "@/components/ui/header/HeaderScrollProvider";
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
+import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
+import { SplashOverlay } from "@/features/splash/components/SplashOverlay";
+import { useSplashPhase } from "@/features/splash/hooks/useSplashPhase";
 import { setupOnlineManager } from "@/lib/online-manager";
 import { queryClient } from "@/lib/queryClient";
 import { tokenPersistence } from "@/lib/tokenStorage";
@@ -46,14 +48,17 @@ export default function RootLayout() {
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
   });
 
-  useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded]);
+  // 초기화(폰트 + 인증 상태 확인)가 끝날 때까지 스플래시를 유지한다.
+  // 홈/로그인 분기는 (tabs) 의 인증 가드가 스플래시 아래에서 처리한다.
+  const authStatus = useAuthGate();
+  const splashPhase = useSplashPhase(fontsLoaded && authStatus !== "checking");
 
   if (!fontsLoaded) {
-    return null;
+    return (
+      <View className="flex-1 bg-background-base">
+        <SplashOverlay isFadingOut={false} />
+      </View>
+    );
   }
 
   return (
@@ -106,6 +111,9 @@ export default function RootLayout() {
             </View>
           </KeyboardProvider>
         </SafeAreaProvider>
+        {splashPhase !== "hidden" && (
+          <SplashOverlay isFadingOut={splashPhase === "fading"} />
+        )}
       </GestureHandlerRootView>
     </QueryClientProvider>
   );
