@@ -10,6 +10,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { HeaderScrollProvider } from "@/components/ui/header/HeaderScrollProvider";
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
+import { isWeb } from "@/constants/platform.constants";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
 import { SplashOverlay } from "@/features/splash/components/SplashOverlay";
 import { useSplashPhase } from "@/features/splash/hooks/useSplashPhase";
@@ -50,13 +51,16 @@ export default function RootLayout() {
 
   // 초기화(폰트 + 인증 상태 확인)가 끝날 때까지 스플래시를 유지한다.
   // 홈/로그인 분기는 (tabs) 의 인증 가드가 스플래시 아래에서 처리한다.
+  // 웹은 스플래시를 노출하지 않는다(웹 관례상 인위적 대기 없이 다크 배경만) —
+  // 실제 초기화가 짧아 최소 노출을 빼면 마스코트가 깜빡이는 플리커만 남는다.
+  const isSplashEnabled = !isWeb;
   const authStatus = useAuthGate();
   const splashPhase = useSplashPhase(fontsLoaded && authStatus !== "checking");
 
   if (!fontsLoaded) {
     return (
       <View className="flex-1 bg-background-base">
-        <SplashOverlay isFadingOut={false} />
+        {isSplashEnabled && <SplashOverlay isFadingOut={false} />}
       </View>
     );
   }
@@ -111,7 +115,7 @@ export default function RootLayout() {
             </View>
           </KeyboardProvider>
         </SafeAreaProvider>
-        {splashPhase !== "hidden" && (
+        {isSplashEnabled && splashPhase !== "hidden" && (
           <SplashOverlay isFadingOut={splashPhase === "fading"} />
         )}
       </GestureHandlerRootView>
