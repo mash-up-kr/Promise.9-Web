@@ -1,0 +1,80 @@
+diff --git a/build/useShareIntent.js b/build/useShareIntent.js
+index 1ab12c4c9e429ef8adfdac61c096acc906063dcf..f64c460bdd21853a869992b2b42313658972e485 100644
+--- a/build/useShareIntent.js
++++ b/build/useShareIntent.js
+@@ -37,7 +37,7 @@ export default function useShareIntent(options = SHAREINTENT_OPTIONS_DEFAULT) {
+      */
+     const refreshShareIntent = () => {
+         options.debug && console.debug("useShareIntent[refresh]", url);
+-        if (url?.includes(`${getScheme(options)}://dataUrl=`)) {
++        if (url?.includes("dataUrl=")) {
+             // iOS only
+             ExpoShareIntentModule?.getShareIntent(url);
+         }
+diff --git a/ios/ExpoShareIntentModule.swift b/ios/ExpoShareIntentModule.swift
+index e52b6d089f8625d399c371daf14a9fe010d5fede..859040c14809e584e40751e722794677ce3c7d04 100644
+--- a/ios/ExpoShareIntentModule.swift
++++ b/ios/ExpoShareIntentModule.swift
+@@ -59,7 +59,7 @@ public class ExpoShareIntentModule: Module {
+         if let url = url {
+             let userDefaults = UserDefaults(suiteName: appGroupIdentifier)
+             if url.fragment == "media" {
+-                if let key = url.host?.components(separatedBy: "=").last {
++                if let key = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "dataUrl" })?.value ?? url.host?.components(separatedBy: "=").last {
+                     if let json = userDefaults?.object(forKey: key) as? Data {
+                         let sharedArray = decodeMedia(data: json)
+                         let sharedMediaFiles: [SharedMediaFile] = sharedArray.compactMap {
+@@ -90,7 +90,7 @@ public class ExpoShareIntentModule: Module {
+                     }
+                 }
+             } else if url.fragment == "file" {
+-                if let key = url.host?.components(separatedBy: "=").last {
++                if let key = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "dataUrl" })?.value ?? url.host?.components(separatedBy: "=").last {
+                     if let json = userDefaults?.object(forKey: key) as? Data {
+                         let sharedArray = decodeMedia(data: json)
+                         let sharedMediaFiles: [SharedMediaFile] = sharedArray.compactMap {
+@@ -109,7 +109,7 @@ public class ExpoShareIntentModule: Module {
+                     }
+                 }
+             } else if url.fragment == "weburl" {
+-                if let key = url.host?.components(separatedBy: "=").last {
++                if let key = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "dataUrl" })?.value ?? url.host?.components(separatedBy: "=").last {
+                     if let json = userDefaults?.object(forKey: key) as? Data {
+                         let sharedArray = decodeWebUrl(data: json)
+                         let sharedWebUrls: [WebUrl] = sharedArray.compactMap {
+@@ -122,7 +122,7 @@ public class ExpoShareIntentModule: Module {
+                     }
+                 }
+             } else if url.fragment == "text" {
+-                if let key = url.host?.components(separatedBy: "=").last {
++                if let key = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "dataUrl" })?.value ?? url.host?.components(separatedBy: "=").last {
+                     if let sharedArray = userDefaults?.object(forKey: key) as? [String] {
+                         latestText = sharedArray.joined(separator: ",")
+                         let optionalString = latestText
+diff --git a/plugin/build/ios/ShareExtensionViewController.swift b/plugin/build/ios/ShareExtensionViewController.swift
+index f1f4b726dfe3a7bd9e341e74c6d09b22becddf2f..7c9348ed0eeae5c0715df8ee4fd13b392de23a15 100644
+--- a/plugin/build/ios/ShareExtensionViewController.swift
++++ b/plugin/build/ios/ShareExtensionViewController.swift
+@@ -491,13 +491,20 @@ class ShareViewController: UIViewController {
+ 
+   private func redirectToHostApp(type: RedirectType) {
+     let nonce = UUID().uuidString
+-    let url = URL(string: "\(shareProtocol)://dataUrl=\(sharedKey)?nonce=\(nonce)#\(type)")!
++    let url = URL(string: "\(shareProtocol)://share/?dataUrl=\(sharedKey)&nonce=\(nonce)#\(type)")!
++    NSLog("[ShareExtension] redirect open: \(url.absoluteString)")
+     var responder = self as UIResponder?
+ 
+     while responder != nil {
+       if let application = responder as? UIApplication {
+         if application.canOpenURL(url) {
+-          application.open(url)
++          // completeRequest 가 open 전달보다 먼저 프로세스를 끝내면 URL 이 유실된다 —
++          // 반드시 open 완료 콜백 안에서 종료한다.
++          application.open(url, options: [:]) { ok in
++            NSLog("[ShareExtension] open completion: \(ok)")
++            self.extensionContext!.completeRequest(returningItems: [], completionHandler: nil)
++          }
++          return
+         } else {
+           NSLog("redirectToHostApp canOpenURL KO: \(shareProtocol)")
+           self.dismissWithError(

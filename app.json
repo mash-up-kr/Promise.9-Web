@@ -28,6 +28,20 @@
     "plugins": [
       "expo-router",
       [
+        "expo-share-intent",
+        {
+          "androidIntentFilters": ["text/*"],
+          "disableIOS": true
+        }
+      ],
+      [
+        "expo-share-extension",
+        {
+          "activationRules": [{ "type": "url", "max": 1 }],
+          "height": 500
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",
