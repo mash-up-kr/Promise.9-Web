@@ -248,7 +248,7 @@ describe("CreateLinkSheet", () => {
     );
   });
 
-  test("저장 성공 시 링크 쿼리를 무효화한다", async () => {
+  test("저장 성공 시 링크·폴더 쿼리를 무효화한다", async () => {
     const invalidateSpy = jest.spyOn(
       QueryClient.prototype,
       "invalidateQueries",
@@ -260,6 +260,8 @@ describe("CreateLinkSheet", () => {
     await waitFor(() =>
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["link"] }),
     );
+    // 폴더 칩의 링크 카운트도 저장 직후 갱신돼야 한다.
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["folder"] });
     invalidateSpy.mockRestore();
   });
 

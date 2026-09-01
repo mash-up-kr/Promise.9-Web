@@ -226,6 +226,8 @@ export function useCreateLinkMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: linkKeys.root() });
+      // 폴더 칩·목록의 linkCount 도 저장 직후 갱신돼야 한다.
+      queryClient.invalidateQueries({ queryKey: folderKeys.root() });
     },
   });
 }
