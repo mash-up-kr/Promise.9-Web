@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 
 export interface MockTab {
+  id?: number;
   url?: string;
   title?: string;
   favIconUrl?: string;

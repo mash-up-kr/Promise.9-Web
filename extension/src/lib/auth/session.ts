@@ -50,7 +50,17 @@ export function subscribeLoggedIn(
  * 로그인돼 있으면 소셜 로그인 없이 바로 연결된다.
  */
 export async function openWebLogin(): Promise<void> {
-  await chrome.tabs.create({ url: webAppUrl(WEB_APP_PATH.extensionLogin) });
+  // 지금 탭을 opener 로 지정한다 — 로그인 탭을 닫으면("원래 탭으로 돌아가기") 크롬이
+  // 옆 탭이 아니라 opener 탭을 다시 활성화한다.
+  const [activeTab] = await chrome.tabs.query({
+    active: true,
+    currentWindow: true,
+  });
+
+  await chrome.tabs.create({
+    url: webAppUrl(WEB_APP_PATH.extensionLogin),
+    ...(activeTab?.id !== undefined ? { openerTabId: activeTab.id } : {}),
+  });
 }
 
 /**

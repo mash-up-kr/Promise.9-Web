@@ -74,9 +74,10 @@ describe("SidePanelApp", () => {
     expect(await screen.findByText("로그인을 해주세요")).toBeInTheDocument();
   });
 
-  it("로그인 버튼은 웹앱 로그인 페이지를 새 탭으로 연다", async () => {
+  it("로그인 버튼은 지금 탭을 opener 로 웹앱 로그인 페이지를 새 탭으로 연다", async () => {
     // 익스텐션엔 로그인 UI 가 없다 — 웹에 있는 소셜 로그인을 그대로 쓴다.
-    const chromeMock = installChromeMock({ tab: SAVABLE_TAB });
+    // openerTabId: 로그인 탭을 닫으면(원래 탭으로 돌아가기) 옆 탭이 아니라 이 탭으로 돌아가게 한다.
+    const chromeMock = installChromeMock({ tab: { ...SAVABLE_TAB, id: 7 } });
     const user = userEvent.setup();
 
     renderPanel(<SidePanelApp />);
@@ -84,6 +85,7 @@ describe("SidePanelApp", () => {
 
     expect(chromeMock.createTab).toHaveBeenCalledWith({
       url: "https://link-ding-dong.com/login?return=extension",
+      openerTabId: 7,
     });
     expect(
       screen.getByText("열린 탭에서 로그인하면 여기로 바로 이어져요"),
