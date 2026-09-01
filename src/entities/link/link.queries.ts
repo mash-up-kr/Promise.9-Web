@@ -2,6 +2,7 @@ import { apiClient, type SuccessResponse } from "@shared/api";
 import { hexToFolderTone } from "@shared/folder/folder.constants";
 import type { Link, LinkDetail, LinkPreview } from "@shared/types/link.types";
 import {
+  infiniteQueryOptions,
   queryOptions,
   useMutation,
   useQueryClient,
@@ -154,6 +155,12 @@ export function toLinkDetail(item: LinkDetailResponse): LinkDetail {
 // 모듈 스코프에 둬야 호출마다 같은 참조라 react-query 가 데이터가 그대로일 때 재계산을 건너뛴다.
 const selectLinks = (data: LinkListResponse): Link[] => data.links.map(toLink);
 
+/** 서버 GET /links 의 limit 최대치 — 목록 화면 페이지 크기로 쓴다. */
+const LIST_PAGE_LIMIT = 30;
+
+const selectLinkPages = (data: { pages: LinkListResponse[] }): Link[] =>
+  data.pages.flatMap(selectLinks);
+
 export const linkQueries = {
   keys: linkKeys,
   // 저장 전 OG 메타데이터. LinkPreviewCard 가 useSuspenseQuery 로 소비.
@@ -169,7 +176,7 @@ export const linkQueries = {
         return data.data;
       },
     }),
-  // 목록 조회 — 페이지네이션은 후속이라 우선 첫 페이지만 표시한다.
+  // 단일 페이지 조회 — 홈 섹션처럼 상위 N개만 보여주는 곳이 쓴다. 목록 화면은 infiniteList.
   list: (params: LinkListParams = {}) =>
     queryOptions({
       queryKey: linkKeys.list(params),
@@ -183,6 +190,33 @@ export const linkQueries = {
         return linkListResponseSchema.parse(data.data);
       },
       select: selectLinks,
+    }),
+  // 목록 화면(폴더 상세·전체·최근 삭제)용 커서 페이지네이션 —
+  // 서버 기본 limit(9)은 홈 섹션용이라 목록은 최대치(30)로 당긴다.
+  infiniteList: (params: LinkListParams) =>
+    infiniteQueryOptions({
+      queryKey: linkKeys.infiniteList(params),
+      queryFn: async ({ pageParam, signal }) => {
+        const { data } = await apiClient.get<SuccessResponse<unknown>>(
+          "/links",
+          {
+            params: {
+              ...params,
+              limit: LIST_PAGE_LIMIT,
+              cursor: pageParam || undefined,
+            },
+            signal,
+          },
+        );
+
+        return linkListResponseSchema.parse(data.data);
+      },
+      initialPageParam: "",
+      getNextPageParam: (lastPage) =>
+        lastPage.pagination.hasNext
+          ? (lastPage.pagination.nextCursor ?? undefined)
+          : undefined,
+      select: selectLinkPages,
     }),
   // 링크 상세. queryFn 이 서버 응답을 검증·매핑해 UI LinkDetail 을 반환한다.
   detail: (linkId: string) =>
