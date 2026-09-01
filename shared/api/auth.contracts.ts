@@ -24,3 +24,10 @@ export const refreshResponseSchema = z.object({
   refreshToken: z.string(),
 });
 export type RefreshResponse = z.infer<typeof refreshResponseSchema>;
+
+// POST /auth/extension-token 응답 — 서버가 /auth/refresh 와 같은 TokenPairResponseDto 를 쓴다.
+// 웹 로그인 세션의 액세스 토큰으로 호출하면, 익스텐션에 인계할 **별개 tokenFamily** 의 토큰쌍을 발급한다.
+export const extensionTokenResponseSchema = refreshResponseSchema;
+export type ExtensionTokenResponse = z.infer<
+  typeof extensionTokenResponseSchema
+>;

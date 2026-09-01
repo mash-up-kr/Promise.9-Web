@@ -6,11 +6,11 @@ import {
 describe("extensionLoginMessageSchema", () => {
   const valid = {
     source: EXTENSION_LOGIN_MESSAGE_SOURCE,
-    provider: "google",
-    idToken: "id-token",
+    accessToken: "ext-access-token",
+    refreshToken: "ext-refresh-token",
   };
 
-  test("웹앱이 보내는 로그인 인계 메시지를 받아들인다", () => {
+  test("웹앱이 보내는 토큰쌍 인계 메시지를 받아들인다", () => {
     expect(extensionLoginMessageSchema.safeParse(valid).success).toBe(true);
   });
 
@@ -22,15 +22,16 @@ describe("extensionLoginMessageSchema", () => {
     ).toBe(false);
   });
 
-  test("idToken 이 비어 있으면 거부한다", () => {
+  test("accessToken 이 비어 있으면 거부한다", () => {
     expect(
-      extensionLoginMessageSchema.safeParse({ ...valid, idToken: "" }).success,
+      extensionLoginMessageSchema.safeParse({ ...valid, accessToken: "" })
+        .success,
     ).toBe(false);
   });
 
-  test("서버가 모르는 provider 는 거부한다", () => {
+  test("refreshToken 이 비어 있으면 거부한다", () => {
     expect(
-      extensionLoginMessageSchema.safeParse({ ...valid, provider: "naver" })
+      extensionLoginMessageSchema.safeParse({ ...valid, refreshToken: "" })
         .success,
     ).toBe(false);
   });
