@@ -85,8 +85,9 @@ src/
 
 익스텐션에는 로그인 UI 가 없다. 로그인 버튼은 웹앱 `/login?return=extension` 을 새 탭으로 열고,
 웹앱이 `POST /auth/extension-token` 으로 발급받은 **익스텐션 전용 토큰쌍**을
-`chrome.runtime.sendMessage(확장 ID, …)` 로 넘겨준다. background 는 받은 쌍을 저장하고
-웹앱 탭을 닫는다. 웹에 이미 로그인돼 있으면 소셜 로그인 없이 즉시 연결된다.
+`chrome.runtime.sendMessage(확장 ID, …)` 로 넘겨준다. background 는 받은 쌍을 저장하고,
+웹앱은 완료 안내와 "원래 탭으로 돌아가기" 버튼을 보여준다. 웹에 이미 로그인돼 있으면
+소셜 로그인 없이 즉시 연결된다.
 (Pocket · Instapaper · Raindrop 과 같은 방식.)
 
 - 웹의 리프레시 토큰을 복사하지 않는 이유: 서버가 Refresh Token Rotation 을 써서 같은 토큰을
