@@ -151,8 +151,11 @@ function Toggle({ checked, label, onChange }: ToggleProps) {
     >
       <span
         className={clsx(
-          "size-5 rounded-full bg-opacity-white-100 transition-transform",
-          checked ? "translate-x-5" : "translate-x-0",
+          "size-5 rounded-full transition-transform",
+          // 트랙이 켜짐=흰색(action-inverse)·꺼짐=어두움이라, 손잡이는 반대로 두어야 보인다.
+          checked
+            ? "translate-x-5 bg-icon-inverse"
+            : "translate-x-0 bg-opacity-white-100",
         )}
       />
     </button>
