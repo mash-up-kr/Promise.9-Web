@@ -84,12 +84,14 @@ src/
 ## 로그인 — 웹앱에 위임
 
 익스텐션에는 로그인 UI 가 없다. 로그인 버튼은 웹앱 `/login?return=extension` 을 새 탭으로 열고,
-웹앱이 소셜 로그인으로 받은 idToken 을 `chrome.runtime.sendMessage(확장 ID, …)` 로 넘겨준다.
-익스텐션 background 가 그 idToken 으로 `POST /auth/social` 을 호출해 **자기 토큰 쌍**을 받고,
-웹앱 탭을 닫는다. (Pocket · Instapaper · Raindrop 과 같은 방식.)
+웹앱이 `POST /auth/extension-token` 으로 발급받은 **익스텐션 전용 토큰쌍**을
+`chrome.runtime.sendMessage(확장 ID, …)` 로 넘겨준다. background 는 받은 쌍을 저장하고
+웹앱 탭을 닫는다. 웹에 이미 로그인돼 있으면 소셜 로그인 없이 즉시 연결된다.
+(Pocket · Instapaper · Raindrop 과 같은 방식.)
 
 - 웹의 리프레시 토큰을 복사하지 않는 이유: 서버가 Refresh Token Rotation 을 써서 같은 토큰을
-  두 표면이 나눠 가지면 한쪽이 갱신할 때 다른 쪽이 로그아웃된다.
+  두 표면이 나눠 가지면 한쪽이 갱신할 때 다른 쪽이 로그아웃된다. `/auth/extension-token` 은
+  웹 세션과 **별개의 tokenFamily** 로 발급해 서로 독립이다.
 - 메시지 계약은 `shared/extension/extensionLogin.contracts.ts` 하나를 웹·익스텐션이 같이 쓴다.
 - 구글 클라이언트 ID · Cloud Console 등록이 **익스텐션에는 필요 없다** — 구글 인증은 웹앱이 한다.
 

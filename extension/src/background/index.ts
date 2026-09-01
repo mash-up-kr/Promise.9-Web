@@ -94,8 +94,9 @@ chrome.runtime.onInstalled.addListener(() => {
  * 웹앱 탭에서 오는 로그인 인계.
  *
  * 익스텐션은 로그인 UI 가 없다 — 패널이 웹앱 `/login?return=extension` 을 새 탭으로 열고,
- * 웹앱이 소셜 로그인으로 받은 idToken 을 `chrome.runtime.sendMessage(확장ID, …)` 로 보내면
- * 여기서 받아 이 익스텐션의 세션을 만든다. 끝나면 그 탭은 닫아 사용자를 원래 페이지로 돌려보낸다.
+ * 웹앱이 `POST /auth/extension-token` 으로 발급받은 익스텐션 전용 토큰쌍을
+ * `chrome.runtime.sendMessage(확장ID, …)` 로 보내면 여기서 받아 저장한다.
+ * 끝나면 그 탭은 닫아 사용자를 원래 페이지로 돌려보낸다.
  */
 chrome.runtime.onMessageExternal.addListener(
   (message: unknown, sender, sendResponse) => {

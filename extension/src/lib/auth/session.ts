@@ -1,12 +1,8 @@
 import {
-  apiClient,
   clearTokens,
   getRefreshToken,
-  type SocialProvider,
-  type SuccessResponse,
   setTokenPersistence,
   setTokens,
-  socialLoginResponseSchema,
 } from "@shared/api";
 
 import { WEB_APP_PATH, webAppUrl } from "@/lib/webApp";
@@ -50,31 +46,25 @@ export function subscribeLoggedIn(
  *
  * 익스텐션 안에 로그인 UI 를 두지 않는다 — 웹에 이미 있는 소셜 로그인(구글, 이후 카카오)을
  * 그대로 쓰고, 사용자는 익숙한 주소창을 보며 로그인한다(Pocket·Instapaper·Raindrop 과 같은 방식).
- * 웹앱은 `return=extension` 을 보고 로그인 결과(idToken)를 이 익스텐션에 넘긴다.
+ * 웹앱은 `return=extension` 을 보고 익스텐션 전용 토큰쌍을 발급해 넘긴다 — 웹에 이미
+ * 로그인돼 있으면 소셜 로그인 없이 바로 연결된다.
  */
 export async function openWebLogin(): Promise<void> {
   await chrome.tabs.create({ url: webAppUrl(WEB_APP_PATH.extensionLogin) });
 }
 
 /**
- * 웹앱이 넘겨준 idToken 으로 이 익스텐션의 세션을 만든다.
+ * 웹앱이 넘겨준 토큰쌍으로 이 익스텐션의 세션을 만든다.
  *
- * 웹이 발급받은 토큰을 복사하지 않고 `POST /auth/social` 을 다시 부르는 이유: 서버가
- * Refresh Token Rotation 을 쓰므로 같은 리프레시 토큰을 두 표면이 나눠 가지면 한쪽이 갱신하는
- * 순간 다른 쪽이 로그아웃된다. 서버는 idToken 을 무상태로 검증하고 호출마다 새 토큰 family 를
- * 발급하므로 같은 idToken 으로 두 번 로그인해도 서로 독립이다.
+ * 웹이 자기 토큰을 복사해 주는 게 아니다 — `POST /auth/extension-token` 이 웹 세션과 **별개의
+ * tokenFamily** 로 발급한 쌍이라, 두 표면이 서로 독립적으로 회전·폐기된다(서버가 Refresh Token
+ * Rotation 을 쓰므로 같은 리프레시 토큰을 나눠 가지면 한쪽이 갱신하는 순간 다른 쪽이 로그아웃된다).
  */
-export async function logInWithIdToken(
-  provider: SocialProvider,
-  idToken: string,
+export async function logInWithTokens(
+  accessToken: string,
+  refreshToken: string,
 ): Promise<void> {
-  const { data } = await apiClient.post<SuccessResponse<unknown>>(
-    "/auth/social",
-    { provider, idToken },
-  );
-  const parsed = socialLoginResponseSchema.parse(data.data);
-
-  await setTokens(parsed.accessToken, parsed.refreshToken);
+  await setTokens(accessToken, refreshToken);
 }
 
 export async function logOut(): Promise<void> {
