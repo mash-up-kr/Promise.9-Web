@@ -6,6 +6,7 @@ jest.mock("@shared/api", () => {
   const contracts = jest.requireActual("@shared/api/auth.contracts");
   return {
     apiClient: { get: jest.fn(), post: jest.fn() },
+    refreshAccessToken: jest.fn(),
     ...errors,
     ...token,
     ...contracts,
@@ -13,7 +14,13 @@ jest.mock("@shared/api", () => {
 });
 
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import { ApiError, apiClient } from "@shared/api";
+import {
+  ApiError,
+  apiClient,
+  setAccessToken,
+  setTokenPersistence,
+} from "@shared/api";
+import { EXTENSION_LOGIN_MESSAGE_SOURCE } from "@shared/extension/extensionLogin.contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
@@ -237,27 +244,49 @@ describe("LoginScreen", () => {
   describe("크롬 익스텐션 인계", () => {
     const originalExtensionId = process.env.EXPO_PUBLIC_EXTENSION_ID;
     const chromeGlobal = globalThis as { chrome?: unknown };
-    const sendMessage = jest.fn().mockResolvedValue({ ok: true });
+    const sendMessage = jest.fn();
+
+    // 리프레시 토큰이 영속 저장돼 있는(로그인 이력이 있는) 상태를 흉내낸다.
+    const loggedInPersistence = {
+      getRefreshToken: async () => "web-rt",
+      setRefreshToken: async () => {},
+    };
 
     beforeEach(() => {
       process.env.EXPO_PUBLIC_EXTENSION_ID = "ext-id";
       chromeGlobal.chrome = { runtime: { sendMessage } };
-      sendMessage.mockClear();
+      sendMessage.mockReset().mockResolvedValue({ ok: true });
       mockSignIn.mockResolvedValue(googleSuccess());
-      mockPost.mockResolvedValue({
-        data: {
-          success: true,
-          data: { accessToken: "at", refreshToken: "rt", isNewUser: false },
-        },
-      });
+      // /auth/social 과 /auth/extension-token 을 같은 mock 이 받는다 — URL 로 구분.
+      mockPost.mockImplementation((url: string) =>
+        url === "/auth/extension-token"
+          ? Promise.resolve({
+              data: {
+                success: true,
+                data: { accessToken: "ext-at", refreshToken: "ext-rt" },
+              },
+            })
+          : Promise.resolve({
+              data: {
+                success: true,
+                data: {
+                  accessToken: "at",
+                  refreshToken: "rt",
+                  isNewUser: false,
+                },
+              },
+            }),
+      );
     });
 
     afterEach(() => {
       process.env.EXPO_PUBLIC_EXTENSION_ID = originalExtensionId;
+      setTokenPersistence(null);
+      setAccessToken(null);
       delete chromeGlobal.chrome;
     });
 
-    test("?return=extension 이면 idToken 을 익스텐션에도 넘기고 웹 로그인도 그대로 한다", async () => {
+    test("?return=extension 이면 로그인 후 익스텐션용 토큰쌍을 발급해 넘긴다", async () => {
       mockParams.mockReturnValue({ return: "extension" });
       await renderScreen();
 
@@ -265,18 +294,68 @@ describe("LoginScreen", () => {
         screen.getByRole("button", { name: "Google로 계속하기" }),
       );
 
+      // 웹 로그인이 먼저다 — 그 세션의 액세스 토큰으로 익스텐션용 토큰쌍을 발급받는다.
+      await waitFor(() =>
+        expect(mockPost).toHaveBeenCalledWith("/auth/social", {
+          provider: "google",
+          idToken: "mock-id-token",
+        }),
+      );
+      await waitFor(() =>
+        expect(sendMessage).toHaveBeenCalledWith("ext-id", {
+          source: EXTENSION_LOGIN_MESSAGE_SOURCE,
+          accessToken: "ext-at",
+          refreshToken: "ext-rt",
+        }),
+      );
+      // 홈으로 가지 않고 연결 화면을 보여준다 — 연결이 끝나면 익스텐션이 이 탭을 닫는다.
+      expect(
+        await screen.findByText("연결됐어요! 이 탭은 곧 닫혀요"),
+      ).toBeOnTheScreen();
+      expect(mockReplace).not.toHaveBeenCalled();
+    });
+
+    test("이미 로그인돼 있으면 소셜 로그인 없이 바로 연결한다", async () => {
+      mockParams.mockReturnValue({ return: "extension" });
+      setTokenPersistence(loggedInPersistence);
+      setAccessToken("web-at");
+      await renderScreen();
+
       await waitFor(() =>
         expect(sendMessage).toHaveBeenCalledWith(
           "ext-id",
-          expect.objectContaining({
-            provider: "google",
-            idToken: "mock-id-token",
-          }),
+          expect.objectContaining({ accessToken: "ext-at" }),
         ),
       );
-      // 익스텐션에 넘겼다고 웹 로그인을 건너뛰지 않는다 — 두 표면은 각자 세션을 갖는다.
-      await waitFor(() => expect(mockPost).toHaveBeenCalled());
-      await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+      expect(
+        await screen.findByText("연결됐어요! 이 탭은 곧 닫혀요"),
+      ).toBeOnTheScreen();
+      // 소셜 로그인 화면을 거치지 않는다.
+      expect(
+        screen.queryByRole("button", { name: "Google로 계속하기" }),
+      ).toBeNull();
+      expect(mockPost).not.toHaveBeenCalledWith(
+        "/auth/social",
+        expect.anything(),
+      );
+    });
+
+    test("연결에 실패하면 다시 시도할 수 있다", async () => {
+      mockParams.mockReturnValue({ return: "extension" });
+      setTokenPersistence(loggedInPersistence);
+      setAccessToken("web-at");
+      sendMessage.mockRejectedValueOnce(new Error("no receiver"));
+      await renderScreen();
+
+      expect(
+        await screen.findByText("연결에 실패했어요. 다시 시도해주세요."),
+      ).toBeOnTheScreen();
+
+      await fireEvent.press(screen.getByRole("button", { name: "다시 시도" }));
+
+      expect(
+        await screen.findByText("연결됐어요! 이 탭은 곧 닫혀요"),
+      ).toBeOnTheScreen();
     });
 
     test("return 쿼리가 없으면 익스텐션에 아무것도 보내지 않는다", async () => {
@@ -288,6 +367,7 @@ describe("LoginScreen", () => {
 
       await waitFor(() => expect(mockPost).toHaveBeenCalled());
       expect(sendMessage).not.toHaveBeenCalled();
+      expect(mockPost).not.toHaveBeenCalledWith("/auth/extension-token");
     });
   });
 });

@@ -1,4 +1,10 @@
-import type { SocialProvider } from "@shared/api";
+import {
+  apiClient,
+  extensionTokenResponseSchema,
+  getAccessToken,
+  refreshAccessToken,
+  type SuccessResponse,
+} from "@shared/api";
 import {
   EXTENSION_LOGIN_MESSAGE_SOURCE,
   EXTENSION_LOGIN_RETURN_VALUE,
@@ -27,36 +33,41 @@ export function isExtensionReturn(
 }
 
 /**
- * 소셜 로그인으로 받은 idToken 을 크롬 익스텐션에 넘긴다.
+ * 이 웹 세션의 계정을 크롬 익스텐션에 연결한다.
  *
- * 익스텐션은 자체 로그인 UI 없이 이 페이지를 `?return=extension` 으로 연다. 웹은 평소처럼
- * 자기 로그인을 진행하면서, 같은 idToken 을 익스텐션에도 건네 익스텐션이 **자기 토큰 쌍**을
- * 발급받게 한다(리프레시 토큰을 복사해 주면 RTR 때문에 한쪽이 로그아웃된다).
- *
- * 익스텐션이 없거나(다른 브라우저, 미설치) ID 가 다르면 조용히 실패한다 — 웹 로그인과 무관하다.
+ * `POST /auth/extension-token` 으로 익스텐션 전용 토큰쌍(웹 세션과 별개 tokenFamily)을
+ * 발급받아 `chrome.runtime.sendMessage` 로 넘긴다 — 웹에 이미 로그인돼 있으면 소셜 로그인을
+ * 다시 할 필요가 없다. 실패해도(미설치·네트워크) 웹 세션에는 아무 영향이 없다.
  */
-export async function sendIdTokenToExtension(payload: {
-  provider: SocialProvider;
-  idToken: string;
-}): Promise<boolean> {
+export async function connectExtension(): Promise<boolean> {
   const extensionId = process.env.EXPO_PUBLIC_EXTENSION_ID;
   const sendMessage = (globalThis as ChromeRuntimeLike).chrome?.runtime
     ?.sendMessage;
+  // 받을 익스텐션이 없으면(다른 브라우저·미설치) 전달할 수 없는 토큰쌍을 만들지 않는다 — 발급 전에 확인.
   if (!extensionId || !sendMessage) return false;
 
-  const message: ExtensionLoginMessage = {
-    source: EXTENSION_LOGIN_MESSAGE_SOURCE,
-    ...payload,
-  };
-
   try {
+    // 액세스 토큰은 메모리 전용이라 익스텐션이 새로 연 탭에는 없다 — 영속 리프레시 토큰으로 먼저
+    // 복원한다. (`/auth/*` 는 401 자동 재발급 대상이 아니라 인터셉터가 대신해 주지 않는다.)
+    if (!(await getAccessToken())) await refreshAccessToken();
+
+    const { data } = await apiClient.post<SuccessResponse<unknown>>(
+      "/auth/extension-token",
+    );
+    const pair = extensionTokenResponseSchema.parse(data.data);
+
+    const message: ExtensionLoginMessage = {
+      source: EXTENSION_LOGIN_MESSAGE_SOURCE,
+      accessToken: pair.accessToken,
+      refreshToken: pair.refreshToken,
+    };
     const response = (await sendMessage(extensionId, message)) as
       | { ok?: boolean }
       | undefined;
 
     return response?.ok === true;
   } catch {
-    // 익스텐션이 응답하지 않는 경우(미설치·비활성). 웹 로그인에는 영향이 없어야 한다.
+    // 발급 실패(미로그인·네트워크)든 익스텐션 무응답이든 — 호출부엔 연결 실패로만 알린다.
     return false;
   }
 }
