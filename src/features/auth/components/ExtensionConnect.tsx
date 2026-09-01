@@ -10,17 +10,27 @@ import { LoginGraphic } from "./LoginGraphic";
 
 type ConnectStatus = "connecting" | "done" | "failed";
 
-const DESCRIPTION: Record<ConnectStatus, string> = {
-  connecting: "익스텐션에 계정을 연결하고 있어요",
-  done: "연결됐어요! 이 탭은 곧 닫혀요",
-  failed: "연결에 실패했어요. 다시 시도해주세요.",
+const COPY: Record<ConnectStatus, { title: string; description: string }> = {
+  connecting: {
+    title: "링딩동 계정 연결",
+    description: "익스텐션에 계정을 연결하고 있어요",
+  },
+  done: {
+    title: "로그인 완료!",
+    description: "익스텐션에 계정이 연결됐어요",
+  },
+  failed: {
+    title: "링딩동 계정 연결",
+    description: "연결에 실패했어요. 다시 시도해주세요.",
+  },
 };
 
 /**
  * 익스텐션이 연 탭(`?return=extension`)에서 로그인이 확인된 뒤 보여주는 연결 화면.
  *
- * 계정 연결(`connectExtension`)을 스스로 실행하고 결과만 보여준다 — 성공하면 익스텐션
- * background 가 이 탭을 닫아 사용자를 원래 페이지로 돌려보내므로, 홈으로 이동하지 않는다.
+ * 계정 연결(`connectExtension`)을 스스로 실행하고 결과를 보여준다 — 홈으로 이동하지 않고,
+ * 완료 안내와 함께 "원래 탭으로 돌아가기" 버튼으로 사용자가 직접 이 탭을 닫게 한다
+ * (자동으로 닫으면 로그인이 끝났다는 걸 볼 새가 없다).
  */
 export function ExtensionConnect() {
   const insets = useSafeAreaInsets();
@@ -43,6 +53,11 @@ export function ExtensionConnect() {
 
   const retry = () => setStatus("connecting");
 
+  // 이 탭은 익스텐션(chrome.tabs.create)이 열었고 내비게이션 이력이 1이라 window.close() 로
+  // 닫을 수 있다 — 닫히면 크롬이 직전에 보던 탭을 다시 활성화한다. (RN 네이티브엔 close 가 없다.)
+  const returnToOriginalTab = () =>
+    (globalThis as { close?: () => void }).close?.();
+
   return (
     <View
       className="flex-1 bg-background-base"
@@ -55,14 +70,21 @@ export function ExtensionConnect() {
         <LoginGraphic />
         <View className="mt-10 items-center gap-1">
           <Text variant="heading-3" className="text-text-strong">
-            링딩동 계정 연결
+            {COPY[status].title}
           </Text>
           <Text variant="body-2-reading" className="text-text-alternative">
-            {DESCRIPTION[status]}
+            {COPY[status].description}
           </Text>
         </View>
       </View>
 
+      {status === "done" && (
+        <View className="px-5">
+          <ActionButton onPress={returnToOriginalTab}>
+            원래 탭으로 돌아가기
+          </ActionButton>
+        </View>
+      )}
       {status === "failed" && (
         <View className="px-5">
           <ActionButton onPress={retry}>다시 시도</ActionButton>

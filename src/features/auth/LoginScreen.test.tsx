@@ -284,6 +284,7 @@ describe("LoginScreen", () => {
       setTokenPersistence(null);
       setAccessToken(null);
       delete chromeGlobal.chrome;
+      delete (globalThis as { close?: () => void }).close;
     });
 
     test("?return=extension 이면 로그인 후 익스텐션용 토큰쌍을 발급해 넘긴다", async () => {
@@ -310,7 +311,7 @@ describe("LoginScreen", () => {
       );
       // 홈으로 가지 않고 연결 화면을 보여준다 — 연결이 끝나면 익스텐션이 이 탭을 닫는다.
       expect(
-        await screen.findByText("연결됐어요! 이 탭은 곧 닫혀요"),
+        await screen.findByText("익스텐션에 계정이 연결됐어요"),
       ).toBeOnTheScreen();
       expect(mockReplace).not.toHaveBeenCalled();
     });
@@ -328,7 +329,7 @@ describe("LoginScreen", () => {
         ),
       );
       expect(
-        await screen.findByText("연결됐어요! 이 탭은 곧 닫혀요"),
+        await screen.findByText("익스텐션에 계정이 연결됐어요"),
       ).toBeOnTheScreen();
       // 소셜 로그인 화면을 거치지 않는다.
       expect(
@@ -354,8 +355,24 @@ describe("LoginScreen", () => {
       await fireEvent.press(screen.getByRole("button", { name: "다시 시도" }));
 
       expect(
-        await screen.findByText("연결됐어요! 이 탭은 곧 닫혀요"),
+        await screen.findByText("익스텐션에 계정이 연결됐어요"),
       ).toBeOnTheScreen();
+    });
+
+    test("연결 완료 화면의 버튼으로 로그인 탭을 닫는다", async () => {
+      mockParams.mockReturnValue({ return: "extension" });
+      setTokenPersistence(loggedInPersistence);
+      setAccessToken("web-at");
+      // 이 탭은 익스텐션이 열었고 내비게이션 이력이 없어 window.close() 로 닫을 수 있다.
+      const closeTab = jest.fn();
+      (globalThis as { close?: () => void }).close = closeTab;
+      await renderScreen();
+
+      await fireEvent.press(
+        await screen.findByRole("button", { name: "원래 탭으로 돌아가기" }),
+      );
+
+      expect(closeTab).toHaveBeenCalled();
     });
 
     test("return 쿼리가 없으면 익스텐션에 아무것도 보내지 않는다", async () => {
