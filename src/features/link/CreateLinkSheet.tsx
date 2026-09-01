@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as Clipboard from "expo-clipboard";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   type Control,
@@ -43,18 +43,15 @@ const SAVE_SNACKBAR_DURATION = 4000;
 export function CreateLinkSheet() {
   const router = useRouter();
   const { show } = useSnackbar();
-  // 외부 공유로 진입하면 URL 이 채워진 상태로 시작한다(시안: 공유 진입엔 빈 URL 상태 없음).
-  const { sharedUrl } = useLocalSearchParams<{ sharedUrl?: string }>();
-  const initialUrl = typeof sharedUrl === "string" ? sharedUrl : "";
   const { control, handleSubmit, setValue } = useForm<CreateLinkForm>({
     resolver: zodResolver(createLinkSchema),
     mode: "onChange",
     defaultValues: {
-      url: initialUrl,
+      url: "",
       folderId: null,
       reminder: null,
       memo: "",
-      previewUrl: linkUrlSchema.safeParse(initialUrl).success ? initialUrl : "",
+      previewUrl: "",
     },
   });
   const createLinkMutation = useCreateLinkMutation();

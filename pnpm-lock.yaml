@@ -10,7 +10,6 @@ overrides:
 
 patchedDependencies:
   expo-share-extension@5.0.6: ee9b863289b85bcbda67e15e003922dfa76b967112b6894a9cae2190522937f8
-  expo-share-intent@7.0.0: 6899c09775be764c8273d1fb0f8b69cc72fbc24db6def23047b80d3f82d81e7c
   react-native-css: 142d25a8c82ea6cf8c6ea2b3312a880d5316ca6669aaf73371e1f782bc79cb81
 
 importers:
@@ -101,9 +100,6 @@ importers:
       expo-share-extension:
         specifier: 5.0.6
         version: 5.0.6(patch_hash=ee9b863289b85bcbda67e15e003922dfa76b967112b6894a9cae2190522937f8)(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
-      expo-share-intent:
-        specifier: ^7.0.0
-        version: 7.0.0(patch_hash=6899c09775be764c8273d1fb0f8b69cc72fbc24db6def23047b80d3f82d81e7c)(expo-constants@56.0.18)(expo-linking@56.0.14)(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
       expo-splash-screen:
         specifier: ~56.0.10
         version: 56.0.10(expo@56.0.12)(typescript@6.0.3)
@@ -2898,15 +2894,6 @@ packages:
     resolution: {integrity: sha512-CEwAwxFppnEdV5oWWImnO+V3KHH+Nb6BkiA7Seg43P7vMYo9rmu9bo81ZlmYJIfZ3Iw2Cj8VBi0mEZd7gklwWw==}
     peerDependencies:
       expo: '*'
-      react: '*'
-      react-native: '*'
-
-  expo-share-intent@7.0.0:
-    resolution: {integrity: sha512-9fVw0ObAdJMj9YlN/zkBwMKWlQakjP5xa2pf81V44sK+49GJyVT38NBJv+RtEGSK5CH2SUJHHdJ062HZG5a/AQ==}
-    peerDependencies:
-      expo: ^56
-      expo-constants: '>=56.0.10'
-      expo-linking: '>=56.0.13'
       react: '*'
       react-native: '*'
 
@@ -7912,18 +7899,6 @@ snapshots:
       semver: 7.8.4
       valibot: 1.4.2(typescript@6.0.3)
     transitivePeerDependencies:
-      - typescript
-
-  expo-share-intent@7.0.0(patch_hash=6899c09775be764c8273d1fb0f8b69cc72fbc24db6def23047b80d3f82d81e7c)(expo-constants@56.0.18)(expo-linking@56.0.14)(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3):
-    dependencies:
-      '@expo/config-plugins': 56.0.9(typescript@6.0.3)
-      expo: 56.0.12(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(@expo/metro-runtime@56.0.15)(expo-router@56.2.11)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-worklets@0.8.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
-      expo-constants: 56.0.18(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      expo-linking: 56.0.14(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-      react: 19.2.3
-      react-native: 0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-    transitivePeerDependencies:
-      - supports-color
       - typescript
 
   expo-splash-screen@56.0.10(expo@56.0.12)(typescript@6.0.3):

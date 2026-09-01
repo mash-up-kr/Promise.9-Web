@@ -12,5 +12,4 @@ overrides:
 
 patchedDependencies:
   expo-share-extension@5.0.6: patches/expo-share-extension@5.0.6.patch
-  expo-share-intent@7.0.0: patches/expo-share-intent@7.0.0.patch
   react-native-css: patches/react-native-css.patch

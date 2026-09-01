@@ -1,6 +1,6 @@
 import { apiClient } from "@shared/api";
 import type { SuccessResponse } from "@shared/api/api.types";
-import { close, openHostApp } from "expo-share-extension";
+import type { PropsWithChildren } from "react";
 import { useEffect, useReducer, useState } from "react";
 import {
   ActivityIndicator,
@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 
+import { isAndroid } from "@/constants/platform.constants";
 import {
   getDuplicateLinkId,
   isDuplicateLinkError,
@@ -22,6 +23,7 @@ import {
   type ShareSaveState,
   shareSaveReducer,
 } from "./share.reducer";
+import { close, openHostApp } from "./shareHost";
 
 // NativeWind(global.css) 없이 도는 익스텐션 번들이라 스타일은 StyleSheet 로 직접 그린다.
 // 색은 앱 토큰과 동일한 값(base #1a1a1a 등)을 쓴다.
@@ -101,22 +103,47 @@ export function ShareExtension({ url }: { url?: string }) {
     }
   };
 
-  if (state.phase === "editing" || state.phase === "saving") {
-    return (
-      <EntrySheet
-        url={sharedUrl}
-        isSaving={state.phase === "saving"}
-        folders={folders}
-        selectedFolderId={selectedFolderId}
-        onSelectFolder={setSelectedFolderId}
-        memo={memo}
-        onChangeMemo={setMemo}
-        onSave={save}
-      />
-    );
-  }
+  const isEditing = state.phase === "editing" || state.phase === "saving";
 
-  return <ResultSheet state={state} onRetry={save} />;
+  return (
+    <ShareSheetContainer height={isEditing ? 560 : 400}>
+      {isEditing ? (
+        <EntrySheet
+          url={sharedUrl}
+          isSaving={state.phase === "saving"}
+          folders={folders}
+          selectedFolderId={selectedFolderId}
+          onSelectFolder={setSelectedFolderId}
+          memo={memo}
+          onChangeMemo={setMemo}
+          onSave={save}
+        />
+      ) : (
+        <ResultSheet state={state} onRetry={save} />
+      )}
+    </ShareSheetContainer>
+  );
+}
+
+// iOS 는 익스텐션 컨테이너 자체가 시트라 그대로 통과시키고,
+// Android 는 반투명 액티비티 전체 위에 딤 + 하단 시트를 직접 그린다(탭 아웃 = 닫기).
+function ShareSheetContainer({
+  height,
+  children,
+}: PropsWithChildren<{ height: number }>) {
+  if (!isAndroid) {
+    return children;
+  }
+  return (
+    <View style={styles.androidRoot}>
+      <Pressable
+        accessibilityLabel="닫기"
+        style={StyleSheet.absoluteFill}
+        onPress={() => close()}
+      />
+      <View style={[styles.androidSheet, { height }]}>{children}</View>
+    </View>
+  );
 }
 
 function EntrySheet({
@@ -314,6 +341,16 @@ function ResultSheet({
 }
 
 const styles = StyleSheet.create({
+  androidRoot: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  androidSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: "hidden",
+  },
   container: {
     flex: 1,
     backgroundColor: "#1a1a1a",

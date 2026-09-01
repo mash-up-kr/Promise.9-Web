@@ -12,7 +12,6 @@ const mockBack = jest.fn();
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
 const mockCanGoBack = jest.fn(() => true);
-let mockSearchParams: Record<string, string> = {};
 jest.mock("expo-router", () => ({
   useRouter: () => ({
     back: mockBack,
@@ -20,7 +19,6 @@ jest.mock("expo-router", () => ({
     push: mockPush,
     canGoBack: mockCanGoBack,
   }),
-  useLocalSearchParams: () => mockSearchParams,
 }));
 jest.mock("expo-clipboard", () => ({
   hasStringAsync: jest.fn().mockResolvedValue(false),
@@ -147,7 +145,6 @@ describe("CreateLinkSheet", () => {
     mockPush.mockClear();
     mockCanGoBack.mockClear();
     mockCanGoBack.mockReturnValue(true);
-    mockSearchParams = {};
     mockGet.mockReset();
     mockGetByUrl();
     mockPost.mockReset();
@@ -426,29 +423,6 @@ describe("CreateLinkSheet", () => {
     expect(screen.getByPlaceholderText("URL")).toBeTruthy();
 
     consoleError.mockRestore();
-  });
-
-  test("공유로 전달된 sharedUrl 이 있으면 URL 이 채워진 채 시작하고 미리보기를 바로 조회한다", async () => {
-    mockSearchParams = { sharedUrl: "https://toss.tech/shared" };
-    mockGetByUrl({
-      "/links/preview": {
-        title: "공유 프리뷰",
-        source: "toss.tech",
-        thumbnailUrl: null,
-      },
-    });
-
-    await renderSheet();
-
-    expect(screen.getByPlaceholderText("URL").props.value).toBe(
-      "https://toss.tech/shared",
-    );
-    expect(await screen.findByText("공유 프리뷰")).toBeOnTheScreen();
-    await waitFor(() =>
-      expect(
-        screen.getByLabelText("저장").props.accessibilityState.disabled,
-      ).toBe(false),
-    );
   });
 
   test("유효 URL 입력 후 blur 하면 프리뷰 카드가 뜬다", async () => {

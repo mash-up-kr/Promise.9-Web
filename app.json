@@ -27,19 +27,23 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-share-intent",
-        {
-          "androidIntentFilters": ["text/*"],
-          "disableIOS": true
-        }
-      ],
+      "./plugins/withAndroidShareActivity",
       [
         "expo-share-extension",
         {
-          "activationRules": [{ "type": "url", "max": 1 }],
+          "activationRules": [
+            {
+              "type": "url",
+              "max": 1
+            }
+          ],
           "height": 500,
-          "backgroundColor": { "red": 0, "green": 0, "blue": 0, "alpha": 0 }
+          "backgroundColor": {
+            "red": 0,
+            "green": 0,
+            "blue": 0,
+            "alpha": 0
+          }
         }
       ],
       [
