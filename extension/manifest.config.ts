@@ -48,8 +48,11 @@ export default defineManifest({
   host_permissions: ["https://api.link-ding-dong.com/*"],
   // 웹앱 페이지만 이 익스텐션에 메시지를 보낼 수 있다(로그인 인계). 도메인 단위 허용이라
   // background 가 origin 과 메시지 모양을 한 번 더 검사한다(lib/auth/handoff).
+  // localhost 는 로컬 웹앱(pnpm web)으로 인계를 테스트하기 위한 것 — background 의 origin
+  // 검사가 웹앱 주소(VITE_WEB_APP_BASE_URL)와 일치할 때만 통과시키므로, 배포 빌드(기본값
+  // link-ding-dong.com)에서는 localhost 가 보낸 메시지를 받아도 거부한다.
   externally_connectable: {
-    matches: ["https://link-ding-dong.com/*"],
+    matches: ["https://link-ding-dong.com/*", "http://localhost/*"],
   },
   icons: {
     16: "icons/icon-16.png",
