@@ -2,6 +2,7 @@ import { setTokenPersistence } from "@shared/api";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
+import { ShareIntentProvider } from "expo-share-intent";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { View } from "react-native";
@@ -11,6 +12,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { HeaderScrollProvider } from "@/components/ui/header/HeaderScrollProvider";
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
+import { ShareIntentRedirector } from "@/features/share/components/ShareIntentRedirector";
 import { setupOnlineManager } from "@/lib/online-manager";
 import { queryClient } from "@/lib/queryClient";
 import { tokenPersistence } from "@/lib/tokenStorage";
@@ -57,56 +59,59 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView className="flex-1 bg-background-base">
-        <SafeAreaProvider>
-          <KeyboardProvider>
-            {/* 웹에서 앱 폭을 제한하고 중앙 정렬한다. 네이티브는 화면보다 넓어 영향 없음.
+    <ShareIntentProvider>
+      <QueryClientProvider client={queryClient}>
+        <GestureHandlerRootView className="flex-1 bg-background-base">
+          <ShareIntentRedirector />
+          <SafeAreaProvider>
+            <KeyboardProvider>
+              {/* 웹에서 앱 폭을 제한하고 중앙 정렬한다. 네이티브는 화면보다 넓어 영향 없음.
                 Modal 위치 보정(Popover)이 같은 상수를 참조하므로 리터럴 대신 상수를 쓴다. */}
-            <View
-              className="mx-auto w-full flex-1"
-              style={{ maxWidth: CONTENT_MAX_WIDTH }}
-            >
-              <SnackbarProvider>
-                <HeaderScrollProvider>
-                  <ThemeProvider value={transparentBackgroundTheme}>
-                    <Stack
-                      screenOptions={{
-                        contentStyle: { backgroundColor: "transparent" },
-                      }}
-                    >
-                      <Stack.Screen
-                        name="(tabs)"
-                        options={{ headerShown: false }}
-                      />
-                      <Stack.Screen
-                        name="(auth)"
-                        options={{ headerShown: false }}
-                      />
-                      <Stack.Screen
-                        name="create-link"
-                        options={sheetScreenOptions}
-                      />
-                      <Stack.Screen
-                        name="create-folder"
-                        options={sheetScreenOptions}
-                      />
-                      <Stack.Screen
-                        name="edit-folder"
-                        options={sheetScreenOptions}
-                      />
-                      <Stack.Screen
-                        name="move-links"
-                        options={sheetScreenOptions}
-                      />
-                    </Stack>
-                  </ThemeProvider>
-                </HeaderScrollProvider>
-              </SnackbarProvider>
-            </View>
-          </KeyboardProvider>
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
-    </QueryClientProvider>
+              <View
+                className="mx-auto w-full flex-1"
+                style={{ maxWidth: CONTENT_MAX_WIDTH }}
+              >
+                <SnackbarProvider>
+                  <HeaderScrollProvider>
+                    <ThemeProvider value={transparentBackgroundTheme}>
+                      <Stack
+                        screenOptions={{
+                          contentStyle: { backgroundColor: "transparent" },
+                        }}
+                      >
+                        <Stack.Screen
+                          name="(tabs)"
+                          options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
+                          name="(auth)"
+                          options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
+                          name="create-link"
+                          options={sheetScreenOptions}
+                        />
+                        <Stack.Screen
+                          name="create-folder"
+                          options={sheetScreenOptions}
+                        />
+                        <Stack.Screen
+                          name="edit-folder"
+                          options={sheetScreenOptions}
+                        />
+                        <Stack.Screen
+                          name="move-links"
+                          options={sheetScreenOptions}
+                        />
+                      </Stack>
+                    </ThemeProvider>
+                  </HeaderScrollProvider>
+                </SnackbarProvider>
+              </View>
+            </KeyboardProvider>
+          </SafeAreaProvider>
+        </GestureHandlerRootView>
+      </QueryClientProvider>
+    </ShareIntentProvider>
   );
 }
