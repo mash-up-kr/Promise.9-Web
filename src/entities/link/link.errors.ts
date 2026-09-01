@@ -14,3 +14,15 @@ export function isDuplicateLinkError(error: unknown): boolean {
     error.payload?.error.errorCode === LINK_ERROR_CODE.ALREADY_EXISTS
   );
 }
+
+/**
+ * 중복 저장 409 가 담아주는 기존 링크 ID (서버 PR #109). '보러가기' 딥링크용.
+ * linkId 는 링크 도메인 전용 확장 필드라 공용 ErrorData 타입에는 넣지 않는다.
+ */
+export function getDuplicateLinkId(error: unknown): number | null {
+  if (!isDuplicateLinkError(error) || !isApiError(error)) {
+    return null;
+  }
+  const { linkId } = error.payload?.error as { linkId?: unknown };
+  return typeof linkId === "number" ? linkId : null;
+}

@@ -2,9 +2,13 @@
 import { ApiError } from "@shared/api/errors";
 import type { AxiosResponse } from "axios";
 
-import { isDuplicateLinkError, LINK_ERROR_CODE } from "./link.errors";
+import {
+  getDuplicateLinkId,
+  isDuplicateLinkError,
+  LINK_ERROR_CODE,
+} from "./link.errors";
 
-const makeApiError = (errorCode: number) =>
+const makeApiError = (errorCode: number, extra: object = {}) =>
   new ApiError({
     status: 409,
     data: {
@@ -14,6 +18,7 @@ const makeApiError = (errorCode: number) =>
         errorCode,
         message: "이미 저장한 링크입니다.",
         timestamp: "2026-08-26T00:00:00.000Z",
+        ...extra,
       },
     },
   } as AxiosResponse);
@@ -28,5 +33,23 @@ describe("isDuplicateLinkError", () => {
 
   it("일반 Error 는 false", () => {
     expect(isDuplicateLinkError(new Error("boom"))).toBe(false);
+  });
+});
+
+describe("getDuplicateLinkId", () => {
+  it("중복 에러의 error.linkId 를 반환한다", () => {
+    const error = makeApiError(LINK_ERROR_CODE.ALREADY_EXISTS, { linkId: 42 });
+    expect(getDuplicateLinkId(error)).toBe(42);
+  });
+
+  it("linkId 가 없는 중복 에러는 null (구버전 서버 응답)", () => {
+    expect(
+      getDuplicateLinkId(makeApiError(LINK_ERROR_CODE.ALREADY_EXISTS)),
+    ).toBeNull();
+  });
+
+  it("중복 에러가 아니면 linkId 가 있어도 null", () => {
+    expect(getDuplicateLinkId(makeApiError(930002, { linkId: 42 }))).toBeNull();
+    expect(getDuplicateLinkId(new Error("boom"))).toBeNull();
   });
 });
