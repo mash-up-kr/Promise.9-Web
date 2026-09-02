@@ -72,6 +72,24 @@ export interface TextProps
   className?: string;
 }
 
+// iOS Share Extension 프로세스에서는 css interop 이 fontFamily 를 지정한 Text 를
+// 폰트 값과 무관하게 그리지 못한다(등록 방식 불문 — Fabric 조합 버그로 추정).
+// 익스텐션 엔트리(index.share.js)가 이 플래그를 세우면 폰트 클래스만 걷어내
+// 시스템 폰트로 폴백한다(공유 익스텐션 통례). 메인 앱 경로에서는 no-op.
+declare global {
+  var __promise9ShareExtension: boolean | undefined;
+}
+
+function stripFontClasses(resolved: string): string {
+  if (!globalThis.__promise9ShareExtension) {
+    return resolved;
+  }
+  return resolved
+    .split(" ")
+    .filter((token) => !token.startsWith("font-pretendard"))
+    .join(" ");
+}
+
 export function Text({
   className,
   variant,
@@ -88,18 +106,20 @@ export function Text({
   const resolvedSize = size ?? (variant ? undefined : "md");
   return (
     <RNText
-      className={textStyles({
-        variant,
-        isTruncated,
-        bold,
-        underline,
-        strikeThrough,
-        size: resolvedSize,
-        sub,
-        italic,
-        highlight,
-        class: className,
-      })}
+      className={stripFontClasses(
+        textStyles({
+          variant,
+          isTruncated,
+          bold,
+          underline,
+          strikeThrough,
+          size: resolvedSize,
+          sub,
+          italic,
+          highlight,
+          class: className,
+        }),
+      )}
       {...props}
     />
   );
