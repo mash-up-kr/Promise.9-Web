@@ -5,7 +5,8 @@ import {
   folderToneToHex,
   type SelectableFolderColor,
 } from "@shared/folder/folder.constants";
-import { Calendar, Clock, Plus } from "lucide-react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Calendar, ChevronRight, Clock, Plus } from "lucide-react-native";
 import type { PropsWithChildren } from "react";
 import { useEffect, useReducer, useState } from "react";
 import {
@@ -29,7 +30,11 @@ import {
   isDuplicateLinkError,
 } from "@/entities/link/link.errors";
 import { FOLDER_COLOR_OPTIONS } from "@/features/archive/archive.constants";
+import { DatePickerModal } from "@/features/link/components/DatePickerModal";
+import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
+import { TimePickerModal } from "@/features/link/components/TimePickerModal";
 import {
+  formatRemainingPeriod,
   formatReminderDate,
   formatReminderTime,
   getRandomReminderDays,
@@ -49,8 +54,8 @@ import {
 } from "./share.reducer";
 import { close, openHostApp } from "./shareHost";
 
-// NativeWind(global.css) 없이 도는 익스텐션 번들이라 스타일은 StyleSheet 로 직접 그린다.
-// 색은 앱 토큰과 동일한 값(base #1a1a1a 등)을 쓴다.
+// 익스텐션 엔트리도 global.css 를 로드해 NativeWind(className)·인앱 컴포넌트를 쓸 수 있다.
+// 기존 스타일은 StyleSheet 로 남겨둔다(동작 동일, 전환은 불필요한 churn).
 
 interface CreatedLink {
   linkId: number;
@@ -67,6 +72,9 @@ interface FoldersResponse {
 }
 
 const MEMO_MAX_LENGTH = 300;
+
+// 익스텐션 프로세스 전용 클라이언트 — LinkPreviewCard(react-query) 재사용을 위해 둔다.
+const extensionQueryClient = new QueryClient();
 
 /**
  * iOS Share Extension 루트 — 공유받은 URL 을 익스텐션 안에서 바로 저장한다.
@@ -118,6 +126,25 @@ export function ShareExtension({ url }: { url?: string }) {
     setSelectedFolderId(folder.folderId);
   };
 
+  // 날짜/시간 정밀 선택 — 인앱 ReminderSection 과 같은 피커 모달을 그대로 띄운다.
+  // (global.css 로드로 인앱 컴포넌트 재사용 가능; 직접 선택 시 프리셋 해제도 동일 정책.)
+  const [openPicker, setOpenPicker] = useState<"date" | "time" | null>(null);
+
+  const confirmPickedDate = (date: string) => {
+    if (reminder) {
+      setSelectedPresetDays(null);
+      setReminder({ ...reminder, date });
+    }
+    setOpenPicker(null);
+  };
+
+  const confirmPickedTime = (time: { hour: number; minute: number }) => {
+    if (reminder) {
+      setReminder({ ...reminder, ...time });
+    }
+    setOpenPicker(null);
+  };
+
   useEffect(function loadFolderChips() {
     let cancelled = false;
     apiClient
@@ -164,28 +191,46 @@ export function ShareExtension({ url }: { url?: string }) {
   const isEditing = state.phase === "editing" || state.phase === "saving";
 
   return (
-    <ShareSheetContainer height={isEditing ? 650 : 400}>
-      {isEditing ? (
-        <EntrySheet
-          url={sharedUrl}
-          isSaving={state.phase === "saving"}
-          folders={folders}
-          selectedFolderId={selectedFolderId}
-          onSelectFolder={setSelectedFolderId}
-          onFolderCreated={handleFolderCreated}
-          reminder={reminder}
-          selectedPresetDays={selectedPresetDays}
-          onToggleReminder={toggleReminder}
-          onSelectPreset={selectPreset}
-          onSelectRandomDate={selectRandomDate}
-          memo={memo}
-          onChangeMemo={setMemo}
-          onSave={save}
-        />
-      ) : (
-        <ResultSheet state={state} onRetry={save} />
-      )}
-    </ShareSheetContainer>
+    <QueryClientProvider client={extensionQueryClient}>
+      <ShareSheetContainer height={isEditing ? 600 : 400}>
+        {isEditing ? (
+          <EntrySheet
+            url={sharedUrl}
+            isSaving={state.phase === "saving"}
+            folders={folders}
+            selectedFolderId={selectedFolderId}
+            onSelectFolder={setSelectedFolderId}
+            onFolderCreated={handleFolderCreated}
+            reminder={reminder}
+            selectedPresetDays={selectedPresetDays}
+            onToggleReminder={toggleReminder}
+            onSelectPreset={selectPreset}
+            onSelectRandomDate={selectRandomDate}
+            onOpenDatePicker={() => setOpenPicker("date")}
+            onOpenTimePicker={() => setOpenPicker("time")}
+            memo={memo}
+            onChangeMemo={setMemo}
+            onSave={save}
+          />
+        ) : (
+          <ResultSheet state={state} onRetry={save} />
+        )}
+        {openPicker === "date" && reminder && (
+          <DatePickerModal
+            value={reminder.date}
+            onConfirm={confirmPickedDate}
+            onClose={() => setOpenPicker(null)}
+          />
+        )}
+        {openPicker === "time" && reminder && (
+          <TimePickerModal
+            value={{ hour: reminder.hour, minute: reminder.minute }}
+            onConfirm={confirmPickedTime}
+            onClose={() => setOpenPicker(null)}
+          />
+        )}
+      </ShareSheetContainer>
+    </QueryClientProvider>
   );
 }
 
@@ -222,6 +267,8 @@ function EntrySheet({
   onToggleReminder,
   onSelectPreset,
   onSelectRandomDate,
+  onOpenDatePicker,
+  onOpenTimePicker,
   memo,
   onChangeMemo,
   onSave,
@@ -237,6 +284,8 @@ function EntrySheet({
   onToggleReminder: (isEnabled: boolean) => void;
   onSelectPreset: (days: number) => void;
   onSelectRandomDate: () => void;
+  onOpenDatePicker: () => void;
+  onOpenTimePicker: () => void;
   memo: string;
   onChangeMemo: (memo: string) => void;
   onSave: () => void;
@@ -274,7 +323,9 @@ function EntrySheet({
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.entryScrollContent}
       >
+        {/* 시안 통합 카드(인앱 CreateLinkSheet 미러) — 프리뷰(파비콘·제목)와 URL 을 한 카드로. */}
         <View style={styles.urlCard}>
+          <LinkPreviewCard url={url} isBare />
           <Text style={styles.urlText} numberOfLines={2}>
             {url}
           </Text>
@@ -351,6 +402,8 @@ function EntrySheet({
             isDisabled={isSaving}
             onSelectPreset={onSelectPreset}
             onSelectRandomDate={onSelectRandomDate}
+            onOpenDatePicker={onOpenDatePicker}
+            onOpenTimePicker={onOpenTimePicker}
           />
         )}
 
@@ -536,12 +589,16 @@ function ReminderOnCard({
   isDisabled,
   onSelectPreset,
   onSelectRandomDate,
+  onOpenDatePicker,
+  onOpenTimePicker,
 }: {
   reminder: ReminderValue;
   selectedPresetDays: number | null;
   isDisabled: boolean;
   onSelectPreset: (days: number) => void;
   onSelectRandomDate: () => void;
+  onOpenDatePicker: () => void;
+  onOpenTimePicker: () => void;
 }) {
   return (
     <View style={styles.reminderCardOn}>
@@ -570,7 +627,13 @@ function ReminderOnCard({
         </Pressable>
       </View>
       <View style={styles.reminderDivider} />
-      <View style={styles.reminderValueRow}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="날짜 선택"
+        style={styles.reminderValueRow}
+        disabled={isDisabled}
+        onPress={onOpenDatePicker}
+      >
         <View style={styles.reminderValueItem}>
           <Calendar size={16} color="#E9E9EB" />
           <Text style={styles.reminderValueText}>
@@ -578,12 +641,27 @@ function ReminderOnCard({
           </Text>
         </View>
         <View style={styles.reminderValueItem}>
+          <Text style={styles.reminderRemainingText}>
+            {formatRemainingPeriod(reminder.date)}
+          </Text>
+          <ChevronRight size={16} color="#8A8A93" />
+        </View>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="시간 선택"
+        style={styles.reminderValueRow}
+        disabled={isDisabled}
+        onPress={onOpenTimePicker}
+      >
+        <View style={styles.reminderValueItem}>
           <Clock size={16} color="#E9E9EB" />
           <Text style={styles.reminderValueText}>
             {formatReminderTime(reminder.hour, reminder.minute)}
           </Text>
         </View>
-      </View>
+        <ChevronRight size={16} color="#8A8A93" />
+      </Pressable>
     </View>
   );
 }
@@ -760,6 +838,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#242424",
     borderRadius: 16,
     padding: 16,
+    gap: 12,
   },
   urlText: {
     color: "#d0d0d0",
@@ -932,6 +1011,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+  },
+  reminderRemainingText: {
+    color: "#fbffc2",
+    fontSize: 14,
   },
   reminderValueText: {
     color: "#ffffff",

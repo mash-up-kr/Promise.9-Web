@@ -59,14 +59,31 @@ function duplicateError(linkId?: number) {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockGet.mockResolvedValue({
-    data: { success: true, data: FOLDERS_RESPONSE },
+  mockGet.mockImplementation((url: string) => {
+    if (url === "/links/preview") {
+      return Promise.resolve({
+        data: {
+          success: true,
+          data: {
+            title: "토스 기술 블로그",
+            source: "toss.tech",
+            thumbnailUrl: null,
+          },
+        },
+      });
+    }
+    return Promise.resolve({ data: { success: true, data: FOLDERS_RESPONSE } });
   });
 });
 
 test("공유받은 URL 을 표시한다", async () => {
   await render(<ShareExtension url="https://toss.tech/a" />);
   expect(screen.getByText("https://toss.tech/a")).toBeOnTheScreen();
+});
+
+test("공유 URL 의 프리뷰 제목을 카드에 보여준다", async () => {
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  expect(await screen.findByText("토스 기술 블로그")).toBeOnTheScreen();
 });
 
 test("취소를 누르면 익스텐션을 닫는다", async () => {
@@ -313,6 +330,31 @@ test("프리셋 칩을 고르면 해당 날짜로 리마인드가 실린다", as
       reminderAt: expect.stringContaining(expectedDate),
     }),
   );
+});
+
+test("리마인드 날짜를 누르면 날짜 피커가 열리고, 확인하면 프리셋 선택이 풀린다", async () => {
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  const user = userEvent.setup();
+
+  await user.press(screen.getByLabelText("리마인드"));
+  await user.press(screen.getByLabelText("날짜 선택"));
+  expect(await screen.findByText("날짜 선택")).toBeOnTheScreen();
+
+  await user.press(screen.getByText("확인"));
+  expect(screen.queryByText("날짜 선택")).toBeNull();
+  expect(screen.getByLabelText("내일").props.accessibilityState.selected).toBe(
+    false,
+  );
+});
+
+test("리마인드 시간을 누르면 시간 피커가 열린다", async () => {
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  const user = userEvent.setup();
+
+  await user.press(screen.getByLabelText("리마인드"));
+  await user.press(screen.getByLabelText("시간 선택"));
+
+  expect(await screen.findByText("시간 선택")).toBeOnTheScreen();
 });
 
 test("리마인드를 다시 끄면 reminderAt 없이 저장된다", async () => {
