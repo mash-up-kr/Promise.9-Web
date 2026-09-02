@@ -1,5 +1,6 @@
 import { apiClient } from "@shared/api";
 import type { SuccessResponse } from "@shared/api/api.types";
+import { Calendar, Clock } from "lucide-react-native";
 import type { PropsWithChildren } from "react";
 import { useEffect, useReducer, useState } from "react";
 import {
@@ -13,6 +14,9 @@ import {
   View,
 } from "react-native";
 
+import { BellIcon } from "@/components/ui/icon/BellIcon";
+import { DiceIcon } from "@/components/ui/icon/DiceIcon";
+import { FolderIcon } from "@/components/ui/icon/FolderIcon";
 import { isAndroid } from "@/constants/platform.constants";
 import {
   getDuplicateLinkId,
@@ -287,7 +291,8 @@ function EntrySheet({
         />
       </View>
       {reminder === null ? (
-        <View style={styles.reminderCard}>
+        <View style={[styles.reminderCard, styles.reminderOffRow]}>
+          <BellIcon color="#8A8A93" />
           <Text style={styles.reminderPlaceholder}>
             잊지 않도록 다시 알려드려요
           </Text>
@@ -320,6 +325,9 @@ function EntrySheet({
   );
 }
 
+// 미분류 folder 아이콘 색 — 인앱 FolderChipList 와 동일한 Figma 기준(folder/gray).
+const UNCLASSIFIED_FOLDER_COLOR = "#65656B";
+
 function FolderChip({
   name,
   color,
@@ -342,9 +350,7 @@ function FolderChip({
       disabled={isDisabled}
       onPress={onPress}
     >
-      {color != null && (
-        <View style={[styles.folderDot, { backgroundColor: color }]} />
-      )}
+      <FolderIcon size={16} color={color ?? UNCLASSIFIED_FOLDER_COLOR} />
       <Text
         style={[
           styles.folderChipText,
@@ -405,7 +411,10 @@ function ReminderOnCard({
 }) {
   return (
     <View style={styles.reminderCardOn}>
-      <Text style={styles.reminderQuestion}>언제 알려드릴까요?</Text>
+      <View style={styles.reminderQuestionRow}>
+        <BellIcon color="#E9E9EB" />
+        <Text style={styles.reminderQuestion}>언제 알려드릴까요?</Text>
+      </View>
       <View style={styles.presetRow}>
         {REMINDER_PRESETS.map((preset) => (
           <PresetChip
@@ -416,21 +425,30 @@ function ReminderOnCard({
             onPress={() => onSelectPreset(preset.days)}
           />
         ))}
-        <PresetChip
-          label="랜덤"
-          isSelected={false}
-          isDisabled={isDisabled}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="랜덤 날짜"
+          style={styles.presetChip}
+          disabled={isDisabled}
           onPress={onSelectRandomDate}
-        />
+        >
+          <DiceIcon />
+        </Pressable>
       </View>
       <View style={styles.reminderDivider} />
       <View style={styles.reminderValueRow}>
-        <Text style={styles.reminderValueText}>
-          {formatReminderDate(reminder.date)}
-        </Text>
-        <Text style={styles.reminderValueText}>
-          {formatReminderTime(reminder.hour, reminder.minute)}
-        </Text>
+        <View style={styles.reminderValueItem}>
+          <Calendar size={16} color="#E9E9EB" />
+          <Text style={styles.reminderValueText}>
+            {formatReminderDate(reminder.date)}
+          </Text>
+        </View>
+        <View style={styles.reminderValueItem}>
+          <Clock size={16} color="#E9E9EB" />
+          <Text style={styles.reminderValueText}>
+            {formatReminderTime(reminder.hour, reminder.minute)}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -624,32 +642,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
   },
+  // 인앱 Folder Chip / SaveSheet 미러 — h40·px12·gap4, 선택=white-10 bg, 비선택=white-05 테두리.
   folderChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
     height: 40,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     borderRadius: 20,
-    backgroundColor: "#242424",
+    borderWidth: 1,
+    borderColor: "#ffffff0d",
   },
   folderChipSelected: {
-    backgroundColor: "#3a3a3a",
-    borderWidth: 1,
-    borderColor: "#ffffff",
-  },
-  folderDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    backgroundColor: "#ffffff1a",
+    borderColor: "transparent",
   },
   folderChipText: {
-    color: "#a0a0a0",
+    color: "#8a8a93",
     fontSize: 14,
   },
   folderChipTextSelected: {
-    color: "#ffffff",
-    fontWeight: "600",
+    color: "#fafafa",
   },
   reminderHeader: {
     flexDirection: "row",
@@ -677,6 +690,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff1a",
     padding: 16,
     gap: 12,
+  },
+  reminderOffRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  reminderQuestionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   reminderQuestion: {
     color: "#ffffff",
@@ -715,6 +738,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  reminderValueItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   reminderValueText: {
     color: "#ffffff",
