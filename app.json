@@ -31,17 +31,6 @@
       "expo-router",
       "./plugins/withAndroidShareActivity",
       [
-        "expo-font",
-        {
-          "fonts": [
-            "./assets/fonts/Pretendard-Regular.ttf",
-            "./assets/fonts/Pretendard-Medium.ttf",
-            "./assets/fonts/Pretendard-SemiBold.ttf",
-            "./assets/fonts/Pretendard-Bold.ttf"
-          ]
-        }
-      ],
-      [
         "expo-share-extension",
         {
           "activationRules": [
