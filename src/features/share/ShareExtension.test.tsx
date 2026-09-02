@@ -197,6 +197,70 @@ test("폴더 칩을 선택해 저장하면 folderId 가 실린다", async () => 
   );
 });
 
+test("폴더 추가 → 이름 입력·만들기 → 새 폴더가 목록에 추가되고 선택된다", async () => {
+  mockPost.mockImplementation((url: string) => {
+    if (url === "/folders") {
+      return Promise.resolve({
+        data: {
+          success: true,
+          data: {
+            folderId: 9,
+            folderName: "새폴더",
+            color: "#61a8ef",
+            createdAt: "",
+          },
+        },
+      });
+    }
+    return Promise.resolve({ data: { success: true, data: { linkId: 1 } } });
+  });
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  const user = userEvent.setup();
+
+  await user.press(await screen.findByLabelText("폴더 추가"));
+  await user.type(screen.getByPlaceholderText("폴더 이름"), "새폴더");
+  await user.press(screen.getByText("만들기"));
+
+  expect(await screen.findByText("새폴더")).toBeOnTheScreen();
+  expect(
+    screen.getByLabelText("새폴더").props.accessibilityState.selected,
+  ).toBe(true);
+
+  await user.press(screen.getByText("저장"));
+  expect(mockPost).toHaveBeenCalledWith(
+    "/links",
+    expect.objectContaining({ folderId: 9 }),
+  );
+});
+
+test("폴더 이름이 중복이면 안내 문구를 보여준다", async () => {
+  const { ApiError } = jest.requireActual("@shared/api/errors");
+  mockPost.mockRejectedValue(
+    new ApiError({
+      status: 409,
+      data: {
+        success: false,
+        error: {
+          code: 409,
+          errorCode: 920002,
+          message: "이미 존재하는 폴더 이름입니다.",
+          timestamp: "",
+        },
+      },
+    } as never),
+  );
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  const user = userEvent.setup();
+
+  await user.press(await screen.findByLabelText("폴더 추가"));
+  await user.type(screen.getByPlaceholderText("폴더 이름"), "디자인");
+  await user.press(screen.getByText("만들기"));
+
+  expect(
+    await screen.findByText("이미 있는 폴더 이름이에요"),
+  ).toBeOnTheScreen();
+});
+
 test("리마인드는 기본 Off — reminderAt 없이(null) 저장된다", async () => {
   mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 1 } } });
   await render(<ShareExtension url="https://toss.tech/a" />);

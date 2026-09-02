@@ -1,6 +1,11 @@
 import { apiClient } from "@shared/api";
 import type { SuccessResponse } from "@shared/api/api.types";
-import { Calendar, Clock } from "lucide-react-native";
+import {
+  FOLDER_TONE_HEX,
+  folderToneToHex,
+  type SelectableFolderColor,
+} from "@shared/folder/folder.constants";
+import { Calendar, Clock, Plus } from "lucide-react-native";
 import type { PropsWithChildren } from "react";
 import { useEffect, useReducer, useState } from "react";
 import {
@@ -18,10 +23,12 @@ import { BellIcon } from "@/components/ui/icon/BellIcon";
 import { DiceIcon } from "@/components/ui/icon/DiceIcon";
 import { FolderIcon } from "@/components/ui/icon/FolderIcon";
 import { isAndroid } from "@/constants/platform.constants";
+import { isDuplicateFolderNameError } from "@/entities/folder/folder.errors";
 import {
   getDuplicateLinkId,
   isDuplicateLinkError,
 } from "@/entities/link/link.errors";
+import { FOLDER_COLOR_OPTIONS } from "@/features/archive/archive.constants";
 import {
   formatReminderDate,
   formatReminderTime,
@@ -105,6 +112,12 @@ export function ShareExtension({ url }: { url?: string }) {
     setReminder({ ...reminder, date: addDaysDate(getRandomReminderDays()) });
   };
 
+  // 인앱 시트와 같은 정책 — 방금 만든 폴더는 곧바로 선택한다.
+  const handleFolderCreated = (folder: FolderSummary) => {
+    setFolders((prev) => [...prev, folder]);
+    setSelectedFolderId(folder.folderId);
+  };
+
   useEffect(function loadFolderChips() {
     let cancelled = false;
     apiClient
@@ -159,6 +172,7 @@ export function ShareExtension({ url }: { url?: string }) {
           folders={folders}
           selectedFolderId={selectedFolderId}
           onSelectFolder={setSelectedFolderId}
+          onFolderCreated={handleFolderCreated}
           reminder={reminder}
           selectedPresetDays={selectedPresetDays}
           onToggleReminder={toggleReminder}
@@ -202,6 +216,7 @@ function EntrySheet({
   folders,
   selectedFolderId,
   onSelectFolder,
+  onFolderCreated,
   reminder,
   selectedPresetDays,
   onToggleReminder,
@@ -216,6 +231,7 @@ function EntrySheet({
   folders: FolderSummary[];
   selectedFolderId: number | null;
   onSelectFolder: (folderId: number | null) => void;
+  onFolderCreated: (folder: FolderSummary) => void;
   reminder: ReminderValue | null;
   selectedPresetDays: number | null;
   onToggleReminder: (isEnabled: boolean) => void;
@@ -225,6 +241,8 @@ function EntrySheet({
   onChangeMemo: (memo: string) => void;
   onSave: () => void;
 }) {
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+
   return (
     <View style={styles.container}>
       <View style={styles.handle} />
@@ -249,84 +267,200 @@ function EntrySheet({
           )}
         </Pressable>
       </View>
-      <View style={styles.urlCard}>
-        <Text style={styles.urlText} numberOfLines={2}>
-          {url}
-        </Text>
-      </View>
-
-      <Text style={styles.sectionTitle}>폴더</Text>
+      {/* 시트 높이는 빌드 타임 고정(iOS) — 콘텐츠가 넘치는 작은 화면·리마인드 On 상태는
+          세로 스크롤로 흡수한다. 헤더(취소·저장)는 스크롤 밖에 고정. */}
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.folderRow}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.entryScrollContent}
       >
-        <FolderChip
-          name="미분류"
-          color={null}
-          isSelected={selectedFolderId === null}
-          isDisabled={isSaving}
-          onPress={() => onSelectFolder(null)}
-        />
-        {folders.map((folder) => (
-          <FolderChip
-            key={folder.folderId}
-            name={folder.folderName}
-            color={folder.color}
-            isSelected={selectedFolderId === folder.folderId}
-            isDisabled={isSaving}
-            onPress={() => onSelectFolder(folder.folderId)}
-          />
-        ))}
-      </ScrollView>
-
-      <View style={styles.reminderHeader}>
-        <Text style={[styles.sectionTitle, styles.sectionTitleInRow]}>
-          리마인드
-        </Text>
-        <ReminderToggle
-          isOn={reminder !== null}
-          isDisabled={isSaving}
-          onToggle={onToggleReminder}
-        />
-      </View>
-      {reminder === null ? (
-        <View style={[styles.reminderCard, styles.reminderOffRow]}>
-          <BellIcon color="#8A8A93" />
-          <Text style={styles.reminderPlaceholder}>
-            잊지 않도록 다시 알려드려요
+        <View style={styles.urlCard}>
+          <Text style={styles.urlText} numberOfLines={2}>
+            {url}
           </Text>
         </View>
-      ) : (
-        <ReminderOnCard
-          reminder={reminder}
-          selectedPresetDays={selectedPresetDays}
-          isDisabled={isSaving}
-          onSelectPreset={onSelectPreset}
-          onSelectRandomDate={onSelectRandomDate}
-        />
-      )}
 
-      <Text style={styles.sectionTitle}>메모</Text>
-      <TextInput
-        style={styles.memoInput}
-        multiline
-        maxLength={MEMO_MAX_LENGTH}
-        editable={!isSaving}
-        placeholder="저장한 이유나 기억하고 싶은 점을 적어보세요"
-        placeholderTextColor="#6b6b6b"
-        value={memo}
-        onChangeText={onChangeMemo}
-      />
-      <Text style={styles.memoCounter}>
-        {memo.length}/{MEMO_MAX_LENGTH}
-      </Text>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionTitle, styles.sectionTitleInRow]}>
+            폴더
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="폴더 추가"
+            hitSlop={8}
+            disabled={isSaving}
+            onPress={() => setIsCreatingFolder((isOpen) => !isOpen)}
+          >
+            <Plus size={24} color="#fffe66" />
+          </Pressable>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.folderRow}
+        >
+          <FolderChip
+            name="미분류"
+            color={null}
+            isSelected={selectedFolderId === null}
+            isDisabled={isSaving}
+            onPress={() => onSelectFolder(null)}
+          />
+          {folders.map((folder) => (
+            <FolderChip
+              key={folder.folderId}
+              name={folder.folderName}
+              color={folder.color}
+              isSelected={selectedFolderId === folder.folderId}
+              isDisabled={isSaving}
+              onPress={() => onSelectFolder(folder.folderId)}
+            />
+          ))}
+        </ScrollView>
+        {isCreatingFolder && (
+          <FolderCreateForm
+            isDisabled={isSaving}
+            onCreated={(folder) => {
+              setIsCreatingFolder(false);
+              onFolderCreated(folder);
+            }}
+          />
+        )}
+
+        <View style={styles.reminderHeader}>
+          <Text style={[styles.sectionTitle, styles.sectionTitleInRow]}>
+            리마인드
+          </Text>
+          <ReminderToggle
+            isOn={reminder !== null}
+            isDisabled={isSaving}
+            onToggle={onToggleReminder}
+          />
+        </View>
+        {reminder === null ? (
+          <View style={[styles.reminderCard, styles.reminderOffRow]}>
+            <BellIcon color="#8A8A93" />
+            <Text style={styles.reminderPlaceholder}>
+              잊지 않도록 다시 알려드려요
+            </Text>
+          </View>
+        ) : (
+          <ReminderOnCard
+            reminder={reminder}
+            selectedPresetDays={selectedPresetDays}
+            isDisabled={isSaving}
+            onSelectPreset={onSelectPreset}
+            onSelectRandomDate={onSelectRandomDate}
+          />
+        )}
+
+        <Text style={styles.sectionTitle}>메모</Text>
+        <TextInput
+          style={styles.memoInput}
+          multiline
+          maxLength={MEMO_MAX_LENGTH}
+          editable={!isSaving}
+          placeholder="저장한 이유나 기억하고 싶은 점을 적어보세요"
+          placeholderTextColor="#6b6b6b"
+          value={memo}
+          onChangeText={onChangeMemo}
+        />
+        <Text style={styles.memoCounter}>
+          {memo.length}/{MEMO_MAX_LENGTH}
+        </Text>
+      </ScrollView>
     </View>
   );
 }
 
 // 미분류 folder 아이콘 색 — 인앱 FolderChipList 와 동일한 Figma 기준(folder/gray).
 const UNCLASSIFIED_FOLDER_COLOR = "#65656B";
+
+const FOLDER_NAME_MAX_LENGTH = 20;
+
+// 인앱 폴더 생성 폼(FolderFormSheet)의 익스텐션판 — 이름·색을 받아 POST /folders 로
+// 만들고 성공 시 목록에 반영한다. 기본 색은 인앱과 동일하게 blue.
+function FolderCreateForm({
+  isDisabled,
+  onCreated,
+}: {
+  isDisabled: boolean;
+  onCreated: (folder: FolderSummary) => void;
+}) {
+  const [name, setName] = useState("");
+  const [color, setColor] = useState<SelectableFolderColor>("blue");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const submit = async () => {
+    const folderName = name.trim();
+    if (folderName === "" || isSubmitting) {
+      return;
+    }
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const { data } = await apiClient.post<SuccessResponse<FolderSummary>>(
+        "/folders",
+        { folderName, color: folderToneToHex(color) },
+      );
+      onCreated(data.data);
+    } catch (error) {
+      setErrorMessage(
+        isDuplicateFolderNameError(error)
+          ? "이미 있는 폴더 이름이에요"
+          : "폴더를 만들지 못했어요. 다시 시도해주세요",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <View style={styles.folderCreateForm}>
+      <TextInput
+        style={styles.folderNameInput}
+        placeholder="폴더 이름"
+        placeholderTextColor="#6b6b6b"
+        maxLength={FOLDER_NAME_MAX_LENGTH}
+        editable={!isDisabled && !isSubmitting}
+        value={name}
+        onChangeText={setName}
+      />
+      <View style={styles.colorSwatchRow}>
+        {FOLDER_COLOR_OPTIONS.map((tone) => (
+          <Pressable
+            key={tone}
+            accessibilityRole="button"
+            accessibilityLabel={`색상 ${tone}`}
+            accessibilityState={{ selected: color === tone }}
+            disabled={isDisabled || isSubmitting}
+            onPress={() => setColor(tone)}
+            style={[
+              styles.colorSwatch,
+              { backgroundColor: FOLDER_TONE_HEX[tone] },
+              color === tone && styles.colorSwatchSelected,
+            ]}
+          />
+        ))}
+      </View>
+      {errorMessage != null && (
+        <Text style={styles.folderCreateError}>{errorMessage}</Text>
+      )}
+      <Pressable
+        style={styles.folderCreateButton}
+        disabled={isDisabled || isSubmitting || name.trim() === ""}
+        onPress={submit}
+      >
+        {isSubmitting ? (
+          <ActivityIndicator size="small" color="#1a1a1a" />
+        ) : (
+          <Text style={styles.folderCreateButtonText}>만들기</Text>
+        )}
+      </Pressable>
+    </View>
+  );
+}
 
 function FolderChip({
   name,
@@ -663,6 +797,61 @@ const styles = StyleSheet.create({
   },
   folderChipTextSelected: {
     color: "#fafafa",
+  },
+  entryScrollContent: {
+    paddingBottom: 16,
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  folderCreateForm: {
+    marginTop: 12,
+    borderRadius: 16,
+    backgroundColor: "#ffffff1a",
+    padding: 16,
+    gap: 12,
+  },
+  folderNameInput: {
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#0000004d",
+    paddingHorizontal: 14,
+    color: "#ffffff",
+    fontSize: 14,
+  },
+  colorSwatchRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  colorSwatch: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+  },
+  colorSwatchSelected: {
+    borderWidth: 2,
+    borderColor: "#ffffff",
+  },
+  folderCreateError: {
+    color: "#ee97a4",
+    fontSize: 13,
+  },
+  folderCreateButton: {
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  folderCreateButtonText: {
+    color: "#1a1a1a",
+    fontSize: 14,
+    fontWeight: "600",
   },
   reminderHeader: {
     flexDirection: "row",
