@@ -1,17 +1,28 @@
 import { apiClient } from "@shared/api";
 import type { SuccessResponse } from "@shared/api/api.types";
 import {
-  FOLDER_TONE_HEX,
   folderToneToHex,
   type SelectableFolderColor,
 } from "@shared/folder/folder.constants";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Calendar, ChevronRight, Clock, Plus } from "lucide-react-native";
 import type { ComponentProps, PropsWithChildren } from "react";
-import { useEffect, useReducer, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Image,
+  Modal,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,17 +30,21 @@ import {
   TextInput,
   View,
 } from "react-native";
-
+import { ActionButton } from "@/components/ui/action-button/ActionButton";
+import { Dialog } from "@/components/ui/dialog/Dialog";
 import { BellIcon } from "@/components/ui/icon/BellIcon";
 import { DiceIcon } from "@/components/ui/icon/DiceIcon";
 import { FolderIcon } from "@/components/ui/icon/FolderIcon";
+import { Input, InputField } from "@/components/ui/input/Input";
+import { Text as UIText } from "@/components/ui/text/Text";
 import { isAndroid } from "@/constants/platform.constants";
 import { isDuplicateFolderNameError } from "@/entities/folder/folder.errors";
 import {
   getDuplicateLinkId,
   isDuplicateLinkError,
 } from "@/entities/link/link.errors";
-import { FOLDER_COLOR_OPTIONS } from "@/features/archive/archive.constants";
+import { DuplicateFolderNameAlert } from "@/features/archive/components/DuplicateFolderNameAlert";
+import { FolderColorPicker } from "@/features/archive/components/FolderColorPicker";
 import { DatePickerModal } from "@/features/link/components/DatePickerModal";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { TimePickerModal } from "@/features/link/components/TimePickerModal";
@@ -202,9 +217,23 @@ export function ShareExtension({ url }: { url?: string }) {
 
   const isEditing = state.phase === "editing" || state.phase === "saving";
 
+  // 닫기 요청은 항상 컨테이너의 퇴장 애니메이션(시트 다운 → dim 페이드)을 거친다.
+  const sheetRef = useRef<ShareSheetHandle>(null);
+  const dismissSheet = useCallback(() => {
+    if (sheetRef.current) {
+      sheetRef.current.dismiss();
+    } else {
+      close();
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={extensionQueryClient}>
-      <ShareSheetContainer height={isEditing ? 600 : 400}>
+      <ShareSheetContainer
+        ref={sheetRef}
+        height={isEditing ? 600 : 400}
+        onClosed={() => close()}
+      >
         {isEditing ? (
           <EntrySheet
             url={sharedUrl}
@@ -223,9 +252,10 @@ export function ShareExtension({ url }: { url?: string }) {
             memo={memo}
             onChangeMemo={setMemo}
             onSave={save}
+            onCancel={dismissSheet}
           />
         ) : (
-          <ResultSheet state={state} onRetry={save} />
+          <ResultSheet state={state} onRetry={save} onClose={dismissSheet} />
         )}
         {openPicker === "date" && reminder && (
           <DatePickerModal
@@ -246,26 +276,137 @@ export function ShareExtension({ url }: { url?: string }) {
   );
 }
 
-// iOS 는 익스텐션 컨테이너 자체가 시트라 그대로 통과시키고,
-// Android 는 반투명 액티비티 전체 위에 딤 + 하단 시트를 직접 그린다(탭 아웃 = 닫기).
-function ShareSheetContainer({
-  height,
-  children,
-}: PropsWithChildren<{ height: number }>) {
+// 시트 등장·퇴장 모션 값 — dim 은 슬라이드가 아니라 페이드로 나타나고,
+// 닫힐 때는 시트가 먼저 내려간 뒤 스르륵 사라진다(iOS dim 은 시스템 프레젠테이션 담당).
+const SHEET_ENTER_MS = 260;
+const SHEET_EXIT_MS = 220;
+const DIM_FADE_MS = 180;
+const DRAG_DISMISS_DISTANCE = 120;
+const DRAG_DISMISS_VELOCITY = 0.8;
+
+interface ShareSheetHandle {
+  dismiss: () => void;
+}
+
+// iOS 는 익스텐션 컨테이너(높이 고정)가 곧 시트 영역이고, Android 는 반투명 액티비티
+// 전체 위에 딤 + 하단 시트를 직접 그린다. 양쪽 모두 시트 슬라이드·상단 스와이프 다운은
+// 여기서 담당한다(탭 아웃 닫기는 Android 전용 — iOS 는 시트 밖이 호스트 앱 영역).
+const ShareSheetContainer = forwardRef<
+  ShareSheetHandle,
+  PropsWithChildren<{ height: number; onClosed: () => void }>
+>(function ShareSheetContainer({ height, onClosed, children }, ref) {
+  const sheetY = useRef(new Animated.Value(height)).current;
+  const dimOpacity = useRef(new Animated.Value(0)).current;
+  const heightRef = useRef(height);
+  heightRef.current = height;
+
+  useEffect(
+    function enterAnimation() {
+      Animated.timing(sheetY, {
+        toValue: 0,
+        duration: SHEET_ENTER_MS,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+      if (isAndroid) {
+        Animated.timing(dimOpacity, {
+          toValue: 1,
+          duration: DIM_FADE_MS,
+          useNativeDriver: true,
+        }).start();
+      }
+    },
+    [sheetY, dimOpacity],
+  );
+
+  const dismiss = useCallback(() => {
+    Animated.timing(sheetY, {
+      toValue: heightRef.current,
+      duration: SHEET_EXIT_MS,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: true,
+    }).start(() => {
+      if (!isAndroid) {
+        onClosed();
+        return;
+      }
+      Animated.timing(dimOpacity, {
+        toValue: 0,
+        duration: DIM_FADE_MS,
+        useNativeDriver: true,
+      }).start(() => onClosed());
+    });
+  }, [sheetY, dimOpacity, onClosed]);
+
+  useImperativeHandle(ref, () => ({ dismiss }), [dismiss]);
+
+  const dismissRef = useRef(dismiss);
+  dismissRef.current = dismiss;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) =>
+        gesture.dy > 6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+      onPanResponderMove: (_, gesture) => {
+        if (gesture.dy > 0) {
+          sheetY.setValue(gesture.dy);
+        }
+      },
+      onPanResponderRelease: (_, gesture) => {
+        if (
+          gesture.dy > DRAG_DISMISS_DISTANCE ||
+          gesture.vy > DRAG_DISMISS_VELOCITY
+        ) {
+          dismissRef.current();
+          return;
+        }
+        Animated.timing(sheetY, {
+          toValue: 0,
+          duration: 160,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }).start();
+      },
+    }),
+  ).current;
+
+  const sheet = (
+    <Animated.View
+      style={[
+        isAndroid ? [styles.androidSheet, { height }] : styles.iosSheet,
+        { transform: [{ translateY: sheetY }] },
+      ]}
+    >
+      {children}
+      <View
+        accessibilityLabel="시트 끌어서 닫기"
+        style={styles.dragZone}
+        {...panResponder.panHandlers}
+      />
+    </Animated.View>
+  );
+
   if (!isAndroid) {
-    return children;
+    return sheet;
   }
   return (
     <View style={styles.androidRoot}>
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          styles.androidDim,
+          { opacity: dimOpacity },
+        ]}
+      />
       <Pressable
         accessibilityLabel="닫기"
         style={StyleSheet.absoluteFill}
-        onPress={() => close()}
+        onPress={() => dismissRef.current()}
       />
-      <View style={[styles.androidSheet, { height }]}>{children}</View>
+      {sheet}
     </View>
   );
-}
+});
 
 function EntrySheet({
   url,
@@ -284,6 +425,7 @@ function EntrySheet({
   memo,
   onChangeMemo,
   onSave,
+  onCancel,
 }: {
   url: string;
   isSaving: boolean;
@@ -301,6 +443,7 @@ function EntrySheet({
   memo: string;
   onChangeMemo: (memo: string) => void;
   onSave: () => void;
+  onCancel: () => void;
 }) {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
@@ -311,7 +454,7 @@ function EntrySheet({
         <Pressable
           style={styles.headerButton}
           disabled={isSaving}
-          onPress={() => close()}
+          onPress={onCancel}
         >
           <SheetText style={styles.headerButtonText}>취소</SheetText>
         </Pressable>
@@ -381,8 +524,8 @@ function EntrySheet({
           ))}
         </ScrollView>
         {isCreatingFolder && (
-          <FolderCreateForm
-            isDisabled={isSaving}
+          <FolderCreateModal
+            onClose={() => setIsCreatingFolder(false)}
             onCreated={(folder) => {
               setIsCreatingFolder(false);
               onFolderCreated(folder);
@@ -446,18 +589,19 @@ const UNCLASSIFIED_FOLDER_COLOR = "#65656B";
 
 const FOLDER_NAME_MAX_LENGTH = 20;
 
-// 인앱 폴더 생성 폼(FolderFormSheet)의 익스텐션판 — 이름·색을 받아 POST /folders 로
-// 만들고 성공 시 목록에 반영한다. 기본 색은 인앱과 동일하게 blue.
-function FolderCreateForm({
-  isDisabled,
+// 인앱 폴더 생성 모달(FolderFormSheet)의 익스텐션판 — 같은 카드(Dialog·Input·색상 그리드)를
+// 재사용하고, 폼 상태만 로컬로 든다. 성공 시 목록 반영은 부모(onCreated)가 맡는다.
+function FolderCreateModal({
+  onClose,
   onCreated,
 }: {
-  isDisabled: boolean;
+  onClose: () => void;
   onCreated: (folder: FolderSummary) => void;
 }) {
   const [name, setName] = useState("");
   const [color, setColor] = useState<SelectableFolderColor>("blue");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isDuplicateOpen, setIsDuplicateOpen] = useState(false);
+  const [hasFailed, setHasFailed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const submit = async () => {
@@ -466,7 +610,7 @@ function FolderCreateForm({
       return;
     }
     setIsSubmitting(true);
-    setErrorMessage(null);
+    setHasFailed(false);
     try {
       const { data } = await apiClient.post<SuccessResponse<FolderSummary>>(
         "/folders",
@@ -474,62 +618,92 @@ function FolderCreateForm({
       );
       onCreated(data.data);
     } catch (error) {
-      setErrorMessage(
-        isDuplicateFolderNameError(error)
-          ? "이미 있는 폴더 이름이에요"
-          : "폴더를 만들지 못했어요. 다시 시도해주세요",
-      );
+      if (isDuplicateFolderNameError(error)) {
+        setIsDuplicateOpen(true);
+      } else {
+        setHasFailed(true);
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <View style={styles.folderCreateForm}>
-      <TextInput
-        allowFontScaling={
-          globalThis.__promise9ShareExtension ? false : undefined
-        }
-        style={styles.folderNameInput}
-        placeholder="폴더 이름"
-        placeholderTextColor="#6b6b6b"
-        maxLength={FOLDER_NAME_MAX_LENGTH}
-        editable={!isDisabled && !isSubmitting}
-        value={name}
-        onChangeText={setName}
+    <Modal
+      transparent
+      statusBarTranslucent
+      visible
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Dialog onDismiss={onClose}>
+        <View className="w-full max-w-[335px] gap-10 rounded-[36px] border border-opacity-white-05 bg-gray-800 p-5">
+          <View className="gap-4">
+            <UIText
+              variant="heading-2"
+              className="text-center text-text-strong"
+            >
+              새 폴더 만들기
+            </UIText>
+
+            <View className="gap-5">
+              <View className="gap-2">
+                <UIText variant="heading-3" className="text-icon-normal">
+                  이름
+                </UIText>
+                <Input variant="field">
+                  <InputField
+                    allowFontScaling={
+                      globalThis.__promise9ShareExtension ? false : undefined
+                    }
+                    placeholder="폴더 이름을 입력하세요."
+                    maxLength={FOLDER_NAME_MAX_LENGTH}
+                    editable={!isSubmitting}
+                    value={name}
+                    onChangeText={setName}
+                  />
+                </Input>
+              </View>
+
+              <View className="gap-5">
+                <UIText variant="heading-3" className="text-icon-normal">
+                  색상
+                </UIText>
+                <FolderColorPicker value={color} onChange={setColor} />
+              </View>
+
+              {hasFailed && (
+                <UIText variant="caption-1" className="text-action-destructive">
+                  폴더를 만들지 못했어요. 다시 시도해주세요
+                </UIText>
+              )}
+            </View>
+          </View>
+
+          <View className="flex-row gap-2">
+            <ActionButton
+              variant="assistive"
+              className="flex-1"
+              onPress={onClose}
+            >
+              취소
+            </ActionButton>
+            <ActionButton
+              className="flex-1"
+              disabled={isSubmitting || name.trim() === ""}
+              onPress={submit}
+            >
+              저장
+            </ActionButton>
+          </View>
+        </View>
+      </Dialog>
+
+      <DuplicateFolderNameAlert
+        isOpen={isDuplicateOpen}
+        onClose={() => setIsDuplicateOpen(false)}
       />
-      <View style={styles.colorSwatchRow}>
-        {FOLDER_COLOR_OPTIONS.map((tone) => (
-          <Pressable
-            key={tone}
-            accessibilityRole="button"
-            accessibilityLabel={`색상 ${tone}`}
-            accessibilityState={{ selected: color === tone }}
-            disabled={isDisabled || isSubmitting}
-            onPress={() => setColor(tone)}
-            style={[
-              styles.colorSwatch,
-              { backgroundColor: FOLDER_TONE_HEX[tone] },
-              color === tone && styles.colorSwatchSelected,
-            ]}
-          />
-        ))}
-      </View>
-      {errorMessage != null && (
-        <SheetText style={styles.folderCreateError}>{errorMessage}</SheetText>
-      )}
-      <Pressable
-        style={styles.folderCreateButton}
-        disabled={isDisabled || isSubmitting || name.trim() === ""}
-        onPress={submit}
-      >
-        {isSubmitting ? (
-          <ActivityIndicator size="small" color="#1a1a1a" />
-        ) : (
-          <SheetText style={styles.folderCreateButtonText}>만들기</SheetText>
-        )}
-      </Pressable>
-    </View>
+    </Modal>
   );
 }
 
@@ -753,9 +927,11 @@ const RESULT_CONTENT = {
 function ResultSheet({
   state,
   onRetry,
+  onClose,
 }: {
   state: Exclude<ShareSaveState, { phase: "editing" } | { phase: "saving" }>;
   onRetry: () => void;
+  onClose: () => void;
 }) {
   const content = RESULT_CONTENT[state.phase];
 
@@ -772,7 +948,7 @@ function ResultSheet({
         onRetry();
         return;
       case "retry-limit":
-        close();
+        onClose();
         return;
     }
   };
@@ -800,7 +976,19 @@ const styles = StyleSheet.create({
   androidRoot: {
     flex: 1,
     justifyContent: "flex-end",
+  },
+  androidDim: {
     backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  iosSheet: {
+    flex: 1,
+  },
+  dragZone: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 40,
   },
   androidSheet: {
     borderTopLeftRadius: 24,
@@ -906,51 +1094,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 20,
     marginBottom: 10,
-  },
-  folderCreateForm: {
-    marginTop: 12,
-    borderRadius: 16,
-    backgroundColor: "#ffffff1a",
-    padding: 16,
-    gap: 12,
-  },
-  folderNameInput: {
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: "#0000004d",
-    paddingHorizontal: 14,
-    color: "#ffffff",
-    fontSize: 14,
-  },
-  colorSwatchRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  colorSwatch: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-  },
-  colorSwatchSelected: {
-    borderWidth: 2,
-    borderColor: "#ffffff",
-  },
-  folderCreateError: {
-    color: "#ee97a4",
-    fontSize: 13,
-  },
-  folderCreateButton: {
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#ffffff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  folderCreateButtonText: {
-    color: "#1a1a1a",
-    fontSize: 14,
-    fontWeight: "600",
   },
   reminderHeader: {
     flexDirection: "row",

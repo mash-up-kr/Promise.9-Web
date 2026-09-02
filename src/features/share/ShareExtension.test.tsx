@@ -8,7 +8,12 @@ jest.mock("@shared/api", () => ({
 
 import { apiClient } from "@shared/api";
 import { ApiError } from "@shared/api/errors";
-import { render, screen, userEvent } from "@testing-library/react-native";
+import {
+  render,
+  screen,
+  userEvent,
+  waitFor,
+} from "@testing-library/react-native";
 import { close, openHostApp } from "expo-share-extension";
 
 import { ShareExtension } from "./ShareExtension";
@@ -86,10 +91,10 @@ test("공유 URL 의 프리뷰 제목을 카드에 보여준다", async () => {
   expect(await screen.findByText("토스 기술 블로그")).toBeOnTheScreen();
 });
 
-test("취소를 누르면 익스텐션을 닫는다", async () => {
+test("취소를 누르면 퇴장 애니메이션 후 익스텐션을 닫는다", async () => {
   await render(<ShareExtension url="https://toss.tech/a" />);
   await userEvent.setup().press(screen.getByText("취소"));
-  expect(close).toHaveBeenCalled();
+  await waitFor(() => expect(close).toHaveBeenCalled());
 });
 
 test("저장 성공 → 성공 시트, '링크 보러가기'는 저장한 링크 상세를 연다", async () => {
@@ -169,7 +174,7 @@ test("3회 연속 실패 → 반복 실패 시트, '닫기'는 익스텐션을 �
     await screen.findByText("잠시 후 다시 시도해주세요"),
   ).toBeOnTheScreen();
   await user.press(screen.getByText("닫기"));
-  expect(close).toHaveBeenCalled();
+  await waitFor(() => expect(close).toHaveBeenCalled());
 });
 
 test("성공 시트는 성공 마스코트 그래픽을 보여준다", async () => {
@@ -235,8 +240,11 @@ test("폴더 추가 → 이름 입력·만들기 → 새 폴더가 목록에 추
   const user = userEvent.setup();
 
   await user.press(await screen.findByLabelText("폴더 추가"));
-  await user.type(screen.getByPlaceholderText("폴더 이름"), "새폴더");
-  await user.press(screen.getByText("만들기"));
+  await user.type(
+    screen.getByPlaceholderText("폴더 이름을 입력하세요."),
+    "새폴더",
+  );
+  await user.press(screen.getAllByText("저장").at(-1) as never);
 
   expect(await screen.findByText("새폴더")).toBeOnTheScreen();
   expect(
@@ -270,11 +278,14 @@ test("폴더 이름이 중복이면 안내 문구를 보여준다", async () => 
   const user = userEvent.setup();
 
   await user.press(await screen.findByLabelText("폴더 추가"));
-  await user.type(screen.getByPlaceholderText("폴더 이름"), "디자인");
-  await user.press(screen.getByText("만들기"));
+  await user.type(
+    screen.getByPlaceholderText("폴더 이름을 입력하세요."),
+    "디자인",
+  );
+  await user.press(screen.getAllByText("저장").at(-1) as never);
 
   expect(
-    await screen.findByText("이미 있는 폴더 이름이에요"),
+    await screen.findByText("같은 이름의 폴더가 있어요"),
   ).toBeOnTheScreen();
 });
 
