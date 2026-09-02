@@ -7,30 +7,44 @@ const { View, Pressable, ScrollView, TextInput } = require("react-native");
 // useBottomSheet(자손에서 close 등 명령 호출)를 흉내내기 위한 컨텍스트.
 const SheetContext = React.createContext(null);
 
-const BottomSheet = React.forwardRef(({ children, onChange }, ref) => {
-  const commands = {
-    snapToIndex: () => {},
-    expand: () => {},
-    collapse: () => {},
-    close: () => onChange?.(-1),
-    forceClose: () => onChange?.(-1),
-  };
-  React.useImperativeHandle(ref, () => commands);
-  // "sheet-dismiss" 를 누르면 시트 닫힘(index -1)을 시뮬레이션한다.
-  return React.createElement(
-    SheetContext.Provider,
-    { value: commands },
-    React.createElement(
-      View,
-      null,
-      React.createElement(Pressable, {
-        accessibilityLabel: "sheet-dismiss",
-        onPress: () => onChange?.(-1),
-      }),
+const BottomSheet = React.forwardRef(
+  (
+    {
       children,
-    ),
-  );
-});
+      onChange,
+      backdropComponent: Backdrop,
+      enablePanDownToClose = true,
+    },
+    ref,
+  ) => {
+    const commands = {
+      snapToIndex: () => {},
+      expand: () => {},
+      collapse: () => {},
+      close: () => onChange?.(-1),
+      forceClose: () => onChange?.(-1),
+    };
+    React.useImperativeHandle(ref, () => commands);
+    // "sheet-dismiss" 를 누르면 시트 닫힘(index -1)을 시뮬레이션한다(pan-down 대체).
+    // enablePanDownToClose=false(isLocked) 면 무시한다.
+    return React.createElement(
+      SheetContext.Provider,
+      { value: commands },
+      React.createElement(
+        View,
+        null,
+        Backdrop ? React.createElement(Backdrop, {}) : null,
+        React.createElement(Pressable, {
+          accessibilityLabel: "sheet-dismiss",
+          onPress: () => {
+            if (enablePanDownToClose) onChange?.(-1);
+          },
+        }),
+        children,
+      ),
+    );
+  },
+);
 BottomSheet.displayName = "BottomSheet";
 
 const passthrough = (name, Base) => {

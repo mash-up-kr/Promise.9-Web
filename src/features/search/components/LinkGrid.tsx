@@ -19,6 +19,8 @@ export function LinkGrid({ links }: LinkGridProps) {
         <LinkTile
           key={link.linkId}
           link={link}
+          // 시안 Content Card 는 메타 라인을 끈 인스턴스를 쓴다(홈과 동일).
+          showMeta={false}
           onPress={() => router.push(linkDetailHref(String(link.linkId)))}
         />
       ))}

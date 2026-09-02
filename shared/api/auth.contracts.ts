@@ -30,3 +30,10 @@ export const kakaoExchangeResponseSchema = z.object({
   idToken: z.string(),
 });
 export type KakaoExchangeResponse = z.infer<typeof kakaoExchangeResponseSchema>;
+
+// POST /auth/refresh 응답 — RTR(재발급 시 기존 refreshToken 폐기, 신규 발급).
+export const refreshResponseSchema = z.object({
+  accessToken: z.string(),
+  refreshToken: z.string(),
+});
+export type RefreshResponse = z.infer<typeof refreshResponseSchema>;

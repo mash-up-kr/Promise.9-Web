@@ -65,6 +65,7 @@ const sampleLink = {
   representativeTag: null,
   thumbnailUrl: null,
   savedAt: "2026-07-26T00:00:00.000Z",
+  reminderAt: null,
 };
 
 const otherLink = {
@@ -441,7 +442,23 @@ describe("ArchiveDetailScreen 링크 컨텍스트 메뉴", () => {
         ? Promise.resolve({
             data: {
               success: true,
-              data: { linkId: 42, url: "https://toss.tech/article/1" },
+              data: {
+                linkId: 42,
+                url: "https://toss.tech/article/1",
+                folder: null,
+                thumbnailUrl: null,
+                title: "제목",
+                source: "toss.tech",
+                publishedAt: null,
+                savedAt: "2026-07-13T00:00:00.000Z",
+                isFavorite: false,
+                viewedAt: null,
+                processingStatus: "SUCCESS",
+                aiSummary: null,
+                tags: [],
+                memo: null,
+                relatedLinks: [],
+              },
             },
           })
         : Promise.resolve(linksResponse([sampleLink])),

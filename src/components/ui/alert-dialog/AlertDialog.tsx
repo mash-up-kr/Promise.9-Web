@@ -129,6 +129,8 @@ export interface AlertDialogButtonProps {
   label: string;
   variant: "primary" | "secondary" | "destructive";
   onPress: () => void;
+  /** 진행 중(로그아웃 등) 중복 탭 방지. */
+  disabled?: boolean;
 }
 
 // 시안 Action Button Medium 을 그대로 쓰고, 알림 액션이 늘 원하는 반반 배치(flex-1)만 얹는다.
@@ -143,12 +145,14 @@ export function AlertDialogButton({
   label,
   variant,
   onPress,
+  disabled,
 }: AlertDialogButtonProps) {
   return (
     <ActionButton
       variant={ACTION_VARIANT[variant]}
       className="flex-1"
       onPress={onPress}
+      disabled={disabled}
     >
       {label}
     </ActionButton>

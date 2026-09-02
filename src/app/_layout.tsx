@@ -11,6 +11,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { HeaderScrollProvider } from "@/components/ui/header/HeaderScrollProvider";
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
+import { setupOnlineManager } from "@/lib/online-manager";
 import { queryClient } from "@/lib/queryClient";
 import { tokenPersistence } from "@/lib/tokenStorage";
 import "@/global.css";
@@ -20,6 +21,7 @@ SplashScreen.preventAutoHideAsync();
 // 리프레시 토큰 영속 저장소 주입 — @/lib/tokenStorage 는 플랫폼별로 갈린다
 // (네이티브: expo-secure-store · 웹: tokenStorage.web.ts, localStorage).
 setTokenPersistence(tokenPersistence);
+setupOnlineManager();
 
 const transparentBackgroundTheme = {
   ...DefaultTheme,

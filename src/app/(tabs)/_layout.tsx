@@ -1,5 +1,6 @@
-import { Tabs, useRouter } from "expo-router";
+import { Redirect, Tabs, useRouter } from "expo-router";
 import { Search, Settings } from "lucide-react-native";
+import { View } from "react-native";
 
 import { Header } from "@/components/ui/header/Header";
 import { HeaderActions } from "@/components/ui/header/HeaderActions";
@@ -7,9 +8,23 @@ import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Logo } from "@/components/ui/logo/Logo";
 import { TabBar } from "@/components/ui/tab-bar/TabBar";
 import { ROUTES } from "@/constants/routes.constants";
+import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
 
 export default function TabsLayout() {
   const router = useRouter();
+  const authStatus = useAuthGate();
+
+  // 저장된 리프레시 토큰이 없는(한 번도 로그인 안 한) 콜드 스타트는 탭 화면 진입 전에
+  // 로그인으로 보낸다. 토큰이 있지만 만료된 경우는 401 → refresh 인터셉터가 처리한다.
+  if (authStatus === "unauthenticated") {
+    return <Redirect href={ROUTES.LOGIN} />;
+  }
+
+  if (authStatus === "checking") {
+    return (
+      <View testID="auth-gate-checking" className="flex-1 bg-background-base" />
+    );
+  }
 
   return (
     <Tabs
@@ -40,7 +55,11 @@ export default function TabsLayout() {
                     accessibilityLabel="검색"
                     onPress={() => router.navigate(ROUTES.SEARCH)}
                   />
-                  <IconButton iconNode={Settings} accessibilityLabel="설정" />
+                  <IconButton
+                    iconNode={Settings}
+                    accessibilityLabel="설정"
+                    onPress={() => router.navigate(ROUTES.SETTINGS)}
+                  />
                 </>
               }
             />
@@ -52,7 +71,11 @@ export default function TabsLayout() {
         name="archive"
         options={{ title: "보관함", headerShown: false }}
       />
-      <Tabs.Screen name="settings" options={{ title: "세팅" }} />
+      {/* 설정은 Figma 대로 자체 헤더(뒤로가기 + "설정")를 렌더하므로 탭 헤더는 숨긴다(보관함 선례). */}
+      <Tabs.Screen
+        name="settings"
+        options={{ title: "세팅", headerShown: false }}
+      />
     </Tabs>
   );
 }

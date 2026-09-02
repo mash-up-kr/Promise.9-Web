@@ -65,6 +65,23 @@ describe("BottomSheetHeader", () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
+  test("isConfirmPending 이면 저장 라벨 대신 스피너가 보이고 저장은 비활성화된다", async () => {
+    const onConfirm = jest.fn();
+    await render(
+      <BottomSheetHeader
+        title="새 폴더"
+        onCancel={jest.fn()}
+        onConfirm={onConfirm}
+        isConfirmPending
+      />,
+    );
+    expect(screen.getByRole("progressbar")).toBeOnTheScreen();
+    expect(screen.queryByText("저장")).toBeNull();
+    const user = userEvent.setup();
+    await user.press(screen.getByRole("button", { name: "저장" }));
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
   test("라벨을 바꿀 수 있다", async () => {
     await render(
       <BottomSheetHeader

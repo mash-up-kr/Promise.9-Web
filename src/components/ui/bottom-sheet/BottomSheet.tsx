@@ -7,11 +7,16 @@ import GorhomBottomSheet, {
 import type { ReactNode } from "react";
 import { useCallback, useRef } from "react";
 import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export interface BottomSheetProps {
   onClose: () => void;
   children: ReactNode;
   snapPoints?: (string | number)[];
+  /** 백드롭 탭 시 동작. "none" 이면 탭으로 닫히지 않는다. 기본 "close". */
+  backdropPressBehavior?: "close" | "none";
+  /** true 면 pan-down 제스처로 닫히지 않는다. 기본 false. */
+  isLocked?: boolean;
 }
 
 // Figma Sheet Container: gray-900 솔리드 + 상단 radius 24 + 위쪽 그림자.
@@ -36,8 +41,12 @@ export function BottomSheet({
   onClose,
   children,
   snapPoints,
+  backdropPressBehavior = "close",
+  isLocked = false,
 }: BottomSheetProps) {
   const ref = useRef<GorhomBottomSheet>(null);
+  // 시안 정책: 시트는 콘텐츠만큼 자라되 상단 Safe Area 바로 아래까지만 덮는다.
+  const insets = useSafeAreaInsets();
 
   // 시안 FolderSheet 주석: enter/exit spring 420/40.
   // overshootClamping: 목표 지점을 지나쳐 되튕기는(통통 튀는) 동작을 제거한다.
@@ -69,11 +78,11 @@ export function BottomSheet({
         {...props}
         appearsOnIndex={0}
         disappearsOnIndex={-1}
-        pressBehavior="close"
+        pressBehavior={backdropPressBehavior}
         opacity={0.6}
       />
     ),
-    [],
+    [backdropPressBehavior],
   );
 
   return (
@@ -82,7 +91,8 @@ export function BottomSheet({
       index={0}
       snapPoints={snapPoints}
       enableDynamicSizing={!snapPoints}
-      enablePanDownToClose
+      topInset={insets.top}
+      enablePanDownToClose={!isLocked}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"

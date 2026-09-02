@@ -2,7 +2,13 @@ jest.mock("@shared/api", () => ({ apiClient: { get: jest.fn() } }));
 
 import { apiClient } from "@shared/api";
 
-import { linkListResponseSchema, linkQueries, toLink } from "./link.queries";
+import {
+  linkDetailResponseSchema,
+  linkListResponseSchema,
+  linkQueries,
+  toLink,
+  toLinkDetail,
+} from "./link.queries";
 
 const validItem = {
   linkId: 1,
@@ -11,6 +17,7 @@ const validItem = {
   representativeTag: null,
   thumbnailUrl: null,
   savedAt: "2026-07-26T00:00:00.000Z",
+  reminderAt: null,
 };
 const validResponse = {
   links: [validItem],
@@ -27,6 +34,7 @@ describe("toLink", () => {
         representativeTag: null,
         thumbnailUrl: null,
         savedAt: "2026-07-26T00:00:00.000Z",
+        reminderAt: null,
       }),
     ).toEqual({
       linkId: 1,
@@ -60,6 +68,15 @@ describe("linkListResponseSchema", () => {
       ],
     };
     expect(linkListResponseSchema.safeParse(withTag).success).toBe(true);
+  });
+
+  // 홈 "다시 볼 링크" 가 목록 응답의 reminderAt 으로 알림 날짜 배지를 그린다.
+  it("리마인드 시각이 있는 응답을 통과시킨다", () => {
+    const withReminder = {
+      ...validResponse,
+      links: [{ ...validItem, reminderAt: "2026-08-20T12:00:00.000Z" }],
+    };
+    expect(linkListResponseSchema.safeParse(withReminder).success).toBe(true);
   });
 
   it("필드 타입이 계약과 다르면 거부한다", () => {
@@ -158,5 +175,91 @@ describe("linkQueries.list", () => {
     expect(linkQueries.list({ folderId: 3 }).select).toBe(
       linkQueries.list({ favorite: true }).select,
     );
+  });
+});
+
+const detailResponse = {
+  linkId: 42,
+  url: "https://toss.tech/article/example",
+  folder: { folderId: 3, folderName: "디자인" },
+  thumbnailUrl: "https://static.example.com/t.png",
+  title: "제목",
+  source: "toss.tech",
+  publishedAt: "2026-06-19T00:00:00.000Z",
+  savedAt: "2026-07-13T00:00:00.000Z",
+  isFavorite: true,
+  viewedAt: null,
+  processingStatus: "SUCCESS",
+  aiSummary: "요약",
+  tags: [{ tagId: 7, name: "디자인", sourceType: "ai", sortOrder: 1 }],
+  memo: "메모",
+  relatedLinks: [{ linkId: 41, title: "관련", thumbnailUrl: null }],
+};
+
+describe("linkDetailResponseSchema", () => {
+  it("정상 상세 응답을 통과시킨다", () => {
+    expect(linkDetailResponseSchema.safeParse(detailResponse).success).toBe(
+      true,
+    );
+  });
+
+  it("PENDING(요약 null·빈 배열) 응답을 통과시킨다", () => {
+    const r = {
+      ...detailResponse,
+      processingStatus: "PENDING",
+      aiSummary: null,
+      tags: [],
+      relatedLinks: [],
+    };
+    expect(linkDetailResponseSchema.safeParse(r).success).toBe(true);
+  });
+});
+
+describe("toLinkDetail", () => {
+  it("nullable title·source 를 빈 문자열로, relatedLink 썸네일 null 을 '' 로 폴백한다", () => {
+    const d = toLinkDetail(
+      linkDetailResponseSchema.parse({
+        ...detailResponse,
+        title: null,
+        source: null,
+      }),
+    );
+    expect(d.title).toBe("");
+    expect(d.source).toBe("");
+    expect(d.relatedLinks?.[0]).toEqual({
+      linkId: 41,
+      title: "관련",
+      thumbnailUrl: "",
+    });
+    expect(d.folder).toEqual({ folderId: 3, folderName: "디자인" });
+    expect(d.isFavorite).toBe(true);
+  });
+
+  it("서버 folder.color(hex) 를 UI tone 으로 매핑한다", () => {
+    const d = toLinkDetail(
+      linkDetailResponseSchema.parse({
+        ...detailResponse,
+        folder: { folderId: 3, folderName: "디자인", color: "#61a8ef" },
+      }),
+    );
+    expect(d.folderColor).toBe("blue");
+    // folder 객체 자체엔 color 를 흘리지 않는다.
+    expect(d.folder).toEqual({ folderId: 3, folderName: "디자인" });
+  });
+
+  it("folder.color 가 없으면 folderColor 는 undefined 다", () => {
+    const d = toLinkDetail(linkDetailResponseSchema.parse(detailResponse));
+    expect(d.folderColor).toBeUndefined();
+  });
+
+  // 서버 문서(docs/api/link.md) 의 실제 예시 hex — 팔레트 밖이면 gray 로 떨어져야 하므로 회귀 방지.
+  it("서버 문서 예시 hex(#d5d76a)를 yellow-green 으로 매핑한다", () => {
+    const d = toLinkDetail(
+      linkDetailResponseSchema.parse({
+        ...detailResponse,
+        folder: { folderId: 3, folderName: "디자인", color: "#d5d76a" },
+      }),
+    );
+    expect(d.folderColor).toBe("yellow-green");
   });
 });

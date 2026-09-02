@@ -9,6 +9,8 @@ export {
   type KakaoExchangeResponse,
   kakaoExchangeRequestSchema,
   kakaoExchangeResponseSchema,
+  type RefreshResponse,
+  refreshResponseSchema,
   type SocialLoginRequest,
   type SocialLoginResponse,
   type SocialProvider,
@@ -29,6 +31,7 @@ export {
   TimeoutError,
   UnauthorizedError,
 } from "./errors";
+export { refreshAccessToken } from "./refresh";
 export {
   clearTokens,
   getAccessToken,
