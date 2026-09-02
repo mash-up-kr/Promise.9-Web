@@ -43,7 +43,7 @@ index 3816339ae033c7b49c7d683d4c432888d5080788..27f41d12b95e29fa951d46c48abb0ebc
          PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
          PRODUCT_NAME: `"${targetName}"`,
 diff --git a/plugin/swift/ShareExtensionViewController.swift b/plugin/swift/ShareExtensionViewController.swift
-index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..0d73e60b85cf432a93b4f73edd66398b30bd3b76 100644
+index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..220afc7deb3a2e739e2e970a51e668326e09bd0d 100644
 --- a/plugin/swift/ShareExtensionViewController.swift
 +++ b/plugin/swift/ShareExtensionViewController.swift
 @@ -1,6 +1,7 @@
@@ -75,7 +75,18 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..0d73e60b85cf432a93b4f73edd66398b
        if var components = URLComponents(url: bundleURL, resolvingAgainstBaseURL: false) {
          components.queryItems = (components.queryItems ?? []) + [URLQueryItem(name: "shareExtension", value: "true")]
          return components.url ?? bundleURL
-@@ -98,7 +100,7 @@ class ShareExtensionViewController: UIViewController {
+@@ -84,6 +86,10 @@ class ShareExtensionViewController: UIViewController {
+   }
+   
+   func close() {
++    // 완료 요청과 동시에 RN 리소스를 해체하면 Fabric 서피스가 콘텐츠·변환을 잃고
++    // 기본(흰) 배경으로 리셋된 채 시스템 dismiss 애니메이션에 노출된다(흰 시트 플래시).
++    // 해체 전에 화면에서 먼저 숨겨 플래시를 막는다.
++    view.subviews.forEach { $0.isHidden = true }
+     self.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
+     // we need to clean up when the view is closed via the close() method in react native
+     cleanupAfterClose()
+@@ -98,7 +104,7 @@ class ShareExtensionViewController: UIViewController {
        
        reactNativeFactoryDelegate = ReactNativeDelegate()
        reactNativeFactoryDelegate!.dependencyProvider = RCTAppDependencyProvider()
