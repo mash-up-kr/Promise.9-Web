@@ -363,6 +363,8 @@ describe("CreateLinkSheet", () => {
 
     await fireEvent.press(screen.getByLabelText("sheet-dismiss"));
     expect(mockBack).not.toHaveBeenCalled();
+    await fireEvent.press(screen.getByLabelText("sheet-backdrop"));
+    expect(mockBack).not.toHaveBeenCalled();
 
     resolvePost({
       data: {
@@ -370,6 +372,14 @@ describe("CreateLinkSheet", () => {
         data: { linkId: 1, url: "https://example.com", savedAt: "" },
       },
     });
+    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+  });
+
+  test("백드롭을 누르면 시트가 닫힌다", async () => {
+    await renderSheet();
+
+    await fireEvent.press(screen.getByLabelText("sheet-backdrop"));
+
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
   });
 

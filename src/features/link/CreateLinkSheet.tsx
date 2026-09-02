@@ -131,7 +131,7 @@ export function CreateLinkSheet() {
   return (
     <SheetScreen
       onClose={closeSheet}
-      backdropPressBehavior="none"
+      backdropPressBehavior={isSaving ? "none" : "close"}
       isLocked={isSaving}
       header={
         <CreateLinkSheetHeader
