@@ -296,7 +296,7 @@ describe("CreateLinkSheet", () => {
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
   });
 
-  test("중복(errorCode 930003) → 중복 스낵바, 시트 유지, '보기' 액션 없음", async () => {
+  test("중복(errorCode 930003) → 중복 스낵바, 시트 유지, linkId 없으면(구버전 응답) '보기' 없음", async () => {
     const { ApiError } = jest.requireActual("@shared/api/errors");
     mockPost.mockRejectedValueOnce(
       new ApiError({
@@ -319,6 +319,35 @@ describe("CreateLinkSheet", () => {
     expect(await screen.findByText("이미 저장된 링크예요")).toBeTruthy();
     expect(screen.queryByText("보기")).toBeNull();
     expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  test("중복 응답에 linkId 가 있으면 '보기'가 기존 링크 상세를 연다", async () => {
+    const { ApiError } = jest.requireActual("@shared/api/errors");
+    mockPost.mockRejectedValueOnce(
+      new ApiError({
+        status: 409,
+        data: {
+          success: false,
+          error: {
+            code: 409,
+            errorCode: 930003,
+            message: "이미 저장한 링크입니다.",
+            timestamp: "2026-08-26T00:00:00.000Z",
+            linkId: 77,
+          },
+        },
+      }),
+    );
+    await renderSheet();
+    await fillValidUrl();
+    await pressSave();
+
+    expect(await screen.findByText("이미 저장된 링크예요")).toBeTruthy();
+
+    await userEvent.setup().press(screen.getByText("보기"));
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.objectContaining({ params: { id: "77" } }),
+    );
   });
 
   test("저장 중에는 pan-down 으로 닫히지 않는다", async () => {

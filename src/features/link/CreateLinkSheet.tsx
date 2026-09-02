@@ -21,7 +21,10 @@ import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { Text } from "@/components/ui/text/Text";
 import { isWeb } from "@/constants/platform.constants";
 import { linkDetailHref } from "@/constants/routes.constants";
-import { isDuplicateLinkError } from "@/entities/link/link.errors";
+import {
+  getDuplicateLinkId,
+  isDuplicateLinkError,
+} from "@/entities/link/link.errors";
 import { useCreateLinkMutation } from "@/entities/link/link.queries";
 import { FolderChipList } from "@/features/link/components/FolderChipList";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
@@ -104,9 +107,15 @@ export function CreateLinkSheet() {
           },
           onError: (error) => {
             if (isDuplicateLinkError(error)) {
-              // 409 응답에 기존 linkId 가 없어 '보기' 액션은 서버 보강 후 붙인다(스펙 결정).
+              // 409 가 담아준 기존 linkId 로 '보기'를 연결한다(서버 PR #109). 없으면(구버전) 문구만.
+              const duplicateLinkId = getDuplicateLinkId(error);
               show({
-                ...snackbarPresets.duplicate("이미 저장된 링크예요"),
+                ...snackbarPresets.duplicate(
+                  "이미 저장된 링크예요",
+                  duplicateLinkId != null
+                    ? () => router.push(linkDetailHref(String(duplicateLinkId)))
+                    : undefined,
+                ),
                 duration: SAVE_SNACKBAR_DURATION,
               });
               return;
