@@ -8,13 +8,15 @@
     "scheme": "promise9web",
     "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.mashup.promise9"
+      "bundleIdentifier": "com.mashup.promise9",
+      "infoPlist": {
+        "CFBundleDisplayName": "링띵동"
+      }
     },
     "android": {
       "package": "com.mashup.promise9",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#1a1a1a",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -64,13 +66,17 @@
         }
       ],
       [
+        "./plugins/withAndroidAppLabel",
+        {
+          "label": "링띵동"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
-          }
+          "backgroundColor": "#1a1a1a",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 180
         }
       ],
       "expo-secure-store",
