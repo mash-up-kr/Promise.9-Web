@@ -7,7 +7,7 @@ import {
 } from "@shared/folder/folder.constants";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Calendar, ChevronRight, Clock, Plus } from "lucide-react-native";
-import type { PropsWithChildren } from "react";
+import type { ComponentProps, PropsWithChildren } from "react";
 import { useEffect, useReducer, useState } from "react";
 import {
   ActivityIndicator,
@@ -72,6 +72,18 @@ interface FoldersResponse {
 }
 
 const MEMO_MAX_LENGTH = 300;
+
+// iOS 공유 익스텐션에서는 Fabric Dynamic Type 배율이 깨져 allowFontScaling(기본 true)인
+// 텍스트의 fontSize 가 무효화된다 — 익스텐션 자체 텍스트 공용 래퍼로 우회한다
+// (index.share.js 주석 참고, Android/메인 앱 경로는 no-op).
+function SheetText(props: ComponentProps<typeof Text>) {
+  return (
+    <Text
+      allowFontScaling={globalThis.__promise9ShareExtension ? false : undefined}
+      {...props}
+    />
+  );
+}
 
 // 익스텐션 프로세스 전용 클라이언트 — LinkPreviewCard(react-query) 재사용을 위해 둔다.
 const extensionQueryClient = new QueryClient();
@@ -301,9 +313,9 @@ function EntrySheet({
           disabled={isSaving}
           onPress={() => close()}
         >
-          <Text style={styles.headerButtonText}>취소</Text>
+          <SheetText style={styles.headerButtonText}>취소</SheetText>
         </Pressable>
-        <Text style={styles.headerTitle}>링크 저장</Text>
+        <SheetText style={styles.headerTitle}>링크 저장</SheetText>
         <Pressable
           style={[styles.headerButton, styles.saveButton]}
           disabled={isSaving}
@@ -312,7 +324,7 @@ function EntrySheet({
           {isSaving ? (
             <ActivityIndicator size="small" color="#1a1a1a" />
           ) : (
-            <Text style={styles.saveButtonText}>저장</Text>
+            <SheetText style={styles.saveButtonText}>저장</SheetText>
           )}
         </Pressable>
       </View>
@@ -326,15 +338,15 @@ function EntrySheet({
         {/* 시안 통합 카드(인앱 CreateLinkSheet 미러) — 프리뷰(파비콘·제목)와 URL 을 한 카드로. */}
         <View style={styles.urlCard}>
           <LinkPreviewCard url={url} isBare />
-          <Text style={styles.urlText} numberOfLines={2}>
+          <SheetText style={styles.urlText} numberOfLines={2}>
             {url}
-          </Text>
+          </SheetText>
         </View>
 
         <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionTitle, styles.sectionTitleInRow]}>
+          <SheetText style={[styles.sectionTitle, styles.sectionTitleInRow]}>
             폴더
-          </Text>
+          </SheetText>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="폴더 추가"
@@ -379,9 +391,9 @@ function EntrySheet({
         )}
 
         <View style={styles.reminderHeader}>
-          <Text style={[styles.sectionTitle, styles.sectionTitleInRow]}>
+          <SheetText style={[styles.sectionTitle, styles.sectionTitleInRow]}>
             리마인드
-          </Text>
+          </SheetText>
           <ReminderToggle
             isOn={reminder !== null}
             isDisabled={isSaving}
@@ -391,9 +403,9 @@ function EntrySheet({
         {reminder === null ? (
           <View style={[styles.reminderCard, styles.reminderOffRow]}>
             <BellIcon color="#8A8A93" />
-            <Text style={styles.reminderPlaceholder}>
+            <SheetText style={styles.reminderPlaceholder}>
               잊지 않도록 다시 알려드려요
-            </Text>
+            </SheetText>
           </View>
         ) : (
           <ReminderOnCard
@@ -407,8 +419,11 @@ function EntrySheet({
           />
         )}
 
-        <Text style={styles.sectionTitle}>메모</Text>
+        <SheetText style={styles.sectionTitle}>메모</SheetText>
         <TextInput
+          allowFontScaling={
+            globalThis.__promise9ShareExtension ? false : undefined
+          }
           style={styles.memoInput}
           multiline
           maxLength={MEMO_MAX_LENGTH}
@@ -418,9 +433,9 @@ function EntrySheet({
           value={memo}
           onChangeText={onChangeMemo}
         />
-        <Text style={styles.memoCounter}>
+        <SheetText style={styles.memoCounter}>
           {memo.length}/{MEMO_MAX_LENGTH}
-        </Text>
+        </SheetText>
       </ScrollView>
     </View>
   );
@@ -472,6 +487,9 @@ function FolderCreateForm({
   return (
     <View style={styles.folderCreateForm}>
       <TextInput
+        allowFontScaling={
+          globalThis.__promise9ShareExtension ? false : undefined
+        }
         style={styles.folderNameInput}
         placeholder="폴더 이름"
         placeholderTextColor="#6b6b6b"
@@ -498,7 +516,7 @@ function FolderCreateForm({
         ))}
       </View>
       {errorMessage != null && (
-        <Text style={styles.folderCreateError}>{errorMessage}</Text>
+        <SheetText style={styles.folderCreateError}>{errorMessage}</SheetText>
       )}
       <Pressable
         style={styles.folderCreateButton}
@@ -508,7 +526,7 @@ function FolderCreateForm({
         {isSubmitting ? (
           <ActivityIndicator size="small" color="#1a1a1a" />
         ) : (
-          <Text style={styles.folderCreateButtonText}>만들기</Text>
+          <SheetText style={styles.folderCreateButtonText}>만들기</SheetText>
         )}
       </Pressable>
     </View>
@@ -538,14 +556,14 @@ function FolderChip({
       onPress={onPress}
     >
       <FolderIcon size={16} color={color ?? UNCLASSIFIED_FOLDER_COLOR} />
-      <Text
+      <SheetText
         style={[
           styles.folderChipText,
           isSelected && styles.folderChipTextSelected,
         ]}
       >
         {name}
-      </Text>
+      </SheetText>
     </Pressable>
   );
 }
@@ -604,7 +622,9 @@ function ReminderOnCard({
     <View style={styles.reminderCardOn}>
       <View style={styles.reminderQuestionRow}>
         <BellIcon color="#E9E9EB" />
-        <Text style={styles.reminderQuestion}>언제 알려드릴까요?</Text>
+        <SheetText style={styles.reminderQuestion}>
+          언제 알려드릴까요?
+        </SheetText>
       </View>
       <View style={styles.presetRow}>
         {REMINDER_PRESETS.map((preset) => (
@@ -636,14 +656,14 @@ function ReminderOnCard({
       >
         <View style={styles.reminderValueItem}>
           <Calendar size={16} color="#E9E9EB" />
-          <Text style={styles.reminderValueText}>
+          <SheetText style={styles.reminderValueText}>
             {formatReminderDate(reminder.date)}
-          </Text>
+          </SheetText>
         </View>
         <View style={styles.reminderValueItem}>
-          <Text style={styles.reminderRemainingText}>
+          <SheetText style={styles.reminderRemainingText}>
             {formatRemainingPeriod(reminder.date)}
-          </Text>
+          </SheetText>
           <ChevronRight size={16} color="#8A8A93" />
         </View>
       </Pressable>
@@ -656,9 +676,9 @@ function ReminderOnCard({
       >
         <View style={styles.reminderValueItem}>
           <Clock size={16} color="#E9E9EB" />
-          <Text style={styles.reminderValueText}>
+          <SheetText style={styles.reminderValueText}>
             {formatReminderTime(reminder.hour, reminder.minute)}
-          </Text>
+          </SheetText>
         </View>
         <ChevronRight size={16} color="#8A8A93" />
       </Pressable>
@@ -686,14 +706,14 @@ function PresetChip({
       onPress={onPress}
       style={[styles.presetChip, isSelected && styles.presetChipSelected]}
     >
-      <Text
+      <SheetText
         style={[
           styles.presetChipText,
           isSelected && styles.presetChipTextSelected,
         ]}
       >
         {label}
-      </Text>
+      </SheetText>
     </Pressable>
   );
 }
@@ -766,11 +786,11 @@ function ResultSheet({
           source={RESULT_GRAPHICS[state.phase]}
           style={styles.resultImage}
         />
-        <Text style={styles.resultTitle}>{content.title}</Text>
-        <Text style={styles.resultSubtitle}>{content.subtitle}</Text>
+        <SheetText style={styles.resultTitle}>{content.title}</SheetText>
+        <SheetText style={styles.resultSubtitle}>{content.subtitle}</SheetText>
       </View>
       <Pressable style={styles.ctaButton} onPress={handleCta}>
-        <Text style={styles.ctaText}>{content.cta}</Text>
+        <SheetText style={styles.ctaText}>{content.cta}</SheetText>
       </Pressable>
     </View>
   );
