@@ -13,7 +13,7 @@ export interface SocialProviderConfig {
 
 // Record<SocialProvider, ...> + satisfies — provider 가 늘어나도 여기 추가를 깜빡하면
 // 컴파일 에러로 잡힌다. 배열이었다면 빠뜨려도 타입 통과라 화면에서만 조용히 샌다.
-// 키 순서 = 화면 노출 순서(시안: 카카오 → 구글 → 애플). enabled=false 는 노출하되 비활성(disabled).
+// 키 순서 = 화면 노출 순서(시안: 카카오 → 구글 → 애플). enabled=false(미지원 플랫폼)면 화면에서 숨긴다.
 export const SOCIAL_PROVIDERS = {
   kakao: { label: "카카오로 계속하기", enabled: true },
   google: { label: "Google로 계속하기", enabled: true },

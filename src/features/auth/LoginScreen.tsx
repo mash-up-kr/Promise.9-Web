@@ -81,23 +81,25 @@ export function LoginScreen() {
       </View>
 
       <View className="gap-3 px-5">
-        {Object.entries(SOCIAL_PROVIDERS).map(([key, config]) => {
-          const provider = key as SocialProvider;
-          return (
-            <SocialLoginButton
-              key={provider}
-              provider={provider}
-              label={config.label}
-              onPress={handleSocialLogin}
-              loading={pendingProvider === provider}
-              // 미지원(카카오·애플)은 항상 비활성. 그 외엔 다른 로그인 진행 중일 때만 비활성.
-              disabled={
-                !config.enabled ||
-                (pendingProvider !== null && pendingProvider !== provider)
-              }
-            />
-          );
-        })}
+        {Object.entries(SOCIAL_PROVIDERS)
+          // 미지원 플랫폼의 provider(웹·안드로이드의 애플)는 노출하지 않는다.
+          .filter(([, config]) => config.enabled)
+          .map(([key, config]) => {
+            const provider = key as SocialProvider;
+            return (
+              <SocialLoginButton
+                key={provider}
+                provider={provider}
+                label={config.label}
+                onPress={handleSocialLogin}
+                loading={pendingProvider === provider}
+                // 다른 로그인 진행 중일 때만 비활성.
+                disabled={
+                  pendingProvider !== null && pendingProvider !== provider
+                }
+              />
+            );
+          })}
       </View>
 
       <View className="mt-6 px-5">
