@@ -4,6 +4,7 @@ import type { PropsWithChildren } from "react";
 import { useEffect, useReducer, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +18,18 @@ import {
   getDuplicateLinkId,
   isDuplicateLinkError,
 } from "@/entities/link/link.errors";
+import {
+  formatReminderDate,
+  formatReminderTime,
+  getRandomReminderDays,
+  type ReminderValue,
+  toReminderAtIso,
+} from "@/features/link/reminder.utils";
+import {
+  addDaysDate,
+  getTomorrowDate,
+  roundUpToQuarter,
+} from "@/utils/datetime";
 
 import {
   INITIAL_SHARE_SAVE_STATE,
@@ -58,7 +71,35 @@ export function ShareExtension({ url }: { url?: string }) {
   const [folders, setFolders] = useState<FolderSummary[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
   const [memo, setMemo] = useState("");
+  // 리마인드 — 인앱 ReminderSection 과 같은 의미 구조(값·프리셋). 날짜/시간 정밀 조정
+  // 피커와 알림 권한 요청은 익스텐션 프로세스 제약으로 메인 앱에 맡긴다.
+  const [reminder, setReminder] = useState<ReminderValue | null>(null);
+  const [selectedPresetDays, setSelectedPresetDays] = useState<number | null>(
+    null,
+  );
   const sharedUrl = url ?? "";
+
+  const toggleReminder = (isEnabled: boolean) => {
+    if (!isEnabled) {
+      setSelectedPresetDays(null);
+      setReminder(null);
+      return;
+    }
+    setSelectedPresetDays(1);
+    setReminder({ date: getTomorrowDate(), ...roundUpToQuarter() });
+  };
+
+  const selectPreset = (days: number) => {
+    if (!reminder) return;
+    setSelectedPresetDays(days);
+    setReminder({ ...reminder, date: addDaysDate(days) });
+  };
+
+  const selectRandomDate = () => {
+    if (!reminder) return;
+    setSelectedPresetDays(null);
+    setReminder({ ...reminder, date: addDaysDate(getRandomReminderDays()) });
+  };
 
   useEffect(function loadFolderChips() {
     let cancelled = false;
@@ -87,7 +128,7 @@ export function ShareExtension({ url }: { url?: string }) {
           url: sharedUrl,
           folderId: selectedFolderId,
           memo: memo.trim() || null,
-          reminderAt: null,
+          reminderAt: reminder ? toReminderAtIso(reminder) : null,
         },
       );
       dispatch({ type: "SAVE_SUCCEEDED", linkId: data.data.linkId });
@@ -106,7 +147,7 @@ export function ShareExtension({ url }: { url?: string }) {
   const isEditing = state.phase === "editing" || state.phase === "saving";
 
   return (
-    <ShareSheetContainer height={isEditing ? 560 : 400}>
+    <ShareSheetContainer height={isEditing ? 650 : 400}>
       {isEditing ? (
         <EntrySheet
           url={sharedUrl}
@@ -114,6 +155,11 @@ export function ShareExtension({ url }: { url?: string }) {
           folders={folders}
           selectedFolderId={selectedFolderId}
           onSelectFolder={setSelectedFolderId}
+          reminder={reminder}
+          selectedPresetDays={selectedPresetDays}
+          onToggleReminder={toggleReminder}
+          onSelectPreset={selectPreset}
+          onSelectRandomDate={selectRandomDate}
           memo={memo}
           onChangeMemo={setMemo}
           onSave={save}
@@ -152,6 +198,11 @@ function EntrySheet({
   folders,
   selectedFolderId,
   onSelectFolder,
+  reminder,
+  selectedPresetDays,
+  onToggleReminder,
+  onSelectPreset,
+  onSelectRandomDate,
   memo,
   onChangeMemo,
   onSave,
@@ -161,6 +212,11 @@ function EntrySheet({
   folders: FolderSummary[];
   selectedFolderId: number | null;
   onSelectFolder: (folderId: number | null) => void;
+  reminder: ReminderValue | null;
+  selectedPresetDays: number | null;
+  onToggleReminder: (isEnabled: boolean) => void;
+  onSelectPreset: (days: number) => void;
+  onSelectRandomDate: () => void;
   memo: string;
   onChangeMemo: (memo: string) => void;
   onSave: () => void;
@@ -220,6 +276,32 @@ function EntrySheet({
         ))}
       </ScrollView>
 
+      <View style={styles.reminderHeader}>
+        <Text style={[styles.sectionTitle, styles.sectionTitleInRow]}>
+          리마인드
+        </Text>
+        <ReminderToggle
+          isOn={reminder !== null}
+          isDisabled={isSaving}
+          onToggle={onToggleReminder}
+        />
+      </View>
+      {reminder === null ? (
+        <View style={styles.reminderCard}>
+          <Text style={styles.reminderPlaceholder}>
+            잊지 않도록 다시 알려드려요
+          </Text>
+        </View>
+      ) : (
+        <ReminderOnCard
+          reminder={reminder}
+          selectedPresetDays={selectedPresetDays}
+          isDisabled={isSaving}
+          onSelectPreset={onSelectPreset}
+          onSelectRandomDate={onSelectRandomDate}
+        />
+      )}
+
       <Text style={styles.sectionTitle}>메모</Text>
       <TextInput
         style={styles.memoInput}
@@ -275,7 +357,126 @@ function FolderChip({
   );
 }
 
-// 시안(외부 공유 저장): 결과 4종은 같은 시트 구조에 문구·CTA 만 다르다.
+// 인앱 ReminderSection 의 프리셋과 동일(컴포넌트는 NativeWind 의존이라 값만 미러링).
+const REMINDER_PRESETS = [
+  { days: 1, label: "내일" },
+  { days: 3, label: "3일 후" },
+  { days: 7, label: "7일 후" },
+  { days: 14, label: "14일 후" },
+];
+
+// 인앱 Toggle 시안 미러 — 트랙 On=gray-50/Off=gray-400, 노브 On=20/Off=16 모두 gray-800.
+function ReminderToggle({
+  isOn,
+  isDisabled,
+  onToggle,
+}: {
+  isOn: boolean;
+  isDisabled: boolean;
+  onToggle: (isEnabled: boolean) => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityLabel="리마인드"
+      accessibilityState={{ checked: isOn }}
+      hitSlop={8}
+      disabled={isDisabled}
+      onPress={() => onToggle(!isOn)}
+      style={[styles.toggleTrack, isOn && styles.toggleTrackOn]}
+    >
+      <View style={[styles.toggleKnob, isOn && styles.toggleKnobOn]} />
+    </Pressable>
+  );
+}
+
+function ReminderOnCard({
+  reminder,
+  selectedPresetDays,
+  isDisabled,
+  onSelectPreset,
+  onSelectRandomDate,
+}: {
+  reminder: ReminderValue;
+  selectedPresetDays: number | null;
+  isDisabled: boolean;
+  onSelectPreset: (days: number) => void;
+  onSelectRandomDate: () => void;
+}) {
+  return (
+    <View style={styles.reminderCardOn}>
+      <Text style={styles.reminderQuestion}>언제 알려드릴까요?</Text>
+      <View style={styles.presetRow}>
+        {REMINDER_PRESETS.map((preset) => (
+          <PresetChip
+            key={preset.days}
+            label={preset.label}
+            isSelected={selectedPresetDays === preset.days}
+            isDisabled={isDisabled}
+            onPress={() => onSelectPreset(preset.days)}
+          />
+        ))}
+        <PresetChip
+          label="랜덤"
+          isSelected={false}
+          isDisabled={isDisabled}
+          onPress={onSelectRandomDate}
+        />
+      </View>
+      <View style={styles.reminderDivider} />
+      <View style={styles.reminderValueRow}>
+        <Text style={styles.reminderValueText}>
+          {formatReminderDate(reminder.date)}
+        </Text>
+        <Text style={styles.reminderValueText}>
+          {formatReminderTime(reminder.hour, reminder.minute)}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function PresetChip({
+  label,
+  isSelected,
+  isDisabled,
+  onPress,
+}: {
+  label: string;
+  isSelected: boolean;
+  isDisabled: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: isSelected }}
+      disabled={isDisabled}
+      onPress={onPress}
+      style={[styles.presetChip, isSelected && styles.presetChipSelected]}
+    >
+      <Text
+        style={[
+          styles.presetChipText,
+          isSelected && styles.presetChipTextSelected,
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+// 시안(외부 공유 저장): 결과 4종은 같은 시트 구조에 그래픽·문구·CTA 만 다르다.
+// 그래픽은 시트 배경(#1a1a1a)과 같은 색으로 flatten 된 통짜 PNG(@2x·@3x 밀도 선택).
+const RESULT_GRAPHICS = {
+  success: require("@/assets/images/share/result-success.png"),
+  duplicate: require("@/assets/images/share/result-duplicate.png"),
+  failed: require("@/assets/images/share/result-failed.png"),
+  "retry-limit": require("@/assets/images/share/result-retry-limit.png"),
+} as const;
+
 const RESULT_CONTENT = {
   success: {
     title: "링크 저장을 완료했어요",
@@ -330,6 +531,11 @@ function ResultSheet({
     <View style={[styles.container, styles.resultContainer]}>
       <View style={styles.handle} />
       <View style={styles.resultBody}>
+        <Image
+          testID={`share-result-${state.phase}`}
+          source={RESULT_GRAPHICS[state.phase]}
+          style={styles.resultImage}
+        />
         <Text style={styles.resultTitle}>{content.title}</Text>
         <Text style={styles.resultSubtitle}>{content.subtitle}</Text>
       </View>
@@ -389,7 +595,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: "#ffffff",
     fontSize: 17,
-    fontWeight: "600",
   },
   saveButton: {
     backgroundColor: "#ffffff",
@@ -446,6 +651,101 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontWeight: "600",
   },
+  reminderHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  sectionTitleInRow: {
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  // 인앱 카드 토큰 미러 — bg opacity-white-10(#ffffff1a), placeholder text-alternative 근사.
+  reminderCard: {
+    borderRadius: 16,
+    backgroundColor: "#ffffff1a",
+    padding: 16,
+  },
+  reminderPlaceholder: {
+    color: "#8A8A93",
+    fontSize: 14,
+  },
+  reminderCardOn: {
+    borderRadius: 16,
+    backgroundColor: "#ffffff1a",
+    padding: 16,
+    gap: 12,
+  },
+  reminderQuestion: {
+    color: "#ffffff",
+    fontSize: 14,
+  },
+  presetRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 4,
+  },
+  presetChip: {
+    height: 36,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0000004d",
+  },
+  presetChipSelected: {
+    backgroundColor: "#ffffffcc",
+  },
+  presetChipText: {
+    color: "#ffffffb2",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  presetChipTextSelected: {
+    color: "#17171b",
+  },
+  reminderDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "#ffffff1a",
+  },
+  reminderValueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  reminderValueText: {
+    color: "#ffffff",
+    fontSize: 14,
+  },
+  toggleTrack: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    padding: 4,
+    backgroundColor: "#65656b",
+  },
+  toggleTrackOn: {
+    justifyContent: "flex-end",
+    padding: 2,
+    backgroundColor: "#fafafa",
+  },
+  toggleKnob: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#242426",
+  },
+  toggleKnobOn: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
   memoInput: {
     minHeight: 96,
     borderRadius: 16,
@@ -469,6 +769,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+  },
+  resultImage: {
+    width: 160,
+    height: 160,
   },
   resultTitle: {
     color: "#ffffff",

@@ -155,6 +155,24 @@ test("3회 연속 실패 → 반복 실패 시트, '닫기'는 익스텐션을 �
   expect(close).toHaveBeenCalled();
 });
 
+test("성공 시트는 성공 마스코트 그래픽을 보여준다", async () => {
+  mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 42 } } });
+  await render(<ShareExtension url="https://toss.tech/a" />);
+
+  await userEvent.setup().press(screen.getByText("저장"));
+
+  expect(await screen.findByTestId("share-result-success")).toBeOnTheScreen();
+});
+
+test("중복 시트는 중복 마스코트 그래픽을 보여준다", async () => {
+  mockPost.mockRejectedValue(duplicateError(77));
+  await render(<ShareExtension url="https://toss.tech/a" />);
+
+  await userEvent.setup().press(screen.getByText("저장"));
+
+  expect(await screen.findByTestId("share-result-duplicate")).toBeOnTheScreen();
+});
+
 test("폴더 목록을 칩으로 보여주고 기본 선택은 미분류다", async () => {
   await render(<ShareExtension url="https://toss.tech/a" />);
 
@@ -176,6 +194,75 @@ test("폴더 칩을 선택해 저장하면 folderId 가 실린다", async () => 
   expect(mockPost).toHaveBeenCalledWith(
     "/links",
     expect.objectContaining({ folderId: 1 }),
+  );
+});
+
+test("리마인드는 기본 Off — reminderAt 없이(null) 저장된다", async () => {
+  mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 1 } } });
+  await render(<ShareExtension url="https://toss.tech/a" />);
+
+  await userEvent.setup().press(screen.getByText("저장"));
+
+  expect(mockPost).toHaveBeenCalledWith(
+    "/links",
+    expect.objectContaining({ reminderAt: null }),
+  );
+});
+
+test("리마인드를 켜면 내일 프리셋이 선택되고 reminderAt 이 실린다", async () => {
+  mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 1 } } });
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  const user = userEvent.setup();
+
+  await user.press(screen.getByLabelText("리마인드"));
+
+  expect(screen.getByLabelText("내일").props.accessibilityState.selected).toBe(
+    true,
+  );
+
+  await user.press(screen.getByText("저장"));
+  expect(mockPost).toHaveBeenCalledWith(
+    "/links",
+    expect.objectContaining({ reminderAt: expect.stringMatching(/^\d{4}-/) }),
+  );
+});
+
+test("프리셋 칩을 고르면 해당 날짜로 리마인드가 실린다", async () => {
+  mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 1 } } });
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  const user = userEvent.setup();
+
+  await user.press(screen.getByLabelText("리마인드"));
+  await user.press(screen.getByLabelText("7일 후"));
+  await user.press(screen.getByText("저장"));
+
+  const sevenDaysLater = new Date();
+  sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
+  const expectedDate = [
+    sevenDaysLater.getFullYear(),
+    String(sevenDaysLater.getMonth() + 1).padStart(2, "0"),
+    String(sevenDaysLater.getDate()).padStart(2, "0"),
+  ].join("-");
+  expect(mockPost).toHaveBeenCalledWith(
+    "/links",
+    expect.objectContaining({
+      reminderAt: expect.stringContaining(expectedDate),
+    }),
+  );
+});
+
+test("리마인드를 다시 끄면 reminderAt 없이 저장된다", async () => {
+  mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 1 } } });
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  const user = userEvent.setup();
+
+  await user.press(screen.getByLabelText("리마인드"));
+  await user.press(screen.getByLabelText("리마인드"));
+  await user.press(screen.getByText("저장"));
+
+  expect(mockPost).toHaveBeenCalledWith(
+    "/links",
+    expect.objectContaining({ reminderAt: null }),
   );
 });
 

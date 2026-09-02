@@ -29,6 +29,17 @@
       "expo-router",
       "./plugins/withAndroidShareActivity",
       [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Pretendard-Regular.ttf",
+            "./assets/fonts/Pretendard-Medium.ttf",
+            "./assets/fonts/Pretendard-SemiBold.ttf",
+            "./assets/fonts/Pretendard-Bold.ttf"
+          ]
+        }
+      ],
+      [
         "expo-share-extension",
         {
           "activationRules": [
@@ -37,13 +48,19 @@
               "max": 1
             }
           ],
-          "height": 500,
+          "height": 650,
           "backgroundColor": {
             "red": 0,
             "green": 0,
             "blue": 0,
             "alpha": 0
           }
+        }
+      ],
+      [
+        "./plugins/withShareExtensionDisplayName",
+        {
+          "displayName": "링띵동"
         }
       ],
       [
