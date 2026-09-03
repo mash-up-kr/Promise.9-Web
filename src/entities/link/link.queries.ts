@@ -261,13 +261,11 @@ export function useMoveLinksToFolderMutation() {
     mutationFn: async ({ linkIds, folderId }: MoveLinksToFolderVariables) => {
       await apiClient.patch("/links/folder", { linkIds, folderId });
     },
-    // 상세 화면이 열려 있으면 폴더가 바로 바뀌도록 옮긴 링크의 detail 도 무효화한다.
-    onSuccess: (_data, { linkIds }) => {
-      for (const linkId of linkIds) {
-        queryClient.invalidateQueries({
-          queryKey: linkKeys.detail(String(linkId)),
-        });
-      }
+    // 상세 화면이 열려 있으면 폴더가 바로 바뀌도록 detail 도 무효화한다. 옮긴 링크만
+    // 골라내지 않고 details 전체를 fuzzy 무효화한다 — 비활성 캐시는 다음 마운트 때만
+    // refetch 되므로 과잉 비용이 없다.
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: linkKeys.details() });
       invalidateFolderCaches();
     },
   });

@@ -85,7 +85,7 @@ describe("useMoveLinksToFolderMutation", () => {
     await expectFolderCachesInvalidated(invalidate);
   });
 
-  it("성공하면 옮긴 링크마다 상세 캐시도 버린다(상세 화면 즉시 반영)", async () => {
+  it("성공하면 링크 상세 캐시를 한 번에 버린다(상세 화면 즉시 반영)", async () => {
     const { result, invalidate } = await renderMutation(
       useMoveLinksToFolderMutation,
     );
@@ -95,9 +95,8 @@ describe("useMoveLinksToFolderMutation", () => {
       expect(
         invalidate.mock.calls
           .map(([options]) => options?.queryKey)
-          .filter((key) => key?.[0] === "link" && key?.[1] === "detail")
-          .map((key) => key?.[2]),
-      ).toEqual(["42", "43"]),
+          .filter((key) => key?.[0] === "link" && key?.[1] === "detail"),
+      ).toEqual([["link", "detail"]]),
     );
   });
 });
