@@ -138,15 +138,17 @@ describe("MoveLinksSheet", () => {
     expect(screen.queryByText("디자인에 저장됨")).toBeNull();
   });
 
-  test("폴더를 고르고 저장하면 선택한 링크마다 PATCH 를 보낸다", async () => {
+  test("폴더를 고르고 저장하면 선택한 링크를 한 번에 옮긴다", async () => {
     mockRouteParams.current = { ids: "42,43" };
     await renderSheet();
     await fireEvent.press(await screen.findByRole("radio", { name: "디자인" }));
     await fireEvent.press(screen.getByLabelText("저장"));
 
-    await waitFor(() => expect(mockPatch).toHaveBeenCalledTimes(2));
-    expect(mockPatch).toHaveBeenCalledWith("/links/42", { folderId: 3 });
-    expect(mockPatch).toHaveBeenCalledWith("/links/43", { folderId: 3 });
+    await waitFor(() => expect(mockPatch).toHaveBeenCalledTimes(1));
+    expect(mockPatch).toHaveBeenCalledWith("/links/folder", {
+      linkIds: [42, 43],
+      folderId: 3,
+    });
   });
 
   test("미분류로 옮기면 folderId 를 null 로 보낸다", async () => {
@@ -155,7 +157,10 @@ describe("MoveLinksSheet", () => {
     await fireEvent.press(screen.getByLabelText("저장"));
 
     await waitFor(() =>
-      expect(mockPatch).toHaveBeenCalledWith("/links/42", { folderId: null }),
+      expect(mockPatch).toHaveBeenCalledWith("/links/folder", {
+        linkIds: [42],
+        folderId: null,
+      }),
     );
   });
 

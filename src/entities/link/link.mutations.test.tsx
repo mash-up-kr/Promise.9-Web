@@ -14,8 +14,8 @@ import { renderHook, waitFor } from "@testing-library/react-native";
 import {
   linkQueries,
   useDeleteLinkMutation,
+  useMoveLinksToFolderMutation,
   useRestoreLinkMutation,
-  useUpdateLinkFolderMutation,
   useUpdateLinkMutation,
 } from "./link.queries";
 
@@ -48,53 +48,55 @@ const expectFolderCachesInvalidated = (invalidate: jest.SpyInstance) =>
     ).toEqual(expect.arrayContaining(["link", "folder"])),
   );
 
-describe("useUpdateLinkFolderMutation", () => {
+describe("useMoveLinksToFolderMutation", () => {
   beforeEach(() => {
     mockPatch.mockReset().mockResolvedValue({ data: { success: true } });
   });
 
-  it("링크의 폴더를 PATCH 로 바꾼다", async () => {
-    const { result } = await renderMutation(useUpdateLinkFolderMutation);
-    result.current.mutate({ linkId: 42, folderId: 3 });
+  it("선택한 링크를 한 번의 요청으로 옮긴다", async () => {
+    const { result } = await renderMutation(useMoveLinksToFolderMutation);
+    result.current.mutate({ linkIds: [42, 43], folderId: 3 });
 
-    await waitFor(() =>
-      expect(mockPatch).toHaveBeenCalledWith("/links/42", { folderId: 3 }),
-    );
+    await waitFor(() => expect(mockPatch).toHaveBeenCalledTimes(1));
+    expect(mockPatch).toHaveBeenCalledWith("/links/folder", {
+      linkIds: [42, 43],
+      folderId: 3,
+    });
   });
 
   it("미분류 이동은 folderId 를 null 로 보낸다", async () => {
-    const { result } = await renderMutation(useUpdateLinkFolderMutation);
-    result.current.mutate({ linkId: 42, folderId: null });
+    const { result } = await renderMutation(useMoveLinksToFolderMutation);
+    result.current.mutate({ linkIds: [42], folderId: null });
 
     await waitFor(() =>
-      expect(mockPatch).toHaveBeenCalledWith("/links/42", { folderId: null }),
+      expect(mockPatch).toHaveBeenCalledWith("/links/folder", {
+        linkIds: [42],
+        folderId: null,
+      }),
     );
   });
 
   it("성공하면 폴더 링크 목록과 폴더 목록 캐시를 버린다", async () => {
     const { result, invalidate } = await renderMutation(
-      useUpdateLinkFolderMutation,
+      useMoveLinksToFolderMutation,
     );
-    result.current.mutate({ linkId: 42, folderId: 3 });
+    result.current.mutate({ linkIds: [42], folderId: 3 });
 
     await expectFolderCachesInvalidated(invalidate);
   });
 
-  it("성공하면 옮긴 링크의 상세 캐시도 버린다(상세 화면 즉시 반영)", async () => {
+  it("성공하면 링크 상세 캐시를 한 번에 버린다(상세 화면 즉시 반영)", async () => {
     const { result, invalidate } = await renderMutation(
-      useUpdateLinkFolderMutation,
+      useMoveLinksToFolderMutation,
     );
-    result.current.mutate({ linkId: 42, folderId: 3 });
+    result.current.mutate({ linkIds: [42, 43], folderId: 3 });
 
     await waitFor(() =>
       expect(
-        invalidate.mock.calls.some(
-          ([options]) =>
-            options?.queryKey?.[0] === "link" &&
-            options?.queryKey?.[1] === "detail" &&
-            options?.queryKey?.[2] === "42",
-        ),
-      ).toBe(true),
+        invalidate.mock.calls
+          .map(([options]) => options?.queryKey)
+          .filter((key) => key?.[0] === "link" && key?.[1] === "detail"),
+      ).toEqual([["link", "detail"]]),
     );
   });
 });

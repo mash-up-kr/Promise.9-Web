@@ -14,7 +14,7 @@ import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { Spinner } from "@/components/ui/spinner/Spinner";
 import { Text } from "@/components/ui/text/Text";
 import { folderQueries } from "@/entities/folder/folder.queries";
-import { useUpdateLinkFolderMutation } from "@/entities/link/link.queries";
+import { useMoveLinksToFolderMutation } from "@/entities/link/link.queries";
 import { UNCATEGORIZED_FOLDER } from "./archive.constants";
 import type { ArchiveFolder } from "./archive.types";
 import { toArchiveFolderData } from "./archive.utils";
@@ -24,7 +24,7 @@ import { FolderSelectItem } from "./components/FolderSelectItem";
  * 링크를 다른 폴더로 옮기는 바텀시트 (Figma "archive-detail / folder-move").
  *
  * 대상 링크는 라우트 파라미터 `ids`(쉼표 구분)로 받는다 — 컨텍스트 메뉴의 한 개도,
- * 선택 모드의 여러 개도 같은 시트를 쓴다. 서버에 벌크 이동 API 가 없어 링크마다 PATCH 한다.
+ * 선택 모드의 여러 개도 같은 시트를 쓴다. 이동은 일괄 API 한 번으로 처리한다.
  */
 export function MoveLinksSheet() {
   const router = useRouter();
@@ -52,7 +52,7 @@ function MoveLinksSheetContent() {
   const dismiss = useSheetDismiss();
   const router = useRouter();
   const { show } = useSnackbar();
-  const { mutateAsync: moveLink } = useUpdateLinkFolderMutation();
+  const { mutateAsync: moveLinks } = useMoveLinksToFolderMutation();
 
   const { ids, folderId, title } = useLocalSearchParams<{
     ids?: string;
@@ -81,12 +81,9 @@ function MoveLinksSheetContent() {
 
     setIsMoving(true);
     try {
-      // 벌크 API 가 없어 링크마다 보낸다. 하나라도 실패하면 시트를 열어둔 채 재시도하게 한다.
-      await Promise.all(
-        linkIds.map((linkId) =>
-          moveLink({ linkId, folderId: toRequestFolderId(target.id) }),
-        ),
-      );
+      // 서버가 한 transaction 으로 전부 옮기거나 전부 실패시키므로, 실패하면 시트를 열어둔
+      // 채 그대로 다시 보내면 된다(일부만 옮겨진 상태가 남지 않는다).
+      await moveLinks({ linkIds, folderId: toRequestFolderId(target.id) });
       show(
         snackbarPresets.success(`${target.name}에 저장됨`, () =>
           router.push({
