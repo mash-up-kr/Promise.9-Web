@@ -48,6 +48,11 @@ export interface AsyncBoundaryProps {
  *
  * 이 화면에서 특히 중요한 이유: 폴더 조회가 실패해도 저장 화면 자체는 살아 있어야
  * 미분류로라도 저장할 수 있다.
+ *
+ * 앱·웹(`src/components/ui/async-boundary`)과 모양이 겹치지만 합치지 않는다 — `shared/` 는
+ * 컴포넌트를 두지 않는 곳이고(structure.md), 두 구현은 앞으로도 갈린다: 저쪽은 `resetKeys` 와
+ * 던져진 에러를 fallback 에 넘기고, 이쪽은 devtools 를 따로 열어야 보이는 패널 사정 때문에
+ * 콘솔 로깅을 한다.
  */
 export function AsyncBoundary({
   pending,

@@ -1,3 +1,4 @@
+import { createStorageEntry } from "./chromeStorage";
 import type { SaveLinkPayload } from "./messages";
 import type { SaveSession } from "./saveSession";
 
@@ -12,24 +13,22 @@ export interface SaveRecord {
   request: SaveLinkPayload;
 }
 
-const SAVE_KEY = "save";
-
 /**
  * 저장 기록은 `storage.session` 에 둔다 — 브라우저를 껐다 켜면 사라지는 게 맞는 값이고,
  * 재시도 한도도 시안 정책상 세션 단위다.
  */
-export async function readSaveRecord(): Promise<SaveRecord | null> {
-  const stored = await chrome.storage.session.get(SAVE_KEY);
+const saveRecord = createStorageEntry<SaveRecord>("session", "save");
 
-  return (stored[SAVE_KEY] as SaveRecord | undefined) ?? null;
+export function readSaveRecord(): Promise<SaveRecord | null> {
+  return saveRecord.read();
 }
 
-export async function writeSaveRecord(record: SaveRecord): Promise<void> {
-  await chrome.storage.session.set({ [SAVE_KEY]: record });
+export function writeSaveRecord(record: SaveRecord): Promise<void> {
+  return saveRecord.write(record);
 }
 
-export async function clearSaveRecord(): Promise<void> {
-  await chrome.storage.session.remove(SAVE_KEY);
+export function clearSaveRecord(): Promise<void> {
+  return saveRecord.clear();
 }
 
 /**
@@ -39,15 +38,5 @@ export async function clearSaveRecord(): Promise<void> {
 export function subscribeSaveRecord(
   onChange: (record: SaveRecord | null) => void,
 ): () => void {
-  const listener = (
-    changes: Record<string, chrome.storage.StorageChange>,
-    areaName: string,
-  ) => {
-    if (areaName !== "session" || !(SAVE_KEY in changes)) return;
-    onChange((changes[SAVE_KEY]?.newValue as SaveRecord | undefined) ?? null);
-  };
-
-  chrome.storage.onChanged.addListener(listener);
-
-  return () => chrome.storage.onChanged.removeListener(listener);
+  return saveRecord.subscribe(onChange);
 }

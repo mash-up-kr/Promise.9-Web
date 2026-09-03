@@ -18,18 +18,40 @@ export function useActiveTab(): ActiveTab | null {
     void getActiveTab().then(setTab);
   }, []);
 
+  // onUpdated 는 모든 탭의 모든 변화(로딩 진행 등)마다 온다 — 보이지도 않는 탭 때문에
+  // 패널이 매번 다시 조회·렌더하지 않도록, 화면에 쓰는 필드가 바뀐 활성 탭만 통과시킨다.
+  const handleUpdated = useCallback(
+    (
+      _tabId: number,
+      changeInfo: chrome.tabs.OnUpdatedInfo,
+      tab: chrome.tabs.Tab,
+    ) => {
+      if (!tab.active) return;
+      if (
+        changeInfo.url === undefined &&
+        changeInfo.title === undefined &&
+        changeInfo.favIconUrl === undefined
+      ) {
+        return;
+      }
+
+      refresh();
+    },
+    [refresh],
+  );
+
   useEffect(() => {
     refresh();
 
     // onActivated: 다른 탭으로 전환. onUpdated: 같은 탭에서 페이지 이동·제목 확정.
     chrome.tabs.onActivated.addListener(refresh);
-    chrome.tabs.onUpdated.addListener(refresh);
+    chrome.tabs.onUpdated.addListener(handleUpdated);
 
     return () => {
       chrome.tabs.onActivated.removeListener(refresh);
-      chrome.tabs.onUpdated.removeListener(refresh);
+      chrome.tabs.onUpdated.removeListener(handleUpdated);
     };
-  }, [refresh]);
+  }, [refresh, handleUpdated]);
 
   return tab;
 }

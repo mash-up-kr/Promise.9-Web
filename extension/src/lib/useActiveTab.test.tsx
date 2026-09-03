@@ -59,6 +59,32 @@ describe("useActiveTab", () => {
     await waitFor(() => expect(result.current?.url).toBe(SECOND.url));
   });
 
+  // 브라우저는 어느 탭이든 로딩이 진행될 때마다 onUpdated 를 쏜다 — 전부 다시 읽으면
+  // 보이지도 않는 탭 때문에 패널이 매번 리렌더된다.
+  it("보고 있지 않은 탭의 변경은 무시한다", async () => {
+    const chromeMock = installChromeMock({ tab: FIRST });
+
+    const { result } = renderHook(() => useActiveTab());
+    await waitFor(() => expect(result.current?.url).toBe(FIRST.url));
+
+    act(() =>
+      chromeMock.emitTabUpdated({ url: SECOND.url }, { active: false }),
+    );
+
+    expect(chromeMock.queryTabs).toHaveBeenCalledTimes(1);
+  });
+
+  it("우리가 쓰지 않는 필드만 바뀌면 무시한다", async () => {
+    const chromeMock = installChromeMock({ tab: FIRST });
+
+    const { result } = renderHook(() => useActiveTab());
+    await waitFor(() => expect(result.current?.url).toBe(FIRST.url));
+
+    act(() => chromeMock.emitTabUpdated({ status: "loading" }));
+
+    expect(chromeMock.queryTabs).toHaveBeenCalledTimes(1);
+  });
+
   it("언마운트하면 탭 리스너를 정리한다", async () => {
     const chromeMock = installChromeMock({ tab: FIRST });
 
