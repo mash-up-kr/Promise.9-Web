@@ -1,7 +1,4 @@
-import {
-  createFolderSchema,
-  FOLDER_NAME_MAX_LENGTH,
-} from "./archive.contracts";
+import { createFolderSchema, FOLDER_NAME_MAX_LENGTH } from "./folder.contracts";
 
 describe("createFolderSchema", () => {
   test("유효한 이름·색상을 통과시킨다", () => {

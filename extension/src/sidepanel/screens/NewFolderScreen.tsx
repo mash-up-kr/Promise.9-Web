@@ -5,6 +5,10 @@ import {
   FOLDER_TONE_HEX,
   type SelectableFolderColor,
 } from "@shared/folder/folder.constants";
+import {
+  createFolderSchema,
+  FOLDER_NAME_MAX_LENGTH,
+} from "@shared/folder/folder.contracts";
 import clsx from "clsx";
 import { useState } from "react";
 
@@ -32,26 +36,25 @@ export function NewFolderScreen({ onCancel, onCreated }: NewFolderScreenProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const createFolder = useCreateFolderMutation();
-  const trimmedName = folderName.trim();
+  // 이름 규칙은 앱·웹의 폼과 같은 스키마를 쓴다 — 여기서만 통과하는 이름이 있으면
+  // 웹의 폼으로는 고칠 수 없는 폴더가 생긴다.
+  const parsed = createFolderSchema.safeParse({ folderName, color });
 
   const submit = () => {
-    if (!trimmedName || createFolder.isPending) return;
+    if (!parsed.success || createFolder.isPending) return;
 
     setErrorMessage(null);
-    createFolder.mutate(
-      { folderName: trimmedName, color },
-      {
-        onSuccess: (created) => onCreated(created.folderId),
-        onError: (error) => {
-          // 서버 계약 판별은 엔티티가, 사용자 문구는 화면이 정한다.
-          setErrorMessage(
-            isDuplicateFolderNameError(error)
-              ? "이미 있는 폴더 이름이에요"
-              : "폴더를 만들지 못했어요. 잠시 후 다시 시도해주세요",
-          );
-        },
+    createFolder.mutate(parsed.data, {
+      onSuccess: (created) => onCreated(created.folderId),
+      onError: (error) => {
+        // 서버 계약 판별은 엔티티가, 사용자 문구는 화면이 정한다.
+        setErrorMessage(
+          isDuplicateFolderNameError(error)
+            ? "이미 있는 폴더 이름이에요"
+            : "폴더를 만들지 못했어요. 잠시 후 다시 시도해주세요",
+        );
       },
-    );
+    });
   };
 
   return (
@@ -71,6 +74,7 @@ export function NewFolderScreen({ onCancel, onCreated }: NewFolderScreenProps) {
             }
           }}
           placeholder="새 폴더"
+          maxLength={FOLDER_NAME_MAX_LENGTH}
           // 화면에 들어오자마자 이름부터 치도록.
           // biome-ignore lint/a11y/noAutofocus: 이 화면의 유일한 입력이고 진입 목적이 이름 입력이다
           autoFocus
@@ -108,7 +112,7 @@ export function NewFolderScreen({ onCancel, onCreated }: NewFolderScreenProps) {
         </ActionButton>
         <ActionButton
           onClick={submit}
-          disabled={!trimmedName || createFolder.isPending}
+          disabled={!parsed.success || createFolder.isPending}
         >
           저장
         </ActionButton>
