@@ -17,6 +17,7 @@ import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import {
   ApiError,
   apiClient,
+  refreshAccessToken,
   setAccessToken,
   setTokenPersistence,
 } from "@shared/api";
@@ -256,6 +257,7 @@ describe("LoginScreen", () => {
       process.env.EXPO_PUBLIC_EXTENSION_ID = "ext-id";
       chromeGlobal.chrome = { runtime: { sendMessage } };
       sendMessage.mockReset().mockResolvedValue({ ok: true });
+      (refreshAccessToken as jest.Mock).mockReset().mockResolvedValue("web-at");
       mockSignIn.mockResolvedValue(googleSuccess());
       // /auth/social 과 /auth/extension-token 을 같은 mock 이 받는다 — URL 로 구분.
       mockPost.mockImplementation((url: string) =>
@@ -373,6 +375,50 @@ describe("LoginScreen", () => {
       );
 
       expect(closeTab).toHaveBeenCalled();
+    });
+
+    // 확장 ID 가 없거나 크롬이 아니면 인계가 성립하지 않는다 — 그때 연결 화면에 세우면
+    // 로그인은 끝났는데 성공할 수 없는 '다시 시도' 만 남아 사용자가 갇힌다.
+    test("연결할 수 없는 브라우저면 평범한 웹 로그인으로 진행한다", async () => {
+      mockParams.mockReturnValue({ return: "extension" });
+      delete chromeGlobal.chrome;
+      await renderScreen();
+
+      await fireEvent.press(
+        screen.getByRole("button", { name: "Google로 계속하기" }),
+      );
+
+      await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+      expect(sendMessage).not.toHaveBeenCalled();
+    });
+
+    // 저장된 리프레시 토큰이 서버에서 폐기됐을 수 있다. 재시도는 영원히 같은 결과라
+    // 소셜 로그인으로 되돌려야 한다.
+    test("웹 세션이 만료됐으면 소셜 로그인으로 되돌린다", async () => {
+      mockParams.mockReturnValue({ return: "extension" });
+      setTokenPersistence(loggedInPersistence);
+      setAccessToken(null);
+      (refreshAccessToken as jest.Mock).mockRejectedValue(new Error("401"));
+      await renderScreen();
+
+      expect(
+        await screen.findByRole("button", { name: "Google로 계속하기" }),
+      ).toBeOnTheScreen();
+      expect(sendMessage).not.toHaveBeenCalled();
+    });
+
+    test("연결에 실패하면 홈으로 나갈 수 있다", async () => {
+      mockParams.mockReturnValue({ return: "extension" });
+      setTokenPersistence(loggedInPersistence);
+      setAccessToken("web-at");
+      sendMessage.mockResolvedValue({ ok: false });
+      await renderScreen();
+
+      await fireEvent.press(
+        await screen.findByRole("button", { name: "홈으로 가기" }),
+      );
+
+      expect(mockReplace).toHaveBeenCalledWith("/");
     });
 
     test("return 쿼리가 없으면 익스텐션에 아무것도 보내지 않는다", async () => {

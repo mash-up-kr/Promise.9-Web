@@ -16,7 +16,11 @@ jest.mock("@shared/api", () => {
 import { apiClient, refreshAccessToken, setAccessToken } from "@shared/api";
 import { EXTENSION_LOGIN_MESSAGE_SOURCE } from "@shared/extension/extensionLogin.contracts";
 
-import { connectExtension, isExtensionReturn } from "./extensionHandoff";
+import {
+  canConnectExtension,
+  connectExtension,
+  isExtensionReturn,
+} from "./extensionHandoff";
 
 const mockPost = apiClient.post as jest.Mock;
 const mockRefresh = refreshAccessToken as jest.Mock;
@@ -51,13 +55,28 @@ describe("isExtensionReturn", () => {
   });
 });
 
+describe("canConnectExtension", () => {
+  test("확장 ID 와 chrome.runtime 이 둘 다 있어야 연결을 시도할 수 있다", () => {
+    process.env.EXPO_PUBLIC_EXTENSION_ID = "ext-id";
+    chromeGlobal.chrome = { runtime: { sendMessage: jest.fn() } };
+    expect(canConnectExtension()).toBe(true);
+
+    delete chromeGlobal.chrome;
+    expect(canConnectExtension()).toBe(false);
+
+    chromeGlobal.chrome = { runtime: { sendMessage: jest.fn() } };
+    process.env.EXPO_PUBLIC_EXTENSION_ID = "";
+    expect(canConnectExtension()).toBe(false);
+  });
+});
+
 describe("connectExtension", () => {
   test("익스텐션용 토큰쌍을 발급받아 계약 모양의 메시지로 보낸다", async () => {
     process.env.EXPO_PUBLIC_EXTENSION_ID = "ext-id";
     const sendMessage = jest.fn().mockResolvedValue({ ok: true });
     chromeGlobal.chrome = { runtime: { sendMessage } };
 
-    await expect(connectExtension()).resolves.toBe(true);
+    await expect(connectExtension()).resolves.toEqual({ ok: true });
     expect(mockPost).toHaveBeenCalledWith("/auth/extension-token");
     expect(sendMessage).toHaveBeenCalledWith("ext-id", {
       source: EXTENSION_LOGIN_MESSAGE_SOURCE,
@@ -77,7 +96,7 @@ describe("connectExtension", () => {
     };
     setAccessToken(null);
 
-    await expect(connectExtension()).resolves.toBe(true);
+    await expect(connectExtension()).resolves.toEqual({ ok: true });
     expect(mockRefresh).toHaveBeenCalled();
     expect(mockPost).toHaveBeenCalledWith("/auth/extension-token");
   });
@@ -86,7 +105,10 @@ describe("connectExtension", () => {
   test("chrome.runtime 이 없으면 토큰쌍을 발급하지 않는다", async () => {
     process.env.EXPO_PUBLIC_EXTENSION_ID = "ext-id";
 
-    await expect(connectExtension()).resolves.toBe(false);
+    await expect(connectExtension()).resolves.toEqual({
+      ok: false,
+      reason: "unsupported",
+    });
     expect(mockPost).not.toHaveBeenCalled();
   });
 
@@ -95,25 +117,68 @@ describe("connectExtension", () => {
     const sendMessage = jest.fn();
     chromeGlobal.chrome = { runtime: { sendMessage } };
 
-    await expect(connectExtension()).resolves.toBe(false);
+    await expect(connectExtension()).resolves.toEqual({
+      ok: false,
+      reason: "unsupported",
+    });
     expect(mockPost).not.toHaveBeenCalled();
     expect(sendMessage).not.toHaveBeenCalled();
   });
 
-  test("발급 요청이 실패하면 false 로 끝난다", async () => {
+  test("발급 요청이 실패하면 실패로 끝난다", async () => {
     process.env.EXPO_PUBLIC_EXTENSION_ID = "ext-id";
     chromeGlobal.chrome = { runtime: { sendMessage: jest.fn() } };
     mockPost.mockRejectedValue(new Error("network"));
 
-    await expect(connectExtension()).resolves.toBe(false);
+    await expect(connectExtension()).resolves.toEqual({
+      ok: false,
+      reason: "failed",
+    });
   });
 
-  test("익스텐션이 응답하지 않아도(throw) false 로 끝난다", async () => {
+  // 웹 세션이 만료·폐기된 경우 — 재시도해봐야 같은 결과라, 다시 로그인시켜야 한다.
+  test("웹 세션을 복원할 수 없으면 미인증으로 알린다", async () => {
+    process.env.EXPO_PUBLIC_EXTENSION_ID = "ext-id";
+    chromeGlobal.chrome = { runtime: { sendMessage: jest.fn() } };
+    setAccessToken(null);
+    mockRefresh.mockRejectedValue(new Error("401"));
+
+    await expect(connectExtension()).resolves.toEqual({
+      ok: false,
+      reason: "unauthenticated",
+    });
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  // 발급만 되고 전달되지 않은 토큰쌍은 아무도 쓰지 않는다 — 폐기하지 않으면 재시도할 때마다
+  // 살아 있는 리프레시 토큰이 서버에 쌓인다.
+  test("인계에 실패하면 발급받은 토큰쌍을 폐기한다", async () => {
+    process.env.EXPO_PUBLIC_EXTENSION_ID = "ext-id";
+    chromeGlobal.chrome = {
+      runtime: { sendMessage: jest.fn().mockResolvedValue({ ok: false }) },
+    };
+
+    await expect(connectExtension()).resolves.toEqual({
+      ok: false,
+      reason: "failed",
+    });
+    expect(mockPost).toHaveBeenCalledWith("/auth/logout", {
+      refreshToken: "ext-rt",
+    });
+  });
+
+  test("익스텐션이 응답하지 않아도(throw) 토큰쌍을 폐기하고 끝난다", async () => {
     process.env.EXPO_PUBLIC_EXTENSION_ID = "ext-id";
     chromeGlobal.chrome = {
       runtime: { sendMessage: jest.fn().mockRejectedValue(new Error("no")) },
     };
 
-    await expect(connectExtension()).resolves.toBe(false);
+    await expect(connectExtension()).resolves.toEqual({
+      ok: false,
+      reason: "failed",
+    });
+    expect(mockPost).toHaveBeenCalledWith("/auth/logout", {
+      refreshToken: "ext-rt",
+    });
   });
 });
