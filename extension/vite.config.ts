@@ -34,6 +34,10 @@ export default defineConfig(({ mode }) => {
       ...(process.env.VITEST ? [] : [crx({ manifest })]),
     ],
     resolve: {
+      // `shared/` 는 extension/ 밖이라 기본 해석으로는 루트 node_modules 의 사본을 집는다.
+      // 루트가 버전을 올리는 순간 사본이 둘이 되고, shared 의 쿼리 훅이 익스텐션의
+      // QueryClientProvider 를 못 보게 된다("No QueryClient set"). 항상 익스텐션 것 하나만 쓴다.
+      dedupe: ["react", "react-dom", "@tanstack/react-query"],
       alias: {
         "@": resolvePath("./src"),
         "@shared": resolvePath("../shared"),
