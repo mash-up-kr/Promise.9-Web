@@ -330,6 +330,48 @@ describe("SidePanelApp", () => {
     ).toBeInTheDocument();
   });
 
+  // 초기 읽기는 storage IPC 두 번이라, 그 사이에 background 가 쓴 결과가 도착할 수 있다.
+  // 그 변경을 흘려버리면 뒤늦게 도착한 낡은 스냅샷이 확정돼 패널이 '저장 중' 에 굳는다.
+  it("초기 읽기가 끝나기 전에 도착한 저장 결과도 반영한다", async () => {
+    const request = {
+      url: SAVABLE_TAB.url,
+      folderId: null,
+      memo: null,
+      reminderAt: null,
+    };
+    const chromeMock = installChromeMock({
+      tab: SAVABLE_TAB,
+      local: { refreshToken: "stored-refresh-token" },
+      session: {
+        save: {
+          session: {
+            url: SAVABLE_TAB.url,
+            phase: "saving",
+            linkId: null,
+            failureCount: 0,
+          },
+          request,
+        } satisfies SaveRecord,
+      },
+    });
+
+    renderPanel(<SidePanelApp />);
+    // 아직 아무것도 await 하지 않았다 — 초기 읽기의 promise 가 풀리기 전이다.
+    chromeMock.emitSessionChange("save", {
+      session: {
+        url: SAVABLE_TAB.url,
+        phase: "success",
+        linkId: 42,
+        failureCount: 0,
+      },
+      request,
+    } satisfies SaveRecord);
+
+    expect(
+      await screen.findByText("링크 저장을 완료했어요"),
+    ).toBeInTheDocument();
+  });
+
   it("다른 탭에서 만든 저장 결과는 따라오지 않는다", async () => {
     installChromeMock({
       tab: SAVABLE_TAB,

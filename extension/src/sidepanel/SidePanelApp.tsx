@@ -30,11 +30,6 @@ const RESULT_KIND: Partial<Record<SavePhase, ResultKind>> = {
   "retry-limit": "retry-limit",
 };
 
-interface SessionState {
-  loggedIn: boolean;
-  saveRecord: SaveRecord | null;
-}
-
 /**
  * 링크 하나에 대해 사용자가 작성 중인 내용.
  *
@@ -68,31 +63,35 @@ const closeOverlay = (previous: Draft): Draft => ({
 
 export function SidePanelApp() {
   const tab = useActiveTab();
-  const [session, setSession] = useState<SessionState | null>(null);
+  // 저장소에서 아직 못 읽었으면 undefined — 그동안은 아무것도 그리지 않는다.
+  const [loggedIn, setLoggedIn] = useState<boolean>();
+  const [saveRecord, setSaveRecord] = useState<SaveRecord | null>();
   const [draft, setDraft] = useState<Draft>(() => emptyDraft(undefined));
 
   useEffect(() => {
     let cancelled = false;
-
-    void (async () => {
-      const [loggedIn, saveRecord] = await Promise.all([
-        isLoggedIn(),
-        readSaveRecord(),
-      ]);
-      if (!cancelled) setSession({ loggedIn, saveRecord });
-    })();
+    // 초기 읽기는 storage IPC 라 몇 밀리초가 걸린다. 그 사이 background 가 쓴 변경이 도착하면
+    // 뒤늦게 풀린 초기 값이 더 낡았으므로 버린다 — 안 그러면 이미 끝난 저장이 '저장 중' 으로
+    // 되돌아가 패널이 굳는다. (그래서 읽기보다 구독을 먼저 건다.)
+    let sawSaveChange = false;
+    let sawLoginChange = false;
 
     // 저장은 background 에서 돌기 때문에 결과는 storage 변경으로 도착한다.
-    const unsubscribeSave = subscribeSaveRecord((saveRecord) => {
-      setSession((previous) =>
-        previous ? { ...previous, saveRecord } : previous,
-      );
+    const unsubscribeSave = subscribeSaveRecord((record) => {
+      sawSaveChange = true;
+      setSaveRecord(record);
     });
     // 로그인도 마찬가지 — 웹앱 탭 → background 에서 끝나고 저장소 변경으로만 알 수 있다.
-    const unsubscribeLogin = subscribeLoggedIn((loggedIn) => {
-      setSession((previous) =>
-        previous ? { ...previous, loggedIn } : previous,
-      );
+    const unsubscribeLogin = subscribeLoggedIn((value) => {
+      sawLoginChange = true;
+      setLoggedIn(value);
+    });
+
+    void isLoggedIn().then((value) => {
+      if (!cancelled && !sawLoginChange) setLoggedIn(value);
+    });
+    void readSaveRecord().then((record) => {
+      if (!cancelled && !sawSaveChange) setSaveRecord(record);
     });
 
     return () => {
@@ -125,9 +124,7 @@ export function SidePanelApp() {
   }, []);
 
   // 활성 탭·로그인 상태를 읽는 동안. chrome 로컬 조회라 사실상 한 프레임이다.
-  if (!tab || !session) return null;
-
-  const { loggedIn, saveRecord } = session;
+  if (!tab || loggedIn === undefined || saveRecord === undefined) return null;
 
   if (!isSavableUrl(url)) {
     return <ResultScreen kind="restricted" onAction={closePanel} />;
