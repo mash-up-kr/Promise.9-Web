@@ -35,8 +35,9 @@
 │   ├─ api/                #   HTTP 클라이언트 · 에러 서브클래스 · 토큰
 │   ├─ entities/           #   데이터 단위 — 서버 계약(쿼리·스키마·errorCode). 화면을 모른다
 │   │   ├─ link/           #     GET/POST /links ...
-│   │   └─ folder/         #     GET/POST/PATCH/DELETE /folders ...
-│   └─ folder/             #   폴더 색 팔레트 상수
+│   │   ├─ folder/         #     GET/POST/PATCH/DELETE /folders ...
+│   │   └─ auth/           #     POST /auth/logout · DELETE /auth/withdraw
+│   └─ folder/             #   폴더 색 팔레트 상수 · 이름 규칙(우리가 정한 값)
 │
 └─ extension/              # 크롬 익스텐션 (자체 package.json + 자체 번들러)
     └─ src/

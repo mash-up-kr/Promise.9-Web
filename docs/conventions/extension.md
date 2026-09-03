@@ -9,7 +9,9 @@
 - 디자인 토큰은 앱·웹과 같은 파일(`shared/styles/tokens.css`)을 import 한다. 값을 다시 정의하지 않는다.
 
 ## 기본
-- Manifest V3. `permissions` 는 최소한으로 — 아이콘 클릭으로만 열리므로 상시 `tabs` 대신 `activeTab` 을 쓴다.
+- Manifest V3. `permissions` 는 최소한으로. 다만 **사이드패널은 `tabs` 가 필요하다** — 패널이 열린 채
+  사용자가 탭을 옮겨다녀도 저장 대상이 따라가야 하는데, 아이콘 클릭 시점의 한 탭에만 부여되는
+  `activeTab` 으로는 탭 전환을 따라갈 수 없다(근거: `extension/manifest.config.ts`).
 - 빌드/설치 명령은 반드시 `extension/` 안에서: `cd extension && pnpm ...` (또는 `pnpm --filter promise9-extension ...`).
 - 로컬 확인 방법(탭에서 UI 만 / 실제 확장 설치)은 `extension/README.md`.
 
