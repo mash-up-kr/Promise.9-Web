@@ -1,6 +1,8 @@
 import { apiClient } from "@shared/api";
 import { useMutation } from "@tanstack/react-query";
 
+// 세 표면이 함께 쓴다 — 설정의 로그아웃·탈퇴, 그리고 익스텐션 연결에 실패해 발급만 되고
+// 쓰이지 않은 토큰쌍을 폐기할 때(src/features/auth/extensionHandoff).
 // POST /auth/logout · DELETE /auth/withdraw — 서버는 body 의 refreshToken 으로 세션을 식별한다(→204).
 // 요청은 검증할 필요가 없고 응답 바디도 없어 zod 계약을 두지 않는다.
 export async function logoutRequest(refreshToken: string): Promise<void> {

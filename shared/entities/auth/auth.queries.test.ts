@@ -4,7 +4,7 @@ jest.mock("@shared/api", () => ({
 
 import { apiClient } from "@shared/api";
 
-import { logoutRequest, withdrawRequest } from "./auth-actions.queries";
+import { logoutRequest, withdrawRequest } from "./auth.queries";
 
 const mockPost = apiClient.post as jest.Mock;
 const mockDelete = apiClient.delete as jest.Mock;
