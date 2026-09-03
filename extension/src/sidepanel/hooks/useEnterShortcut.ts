@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
  * 패널 어디에 포커스가 있든 Enter 로 주 동작을 실행한다(시안 공통 'Enter' 안내).
  *
  * 메모 입력 중에는 줄바꿈이 우선이라 textarea 안에서는 동작하지 않는다.
+ * 눌러 두어 자동 반복되는 keydown(`repeat`)은 한 번 누른 것으로 본다 — 안 그러면 저장·재시도가
+ * 초당 수십 번 발사된다.
  */
 export function useEnterShortcut(
   onEnter: (() => void) | undefined,
@@ -17,7 +19,7 @@ export function useEnterShortcut(
     if (!enabled) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Enter" || event.isComposing) return;
+      if (event.key !== "Enter" || event.isComposing || event.repeat) return;
       if (event.target instanceof HTMLTextAreaElement) return;
 
       event.preventDefault();

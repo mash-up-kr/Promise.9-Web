@@ -29,7 +29,13 @@ export async function handleLoginHandoff(
     return { ok: false, reason: "알 수 없는 메시지" };
   }
 
-  await logInWithTokens(parsed.data.accessToken, parsed.data.refreshToken);
+  // 저장(chrome.storage)이 실패해도 반드시 응답한다 — 던지고 말면 sendResponse 가 호출되지
+  // 않고, 웹앱 탭은 포트가 닫힐 때까지 "연결 중" 화면에 묶인다.
+  try {
+    await logInWithTokens(parsed.data.accessToken, parsed.data.refreshToken);
+  } catch {
+    return { ok: false, reason: "토큰을 저장하지 못함" };
+  }
 
   return { ok: true };
 }

@@ -60,13 +60,30 @@ async function retrySave(): Promise<void> {
   await runSave(previous.request);
 }
 
+/**
+ * 저장은 한 번에 한 건만 돈다.
+ *
+ * 패널은 Enter 로도 저장할 수 있어서 키를 두 번 누르거나 누르고 있으면 같은 메시지가 연달아
+ * 온다. 그때마다 요청을 띄우면 두 번째가 서버의 "이미 저장됨" 응답을 받고, 그 결과가 먼저
+ * 끝난 성공 기록을 덮어써 사용자에게는 방금 저장한 링크가 중복으로 보인다.
+ */
+let inFlight: Promise<void> | null = null;
+
+function start(run: () => Promise<void>): void {
+  if (inFlight) return;
+
+  inFlight = run().finally(() => {
+    inFlight = null;
+  });
+}
+
 function handleMessage(message: ExtensionMessage): void {
   switch (message.type) {
     case MESSAGE_TYPE.saveLink:
-      void runSave(message.payload);
+      start(() => runSave(message.payload));
       return;
     case MESSAGE_TYPE.retrySave:
-      void retrySave();
+      start(retrySave);
       return;
   }
 }

@@ -45,6 +45,15 @@ describe("handleLoginHandoff", () => {
     expect(logInWithTokens).not.toHaveBeenCalled();
   });
 
+  // 응답을 못 보내면 웹앱 탭은 "연결 중" 인 채로 포트가 닫힐 때까지 수십 초를 기다린다.
+  it("토큰 저장에 실패해도 실패로 응답한다", async () => {
+    logInWithTokens.mockRejectedValue(new Error("storage 쓰기 실패"));
+
+    const result = await handleLoginHandoff(MESSAGE, WEB_APP);
+
+    expect(result.ok).toBe(false);
+  });
+
   it("계약 모양이 아닌 메시지는 거부한다", async () => {
     const result = await handleLoginHandoff({ hello: "world" }, WEB_APP);
 
