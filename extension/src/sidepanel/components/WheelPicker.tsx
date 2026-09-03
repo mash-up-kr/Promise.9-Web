@@ -44,12 +44,18 @@ export function WheelColumn<T extends string | number>({
 }: WheelColumnProps<T>) {
   const listRef = useRef<HTMLFieldSetElement>(null);
   const selectedIndex = options.indexOf(value);
+  // 방금 사용자의 스크롤이 알린 인덱스. 스크롤이 만든 값까지 스냅 지점으로 되돌리면
+  // 손가락·트랙패드가 아직 움직이는 중에 위치가 당겨져 관성이 끊기고 한 칸씩만 넘어간다.
+  const scrolledIndexRef = useRef(-1);
 
   // 값이 밖에서 바뀌면(프리셋 선택 등) 그 항목이 가운데 오도록 맞춘다.
+  // 스크롤 중 정렬은 브라우저의 scroll-snap 에 맡긴다.
   useEffect(() => {
     const list = listRef.current;
     if (!list || selectedIndex < 0) return;
+    if (scrolledIndexRef.current === selectedIndex) return;
 
+    scrolledIndexRef.current = -1;
     const top = selectedIndex * ITEM_HEIGHT;
     if (Math.abs(list.scrollTop - top) > 1) list.scrollTop = top;
   }, [selectedIndex]);
@@ -58,8 +64,13 @@ export function WheelColumn<T extends string | number>({
     const list = listRef.current;
     if (!list) return;
 
-    const next = options[Math.round(list.scrollTop / ITEM_HEIGHT)];
-    if (next !== undefined && next !== value) onChange(next);
+    const index = Math.round(list.scrollTop / ITEM_HEIGHT);
+    const next = options[index];
+    if (next === undefined || next === value) return;
+
+    // onChange 보다 먼저 기록해야 뒤이은 렌더의 effect 가 이 값을 보고 위치를 건드리지 않는다.
+    scrolledIndexRef.current = index;
+    onChange(next);
   };
 
   return (
