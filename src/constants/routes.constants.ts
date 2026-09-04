@@ -45,3 +45,21 @@ export function searchHref(keyword: string) {
     params: { q: keyword },
   } as const satisfies Href;
 }
+
+/**
+ * 공유 익스텐션 → 앱 인계 경로(스킴 뒤, 선행 슬래시 없음). 로그인 화면이 `next` 로
+ * 인앱 저장 시트(`url` 프리필)까지 이어준다 — iOS 카카오처럼 익스텐션 안에서 끝낼 수 없는 로그인용.
+ */
+export function shareLoginHandoffPath(sharedUrl: string): string {
+  const next = `${ROUTES.CREATE_LINK}?url=${encodeURIComponent(sharedUrl)}`;
+  return `login?next=${encodeURIComponent(next)}`;
+}
+
+// 로그인 후 이동 대상은 앱 내부 경로만 — 외부 URL·프로토콜 상대 경로는 홈으로 대체한다.
+export function isInternalHref(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.startsWith("/") &&
+    !value.startsWith("//")
+  );
+}

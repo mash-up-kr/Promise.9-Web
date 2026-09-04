@@ -1,10 +1,11 @@
-import { useRouter } from "expo-router";
+import type { Href } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
-import { ROUTES } from "@/constants/routes.constants";
+import { isInternalHref, ROUTES } from "@/constants/routes.constants";
 
 import { useSocialLoginMutation } from "./api/auth.queries";
 import { SOCIAL_PROVIDERS, type SocialProvider } from "./auth.constants";
@@ -28,6 +29,9 @@ export function LoginScreen() {
   const [pendingProvider, setPendingProvider] = useState<SocialProvider | null>(
     null,
   );
+  // 공유 익스텐션 인계처럼 로그인 뒤 돌아갈 곳이 있으면 next 로 받는다(내부 경로만).
+  const { next } = useLocalSearchParams<{ next?: string }>();
+  const destination: Href = isInternalHref(next) ? (next as Href) : ROUTES.HOME;
 
   const handleSocialLogin = async (provider: SocialProvider) => {
     setPendingProvider(provider);
@@ -52,7 +56,7 @@ export function LoginScreen() {
         onSuccess: () => {
           setPendingProvider(null);
           // TODO(#53): 온보딩 화면이 생기면 isNewUser 로 분기한다. 지금은 신규·기존 모두 홈으로.
-          router.replace(ROUTES.HOME);
+          router.replace(destination);
         },
         onError: (error) => {
           setPendingProvider(null);

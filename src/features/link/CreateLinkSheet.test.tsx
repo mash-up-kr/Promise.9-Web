@@ -12,6 +12,11 @@ const mockBack = jest.fn();
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
 const mockCanGoBack = jest.fn(() => true);
+// mock 접두사라 jest.mock 팩토리에서 참조 가능 — 재할당은 current 로만 한다(바깥 let 재할당은
+// 이 babel/jest-hoist 조합에서 read-only 에러가 난다. LinkDetailScreen.test.tsx 와 동일 패턴).
+const mockSearchParams: { current: Record<string, string | undefined> } = {
+  current: {},
+};
 jest.mock("expo-router", () => ({
   useRouter: () => ({
     back: mockBack,
@@ -19,6 +24,7 @@ jest.mock("expo-router", () => ({
     push: mockPush,
     canGoBack: mockCanGoBack,
   }),
+  useLocalSearchParams: () => mockSearchParams.current,
 }));
 jest.mock("expo-clipboard", () => ({
   hasStringAsync: jest.fn().mockResolvedValue(false),
@@ -145,6 +151,7 @@ describe("CreateLinkSheet", () => {
     mockPush.mockClear();
     mockCanGoBack.mockClear();
     mockCanGoBack.mockReturnValue(true);
+    mockSearchParams.current = {};
     mockGet.mockReset();
     mockGetByUrl();
     mockPost.mockReset();
@@ -541,5 +548,23 @@ describe("CreateLinkSheet", () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  test("url 파라미터가 있으면 URL 필드와 프리뷰를 미리 채운다", async () => {
+    mockSearchParams.current = { url: "https://toss.tech/a" };
+    mockGetByUrl();
+    await renderSheet();
+
+    expect(screen.getByPlaceholderText("URL").props.value).toBe(
+      "https://toss.tech/a",
+    );
+    await waitFor(() =>
+      expect(mockGet).toHaveBeenCalledWith(
+        "/links/preview",
+        expect.objectContaining({
+          params: expect.objectContaining({ url: "https://toss.tech/a" }),
+        }),
+      ),
+    );
   });
 });

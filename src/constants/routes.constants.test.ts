@@ -1,8 +1,10 @@
 import {
   archiveDetailHref,
+  isInternalHref,
   linkDetailHref,
   moveLinksHref,
   ROUTES,
+  shareLoginHandoffPath,
 } from "./routes.constants";
 
 describe("routes.constants", () => {
@@ -42,5 +44,22 @@ describe("routes.constants", () => {
       pathname: "/link/[id]",
       params: { id: "link-1" },
     });
+  });
+
+  test("공유 URL 을 로그인 후 저장 시트로 잇는 딥링크 경로를 만든다", () => {
+    const path = shareLoginHandoffPath("https://toss.tech/a?b=1&c=2");
+
+    expect(path.startsWith("login?next=")).toBe(true);
+    const next = decodeURIComponent(path.slice("login?next=".length));
+    expect(next).toBe(
+      `/create-link?url=${encodeURIComponent("https://toss.tech/a?b=1&c=2")}`,
+    );
+  });
+
+  test("내부 경로만 허용한다", () => {
+    expect(isInternalHref("/create-link?url=x")).toBe(true);
+    expect(isInternalHref("//evil.com")).toBe(false);
+    expect(isInternalHref("https://evil.com")).toBe(false);
+    expect(isInternalHref(undefined)).toBe(false);
   });
 });
