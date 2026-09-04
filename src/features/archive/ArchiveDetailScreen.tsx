@@ -1,3 +1,8 @@
+import {
+  linkQueries,
+  useDeleteLinkMutation,
+  useRestoreLinkMutation,
+} from "@shared/entities/link/link.queries";
 import type { Link } from "@shared/types/link.types";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
@@ -7,7 +12,6 @@ import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import {
   AlertDialog,
@@ -27,11 +31,6 @@ import {
   moveLinksHref,
   ROUTES,
 } from "@/constants/routes.constants";
-import {
-  linkQueries,
-  useDeleteLinkMutation,
-  useRestoreLinkMutation,
-} from "@/entities/link/link.queries";
 import { shareUrl } from "@/utils/share";
 import { SYSTEM_FOLDERS, TRASH_FOLDER } from "./archive.constants";
 import type { LinkSortOption } from "./archive.types";

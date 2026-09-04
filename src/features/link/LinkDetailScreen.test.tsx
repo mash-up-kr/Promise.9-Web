@@ -46,7 +46,7 @@ jest.mock("expo-router", () => ({
 
 jest.mock("@/utils/share", () => ({ shareUrl: jest.fn() }));
 // useSuspenseQuery 목이 인자를 무시하므로 linkQueries.detail 은 호출만 되면 되는 스텁이면 충분.
-jest.mock("@/entities/link/link.queries", () => ({
+jest.mock("@shared/entities/link/link.queries", () => ({
   linkQueries: {
     detail: () => ({ queryKey: ["link", "detail"], queryFn: async () => {} }),
   },

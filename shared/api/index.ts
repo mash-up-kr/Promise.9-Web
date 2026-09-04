@@ -5,6 +5,8 @@ export type {
   SuccessResponse,
 } from "./api.types";
 export {
+  type ExtensionTokenResponse,
+  extensionTokenResponseSchema,
   type RefreshResponse,
   refreshResponseSchema,
   type SocialLoginRequest,

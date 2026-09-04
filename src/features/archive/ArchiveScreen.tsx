@@ -1,3 +1,9 @@
+import { isFolderOrderMismatchError } from "@shared/entities/folder/folder.errors";
+import {
+  folderQueries,
+  useDeleteFolderMutation,
+  useReorderFoldersMutation,
+} from "@shared/entities/folder/folder.queries";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Check, Search } from "lucide-react-native";
@@ -9,7 +15,6 @@ import Animated, {
   useSharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import {
   AlertDialog,
   AlertDialogButton,
@@ -22,12 +27,6 @@ import { ListGroup } from "@/components/ui/list-group/ListGroup";
 import { ListSection } from "@/components/ui/list-section/ListSection";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { Text } from "@/components/ui/text/Text";
-import { isFolderOrderMismatchError } from "@/entities/folder/folder.errors";
-import {
-  folderQueries,
-  useDeleteFolderMutation,
-  useReorderFoldersMutation,
-} from "@/entities/folder/folder.queries";
 import { SYSTEM_FOLDERS } from "./archive.constants";
 import type { ArchiveFolder, SystemFolderKey } from "./archive.types";
 import { applyFolderOrder, toArchiveFolderData } from "./archive.utils";

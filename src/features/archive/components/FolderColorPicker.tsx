@@ -1,10 +1,11 @@
 import {
+  FOLDER_COLOR_OPTIONS,
   FOLDER_TONE_HEX,
   type SelectableFolderColor,
 } from "@shared/folder/folder.constants";
 import { Pressable, View } from "react-native";
 
-import { FOLDER_COLOR_OPTIONS, FOLDER_SOLID_CLASS } from "../archive.constants";
+import { FOLDER_SOLID_CLASS } from "../archive.constants";
 
 // Figma 그리드는 6열 고정이라 wrap 에 맡기지 않고 행을 직접 나눈다
 // (폭이 넓어지면 wrap 은 한 행에 7개를 넣어 배치가 깨진다).

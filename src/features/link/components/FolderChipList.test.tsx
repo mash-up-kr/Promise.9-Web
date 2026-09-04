@@ -9,7 +9,7 @@ jest.mock("@shared/api", () => ({ apiClient: { get: jest.fn() } }));
 const mockPush = jest.fn();
 jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush }) }));
 
-import { folderKeys } from "@/entities/folder/folder.keys";
+import { folderKeys } from "@shared/entities/folder/folder.keys";
 
 import { FolderChipList } from "./FolderChipList";
 

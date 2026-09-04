@@ -1,4 +1,5 @@
 import { isHttpError, NetworkError } from "@shared/api";
+import { linkQueries } from "@shared/entities/link/link.queries";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { isString } from "es-toolkit";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -13,7 +14,6 @@ import Animated, {
   LinearTransition,
 } from "react-native-reanimated";
 import { useDebounce } from "react-simplikit";
-
 import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { EmptyState } from "@/components/ui/empty-state/EmptyState";
@@ -23,7 +23,6 @@ import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwa
 import { Illustration } from "@/components/ui/illustration/Illustration";
 import { Spinner } from "@/components/ui/spinner/Spinner";
 import { VStack } from "@/components/ui/vstack/VStack";
-import { linkQueries } from "@/entities/link/link.queries";
 import { SearchBar } from "@/features/search/components/SearchBar";
 
 import { LinkGrid } from "./components/LinkGrid";

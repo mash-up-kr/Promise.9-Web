@@ -1,3 +1,6 @@
+import { folderQueries } from "@shared/entities/folder/folder.queries";
+import { linkQueries } from "@shared/entities/link/link.queries";
+import { recommendationQueries } from "@shared/entities/recommendation/recommendation.queries";
 import {
   useQueryClient,
   useSuspenseQueries,
@@ -13,7 +16,6 @@ import {
 } from "react";
 import { RefreshControl, View } from "react-native";
 import Animated from "react-native-reanimated";
-
 import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { EmptyState } from "@/components/ui/empty-state/EmptyState";
@@ -25,10 +27,6 @@ import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { Text } from "@/components/ui/text/Text";
 import { VStack } from "@/components/ui/vstack/VStack";
-
-import { folderQueries } from "@/entities/folder/folder.queries";
-import { linkQueries } from "@/entities/link/link.queries";
-import { recommendationQueries } from "@/entities/recommendation/recommendation.queries";
 
 import { FolderSection } from "./components/FolderSection";
 import { HomeSkeleton } from "./components/HomeSkeleton";

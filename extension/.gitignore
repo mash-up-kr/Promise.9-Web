@@ -1,0 +1,7 @@
+dist/
+node_modules/
+.env.local
+.env.*.local
+
+# 확장 ID 고정용 개인키 — 공개키만 manifest 에 들어간다
+key.pem

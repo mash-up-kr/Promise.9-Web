@@ -1,10 +1,8 @@
 import { clearTokens, getRefreshToken } from "@shared/api";
+import { useWithdrawMutation } from "@shared/entities/auth/auth.queries";
 import { useRouter } from "expo-router";
 import { useCallback } from "react";
-
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
-
-import { useWithdrawMutation } from "../api/auth-actions.queries";
 
 /**
  * 회원 탈퇴 — 파괴적이라 서버 성공을 신뢰 기준으로 삼는다.
