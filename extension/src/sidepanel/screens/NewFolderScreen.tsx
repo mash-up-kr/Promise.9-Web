@@ -58,64 +58,67 @@ export function NewFolderScreen({ onCancel, onCreated }: NewFolderScreenProps) {
   };
 
   return (
-    <div className="flex flex-col p-4">
-      <h1 className="text-center text-heading-3 text-text-strong">
-        새 폴더 만들기
-      </h1>
+    // 날짜·시간 선택, 로그인 화면과 같은 배치 — 패널 높이를 채우고 내용은 세로 가운데에 둔다.
+    <div className="flex h-full flex-col justify-center px-4 py-6">
+      <div className="mx-auto w-full max-w-100">
+        <h1 className="text-center text-heading-3 text-text-strong">
+          새 폴더 만들기
+        </h1>
 
-      <label className="mt-6 block">
-        <span className="text-heading-3 text-text-strong">이름</span>
-        <input
-          value={folderName}
-          onChange={(event) => setFolderName(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.nativeEvent.isComposing) {
-              submit();
-            }
-          }}
-          placeholder="새 폴더"
-          maxLength={FOLDER_NAME_MAX_LENGTH}
-          // 화면에 들어오자마자 이름부터 치도록.
-          // biome-ignore lint/a11y/noAutofocus: 이 화면의 유일한 입력이고 진입 목적이 이름 입력이다
-          autoFocus
-          className="mt-3 h-12 w-full rounded-2xl bg-background-list px-4 text-body-1 text-text-normal outline-none placeholder:text-text-assistive"
-        />
-      </label>
+        <label className="mt-6 block">
+          <span className="text-heading-3 text-text-strong">이름</span>
+          <input
+            value={folderName}
+            onChange={(event) => setFolderName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+                submit();
+              }
+            }}
+            placeholder="새 폴더"
+            maxLength={FOLDER_NAME_MAX_LENGTH}
+            // 화면에 들어오자마자 이름부터 치도록.
+            // biome-ignore lint/a11y/noAutofocus: 이 화면의 유일한 입력이고 진입 목적이 이름 입력이다
+            autoFocus
+            className="mt-3 h-12 w-full rounded-2xl bg-background-list px-4 text-body-1 text-text-normal outline-none placeholder:text-text-assistive"
+          />
+        </label>
 
-      <fieldset className="mt-6">
-        <legend className="text-heading-3 text-text-strong">색상</legend>
-        <div className="mt-3 space-y-3">
-          {COLOR_ROWS.map((row) => (
-            <div key={row[0]} className="flex justify-between">
-              {row.map((option) => (
-                <Swatch
-                  key={option}
-                  color={option}
-                  selected={option === color}
-                  onSelect={() => setColor(option)}
-                />
-              ))}
-            </div>
-          ))}
+        <fieldset className="mt-6">
+          <legend className="text-heading-3 text-text-strong">색상</legend>
+          <div className="mt-3 space-y-3">
+            {COLOR_ROWS.map((row) => (
+              <div key={row[0]} className="flex justify-between">
+                {row.map((option) => (
+                  <Swatch
+                    key={option}
+                    color={option}
+                    selected={option === color}
+                    onSelect={() => setColor(option)}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </fieldset>
+
+        {errorMessage ? (
+          <p role="alert" className="mt-3 text-action-destructive text-body-3">
+            {errorMessage}
+          </p>
+        ) : null}
+
+        <div className="mt-6 flex gap-2">
+          <ActionButton variant="secondary" onClick={onCancel}>
+            취소
+          </ActionButton>
+          <ActionButton
+            onClick={submit}
+            disabled={!parsed.success || createFolder.isPending}
+          >
+            저장
+          </ActionButton>
         </div>
-      </fieldset>
-
-      {errorMessage ? (
-        <p role="alert" className="mt-3 text-action-destructive text-body-3">
-          {errorMessage}
-        </p>
-      ) : null}
-
-      <div className="mt-6 flex gap-2">
-        <ActionButton variant="secondary" onClick={onCancel}>
-          취소
-        </ActionButton>
-        <ActionButton
-          onClick={submit}
-          disabled={!parsed.success || createFolder.isPending}
-        >
-          저장
-        </ActionButton>
       </div>
     </div>
   );
