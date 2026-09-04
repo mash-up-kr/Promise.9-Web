@@ -9,6 +9,7 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "bundleIdentifier": "com.mashup.promise9",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "CFBundleDisplayName": "링띵동"
       }
@@ -69,6 +70,7 @@
         }
       ],
       "expo-secure-store",
+      "expo-apple-authentication",
       [
         "@react-native-google-signin/google-signin",
         {
@@ -78,7 +80,7 @@
       [
         "@react-native-seoul/kakao-login",
         {
-          "kakaoAppKey": "KAKAO_NATIVE_APP_KEY_PLACEHOLDER"
+          "kakaoAppKey": "d0957b9703accce469748d981d81f796"
         }
       ],
       [

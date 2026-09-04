@@ -5,6 +5,10 @@ export type {
   SuccessResponse,
 } from "./api.types";
 export {
+  type KakaoExchangeRequest,
+  type KakaoExchangeResponse,
+  kakaoExchangeRequestSchema,
+  kakaoExchangeResponseSchema,
   type RefreshResponse,
   refreshResponseSchema,
   type SocialLoginRequest,

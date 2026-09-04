@@ -13,6 +13,7 @@ jest.mock("@shared/api", () => {
 });
 
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { login as kakaoLogin } from "@react-native-seoul/kakao-login";
 import { ApiError, apiClient } from "@shared/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -22,6 +23,7 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 import type { AxiosResponse } from "axios";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
@@ -37,6 +39,7 @@ import { LoginScreen } from "./LoginScreen";
 
 const mockPost = apiClient.post as jest.Mock;
 const mockSignIn = GoogleSignin.signIn as jest.Mock;
+const mockKakaoLogin = kakaoLogin as jest.Mock;
 
 const metrics: Metrics = {
   frame: { x: 0, y: 0, width: 375, height: 812 },
@@ -84,6 +87,8 @@ describe("LoginScreen", () => {
     mockReplace.mockClear();
     mockPost.mockReset();
     mockSignIn.mockReset();
+    mockKakaoLogin.mockReset();
+    (AppleAuthentication.signInAsync as jest.Mock).mockReset();
     // useSocialAuth 의 구글 경로는 webClientId 가 있어야 진행된다.
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = "test-web-client-id";
   });
@@ -92,7 +97,7 @@ describe("LoginScreen", () => {
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = originalWebClientId;
   });
 
-  test("소셜 버튼 3개를 모두 노출하되, 미지원 provider 는 비활성으로 둔다", async () => {
+  test("소셜 버튼 3개를 노출하고, iOS 에선 셋 다 활성화한다", async () => {
     await renderScreen();
 
     // 시안대로 3개 모두 노출한다.
@@ -100,21 +105,71 @@ describe("LoginScreen", () => {
     const kakao = screen.getByRole("button", { name: "카카오로 계속하기" });
     const apple = screen.getByRole("button", { name: "Apple로 계속하기" });
 
-    // 구글만 활성, 아직 서버 미구현인 카카오·애플은 비활성(disabled).
+    // 구글·카카오는 플랫폼 무관 활성. 애플은 iOS 만 지원 — 이 테스트 환경(Platform.OS==="ios")에선 활성.
+    // (웹·안드로이드 비활성은 auth.constants.test.ts 가 검증한다.)
     expect(google.props.accessibilityState.disabled).toBe(false);
-    expect(kakao.props.accessibilityState.disabled).toBe(true);
-    expect(apple.props.accessibilityState.disabled).toBe(true);
+    expect(kakao.props.accessibilityState.disabled).toBe(false);
+    expect(apple.props.accessibilityState.disabled).toBe(false);
   });
 
-  test("미지원(카카오) 버튼을 눌러도 로그인 로직이 실행되지 않는다", async () => {
+  test("카카오 로그인 성공 시 idToken 으로 서버 로그인하고 홈으로 이동한다", async () => {
+    mockKakaoLogin.mockResolvedValue({
+      idToken: "kakao-id-token",
+      accessToken: "a",
+      refreshToken: "r",
+      accessTokenExpiresAt: new Date(),
+      refreshTokenExpiresAt: new Date(),
+      scopes: [],
+    });
+    mockPost.mockResolvedValue({
+      data: {
+        success: true,
+        data: { accessToken: "at", refreshToken: "rt", isNewUser: false },
+      },
+    });
     await renderScreen();
 
     await fireEvent.press(
       screen.getByRole("button", { name: "카카오로 계속하기" }),
     );
 
-    expect(mockSignIn).not.toHaveBeenCalled();
-    expect(mockPost).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(mockPost).toHaveBeenCalledWith("/auth/social", {
+        provider: "kakao",
+        idToken: "kakao-id-token",
+      }),
+    );
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+  });
+
+  test("애플 로그인 성공 시 idToken 으로 서버 로그인하고 홈으로 이동한다", async () => {
+    (AppleAuthentication.signInAsync as jest.Mock).mockResolvedValue({
+      identityToken: "apple-id-token",
+      user: "user-id",
+      email: null,
+      fullName: null,
+      realUserStatus: 1,
+      authorizationCode: "auth-code",
+    });
+    mockPost.mockResolvedValue({
+      data: {
+        success: true,
+        data: { accessToken: "at", refreshToken: "rt", isNewUser: false },
+      },
+    });
+    await renderScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Apple로 계속하기" }),
+    );
+
+    await waitFor(() =>
+      expect(mockPost).toHaveBeenCalledWith("/auth/social", {
+        provider: "apple",
+        idToken: "apple-id-token",
+      }),
+    );
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
   });
 
   test("구글 로그인 성공 시 idToken 으로 서버 로그인하고 홈으로 이동한다", async () => {
@@ -141,6 +196,7 @@ describe("LoginScreen", () => {
   });
 
   test("사용자가 로그인 창을 취소하면 아무 일도 일어나지 않는다", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     mockSignIn.mockResolvedValue({ type: "cancelled", data: null });
     await renderScreen();
 
@@ -150,6 +206,35 @@ describe("LoginScreen", () => {
 
     expect(mockPost).not.toHaveBeenCalled();
     expect(mockReplace).not.toHaveBeenCalled();
+    // 취소는 실패가 아니다 — 개발 콘솔에도 에러로 남기지 않는다.
+    expect(errorSpy).not.toHaveBeenCalledWith(
+      "소셜 로그인 실패",
+      expect.anything(),
+    );
+    errorSpy.mockRestore();
+  });
+
+  // 스낵바는 원인 불문 같은 문구라, 개발자가 실패 원인(미설정 env·팝업 차단·state 불일치 등)을
+  // 알 수 있게 콘솔에 남겨야 한다.
+  test("로그인이 실패하면 개발용으로 원인을 콘솔에 남긴다", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    // idToken 을 못 받아 getIdToken 이 throw 하는 경로(서버 호출 전 실패).
+    mockSignIn.mockResolvedValue(googleSuccess(null));
+    await renderScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Google로 계속하기" }),
+    );
+
+    await waitFor(() =>
+      expect(errorSpy).toHaveBeenCalledWith(
+        "소셜 로그인 실패",
+        "google",
+        expect.any(Error),
+      ),
+    );
+    expect(mockPost).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 
   test("idToken 을 못 받으면 실패 안내를 보여준다", async () => {
@@ -166,7 +251,8 @@ describe("LoginScreen", () => {
     expect(mockPost).not.toHaveBeenCalled();
   });
 
-  test("서버 로그인이 실패하면(errorCode 950003) 안내를 보여준다", async () => {
+  test("서버 로그인이 실패하면(errorCode 950003) 안내를 보여주고 원인을 콘솔에 남긴다", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     mockSignIn.mockResolvedValue(googleSuccess());
     mockPost.mockRejectedValue(
       apiError(401, AUTH_ERROR_CODE.SOCIAL_TOKEN_VERIFICATION_FAILED),
@@ -181,6 +267,15 @@ describe("LoginScreen", () => {
       await screen.findByText("로그인에 실패했어요. 다시 시도해주세요."),
     ).toBeOnTheScreen();
     expect(mockReplace).not.toHaveBeenCalled();
+    // 서버 검증 실패(mutate onError)도 원인 불문 같은 토스트라, 콘솔에 provider·원인을 남겨야 한다.
+    await waitFor(() =>
+      expect(errorSpy).toHaveBeenCalledWith(
+        "소셜 로그인 실패",
+        "google",
+        expect.anything(),
+      ),
+    );
+    errorSpy.mockRestore();
   });
 
   test("지원하지 않는 provider 면(errorCode 950004) 별도 안내를 보여준다", async () => {

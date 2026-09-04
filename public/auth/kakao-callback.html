@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>로그인 처리 중</title>
+  </head>
+  <body
+    style="
+      font-family:
+        -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 24px;
+      color: #444;
+    "
+  >
+    <p id="status">로그인 처리 중입니다. 이 창은 곧 닫힙니다.</p>
+    <script>
+      // 카카오 authorize code 플로우의 redirect_uri.
+      // 앱 번들을 태우지 않으려고 expo-router 라우트가 아니라 public/ 정적 파일로 둔다.
+      // 구글(id_token, fragment)과 달리 카카오는 code 를 query(?)로 돌려준다.
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var status = document.getElementById("status");
+
+        // COOP 로 opener 연결이 끊기면 결과를 전달할 수 없다 — 창을 닫지 말고 안내를 남긴다.
+        if (!window.opener) {
+          status.textContent =
+            "로그인 결과를 앱으로 전달하지 못했습니다. 이 창을 닫고 다시 시도해주세요.";
+          return;
+        }
+
+        window.opener.postMessage(
+          {
+            source: "promise9-kakao-auth",
+            code: params.get("code"),
+            state: params.get("state"),
+            error: params.get("error"),
+          },
+          // 팝업을 연 쪽과 같은 origin 으로만 보낸다 — 다른 창이 가로채지 못하게.
+          window.location.origin,
+        );
+
+        window.close();
+
+        // close() 는 COOP 등으로 막힐 수 있다. 그때 빈 화면처럼 보이지 않도록 안내를 남긴다.
+        setTimeout(function () {
+          status.textContent = "로그인이 완료되었습니다. 이 창을 닫아주세요.";
+        }, 300);
+      })();
+    </script>
+  </body>
+</html>
