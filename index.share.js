@@ -8,6 +8,12 @@ import "./src/global.css";
 // 익스텐션 자체 텍스트가 allowFontScaling 을 끈다 — 실측: 40 지정이 on/off 로 재현·해소.
 globalThis.__promise9ShareExtension = true;
 
+import { setTokenPersistence } from "./shared/api";
 import { ShareExtension } from "./src/features/share/ShareExtension";
+import { tokenPersistence } from "./src/lib/tokenStorage";
+
+// 익스텐션 프로세스는 메인 앱 _layout 을 거치지 않는다 — 여기서 저장소를 주입해야
+// 공유 키체인의 리프레시 토큰을 읽고, 로그인 결과도 남길 수 있다.
+setTokenPersistence(tokenPersistence);
 
 AppRegistry.registerComponent("shareExtension", () => ShareExtension);

@@ -41,6 +41,24 @@ export async function getRefreshToken(): Promise<string | null> {
   return persistence.getRefreshToken();
 }
 
+type TokenListener = () => void;
+
+const listeners = new Set<TokenListener>();
+
+function notifyTokenListeners(): void {
+  for (const listener of listeners) {
+    listener();
+  }
+}
+
+// 로그인·재발급·로그아웃으로 토큰이 바뀐 뒤 알린다 — 인증 가드가 세션 상태를 다시 읽는 신호.
+export function subscribeTokens(listener: TokenListener): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 // 로그인·재발급(RTR) 성공 시 호출 — accessToken 은 메모리에, refreshToken 은 주입된 저장소에 반영.
 // refreshToken 영속 저장을 먼저 끝낸 뒤 accessToken 을 갱신한다 — 저장 I/O 가 실패하면
 // 아무것도 바꾸지 않고 에러를 전파해, 메모리(ATK)와 저장소(RTK)가 어긋나는 걸 막는다.
@@ -50,10 +68,12 @@ export async function setTokens(
 ): Promise<void> {
   await persistence?.setRefreshToken(newRefreshToken);
   accessToken = newAccessToken;
+  notifyTokenListeners();
 }
 
 // 로그아웃·탈퇴·재발급 실패 시 호출.
 export async function clearTokens(): Promise<void> {
   accessToken = null;
   await persistence?.setRefreshToken(null);
+  notifyTokenListeners();
 }
