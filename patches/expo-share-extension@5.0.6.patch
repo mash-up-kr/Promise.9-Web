@@ -43,7 +43,7 @@ index 3816339ae033c7b49c7d683d4c432888d5080788..27f41d12b95e29fa951d46c48abb0ebc
          PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
          PRODUCT_NAME: `"${targetName}"`,
 diff --git a/plugin/swift/ShareExtensionViewController.swift b/plugin/swift/ShareExtensionViewController.swift
-index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..220afc7deb3a2e739e2e970a51e668326e09bd0d 100644
+index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..94c4085db3a424010f862d3de1e3a32c04cbfc29 100644
 --- a/plugin/swift/ShareExtensionViewController.swift
 +++ b/plugin/swift/ShareExtensionViewController.swift
 @@ -1,6 +1,7 @@
@@ -95,3 +95,21 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..220afc7deb3a2e739e2e970a51e66832
        
        var initialProps = sharedData ?? [:]
        
+@@ -130,6 +136,9 @@ class ShareExtensionViewController: UIViewController {
+       
+       configureRootView(reactNativeRootView, withBackgroundColorDict: backgroundFromInfoPlist, withHeight: heightFromInfoPlist)
+       view.addSubview(reactNativeRootView)
++      // 익스텐션 프로세스에선 RCTSharedApplication() 이 nil 이라 RCTPresentedViewController() 도
++      // nil 이다 — 소셜 로그인 SDK 가 프레젠팅 VC 를 찾도록 RN 오버라이드 훅에 이 VC 를 넣는다.
++      RCTUtilsUIOverride.setPresentedViewController(self)
+ 
+       // Hide loading indicator once React content is ready
+       self.loadingIndicator.stopAnimating()
+@@ -247,6 +256,7 @@ class ShareExtensionViewController: UIViewController {
+   private func cleanupAfterClose() {
+     if isCleanedUp { return }
+     isCleanedUp = true
++    RCTUtilsUIOverride.setPresentedViewController(nil)
+     
+     NotificationCenter.default.removeObserver(self)
+     

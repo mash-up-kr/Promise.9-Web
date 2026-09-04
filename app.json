@@ -55,6 +55,7 @@
           "displayName": "링띵동"
         }
       ],
+      "./plugins/withShareExtensionAuthUrlSchemes",
       [
         "./plugins/withAndroidAppLabel",
         {
