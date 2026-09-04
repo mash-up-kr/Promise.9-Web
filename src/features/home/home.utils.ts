@@ -1,34 +1,45 @@
 import type { FolderListResponse } from "@shared/entities/folder/folder.queries";
+import {
+  type LinkListResponse,
+  toLink,
+} from "@shared/entities/link/link.queries";
+import type { RecommendationResponse } from "@shared/entities/recommendation/recommendation.queries";
 import type { Folder } from "@shared/types/folder.types";
+import { uniqBy } from "es-toolkit";
 
 import { HOME_POLICY } from "./home.constants";
 import type { HomeKeyword, RemindLink } from "./home.types";
 
-/** 알림이 가까운 순 상위 N개. 빈 배열이면 호출부가 섹션을 숨긴다. */
-export function selectRemindLinks(links: RemindLink[]): RemindLink[] {
-  return [...links]
-    .sort((a, b) => Date.parse(a.reminderAt) - Date.parse(b.reminderAt))
-    .slice(0, HOME_POLICY.remind.maxLinks);
+/**
+ * 다시 볼 링크. `GET /links?reminder=true&sortBy=reminderAt&order=asc` 응답의 `select` 로 쓴다.
+ *
+ * 정렬(알림 가까운 순)·상한은 서버 요청이 맡으므로 순서를 그대로 둔다. 알림이 없는 항목은
+ * 계약상 오지 않지만, 오더라도 날짜 배지가 빈 카드를 그리지 않도록 뺀다. 빈 배열이면 섹션이 숨는다.
+ */
+export function selectRemindLinks(res: LinkListResponse): RemindLink[] {
+  return res.links.flatMap((item) =>
+    item.reminderAt === null
+      ? []
+      : [{ ...toLink(item), reminderAt: item.reminderAt }],
+  );
 }
 
 /**
- * 링크가 많은 순 상위 N개 키워드.
+ * 많이 저장한 키워드. `GET /recommendations` 응답의 `select` 로 쓴다.
  *
- * 태그가 몇 개 안 붙은 초기 사용자에게 빈약한 섹션을 보여주지 않으려고, 링크 3개 이상인
- * 태그가 3종류 이상 모였을 때만 노출한다(시안 정책). 미달이면 빈 배열이라 섹션이 숨는다.
+ * 노출 조건(링크 3개 이상인 후보 3개 이상)·정렬(링크 많은 순)은 서버 정책 — 미달이면 data 가
+ * null 로 와서 빈 배열이 되고 섹션이 숨는다. 같은 이름의 폴더와 태그가 함께 오면 칩이 겹쳐
+ * 보이므로 앞(링크 많은 쪽)만 남긴다.
  */
-export function selectTopKeywords(keywords: HomeKeyword[]): HomeKeyword[] {
-  const eligible = keywords.filter(
-    (keyword) => keyword.linkCount >= HOME_POLICY.keywords.minLinksPerTag,
-  );
-
-  if (eligible.length < HOME_POLICY.keywords.minVariety) {
+export function selectTopKeywords(res: RecommendationResponse): HomeKeyword[] {
+  if (!res) {
     return [];
   }
 
-  return eligible
-    .sort((a, b) => b.linkCount - a.linkCount)
-    .slice(0, HOME_POLICY.keywords.max);
+  return uniqBy(res.items, (item) => item.label).map((item) => ({
+    name: item.label,
+    linkCount: item.linkCount,
+  }));
 }
 
 type FolderListItem = FolderListResponse["folders"][number];

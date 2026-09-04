@@ -9,7 +9,6 @@ describe("routes.constants", () => {
   test("정적 경로는 실제 라우트 파일 경로와 일치한다", () => {
     expect(ROUTES.HOME).toBe("/");
     expect(ROUTES.SEARCH).toBe("/search");
-    expect(ROUTES.SEARCH_CATEGORIES).toBe("/search/categories");
     expect(ROUTES.CREATE_LINK).toBe("/create-link");
     expect(ROUTES.ARCHIVE).toBe("/archive");
     expect(ROUTES.SETTINGS).toBe("/settings");

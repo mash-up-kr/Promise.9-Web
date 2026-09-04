@@ -17,9 +17,16 @@ export function useWithdraw() {
 
   const withdraw = useCallback(async () => {
     const refreshToken = await getRefreshToken();
+    // 세션이 없으면(비정상 진입) 서버 탈퇴는 성공할 수 없다 — 재시도가 아니라
+    // 재로그인이 답이라, 로컬 세션을 정리하고 로그인으로 보낸다(issue #74).
+    if (!refreshToken) {
+      await clearTokens();
+      show({ message: "세션이 만료됐어요. 다시 로그인해주세요." });
+      router.replace("/(auth)/login");
+      return;
+    }
     try {
-      // refreshToken 이 없으면 빈 문자열로 요청 → 서버가 거부 → catch 로 수렴.
-      await mutateAsync(refreshToken ?? ""); // DELETE /auth/withdraw
+      await mutateAsync(refreshToken); // DELETE /auth/withdraw
       await clearTokens();
       router.replace("/(auth)/login");
     } catch {

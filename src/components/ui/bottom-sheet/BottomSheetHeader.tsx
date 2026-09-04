@@ -1,5 +1,6 @@
 import { Pressable, View } from "react-native";
 
+import { Spinner } from "@/components/ui/spinner/Spinner";
 import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
 
@@ -44,6 +45,7 @@ interface HeaderButtonProps {
   label: string;
   onPress: () => void;
   isDisabled?: boolean;
+  isPending?: boolean;
 }
 
 function HeaderButton({
@@ -51,19 +53,24 @@ function HeaderButton({
   label,
   onPress,
   isDisabled = false,
+  isPending = false,
 }: HeaderButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled: isDisabled }}
-      disabled={isDisabled}
+      accessibilityState={{ disabled: isDisabled || isPending }}
+      disabled={isDisabled || isPending}
       onPress={onPress}
       className={bottomSheetHeaderButtonStyles({ variant, isDisabled })}
     >
-      <Text className={buttonLabelStyles({ variant, isDisabled })}>
-        {label}
-      </Text>
+      {isPending ? (
+        <Spinner size="medium" tone="on-light" />
+      ) : (
+        <Text className={buttonLabelStyles({ variant, isDisabled })}>
+          {label}
+        </Text>
+      )}
     </Pressable>
   );
 }
@@ -76,6 +83,7 @@ export interface BottomSheetHeaderProps {
   onCancel: () => void;
   onConfirm: () => void;
   isConfirmDisabled?: boolean;
+  isConfirmPending?: boolean;
 }
 
 export function BottomSheetHeader({
@@ -86,6 +94,7 @@ export function BottomSheetHeader({
   onCancel,
   onConfirm,
   isConfirmDisabled = false,
+  isConfirmPending = false,
 }: BottomSheetHeaderProps) {
   return (
     <View className="h-15 flex-row items-center justify-between px-5">
@@ -109,6 +118,7 @@ export function BottomSheetHeader({
         label={confirmLabel}
         onPress={onConfirm}
         isDisabled={isConfirmDisabled}
+        isPending={isConfirmPending}
       />
     </View>
   );

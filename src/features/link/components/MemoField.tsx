@@ -10,9 +10,11 @@ const PLACEHOLDER = "저장한 이유나 기억하고 싶은 점을 적어보세
 export interface MemoFieldProps {
   memo: string;
   onChangeMemo: (value: string) => void;
+  /** 포커스 해제 시 — 자동 저장 트리거에 쓴다. */
+  onBlur?: () => void;
 }
 
-export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
+export function MemoField({ memo, onChangeMemo, onBlur }: MemoFieldProps) {
   const inputRef = useRef<TextInput>(null);
 
   // web(react-native-web)의 <textarea>는 내용이 늘어도 자동으로 커지지 않아 직접
@@ -27,33 +29,34 @@ export function MemoField({ memo, onChangeMemo }: MemoFieldProps) {
   }, [memo]);
 
   return (
-    <View className="gap-2">
-      <Text variant="heading-3">메모</Text>
-      <View className="w-full gap-3 rounded-[20px] bg-opacity-white-10 p-4">
-        <TextInput
-          ref={inputRef}
-          multiline
-          value={memo}
-          onChangeText={onChangeMemo}
-          placeholder={PLACEHOLDER}
-          maxLength={MEMO_MAX_LENGTH}
-          // placeholderTextColor 는 className 으로 못 받아 리터럴로 지정 — #ffffff4d = --color-opacity-white-30
-          placeholderTextColor="#ffffff4d"
-          // TODO: 저장 트리거(디바운스/blur) 정책은 백엔드 연동 확정 후 결정 —
-          // 지금은 상위 계획 스코프(mock + 로컬 state)에 따라 키 입력마다 즉시 반영한다.
-          className="min-h-5 w-full font-pretendard text-body-2-reading text-text-normal web:outline-none"
-          // iOS 상단 여백 이슈 우회
-          style={{ verticalAlign: "top", padding: 0 }}
-        />
-        {/* 카운터는 입력값이 있을 때만 노출한다(빈 상태=placeholder 만). */}
-        {memo.length > 0 && (
-          <Text
-            variant="caption-2"
-            className="w-full text-right text-text-alternative"
-          >
+    <View className="gap-3">
+      <Text variant="heading-2">메모</Text>
+      <View className="w-full gap-2">
+        {/* 입력 박스 — 최소 2줄(72px). 카운터는 박스 밖에 둔다(Figma 106:11562). */}
+        <View className="min-h-[72px] w-full rounded-[20px] bg-opacity-white-10 p-4">
+          <TextInput
+            ref={inputRef}
+            multiline
+            value={memo}
+            onChangeText={onChangeMemo}
+            onBlur={onBlur}
+            placeholder={PLACEHOLDER}
+            maxLength={MEMO_MAX_LENGTH}
+            // placeholderTextColor 는 className 으로 못 받아 리터럴로 지정 — #ffffff4d = --color-opacity-white-30
+            placeholderTextColor="#ffffff4d"
+            // TODO: 저장 트리거(디바운스/blur) 정책은 백엔드 연동 확정 후 결정 —
+            // 지금은 상위 계획 스코프(mock + 로컬 state)에 따라 키 입력마다 즉시 반영한다.
+            className="min-h-5 w-full font-pretendard text-body-2-reading text-text-normal web:outline-none"
+            // iOS 상단 여백 이슈 우회
+            style={{ verticalAlign: "top", padding: 0 }}
+          />
+        </View>
+        {/* 카운터는 항상 노출한다(Figma: 글자수 카운터 항상 노출). */}
+        <View className="w-full flex-row justify-end px-1">
+          <Text variant="caption-2" className="text-text-alternative">
             {memo.length}/{MEMO_MAX_LENGTH}
           </Text>
-        )}
+        </View>
       </View>
     </View>
   );

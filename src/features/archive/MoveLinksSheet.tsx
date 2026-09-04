@@ -1,5 +1,5 @@
 import { folderQueries } from "@shared/entities/folder/folder.queries";
-import { useUpdateLinkFolderMutation } from "@shared/entities/link/link.queries";
+import { useMoveLinksToFolderMutation } from "@shared/entities/link/link.queries";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
@@ -23,7 +23,7 @@ import { FolderSelectItem } from "./components/FolderSelectItem";
  * 링크를 다른 폴더로 옮기는 바텀시트 (Figma "archive-detail / folder-move").
  *
  * 대상 링크는 라우트 파라미터 `ids`(쉼표 구분)로 받는다 — 컨텍스트 메뉴의 한 개도,
- * 선택 모드의 여러 개도 같은 시트를 쓴다. 서버에 벌크 이동 API 가 없어 링크마다 PATCH 한다.
+ * 선택 모드의 여러 개도 같은 시트를 쓴다. 이동은 일괄 API 한 번으로 처리한다.
  */
 export function MoveLinksSheet() {
   const router = useRouter();
@@ -51,13 +51,16 @@ function MoveLinksSheetContent() {
   const dismiss = useSheetDismiss();
   const router = useRouter();
   const { show } = useSnackbar();
-  const { mutateAsync: moveLink } = useUpdateLinkFolderMutation();
+  const { mutateAsync: moveLinks } = useMoveLinksToFolderMutation();
 
-  const { ids, folderId } = useLocalSearchParams<{
+  const { ids, folderId, title } = useLocalSearchParams<{
     ids?: string;
     folderId?: string;
+    title?: string;
   }>();
   const linkIds = parseLinkIds(ids);
+  // 진입에 따라 타이틀이 다르다 — 링크 상세 "폴더선택"은 "폴더 선택", 그 외는 "폴더 이동".
+  const headerTitle = title ?? "폴더 이동";
 
   // 목적지 폴더(보관함 라우트 id). 링크가 원래 있던 폴더를 미리 골라둔 채로 연다.
   const [targetFolderId, setTargetFolderId] = useState<string | null>(
@@ -77,12 +80,9 @@ function MoveLinksSheetContent() {
 
     setIsMoving(true);
     try {
-      // 벌크 API 가 없어 링크마다 보낸다. 하나라도 실패하면 시트를 열어둔 채 재시도하게 한다.
-      await Promise.all(
-        linkIds.map((linkId) =>
-          moveLink({ linkId, folderId: toRequestFolderId(target.id) }),
-        ),
-      );
+      // 서버가 한 transaction 으로 전부 옮기거나 전부 실패시키므로, 실패하면 시트를 열어둔
+      // 채 그대로 다시 보내면 된다(일부만 옮겨진 상태가 남지 않는다).
+      await moveLinks({ linkIds, folderId: toRequestFolderId(target.id) });
       show(
         snackbarPresets.success(`${target.name}에 저장됨`, () =>
           router.push({
@@ -102,7 +102,7 @@ function MoveLinksSheetContent() {
   // 폴더 목록을 기다리는 동안에도 취소는 눌려야 하므로 저장만 잠근 헤더를 함께 보여준다.
   const placeholderHeader = (
     <BottomSheetHeader
-      title="폴더 이동"
+      title={headerTitle}
       onCancel={dismiss}
       onConfirm={() => {}}
       isConfirmDisabled
@@ -131,6 +131,7 @@ function MoveLinksSheetContent() {
       }
     >
       <FolderPicker
+        title={headerTitle}
         selectedFolderId={targetFolderId}
         isSaveDisabled={isSaveDisabled}
         onSelect={setTargetFolderId}
@@ -143,6 +144,7 @@ function MoveLinksSheetContent() {
 }
 
 interface FolderPickerProps {
+  title: string;
   selectedFolderId: string | null;
   /** 이동 중이거나 옮길 링크가 없으면 폴더를 골랐어도 저장할 수 없다. */
   isSaveDisabled: boolean;
@@ -153,6 +155,7 @@ interface FolderPickerProps {
 }
 
 function FolderPicker({
+  title,
   selectedFolderId,
   isSaveDisabled,
   onSelect,
@@ -168,7 +171,7 @@ function FolderPicker({
   return (
     <>
       <BottomSheetHeader
-        title="폴더 이동"
+        title={title}
         onCancel={onCancel}
         onConfirm={() => onSave(data.myFolders)}
         isConfirmDisabled={selectedFolderId === null || isSaveDisabled}

@@ -14,8 +14,9 @@ import { renderHook, waitFor } from "@testing-library/react-native";
 import {
   linkQueries,
   useDeleteLinkMutation,
+  useMoveLinksToFolderMutation,
   useRestoreLinkMutation,
-  useUpdateLinkFolderMutation,
+  useUpdateLinkMutation,
 } from "./link.queries";
 
 const mockGet = apiClient.get as jest.Mock;
@@ -47,36 +48,56 @@ const expectFolderCachesInvalidated = (invalidate: jest.SpyInstance) =>
     ).toEqual(expect.arrayContaining(["link", "folder"])),
   );
 
-describe("useUpdateLinkFolderMutation", () => {
+describe("useMoveLinksToFolderMutation", () => {
   beforeEach(() => {
     mockPatch.mockReset().mockResolvedValue({ data: { success: true } });
   });
 
-  it("링크의 폴더를 PATCH 로 바꾼다", async () => {
-    const { result } = await renderMutation(useUpdateLinkFolderMutation);
-    result.current.mutate({ linkId: 42, folderId: 3 });
+  it("선택한 링크를 한 번의 요청으로 옮긴다", async () => {
+    const { result } = await renderMutation(useMoveLinksToFolderMutation);
+    result.current.mutate({ linkIds: [42, 43], folderId: 3 });
 
-    await waitFor(() =>
-      expect(mockPatch).toHaveBeenCalledWith("/links/42", { folderId: 3 }),
-    );
+    await waitFor(() => expect(mockPatch).toHaveBeenCalledTimes(1));
+    expect(mockPatch).toHaveBeenCalledWith("/links/folder", {
+      linkIds: [42, 43],
+      folderId: 3,
+    });
   });
 
   it("미분류 이동은 folderId 를 null 로 보낸다", async () => {
-    const { result } = await renderMutation(useUpdateLinkFolderMutation);
-    result.current.mutate({ linkId: 42, folderId: null });
+    const { result } = await renderMutation(useMoveLinksToFolderMutation);
+    result.current.mutate({ linkIds: [42], folderId: null });
 
     await waitFor(() =>
-      expect(mockPatch).toHaveBeenCalledWith("/links/42", { folderId: null }),
+      expect(mockPatch).toHaveBeenCalledWith("/links/folder", {
+        linkIds: [42],
+        folderId: null,
+      }),
     );
   });
 
   it("성공하면 폴더 링크 목록과 폴더 목록 캐시를 버린다", async () => {
     const { result, invalidate } = await renderMutation(
-      useUpdateLinkFolderMutation,
+      useMoveLinksToFolderMutation,
     );
-    result.current.mutate({ linkId: 42, folderId: 3 });
+    result.current.mutate({ linkIds: [42], folderId: 3 });
 
     await expectFolderCachesInvalidated(invalidate);
+  });
+
+  it("성공하면 링크 상세 캐시를 한 번에 버린다(상세 화면 즉시 반영)", async () => {
+    const { result, invalidate } = await renderMutation(
+      useMoveLinksToFolderMutation,
+    );
+    result.current.mutate({ linkIds: [42, 43], folderId: 3 });
+
+    await waitFor(() =>
+      expect(
+        invalidate.mock.calls
+          .map(([options]) => options?.queryKey)
+          .filter((key) => key?.[0] === "link" && key?.[1] === "detail"),
+      ).toEqual([["link", "detail"]]),
+    );
   });
 });
 
@@ -125,17 +146,73 @@ describe("useRestoreLinkMutation", () => {
 });
 
 describe("linkQueries.detail", () => {
-  it("링크 상세를 조회해 data 를 반환한다", async () => {
+  it("링크 상세를 조회해 UI LinkDetail 로 매핑해 반환한다", async () => {
     mockGet.mockReset().mockResolvedValue({
-      data: { success: true, data: { linkId: 42, url: "https://toss.tech" } },
+      data: {
+        success: true,
+        data: {
+          linkId: 42,
+          url: "https://toss.tech",
+          folder: null,
+          thumbnailUrl: null,
+          title: "제목",
+          source: "toss.tech",
+          publishedAt: null,
+          savedAt: "2026-07-13T00:00:00.000Z",
+          isFavorite: false,
+          viewedAt: null,
+          processingStatus: "SUCCESS",
+          aiSummary: null,
+          tags: [],
+          memo: null,
+          relatedLinks: [],
+        },
+      },
     });
 
     const { queryFn } = linkQueries.detail("42");
-    const detail = await (queryFn as (context: unknown) => Promise<unknown>)({
+    const detail = (await (queryFn as (context: unknown) => Promise<unknown>)({
       signal: undefined,
-    });
+    })) as { linkId: number; url: string; title: string };
 
     expect(mockGet).toHaveBeenCalledWith("/links/42", { signal: undefined });
-    expect(detail).toEqual({ linkId: 42, url: "https://toss.tech" });
+    expect(detail.linkId).toBe(42);
+    expect(detail.url).toBe("https://toss.tech");
+    expect(detail.title).toBe("제목");
+  });
+});
+
+describe("useUpdateLinkMutation", () => {
+  beforeEach(() => {
+    mockPatch.mockReset().mockResolvedValue({ data: { success: true } });
+  });
+
+  it("전달된 필드만 PATCH 로 보낸다(메모)", async () => {
+    const { result } = await renderMutation(useUpdateLinkMutation);
+    result.current.mutate({ linkId: 42, memo: "새 메모" });
+
+    await waitFor(() =>
+      expect(mockPatch).toHaveBeenCalledWith("/links/42", { memo: "새 메모" }),
+    );
+  });
+
+  it("즐겨찾기만 보낼 수 있다", async () => {
+    const { result } = await renderMutation(useUpdateLinkMutation);
+    result.current.mutate({ linkId: 42, isFavorite: true });
+
+    await waitFor(() =>
+      expect(mockPatch).toHaveBeenCalledWith("/links/42", { isFavorite: true }),
+    );
+  });
+
+  it("성공 시 상세·폴더 캐시를 무효화한다", async () => {
+    const { result, invalidate } = await renderMutation(useUpdateLinkMutation);
+    result.current.mutate({ linkId: 42, memo: "x" });
+
+    await waitFor(() =>
+      expect(
+        invalidate.mock.calls.map(([options]) => options?.queryKey?.[0]),
+      ).toEqual(expect.arrayContaining(["link", "folder"])),
+    );
   });
 });

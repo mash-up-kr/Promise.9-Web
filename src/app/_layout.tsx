@@ -3,7 +3,6 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -11,6 +10,11 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { HeaderScrollProvider } from "@/components/ui/header/HeaderScrollProvider";
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
+import { isWeb } from "@/constants/platform.constants";
+import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
+import { SplashOverlay } from "@/features/splash/components/SplashOverlay";
+import { useSplashPhase } from "@/features/splash/hooks/useSplashPhase";
+import { setupOnlineManager } from "@/lib/online-manager";
 import { queryClient } from "@/lib/queryClient";
 import { tokenPersistence } from "@/lib/tokenStorage";
 import "@/global.css";
@@ -20,6 +24,7 @@ SplashScreen.preventAutoHideAsync();
 // 리프레시 토큰 영속 저장소 주입 — @/lib/tokenStorage 는 플랫폼별로 갈린다
 // (네이티브: expo-secure-store · 웹: tokenStorage.web.ts, localStorage).
 setTokenPersistence(tokenPersistence);
+setupOnlineManager();
 
 const transparentBackgroundTheme = {
   ...DefaultTheme,
@@ -44,14 +49,20 @@ export default function RootLayout() {
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
   });
 
-  useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded]);
+  // 초기화(폰트 + 인증 상태 확인)가 끝날 때까지 스플래시를 유지한다.
+  // 홈/로그인 분기는 (tabs) 의 인증 가드가 스플래시 아래에서 처리한다.
+  // 웹은 스플래시를 노출하지 않는다(웹 관례상 인위적 대기 없이 다크 배경만) —
+  // 실제 초기화가 짧아 최소 노출을 빼면 마스코트가 깜빡이는 플리커만 남는다.
+  const isSplashEnabled = !isWeb;
+  const authStatus = useAuthGate();
+  const splashPhase = useSplashPhase(fontsLoaded && authStatus !== "checking");
 
   if (!fontsLoaded) {
-    return null;
+    return (
+      <View className="flex-1 bg-background-base">
+        {isSplashEnabled && <SplashOverlay isFadingOut={false} />}
+      </View>
+    );
   }
 
   return (
@@ -104,6 +115,9 @@ export default function RootLayout() {
             </View>
           </KeyboardProvider>
         </SafeAreaProvider>
+        {isSplashEnabled && splashPhase !== "hidden" && (
+          <SplashOverlay isFadingOut={splashPhase === "fading"} />
+        )}
       </GestureHandlerRootView>
     </QueryClientProvider>
   );
