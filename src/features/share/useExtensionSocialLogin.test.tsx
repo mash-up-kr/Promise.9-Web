@@ -35,7 +35,10 @@ import type { PropsWithChildren } from "react";
 
 import { SocialLoginCancelledError } from "@/features/auth/auth.errors";
 
-import { useExtensionSocialLogin } from "./useExtensionSocialLogin";
+import {
+  EXTENSION_LOGIN_FAILED_MESSAGE,
+  useExtensionSocialLogin,
+} from "./useExtensionSocialLogin";
 
 const mockPost = apiClient.post as jest.Mock;
 
@@ -150,9 +153,7 @@ test("실패하면 오류 문구를 노출하고 다시 시도할 수 있다", a
   await act(() => result.current.login("google"));
 
   await waitFor(() =>
-    expect(result.current.errorMessage).toBe(
-      "로그인에 실패했어요. 다시 시도해주세요.",
-    ),
+    expect(result.current.errorMessage).toBe(EXTENSION_LOGIN_FAILED_MESSAGE),
   );
   expect(result.current.pendingProvider).toBeNull();
   errorSpy.mockRestore();

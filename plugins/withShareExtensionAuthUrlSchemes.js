@@ -41,7 +41,13 @@ module.exports = function withShareExtensionAuthUrlSchemes(config) {
         );
       }
       const parsed = plist.parse(fs.readFileSync(filePath, "utf8"));
-      parsed.CFBundleURLTypes = [{ CFBundleURLSchemes: [scheme] }];
+      const existingTypes = parsed.CFBundleURLTypes ?? [];
+      const hasScheme = existingTypes.some((type) =>
+        type.CFBundleURLSchemes?.includes(scheme),
+      );
+      parsed.CFBundleURLTypes = hasScheme
+        ? existingTypes
+        : [...existingTypes, { CFBundleURLSchemes: [scheme] }];
       fs.writeFileSync(filePath, plist.build(parsed));
       return config;
     },

@@ -59,7 +59,6 @@ describe("tokenStorage (Android — 접근 그룹 없음)", () => {
     };
     jest.doMock("expo-secure-store", () => mockSecureStore);
     jest.doMock("@/constants/platform.constants", () => ({ isIOS: false }));
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { tokenPersistence: androidPersistence } = require("./tokenStorage");
 
     return androidPersistence.getRefreshToken().then(() => {

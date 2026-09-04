@@ -18,9 +18,15 @@ jest.mock("@/features/auth/hooks/useSocialAuth", () => ({
   useSocialAuth: () => ({ getIdToken: mockGetIdToken }),
 }));
 
-import { apiClient, clearTokens, setTokenPersistence } from "@shared/api";
+import {
+  apiClient,
+  clearTokens,
+  setTokenPersistence,
+  setTokens,
+} from "@shared/api";
 import { ApiError, UnauthorizedError } from "@shared/api/errors";
 import {
+  act,
   render,
   screen,
   userEvent,
@@ -493,4 +499,23 @@ test("저장 중 세션이 끊기면(refresh 실패로 토큰 삭제) 로그인 
 
   expect(await screen.findByText("로그인이 필요해요")).toBeOnTheScreen();
   expect(screen.getByText("다시 로그인해주세요")).toBeOnTheScreen();
+});
+
+test("세션 이탈 후 재로그인하면 편집 시트(저장 화면)로 돌아간다", async () => {
+  mockPost.mockImplementation(async () => {
+    // client.ts 인터셉터가 refresh 실패 시 하는 일을 흉내 낸다.
+    await clearTokens();
+    throw unauthorizedError();
+  });
+  await render(<ShareExtension url="https://toss.tech/a" />);
+
+  await userEvent.setup().press(await screen.findByText("저장"));
+  expect(await screen.findByText("로그인이 필요해요")).toBeOnTheScreen();
+
+  storedRefreshToken = "rtk";
+  await act(async () => {
+    await setTokens("atk", "rtk");
+  });
+
+  expect(await screen.findByText("저장")).toBeOnTheScreen();
 });

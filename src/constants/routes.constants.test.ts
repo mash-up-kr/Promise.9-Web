@@ -60,6 +60,7 @@ describe("routes.constants", () => {
     expect(isInternalHref("/create-link?url=x")).toBe(true);
     expect(isInternalHref("//evil.com")).toBe(false);
     expect(isInternalHref("https://evil.com")).toBe(false);
+    expect(isInternalHref("/\\evil.com")).toBe(false);
     expect(isInternalHref(undefined)).toBe(false);
   });
 });

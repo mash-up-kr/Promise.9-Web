@@ -27,20 +27,22 @@ afterEach(async () => {
 
 test("setTokens 가 저장을 마친 뒤 구독자에게 알린다", async () => {
   const listener = jest.fn();
-  subscribeTokens(listener);
+  const unsubscribe = subscribeTokens(listener);
 
   await setTokens("atk", "rtk");
 
   expect(listener).toHaveBeenCalledTimes(1);
+  unsubscribe();
 });
 
 test("clearTokens 도 구독자에게 알린다", async () => {
   const listener = jest.fn();
-  subscribeTokens(listener);
+  const unsubscribe = subscribeTokens(listener);
 
   await clearTokens();
 
   expect(listener).toHaveBeenCalledTimes(1);
+  unsubscribe();
 });
 
 test("해제 함수를 호출하면 더 이상 알리지 않는다", async () => {

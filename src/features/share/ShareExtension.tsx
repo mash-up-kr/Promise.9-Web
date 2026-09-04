@@ -12,6 +12,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useReducer,
   useRef,
   useState,
@@ -109,6 +110,7 @@ export function ShareExtension({ url }: { url?: string }) {
   const status = useExtensionSession();
   // 한 번 인증됐다가 풀린 경우(저장 중 401 → refresh 실패)는 "다시 로그인" 안내로 구분한다.
   const wasAuthenticated = useRef(false);
+  // 렌더 중 기록하지만 단조 래치라 멱등 — effect 로 옮기면 만료 안내가 한 렌더 늦어진다.
   if (status === "authenticated") {
     wasAuthenticated.current = true;
   }
@@ -126,6 +128,11 @@ export function ShareExtension({ url }: { url?: string }) {
   }, []);
 
   const [isEditing, setIsEditing] = useState(true);
+
+  // 세션이 끊겨 저장 흐름이 내려가면 다음 로그인은 편집 시트(600)부터 시작해야 한다.
+  useEffect(() => {
+    if (status !== "authenticated") setIsEditing(true);
+  }, [status]);
 
   return (
     <QueryClientProvider client={extensionQueryClient}>
@@ -288,7 +295,7 @@ function ShareSaveFlow({
 
   const isEditing = state.phase === "editing" || state.phase === "saving";
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     onEditingChange(isEditing);
   }, [isEditing, onEditingChange]);
 
