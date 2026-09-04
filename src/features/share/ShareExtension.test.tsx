@@ -2,12 +2,24 @@ jest.mock("expo-share-extension", () => ({
   close: jest.fn(),
   openHostApp: jest.fn(),
 }));
-jest.mock("@shared/api", () => ({
-  apiClient: { get: jest.fn(), post: jest.fn() },
+jest.mock("@shared/api", () => {
+  const errors = jest.requireActual("@shared/api/errors");
+  const token = jest.requireActual("@shared/api/token");
+  const contracts = jest.requireActual("@shared/api/auth.contracts");
+  return {
+    apiClient: { get: jest.fn(), post: jest.fn() },
+    ...errors,
+    ...token,
+    ...contracts,
+  };
+});
+const mockGetIdToken = jest.fn();
+jest.mock("@/features/auth/hooks/useSocialAuth", () => ({
+  useSocialAuth: () => ({ getIdToken: mockGetIdToken }),
 }));
 
-import { apiClient } from "@shared/api";
-import { ApiError } from "@shared/api/errors";
+import { apiClient, clearTokens, setTokenPersistence } from "@shared/api";
+import { ApiError, UnauthorizedError } from "@shared/api/errors";
 import {
   render,
   screen,
@@ -62,8 +74,32 @@ function duplicateError(linkId?: number) {
   } as never);
 }
 
+function unauthorizedError() {
+  return new UnauthorizedError({
+    status: 401,
+    data: {
+      success: false,
+      error: {
+        code: 401,
+        errorCode: 950001,
+        message: "유효하지 않은 토큰입니다.",
+        timestamp: "",
+      },
+    },
+  } as never);
+}
+
+let storedRefreshToken: string | null = "rtk";
+
 beforeEach(() => {
   jest.clearAllMocks();
+  storedRefreshToken = "rtk";
+  setTokenPersistence({
+    getRefreshToken: async () => storedRefreshToken,
+    setRefreshToken: async (token) => {
+      storedRefreshToken = token;
+    },
+  });
   mockGet.mockImplementation((url: string) => {
     if (url === "/links/preview") {
       return Promise.resolve({
@@ -83,7 +119,7 @@ beforeEach(() => {
 
 test("공유받은 URL 을 표시한다", async () => {
   await render(<ShareExtension url="https://toss.tech/a" />);
-  expect(screen.getByText("https://toss.tech/a")).toBeOnTheScreen();
+  expect(await screen.findByText("https://toss.tech/a")).toBeOnTheScreen();
 });
 
 test("공유 URL 의 프리뷰 제목을 카드에 보여준다", async () => {
@@ -93,7 +129,7 @@ test("공유 URL 의 프리뷰 제목을 카드에 보여준다", async () => {
 
 test("취소를 누르면 퇴장 애니메이션 후 익스텐션을 닫는다", async () => {
   await render(<ShareExtension url="https://toss.tech/a" />);
-  await userEvent.setup().press(screen.getByText("취소"));
+  await userEvent.setup().press(await screen.findByText("취소"));
   await waitFor(() => expect(close).toHaveBeenCalled());
 });
 
@@ -102,7 +138,7 @@ test("저장 성공 → 성공 시트, '링크 보러가기'는 저장한 링크
   await render(<ShareExtension url="https://toss.tech/a" />);
   const user = userEvent.setup();
 
-  await user.press(screen.getByText("저장"));
+  await user.press(await screen.findByText("저장"));
 
   expect(await screen.findByText("링크 저장을 완료했어요")).toBeOnTheScreen();
   expect(mockPost).toHaveBeenCalledWith("/links", {
@@ -121,7 +157,7 @@ test("중복 저장 → 중복 시트, '링크 보러가기'는 기존 링크 �
   await render(<ShareExtension url="https://toss.tech/a" />);
   const user = userEvent.setup();
 
-  await user.press(screen.getByText("저장"));
+  await user.press(await screen.findByText("저장"));
 
   expect(await screen.findByText("이미 저장된 링크예요")).toBeOnTheScreen();
   expect(
@@ -137,7 +173,7 @@ test("중복인데 linkId 가 없으면(구버전 응답) '링크 보러가기'�
   await render(<ShareExtension url="https://toss.tech/a" />);
   const user = userEvent.setup();
 
-  await user.press(screen.getByText("저장"));
+  await user.press(await screen.findByText("저장"));
   await user.press(await screen.findByText("링크 보러가기"));
   expect(openHostApp).toHaveBeenCalledWith("");
 });
@@ -147,7 +183,7 @@ test("저장 실패 → 실패 시트, '다시 시도'가 같은 URL 로 재요�
   await render(<ShareExtension url="https://toss.tech/a" />);
   const user = userEvent.setup();
 
-  await user.press(screen.getByText("저장"));
+  await user.press(await screen.findByText("저장"));
   expect(await screen.findByText("링크를 저장하지 못했어요")).toBeOnTheScreen();
   expect(
     screen.getByText("네트워크 연결을 확인한 뒤 다시 시도해주세요"),
@@ -164,7 +200,7 @@ test("3회 연속 실패 → 반복 실패 시트, '닫기'는 익스텐션을 �
   await render(<ShareExtension url="https://toss.tech/a" />);
   const user = userEvent.setup();
 
-  await user.press(screen.getByText("저장"));
+  await user.press(await screen.findByText("저장"));
   expect(await screen.findByText("다시 시도")).toBeOnTheScreen();
   await user.press(screen.getByText("다시 시도"));
   expect(await screen.findByText("다시 시도")).toBeOnTheScreen();
@@ -181,7 +217,7 @@ test("성공 시트는 성공 마스코트 그래픽을 보여준다", async () 
   mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 42 } } });
   await render(<ShareExtension url="https://toss.tech/a" />);
 
-  await userEvent.setup().press(screen.getByText("저장"));
+  await userEvent.setup().press(await screen.findByText("저장"));
 
   expect(await screen.findByTestId("share-result-success")).toBeOnTheScreen();
 });
@@ -190,7 +226,7 @@ test("중복 시트는 중복 마스코트 그래픽을 보여준다", async () 
   mockPost.mockRejectedValue(duplicateError(77));
   await render(<ShareExtension url="https://toss.tech/a" />);
 
-  await userEvent.setup().press(screen.getByText("저장"));
+  await userEvent.setup().press(await screen.findByText("저장"));
 
   expect(await screen.findByTestId("share-result-duplicate")).toBeOnTheScreen();
 });
@@ -293,7 +329,7 @@ test("리마인드는 기본 Off — reminderAt 없이(null) 저장된다", asyn
   mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 1 } } });
   await render(<ShareExtension url="https://toss.tech/a" />);
 
-  await userEvent.setup().press(screen.getByText("저장"));
+  await userEvent.setup().press(await screen.findByText("저장"));
 
   expect(mockPost).toHaveBeenCalledWith(
     "/links",
@@ -306,7 +342,7 @@ test("리마인드를 켜면 내일 프리셋이 선택되고 reminderAt 이 실
   await render(<ShareExtension url="https://toss.tech/a" />);
   const user = userEvent.setup();
 
-  await user.press(screen.getByLabelText("리마인드"));
+  await user.press(await screen.findByLabelText("리마인드"));
 
   expect(screen.getByLabelText("내일").props.accessibilityState.selected).toBe(
     true,
@@ -324,7 +360,7 @@ test("프리셋 칩을 고르면 해당 날짜로 리마인드가 실린다", as
   await render(<ShareExtension url="https://toss.tech/a" />);
   const user = userEvent.setup();
 
-  await user.press(screen.getByLabelText("리마인드"));
+  await user.press(await screen.findByLabelText("리마인드"));
   await user.press(screen.getByLabelText("7일 후"));
   await user.press(screen.getByText("저장"));
 
@@ -347,7 +383,7 @@ test("리마인드 날짜를 누르면 날짜 피커가 열리고, 확인하면 
   await render(<ShareExtension url="https://toss.tech/a" />);
   const user = userEvent.setup();
 
-  await user.press(screen.getByLabelText("리마인드"));
+  await user.press(await screen.findByLabelText("리마인드"));
   await user.press(screen.getByLabelText("날짜 선택"));
   expect(await screen.findByText("날짜 선택")).toBeOnTheScreen();
 
@@ -362,7 +398,7 @@ test("리마인드 시간을 누르면 시간 피커가 열린다", async () => 
   await render(<ShareExtension url="https://toss.tech/a" />);
   const user = userEvent.setup();
 
-  await user.press(screen.getByLabelText("리마인드"));
+  await user.press(await screen.findByLabelText("리마인드"));
   await user.press(screen.getByLabelText("시간 선택"));
 
   expect(await screen.findByText("시간 선택")).toBeOnTheScreen();
@@ -373,8 +409,8 @@ test("리마인드를 다시 끄면 reminderAt 없이 저장된다", async () =>
   await render(<ShareExtension url="https://toss.tech/a" />);
   const user = userEvent.setup();
 
-  await user.press(screen.getByLabelText("리마인드"));
-  await user.press(screen.getByLabelText("리마인드"));
+  await user.press(await screen.findByLabelText("리마인드"));
+  await user.press(await screen.findByLabelText("리마인드"));
   await user.press(screen.getByText("저장"));
 
   expect(mockPost).toHaveBeenCalledWith(
@@ -389,7 +425,9 @@ test("메모를 입력해 저장하면 앞뒤 공백을 제거해 실린다", as
   const user = userEvent.setup();
 
   await user.type(
-    screen.getByPlaceholderText("저장한 이유나 기억하고 싶은 점을 적어보세요"),
+    await screen.findByPlaceholderText(
+      "저장한 이유나 기억하고 싶은 점을 적어보세요",
+    ),
     "  나중에 읽기  ",
   );
   await user.press(screen.getByText("저장"));
@@ -406,7 +444,7 @@ test("폴더 목록 로딩이 실패해도 미분류로 저장할 수 있다", a
   mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 1 } } });
   await render(<ShareExtension url="https://toss.tech/a" />);
 
-  await userEvent.setup().press(screen.getByText("저장"));
+  await userEvent.setup().press(await screen.findByText("저장"));
 
   expect(await screen.findByText("링크 저장을 완료했어요")).toBeOnTheScreen();
   expect(mockPost).toHaveBeenCalledWith(
@@ -414,4 +452,45 @@ test("폴더 목록 로딩이 실패해도 미분류로 저장할 수 있다", a
     expect.objectContaining({ folderId: null }),
   );
   spy.mockRestore();
+});
+
+test("리프레시 토큰이 없으면 로그인 시트를 먼저 보여준다", async () => {
+  storedRefreshToken = null;
+  await render(<ShareExtension url="https://toss.tech/a" />);
+
+  expect(await screen.findByText("로그인이 필요해요")).toBeOnTheScreen();
+  expect(screen.queryByText("저장")).not.toBeOnTheScreen();
+  expect(mockGet).not.toHaveBeenCalledWith("/folders");
+});
+
+test("로그인에 성공하면 같은 시트에서 저장 화면으로 넘어가고 폴더를 불러온다", async () => {
+  storedRefreshToken = null;
+  mockGetIdToken.mockResolvedValue("google-id-token");
+  mockPost.mockResolvedValue({
+    data: {
+      success: true,
+      data: { accessToken: "atk", refreshToken: "rtk", isNewUser: false },
+    },
+  });
+  await render(<ShareExtension url="https://toss.tech/a" />);
+
+  await userEvent.setup().press(await screen.findByText("Google로 계속하기"));
+
+  expect(await screen.findByText("저장")).toBeOnTheScreen();
+  expect(await screen.findByText("디자인")).toBeOnTheScreen();
+  expect(mockGet).toHaveBeenCalledWith("/folders");
+});
+
+test("저장 중 세션이 끊기면(refresh 실패로 토큰 삭제) 로그인 시트로 돌아간다", async () => {
+  mockPost.mockImplementation(async () => {
+    // client.ts 인터셉터가 refresh 실패 시 하는 일을 흉내 낸다.
+    await clearTokens();
+    throw unauthorizedError();
+  });
+  await render(<ShareExtension url="https://toss.tech/a" />);
+
+  await userEvent.setup().press(await screen.findByText("저장"));
+
+  expect(await screen.findByText("로그인이 필요해요")).toBeOnTheScreen();
+  expect(screen.getByText("다시 로그인해주세요")).toBeOnTheScreen();
 });

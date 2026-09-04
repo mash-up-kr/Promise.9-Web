@@ -6,7 +6,7 @@ import {
 } from "@shared/folder/folder.constants";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Calendar, ChevronRight, Clock, Plus } from "lucide-react-native";
-import type { ComponentProps, PropsWithChildren } from "react";
+import type { PropsWithChildren } from "react";
 import {
   forwardRef,
   useCallback,
@@ -26,7 +26,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from "react-native";
@@ -63,11 +62,20 @@ import {
 } from "@/utils/datetime";
 
 import {
+  EXTENSION_LOGIN_SHEET_HEIGHT,
+  ExtensionLoginSheet,
+} from "./ExtensionLoginSheet";
+import {
   INITIAL_SHARE_SAVE_STATE,
   type ShareSaveState,
   shareSaveReducer,
 } from "./share.reducer";
 import { close, openHostApp } from "./shareHost";
+import { SheetText, sheetStyles } from "./sheet.primitives";
+import {
+  type ExtensionSessionStatus,
+  useExtensionSession,
+} from "./useExtensionSession";
 
 // 익스텐션 엔트리도 global.css 를 로드해 NativeWind(className)·인앱 컴포넌트를 쓸 수 있다.
 // 기존 스타일은 StyleSheet 로 남겨둔다(동작 동일, 전환은 불필요한 churn).
@@ -88,27 +96,91 @@ interface FoldersResponse {
 
 const MEMO_MAX_LENGTH = 300;
 
-// iOS 공유 익스텐션에서는 Fabric Dynamic Type 배율이 깨져 allowFontScaling(기본 true)인
-// 텍스트의 fontSize 가 무효화된다 — 익스텐션 자체 텍스트 공용 래퍼로 우회한다
-// (index.share.js 주석 참고, Android/메인 앱 경로는 no-op).
-function SheetText(props: ComponentProps<typeof Text>) {
-  return (
-    <Text
-      allowFontScaling={globalThis.__promise9ShareExtension ? false : undefined}
-      {...props}
-    />
-  );
-}
-
 // 익스텐션 프로세스 전용 클라이언트 — LinkPreviewCard(react-query) 재사용을 위해 둔다.
 const extensionQueryClient = new QueryClient();
 
 /**
  * iOS Share Extension 루트 — 공유받은 URL 을 익스텐션 안에서 바로 저장한다.
  * 결과 시트(성공/실패/중복/반복실패) 전이는 share.reducer 가 정한다.
- * TODO(#85 후속): 폴더 선택·리마인드·메모 입력, 마스코트 그래픽, 미로그인 상태.
+ * TODO(#85 후속): 폴더 선택·리마인드·메모 입력, 마스코트 그래픽.
  */
 export function ShareExtension({ url }: { url?: string }) {
+  const sharedUrl = url ?? "";
+  const status = useExtensionSession();
+  // 한 번 인증됐다가 풀린 경우(저장 중 401 → refresh 실패)는 "다시 로그인" 안내로 구분한다.
+  const wasAuthenticated = useRef(false);
+  if (status === "authenticated") {
+    wasAuthenticated.current = true;
+  }
+  const isSessionExpired =
+    status === "unauthenticated" && wasAuthenticated.current;
+
+  // 닫기 요청은 항상 컨테이너의 퇴장 애니메이션(시트 다운 → dim 페이드)을 거친다.
+  const sheetRef = useRef<ShareSheetHandle>(null);
+  const dismissSheet = useCallback(() => {
+    if (sheetRef.current) {
+      sheetRef.current.dismiss();
+    } else {
+      close();
+    }
+  }, []);
+
+  const [isEditing, setIsEditing] = useState(true);
+
+  return (
+    <QueryClientProvider client={extensionQueryClient}>
+      <ShareSheetContainer
+        ref={sheetRef}
+        height={sheetHeightFor(status, isEditing)}
+        onClosed={() => close()}
+      >
+        {status === "checking" && <CheckingSheet />}
+        {status === "unauthenticated" && (
+          <ExtensionLoginSheet
+            sharedUrl={sharedUrl}
+            isSessionExpired={isSessionExpired}
+          />
+        )}
+        {status === "authenticated" && (
+          <ShareSaveFlow
+            url={sharedUrl}
+            onDismiss={dismissSheet}
+            onEditingChange={setIsEditing}
+          />
+        )}
+      </ShareSheetContainer>
+    </QueryClientProvider>
+  );
+}
+
+// 편집·확인 중 시트는 길고(600) 결과 시트만 짧다(400). 확인 중을 600 으로 두는 이유:
+// 컨테이너가 마운트 시점 높이로 슬라이드 거리를 잡아, 400 이면 iOS 첫 프레임에 시트 일부가 보인다.
+function sheetHeightFor(
+  status: ExtensionSessionStatus,
+  isEditing: boolean,
+): number {
+  if (status === "unauthenticated") return EXTENSION_LOGIN_SHEET_HEIGHT;
+  if (status === "authenticated" && !isEditing) return 400;
+  return 600;
+}
+
+function CheckingSheet() {
+  return (
+    <View style={[sheetStyles.container, sheetStyles.resultContainer]}>
+      <View style={sheetStyles.handle} />
+    </View>
+  );
+}
+
+function ShareSaveFlow({
+  url,
+  onDismiss,
+  onEditingChange,
+}: {
+  url: string;
+  onDismiss: () => void;
+  onEditingChange: (isEditing: boolean) => void;
+}) {
   const [state, dispatch] = useReducer(
     shareSaveReducer,
     INITIAL_SHARE_SAVE_STATE,
@@ -123,7 +195,6 @@ export function ShareExtension({ url }: { url?: string }) {
   const [selectedPresetDays, setSelectedPresetDays] = useState<number | null>(
     null,
   );
-  const sharedUrl = url ?? "";
 
   const toggleReminder = (isEnabled: boolean) => {
     if (!isEnabled) {
@@ -196,7 +267,7 @@ export function ShareExtension({ url }: { url?: string }) {
       const { data } = await apiClient.post<SuccessResponse<CreatedLink>>(
         "/links",
         {
-          url: sharedUrl,
+          url,
           folderId: selectedFolderId,
           memo: memo.trim() || null,
           reminderAt: reminder ? toReminderAtIso(reminder) : null,
@@ -217,62 +288,50 @@ export function ShareExtension({ url }: { url?: string }) {
 
   const isEditing = state.phase === "editing" || state.phase === "saving";
 
-  // 닫기 요청은 항상 컨테이너의 퇴장 애니메이션(시트 다운 → dim 페이드)을 거친다.
-  const sheetRef = useRef<ShareSheetHandle>(null);
-  const dismissSheet = useCallback(() => {
-    if (sheetRef.current) {
-      sheetRef.current.dismiss();
-    } else {
-      close();
-    }
-  }, []);
+  useEffect(() => {
+    onEditingChange(isEditing);
+  }, [isEditing, onEditingChange]);
 
   return (
-    <QueryClientProvider client={extensionQueryClient}>
-      <ShareSheetContainer
-        ref={sheetRef}
-        height={isEditing ? 600 : 400}
-        onClosed={() => close()}
-      >
-        {isEditing ? (
-          <EntrySheet
-            url={sharedUrl}
-            isSaving={state.phase === "saving"}
-            folders={folders}
-            selectedFolderId={selectedFolderId}
-            onSelectFolder={setSelectedFolderId}
-            onFolderCreated={handleFolderCreated}
-            reminder={reminder}
-            selectedPresetDays={selectedPresetDays}
-            onToggleReminder={toggleReminder}
-            onSelectPreset={selectPreset}
-            onSelectRandomDate={selectRandomDate}
-            onOpenDatePicker={() => setOpenPicker("date")}
-            onOpenTimePicker={() => setOpenPicker("time")}
-            memo={memo}
-            onChangeMemo={setMemo}
-            onSave={save}
-            onCancel={dismissSheet}
-          />
-        ) : (
-          <ResultSheet state={state} onRetry={save} onClose={dismissSheet} />
-        )}
-        {openPicker === "date" && reminder && (
-          <DatePickerModal
-            value={reminder.date}
-            onConfirm={confirmPickedDate}
-            onClose={() => setOpenPicker(null)}
-          />
-        )}
-        {openPicker === "time" && reminder && (
-          <TimePickerModal
-            value={{ hour: reminder.hour, minute: reminder.minute }}
-            onConfirm={confirmPickedTime}
-            onClose={() => setOpenPicker(null)}
-          />
-        )}
-      </ShareSheetContainer>
-    </QueryClientProvider>
+    <>
+      {isEditing ? (
+        <EntrySheet
+          url={url}
+          isSaving={state.phase === "saving"}
+          folders={folders}
+          selectedFolderId={selectedFolderId}
+          onSelectFolder={setSelectedFolderId}
+          onFolderCreated={handleFolderCreated}
+          reminder={reminder}
+          selectedPresetDays={selectedPresetDays}
+          onToggleReminder={toggleReminder}
+          onSelectPreset={selectPreset}
+          onSelectRandomDate={selectRandomDate}
+          onOpenDatePicker={() => setOpenPicker("date")}
+          onOpenTimePicker={() => setOpenPicker("time")}
+          memo={memo}
+          onChangeMemo={setMemo}
+          onSave={save}
+          onCancel={onDismiss}
+        />
+      ) : (
+        <ResultSheet state={state} onRetry={save} onClose={onDismiss} />
+      )}
+      {openPicker === "date" && reminder && (
+        <DatePickerModal
+          value={reminder.date}
+          onConfirm={confirmPickedDate}
+          onClose={() => setOpenPicker(null)}
+        />
+      )}
+      {openPicker === "time" && reminder && (
+        <TimePickerModal
+          value={{ hour: reminder.hour, minute: reminder.minute }}
+          onConfirm={confirmPickedTime}
+          onClose={() => setOpenPicker(null)}
+        />
+      )}
+    </>
   );
 }
 
@@ -448,8 +507,8 @@ function EntrySheet({
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.handle} />
+    <View style={sheetStyles.container}>
+      <View style={sheetStyles.handle} />
       <View style={styles.header}>
         <Pressable
           style={styles.headerButton}
@@ -954,16 +1013,18 @@ function ResultSheet({
   };
 
   return (
-    <View style={[styles.container, styles.resultContainer]}>
-      <View style={styles.handle} />
-      <View style={styles.resultBody}>
+    <View style={[sheetStyles.container, sheetStyles.resultContainer]}>
+      <View style={sheetStyles.handle} />
+      <View style={sheetStyles.resultBody}>
         <Image
           testID={`share-result-${state.phase}`}
           source={RESULT_GRAPHICS[state.phase]}
-          style={styles.resultImage}
+          style={sheetStyles.resultImage}
         />
-        <SheetText style={styles.resultTitle}>{content.title}</SheetText>
-        <SheetText style={styles.resultSubtitle}>{content.subtitle}</SheetText>
+        <SheetText style={sheetStyles.resultTitle}>{content.title}</SheetText>
+        <SheetText style={sheetStyles.resultSubtitle}>
+          {content.subtitle}
+        </SheetText>
       </View>
       <Pressable style={styles.ctaButton} onPress={handleCta}>
         <SheetText style={styles.ctaText}>{content.cta}</SheetText>
@@ -994,23 +1055,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: "hidden",
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#1a1a1a",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-  },
-  handle: {
-    alignSelf: "center",
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#3d3d3d",
-    marginTop: 8,
-    marginBottom: 12,
   },
   header: {
     flexDirection: "row",
@@ -1223,28 +1267,6 @@ const styles = StyleSheet.create({
     color: "#6b6b6b",
     fontSize: 12,
     marginTop: 6,
-  },
-  resultContainer: {
-    justifyContent: "flex-end",
-  },
-  resultBody: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  resultImage: {
-    width: 160,
-    height: 160,
-  },
-  resultTitle: {
-    color: "#ffffff",
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  resultSubtitle: {
-    color: "#a0a0a0",
-    fontSize: 14,
   },
   ctaButton: {
     height: 52,
