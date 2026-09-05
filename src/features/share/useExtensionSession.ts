@@ -20,11 +20,19 @@ export function useExtensionSession(): ExtensionSessionStatus {
 
     const refresh = () => {
       const request = ++latestRequest;
-      getRefreshToken().then((token) => {
-        if (!cancelled && request === latestRequest) {
-          setStatus(token ? "authenticated" : "unauthenticated");
-        }
-      });
+      getRefreshToken()
+        .then((token) => {
+          if (!cancelled && request === latestRequest) {
+            setStatus(token ? "authenticated" : "unauthenticated");
+          }
+        })
+        .catch((error) => {
+          // 키체인 조회 실패를 "확인 중"에 묶어 두면 시트가 영원히 비어 있다 — 로그인 시트로 보낸다.
+          console.error("[share] 리프레시 토큰 조회 실패", error);
+          if (!cancelled && request === latestRequest) {
+            setStatus("unauthenticated");
+          }
+        });
     };
 
     refresh();

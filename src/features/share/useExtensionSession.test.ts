@@ -83,3 +83,12 @@ test("조회가 겹치면 늦게 끝난 이전 결과가 최신 상태를 덮어
   });
   expect(result.current).toBe("unauthenticated");
 });
+
+test("토큰 조회가 실패하면 unauthenticated 로 본다", async () => {
+  const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+  mockGetRefreshToken.mockRejectedValue(new Error("keychain"));
+  const { result } = await renderHook(() => useExtensionSession());
+
+  await waitFor(() => expect(result.current).toBe("unauthenticated"));
+  errorSpy.mockRestore();
+});
