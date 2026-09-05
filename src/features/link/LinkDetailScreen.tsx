@@ -20,7 +20,11 @@ import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { Spinner } from "@/components/ui/spinner/Spinner";
 import { Text } from "@/components/ui/text/Text";
-import { archiveDetailHref, moveLinksHref } from "@/constants/routes.constants";
+import {
+  archiveDetailHref,
+  moveLinksHref,
+  ROUTES,
+} from "@/constants/routes.constants";
 import {
   linkQueries,
   useDeleteLinkMutation,
@@ -166,7 +170,12 @@ function LinkDetailContent() {
     setIsDeleteOpen(false);
     try {
       await deleteLink(linkDetail.linkId);
-      router.back();
+      // 공유 익스텐션 딥링크로 바로 들어오면 돌아갈 화면이 없다 — 홈으로 대체 이동한다.
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace(ROUTES.HOME);
+      }
     } catch {
       show({ message: "링크를 삭제하지 못했어요. 다시 시도해주세요." });
     }

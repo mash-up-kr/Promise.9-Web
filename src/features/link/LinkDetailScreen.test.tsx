@@ -18,6 +18,8 @@ import {
 } from "./mock/mockLinkDetail";
 
 const mockBack = jest.fn();
+const mockReplace = jest.fn();
+const mockCanGoBack = jest.fn(() => true);
 const mockPush = jest.fn();
 const mockDelete = jest.fn().mockResolvedValue(undefined);
 const mockUpdate = jest.fn();
@@ -40,8 +42,12 @@ jest.mock("expo-router", () => ({
   },
   useLocalSearchParams: () => ({ id: mockRoute.id }),
   // 헤더의 HeaderBackButton 이 사용한다.
-  useRouter: () => ({ back: mockBack, push: mockPush, replace: jest.fn() }),
-  canGoBack: () => true,
+  useRouter: () => ({
+    back: mockBack,
+    push: mockPush,
+    replace: mockReplace,
+    canGoBack: mockCanGoBack,
+  }),
 }));
 
 jest.mock("@/utils/share", () => ({ shareUrl: jest.fn() }));
@@ -110,6 +116,8 @@ const renderScreen = () =>
 describe("LinkDetailScreen", () => {
   beforeEach(() => {
     mockBack.mockClear();
+    mockReplace.mockClear();
+    mockCanGoBack.mockReturnValue(true);
     mockPush.mockClear();
     mockDelete.mockClear();
     // 성공 경로가 기본 — 구현·호출 이력을 함께 비운다(실패 테스트가 심은 onError 구현이 새지 않도록).
@@ -289,5 +297,18 @@ describe("LinkDetailScreen", () => {
     expect(mockDelete).toHaveBeenCalledWith(mockLinkDetail.linkId);
     await screen.findByText(mockLinkDetail.title); // 리렌더 안정화
     expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  test("딥링크로 바로 들어와 히스토리가 없으면 삭제 후 홈으로 대체 이동한다", async () => {
+    mockCanGoBack.mockReturnValue(false);
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("mock-delete"));
+    await user.press(screen.getByRole("button", { name: "삭제" }));
+    await screen.findByText(mockLinkDetail.title);
+
+    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalledWith("/");
   });
 });
