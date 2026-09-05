@@ -1,4 +1,6 @@
 import {
+  kakaoExchangeRequestSchema,
+  kakaoExchangeResponseSchema,
   socialLoginRequestSchema,
   socialLoginResponseSchema,
 } from "./auth.contracts";
@@ -47,5 +49,34 @@ describe("socialLoginResponseSchema", () => {
     expect(() =>
       socialLoginResponseSchema.parse({ accessToken: "at" }),
     ).toThrow();
+  });
+});
+
+describe("kakaoExchangeRequestSchema", () => {
+  it("code·redirectUri 가 있으면 통과한다", () => {
+    expect(() =>
+      kakaoExchangeRequestSchema.parse({
+        code: "auth-code",
+        redirectUri: "https://app.example.com/auth/kakao-callback.html",
+      }),
+    ).not.toThrow();
+  });
+
+  it("code 가 없으면 실패한다", () => {
+    expect(() =>
+      kakaoExchangeRequestSchema.parse({ redirectUri: "https://x" }),
+    ).toThrow();
+  });
+});
+
+describe("kakaoExchangeResponseSchema", () => {
+  it("idToken 이 있으면 통과한다", () => {
+    expect(() =>
+      kakaoExchangeResponseSchema.parse({ idToken: "kakao-id-token" }),
+    ).not.toThrow();
+  });
+
+  it("idToken 이 없으면 실패한다", () => {
+    expect(() => kakaoExchangeResponseSchema.parse({})).toThrow();
   });
 });

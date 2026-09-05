@@ -1,5 +1,6 @@
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { login as kakaoLogin } from "@react-native-seoul/kakao-login";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { useCallback } from "react";
 
 import type { SocialProvider } from "../auth.constants";
@@ -55,6 +56,34 @@ async function getKakaoIdToken(): Promise<string> {
   return token.idToken;
 }
 
+// 애플 로그인(iOS 네이티브) — identityToken 을 그대로 POST /auth/social 에 쓴다.
+// 최초 1회만 이름/이메일을 주고 이후엔 안 주지만, 서버가 sub 로 식별하므로 프론트는 신경 쓰지 않는다.
+async function getAppleIdToken(): Promise<string> {
+  try {
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+    if (!credential.identityToken) {
+      throw new Error("애플 로그인 응답에 identityToken 이 없습니다.");
+    }
+    return credential.identityToken;
+  } catch (error) {
+    // 취소는 실패가 아니다 — 구글과 동일하게 Cancelled 로 구분해 화면이 조용히 원복하게 한다.
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code?: string }).code === "ERR_REQUEST_CANCELED"
+    ) {
+      throw new SocialLoginCancelledError();
+    }
+    throw error;
+  }
+}
+
 export function useSocialAuth() {
   const getIdToken = useCallback(
     async (provider: SocialProvider): Promise<string> => {
@@ -64,8 +93,7 @@ export function useSocialAuth() {
         case "kakao":
           return getKakaoIdToken();
         case "apple":
-          // 애플 로그인은 UI 만 준비(SOCIAL_PROVIDERS 비활성) — 서버 계약·SDK 연동 전까지 호출되지 않는다.
-          throw new Error("애플 로그인은 아직 지원하지 않습니다.");
+          return getAppleIdToken();
       }
     },
     [],

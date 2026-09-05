@@ -9,7 +9,8 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.mashup.promise9"
+      "bundleIdentifier": "com.mashup.promise9",
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.mashup.promise9",
@@ -36,6 +37,7 @@
         }
       ],
       "expo-secure-store",
+      "expo-apple-authentication",
       [
         "@react-native-google-signin/google-signin",
         {
@@ -45,7 +47,7 @@
       [
         "@react-native-seoul/kakao-login",
         {
-          "kakaoAppKey": "KAKAO_NATIVE_APP_KEY_PLACEHOLDER"
+          "kakaoAppKey": "d0957b9703accce469748d981d81f796"
         }
       ],
       [

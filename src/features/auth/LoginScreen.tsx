@@ -39,6 +39,9 @@ export function LoginScreen() {
       setPendingProvider(null);
       // 사용자가 로그인 창을 직접 닫은 경우 — 실패가 아니므로 조용히 무시한다.
       if (error instanceof SocialLoginCancelledError) return;
+      // 스낵바는 원인 불문 같은 문구라, provider 와 실제 원인(미설정 env·팝업 차단·state 불일치 등)을
+      // 개발 콘솔에 남긴다 — 이게 없으면 어느 provider 가 왜 실패했는지 단서가 사라진다.
+      console.error("소셜 로그인 실패", provider, error);
       show({ message: LOGIN_FAILED_MESSAGE });
       return;
     }
@@ -53,6 +56,8 @@ export function LoginScreen() {
         },
         onError: (error) => {
           setPendingProvider(null);
+          // 서버 검증 실패도 원인 불문 같은 토스트라, provider·실제 원인(errorCode·status)을 콘솔에 남긴다.
+          console.error("소셜 로그인 실패", provider, error);
           const message = isUnsupportedProviderError(error)
             ? "아직 지원하지 않는 로그인 방식이에요."
             : LOGIN_FAILED_MESSAGE;
@@ -76,23 +81,25 @@ export function LoginScreen() {
       </View>
 
       <View className="gap-3 px-5">
-        {Object.entries(SOCIAL_PROVIDERS).map(([key, config]) => {
-          const provider = key as SocialProvider;
-          return (
-            <SocialLoginButton
-              key={provider}
-              provider={provider}
-              label={config.label}
-              onPress={handleSocialLogin}
-              loading={pendingProvider === provider}
-              // 미지원(카카오·애플)은 항상 비활성. 그 외엔 다른 로그인 진행 중일 때만 비활성.
-              disabled={
-                !config.enabled ||
-                (pendingProvider !== null && pendingProvider !== provider)
-              }
-            />
-          );
-        })}
+        {Object.entries(SOCIAL_PROVIDERS)
+          // 미지원 플랫폼의 provider(웹·안드로이드의 애플)는 노출하지 않는다.
+          .filter(([, config]) => config.enabled)
+          .map(([key, config]) => {
+            const provider = key as SocialProvider;
+            return (
+              <SocialLoginButton
+                key={provider}
+                provider={provider}
+                label={config.label}
+                onPress={handleSocialLogin}
+                loading={pendingProvider === provider}
+                // 다른 로그인 진행 중일 때만 비활성.
+                disabled={
+                  pendingProvider !== null && pendingProvider !== provider
+                }
+              />
+            );
+          })}
       </View>
 
       <View className="mt-6 px-5">
