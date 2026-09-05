@@ -550,6 +550,29 @@ test("세션 이탈 후 재로그인하면 편집 시트(저장 화면)로 돌�
   expect(await screen.findByText("저장")).toBeOnTheScreen();
 });
 
+test("제목과 URL 이 섞인 공유 텍스트는 URL 만 저장한다", async () => {
+  mockPost.mockResolvedValueOnce({ data: { data: { linkId: 7 } } });
+  await render(
+    <ShareExtension
+      url={
+        "TypeScript 타입 호환성\nhttps://toss.tech/article/typescript-type-compatibility"
+      }
+    />,
+  );
+  await screen.findByText(
+    "https://toss.tech/article/typescript-type-compatibility",
+  );
+  await userEvent.setup().press(await screen.findByText("저장"));
+  await waitFor(() =>
+    expect(mockPost).toHaveBeenCalledWith(
+      "/links",
+      expect.objectContaining({
+        url: "https://toss.tech/article/typescript-type-compatibility",
+      }),
+    ),
+  );
+});
+
 test("URL 형식이 아니면 서버에 보내지 않고 저장 불가 시트를 보여준다", async () => {
   await render(<ShareExtension url="이건 링크가 아니에요" />);
   const user = userEvent.setup();

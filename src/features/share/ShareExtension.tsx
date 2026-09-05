@@ -4,6 +4,7 @@ import {
   folderToneToHex,
   type SelectableFolderColor,
 } from "@shared/folder/folder.constants";
+import { extractFirstUrl } from "@shared/link/link.utils";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Calendar, ChevronRight, Clock, Plus } from "lucide-react-native";
 import type { PropsWithChildren } from "react";
@@ -109,7 +110,9 @@ const MEMO_MAX_LENGTH = 300;
  * 결과 시트(성공/실패/중복/반복실패) 전이는 share.reducer 가 정한다.
  */
 export function ShareExtension({ url }: { url?: string }) {
-  const sharedUrl = url ?? "";
+  const sharedText = url ?? "";
+  // Android 는 "제목\nURL" 로 오기도 한다 — URL 이 없으면 원문을 넘겨 기존 '저장할 수 없는 링크' 경로로 흐르게 한다.
+  const sharedUrl = extractFirstUrl(sharedText) ?? sharedText;
   const status = useAuthGate();
   const isTokenReady = useAccessTokenWarmup(status);
   // 한 번 인증됐다가 풀린 경우(저장 중 401 → refresh 실패)는 "다시 로그인" 안내로 구분한다.
