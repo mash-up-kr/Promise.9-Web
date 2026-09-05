@@ -156,7 +156,11 @@ export function CreateLinkSheet() {
             control={control}
             name="folderId"
             render={({ field }) => (
-              <FolderChipList value={field.value} onChange={field.onChange} />
+              <FolderChipList
+                value={field.value}
+                onChange={field.onChange}
+                onAddFolder={() => router.push("/create-folder")}
+              />
             )}
           />
         </AsyncBoundary>

@@ -6,9 +6,6 @@ import { Suspense } from "react";
 // 캐시를 직접 시딩해 queryFn 은 호출되지 않는다.
 jest.mock("@shared/api", () => ({ apiClient: { get: jest.fn() } }));
 
-const mockPush = jest.fn();
-jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush }) }));
-
 import { folderKeys } from "@/entities/folder/folder.keys";
 
 import { FolderChipList } from "./FolderChipList";
@@ -41,13 +38,18 @@ const FOLDERS_RESPONSE = {
 const renderList = async (props: {
   value: number | null;
   onChange: jest.Mock;
+  onAddFolder?: jest.Mock;
 }) => {
   const queryClient = new QueryClient();
   queryClient.setQueryData(folderKeys.list(), FOLDERS_RESPONSE);
   await render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={null}>
-        <FolderChipList value={props.value} onChange={props.onChange} />
+        <FolderChipList
+          value={props.value}
+          onChange={props.onChange}
+          onAddFolder={props.onAddFolder ?? jest.fn()}
+        />
       </Suspense>
     </QueryClientProvider>,
   );
@@ -72,11 +74,12 @@ describe("FolderChipList", () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
-  it("'+' 탭 → 폴더 생성 라우트", async () => {
+  it("'+' 탭 → onAddFolder 호출", async () => {
     const user = userEvent.setup();
-    await renderList({ value: null, onChange: jest.fn() });
+    const onAddFolder = jest.fn();
+    await renderList({ value: null, onChange: jest.fn(), onAddFolder });
     await user.press(screen.getByRole("button", { name: "폴더 추가" }));
-    expect(mockPush).toHaveBeenCalledWith("/create-folder");
+    expect(onAddFolder).toHaveBeenCalled();
   });
 
   it("새 폴더가 목록에 나타나면 자동 선택한다", async () => {

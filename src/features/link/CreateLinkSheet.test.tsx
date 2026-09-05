@@ -207,6 +207,13 @@ describe("CreateLinkSheet", () => {
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
   });
 
+  test("'폴더 추가'를 누르면 폴더 생성 화면으로 이동한다", async () => {
+    await renderSheet();
+    const user = userEvent.setup();
+    await user.press(await screen.findByRole("button", { name: "폴더 추가" }));
+    expect(mockPush).toHaveBeenCalledWith("/create-folder");
+  });
+
   test("성공 스낵바의 '보기'를 누르면 링크 상세로 이동한다", async () => {
     await renderSheet();
     await fillValidUrl();
