@@ -29,6 +29,11 @@ jest.mock("@/constants/platform.constants", () => ({
   isWeb: false,
   isServer: false,
 }));
+// ReminderSection → reminder.permissions → expo-notifications.
+jest.mock("expo-notifications", () => ({
+  getPermissionsAsync: jest.fn().mockResolvedValue({ status: "undetermined" }),
+  requestPermissionsAsync: jest.fn().mockResolvedValue({ status: "granted" }),
+}));
 let mockKeyboardHeight = 0;
 jest.mock("react-native-keyboard-controller", () => ({
   ...jest.requireActual("react-native-keyboard-controller"),
@@ -87,6 +92,28 @@ const FOLDERS_RESPONSE = {
   ],
 };
 
+const PREVIEW_RESPONSE = {
+  data: {
+    success: true,
+    data: {
+      title: "토스 기술 블로그",
+      source: "toss.tech",
+      thumbnailUrl: null,
+    },
+  },
+};
+
+// 리마인드 프리셋은 "오늘 + N일" 을 저장한다 — 실행 시각에 맞춰 기대 날짜를 만든다.
+function dateAfterDays(days: number) {
+  const target = new Date();
+  target.setDate(target.getDate() + days);
+  return [
+    target.getFullYear(),
+    String(target.getMonth() + 1).padStart(2, "0"),
+    String(target.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
 function duplicateError(linkId?: number) {
   return new ApiError({
     status: 409,
@@ -126,6 +153,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockIsAndroid = false;
   mockKeyboardHeight = 0;
+  // 익스텐션 프로세스와 같은 조건 — index.share.js 가 세우는 플래그.
+  globalThis.__promise9ShareExtension = true;
   mockRefreshAccessToken.mockResolvedValue("atk");
   // 메모리 액세스 토큰은 모듈 전역 — 앞 테스트의 로그인이 남긴 값을 비워 진입 조건을 통일한다.
   setAccessToken(null);
@@ -138,19 +167,14 @@ beforeEach(() => {
   });
   mockGet.mockImplementation((url: string) => {
     if (url === "/links/preview") {
-      return Promise.resolve({
-        data: {
-          success: true,
-          data: {
-            title: "토스 기술 블로그",
-            source: "toss.tech",
-            thumbnailUrl: null,
-          },
-        },
-      });
+      return Promise.resolve(PREVIEW_RESPONSE);
     }
     return Promise.resolve({ data: { success: true, data: FOLDERS_RESPONSE } });
   });
+});
+
+afterEach(() => {
+  globalThis.__promise9ShareExtension = undefined;
 });
 
 test("공유받은 URL 을 표시한다", async () => {
@@ -292,8 +316,36 @@ test("폴더 칩을 선택해 저장하면 folderId 가 실린다", async () => 
 });
 
 test("폴더 추가 → 이름 입력·만들기 → 새 폴더가 목록에 추가되고 선택된다", async () => {
+  // 생성 후에는 목록 재조회가 새 폴더를 담아 온다 — 칩의 자동 선택은 그 재조회가 트리거한다.
+  let hasCreatedFolder = false;
+  mockGet.mockImplementation((url: string) => {
+    if (url === "/links/preview") {
+      return Promise.resolve(PREVIEW_RESPONSE);
+    }
+    return Promise.resolve({
+      data: {
+        success: true,
+        data: hasCreatedFolder
+          ? {
+              ...FOLDERS_RESPONSE,
+              folders: [
+                ...FOLDERS_RESPONSE.folders,
+                {
+                  folderId: 9,
+                  folderName: "새폴더",
+                  color: "#61a8ef",
+                  linkCount: 0,
+                  lastSavedAt: null,
+                },
+              ],
+            }
+          : FOLDERS_RESPONSE,
+      },
+    });
+  });
   mockPost.mockImplementation((url: string) => {
     if (url === "/folders") {
+      hasCreatedFolder = true;
       return Promise.resolve({
         data: {
           success: true,
@@ -322,6 +374,10 @@ test("폴더 추가 → 이름 입력·만들기 → 새 폴더가 목록에 추
   expect(
     screen.getByLabelText("새폴더").props.accessibilityState.selected,
   ).toBe(true);
+  // 새 칩은 로컬 추가가 아니라 목록 재조회로 들어온다.
+  expect(
+    mockGet.mock.calls.filter(([path]) => path === "/folders"),
+  ).toHaveLength(2);
 
   await user.press(screen.getByText("저장"));
   expect(mockPost).toHaveBeenCalledWith(
@@ -373,22 +429,29 @@ test("리마인드는 기본 Off — reminderAt 없이(null) 저장된다", asyn
   );
 });
 
-test("리마인드를 켜면 내일 프리셋이 선택되고 reminderAt 이 실린다", async () => {
+test("리마인드를 켜면 내일 날짜로 reminderAt 이 실린다", async () => {
   mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 1 } } });
   await render(<ShareExtension url="https://toss.tech/a" />);
   const user = userEvent.setup();
 
   await user.press(await screen.findByLabelText("리마인드"));
-
-  expect(screen.getByLabelText("내일").props.accessibilityState.selected).toBe(
-    true,
-  );
-
   await user.press(screen.getByText("저장"));
+
   expect(mockPost).toHaveBeenCalledWith(
     "/links",
-    expect.objectContaining({ reminderAt: expect.stringMatching(/^\d{4}-/) }),
+    expect.objectContaining({
+      reminderAt: expect.stringContaining(dateAfterDays(1)),
+    }),
   );
+});
+
+test("익스텐션에서는 리마인드를 켜도 OS 알림 권한을 요청하지 않는다", async () => {
+  const notifications = jest.requireMock("expo-notifications");
+  await render(<ShareExtension url="https://toss.tech/a" />);
+
+  await userEvent.setup().press(await screen.findByLabelText("리마인드"));
+
+  expect(notifications.getPermissionsAsync).not.toHaveBeenCalled();
 });
 
 test("프리셋 칩을 고르면 해당 날짜로 리마인드가 실린다", async () => {
@@ -400,34 +463,25 @@ test("프리셋 칩을 고르면 해당 날짜로 리마인드가 실린다", as
   await user.press(screen.getByLabelText("7일 후"));
   await user.press(screen.getByText("저장"));
 
-  const sevenDaysLater = new Date();
-  sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
-  const expectedDate = [
-    sevenDaysLater.getFullYear(),
-    String(sevenDaysLater.getMonth() + 1).padStart(2, "0"),
-    String(sevenDaysLater.getDate()).padStart(2, "0"),
-  ].join("-");
   expect(mockPost).toHaveBeenCalledWith(
     "/links",
     expect.objectContaining({
-      reminderAt: expect.stringContaining(expectedDate),
+      reminderAt: expect.stringContaining(dateAfterDays(7)),
     }),
   );
 });
 
-test("리마인드 날짜를 누르면 날짜 피커가 열리고, 확인하면 프리셋 선택이 풀린다", async () => {
+test("리마인드 날짜를 누르면 날짜 피커가 열리고 확인하면 닫힌다", async () => {
   await render(<ShareExtension url="https://toss.tech/a" />);
   const user = userEvent.setup();
 
   await user.press(await screen.findByLabelText("리마인드"));
-  await user.press(screen.getByLabelText("날짜 선택"));
+  // 날짜 행은 남은 기간을 함께 보여준다 — 프리셋 칩("내일")과 겹치지 않는 라벨.
+  await user.press(screen.getByText("1일 후"));
   expect(await screen.findByText("날짜 선택")).toBeOnTheScreen();
 
   await user.press(screen.getByText("확인"));
   expect(screen.queryByText("날짜 선택")).toBeNull();
-  expect(screen.getByLabelText("내일").props.accessibilityState.selected).toBe(
-    false,
-  );
 });
 
 test("리마인드 시간을 누르면 시간 피커가 열린다", async () => {
@@ -435,7 +489,7 @@ test("리마인드 시간을 누르면 시간 피커가 열린다", async () => 
   const user = userEvent.setup();
 
   await user.press(await screen.findByLabelText("리마인드"));
-  await user.press(screen.getByLabelText("시간 선택"));
+  await user.press(screen.getByText(/^(오전|오후) \d{1,2}:\d{2}$/));
 
   expect(await screen.findByText("시간 선택")).toBeOnTheScreen();
 });
@@ -496,7 +550,7 @@ test("리프레시 토큰이 없으면 로그인 시트를 먼저 보여준다",
 
   expect(await screen.findByText("로그인이 필요해요")).toBeOnTheScreen();
   expect(screen.queryByText("저장")).not.toBeOnTheScreen();
-  expect(mockGet).not.toHaveBeenCalledWith("/folders");
+  expect(mockGet).not.toHaveBeenCalledWith("/folders", expect.anything());
 });
 
 test("로그인에 성공하면 같은 시트에서 저장 화면으로 넘어가고 폴더를 불러온다", async () => {
@@ -514,7 +568,7 @@ test("로그인에 성공하면 같은 시트에서 저장 화면으로 넘어�
 
   expect(await screen.findByText("저장")).toBeOnTheScreen();
   expect(await screen.findByText("디자인")).toBeOnTheScreen();
-  expect(mockGet).toHaveBeenCalledWith("/folders");
+  expect(mockGet).toHaveBeenCalledWith("/folders", expect.anything());
 });
 
 test("저장 중 세션이 끊기면(refresh 실패로 토큰 삭제) 로그인 시트로 돌아간다", async () => {

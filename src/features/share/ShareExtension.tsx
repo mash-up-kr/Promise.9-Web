@@ -1,12 +1,6 @@
-import { apiClient, isUnauthorizedError } from "@shared/api";
-import type { SuccessResponse } from "@shared/api/api.types";
-import {
-  folderToneToHex,
-  type SelectableFolderColor,
-} from "@shared/folder/folder.constants";
+import { isUnauthorizedError } from "@shared/api";
 import { extractFirstUrl } from "@shared/link/link.utils";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Calendar, ChevronRight, Clock, Plus } from "lucide-react-native";
 import type { PropsWithChildren } from "react";
 import {
   forwardRef,
@@ -19,7 +13,6 @@ import {
   useState,
 } from "react";
 import {
-  ActivityIndicator,
   Animated,
   Easing,
   Image,
@@ -28,7 +21,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from "react-native";
 import {
@@ -36,42 +28,30 @@ import {
   useReanimatedKeyboardAnimation,
 } from "react-native-keyboard-controller";
 import Reanimated, { useAnimatedStyle } from "react-native-reanimated";
-import { ActionButton } from "@/components/ui/action-button/ActionButton";
-import { Dialog } from "@/components/ui/dialog/Dialog";
-import { BellIcon } from "@/components/ui/icon/BellIcon";
-import { DiceIcon } from "@/components/ui/icon/DiceIcon";
-import { FolderIcon } from "@/components/ui/icon/FolderIcon";
-import { Input, InputField } from "@/components/ui/input/Input";
-import { Text as UIText } from "@/components/ui/text/Text";
+import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
+import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
+import { Text } from "@/components/ui/text/Text";
 import { isAndroid } from "@/constants/platform.constants";
-import { isDuplicateFolderNameError } from "@/entities/folder/folder.errors";
+import { useCreateFolderMutation } from "@/entities/folder/folder.queries";
 import {
   getDuplicateLinkId,
   isDuplicateLinkError,
 } from "@/entities/link/link.errors";
-import { DuplicateFolderNameAlert } from "@/features/archive/components/DuplicateFolderNameAlert";
-import { FolderColorPicker } from "@/features/archive/components/FolderColorPicker";
+import { useCreateLinkMutation } from "@/entities/link/link.queries";
+import { FolderFormCard } from "@/features/archive/components/FolderFormCard";
 import {
   type AuthGateStatus,
   useAuthGate,
 } from "@/features/auth/hooks/useAuthGate";
-import { DatePickerModal } from "@/features/link/components/DatePickerModal";
+import { FolderChipList } from "@/features/link/components/FolderChipList";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
-import { TimePickerModal } from "@/features/link/components/TimePickerModal";
+import { MemoField } from "@/features/link/components/MemoField";
+import { ReminderSection } from "@/features/link/components/ReminderSection";
 import { linkUrlSchema } from "@/features/link/link.contracts";
 import {
-  formatRemainingPeriod,
-  formatReminderDate,
-  formatReminderTime,
-  getRandomReminderDays,
   type ReminderValue,
   toReminderAtIso,
 } from "@/features/link/reminder.utils";
-import {
-  addDaysDate,
-  getTomorrowDate,
-  roundUpToQuarter,
-} from "@/utils/datetime";
 
 import {
   EXTENSION_LOGIN_SHEET_HEIGHT,
@@ -88,22 +68,6 @@ import { useAccessTokenWarmup } from "./useAccessTokenWarmup";
 
 // 익스텐션 엔트리도 global.css 를 로드해 NativeWind(className)·인앱 컴포넌트를 쓸 수 있다.
 // 기존 스타일은 StyleSheet 로 남겨둔다(동작 동일, 전환은 불필요한 churn).
-
-interface CreatedLink {
-  linkId: number;
-}
-
-interface FolderSummary {
-  folderId: number;
-  folderName: string;
-  color: string;
-}
-
-interface FoldersResponse {
-  folders: FolderSummary[];
-}
-
-const MEMO_MAX_LENGTH = 300;
 
 /**
  * iOS Share Extension 루트 — 공유받은 URL 을 익스텐션 안에서 바로 저장한다.
@@ -205,80 +169,10 @@ function ShareSaveFlow({
     INITIAL_SHARE_SAVE_STATE,
   );
   // 폴더 미선택(null) = 미분류 — 인앱 저장 시트와 동일한 의미.
-  const [folders, setFolders] = useState<FolderSummary[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
   const [memo, setMemo] = useState("");
-  // 리마인드 — 인앱 ReminderSection 과 같은 의미 구조(값·프리셋). 날짜/시간 정밀 조정
-  // 피커와 알림 권한 요청은 익스텐션 프로세스 제약으로 메인 앱에 맡긴다.
   const [reminder, setReminder] = useState<ReminderValue | null>(null);
-  const [selectedPresetDays, setSelectedPresetDays] = useState<number | null>(
-    null,
-  );
-
-  const toggleReminder = (isEnabled: boolean) => {
-    if (!isEnabled) {
-      setSelectedPresetDays(null);
-      setReminder(null);
-      return;
-    }
-    setSelectedPresetDays(1);
-    setReminder({ date: getTomorrowDate(), ...roundUpToQuarter() });
-  };
-
-  const selectPreset = (days: number) => {
-    if (!reminder) return;
-    setSelectedPresetDays(days);
-    setReminder({ ...reminder, date: addDaysDate(days) });
-  };
-
-  const selectRandomDate = () => {
-    if (!reminder) return;
-    setSelectedPresetDays(null);
-    setReminder({ ...reminder, date: addDaysDate(getRandomReminderDays()) });
-  };
-
-  // 인앱 시트와 같은 정책 — 방금 만든 폴더는 곧바로 선택한다.
-  const handleFolderCreated = (folder: FolderSummary) => {
-    setFolders((prev) => [...prev, folder]);
-    setSelectedFolderId(folder.folderId);
-  };
-
-  // 날짜/시간 정밀 선택 — 인앱 ReminderSection 과 같은 피커 모달을 그대로 띄운다.
-  // (global.css 로드로 인앱 컴포넌트 재사용 가능; 직접 선택 시 프리셋 해제도 동일 정책.)
-  const [openPicker, setOpenPicker] = useState<"date" | "time" | null>(null);
-
-  const confirmPickedDate = (date: string) => {
-    if (reminder) {
-      setSelectedPresetDays(null);
-      setReminder({ ...reminder, date });
-    }
-    setOpenPicker(null);
-  };
-
-  const confirmPickedTime = (time: { hour: number; minute: number }) => {
-    if (reminder) {
-      setReminder({ ...reminder, ...time });
-    }
-    setOpenPicker(null);
-  };
-
-  useEffect(function loadFolderChips() {
-    let cancelled = false;
-    apiClient
-      .get<SuccessResponse<FoldersResponse>>("/folders")
-      .then(({ data }) => {
-        if (!cancelled) {
-          setFolders(data.data.folders);
-        }
-      })
-      .catch((error) => {
-        // 폴더는 부가 기능 — 실패해도 미분류 저장은 가능해야 한다.
-        console.error("[share] 폴더 목록 로딩 실패", error);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const createLinkMutation = useCreateLinkMutation();
 
   const save = async () => {
     if (!linkUrlSchema.safeParse(url).success) {
@@ -287,16 +181,13 @@ function ShareSaveFlow({
     }
     dispatch({ type: "SAVE_REQUESTED" });
     try {
-      const { data } = await apiClient.post<SuccessResponse<CreatedLink>>(
-        "/links",
-        {
-          url,
-          folderId: selectedFolderId,
-          memo: memo.trim() || null,
-          reminderAt: reminder ? toReminderAtIso(reminder) : null,
-        },
-      );
-      dispatch({ type: "SAVE_SUCCEEDED", linkId: data.data.linkId });
+      const created = await createLinkMutation.mutateAsync({
+        url,
+        folderId: selectedFolderId,
+        memo: memo.trim() || null,
+        reminderAt: reminder ? toReminderAtIso(reminder) : null,
+      });
+      dispatch({ type: "SAVE_SUCCEEDED", linkId: created.linkId });
     } catch (error) {
       if (isDuplicateLinkError(error)) {
         dispatch({
@@ -325,17 +216,10 @@ function ShareSaveFlow({
         <EntrySheet
           url={url}
           isSaving={state.phase === "saving"}
-          folders={folders}
           selectedFolderId={selectedFolderId}
           onSelectFolder={setSelectedFolderId}
-          onFolderCreated={handleFolderCreated}
           reminder={reminder}
-          selectedPresetDays={selectedPresetDays}
-          onToggleReminder={toggleReminder}
-          onSelectPreset={selectPreset}
-          onSelectRandomDate={selectRandomDate}
-          onOpenDatePicker={() => setOpenPicker("date")}
-          onOpenTimePicker={() => setOpenPicker("time")}
+          onChangeReminder={setReminder}
           memo={memo}
           onChangeMemo={setMemo}
           onSave={save}
@@ -343,20 +227,6 @@ function ShareSaveFlow({
         />
       ) : (
         <ResultSheet state={state} onRetry={save} onClose={onDismiss} />
-      )}
-      {openPicker === "date" && reminder && (
-        <DatePickerModal
-          value={reminder.date}
-          onConfirm={confirmPickedDate}
-          onClose={() => setOpenPicker(null)}
-        />
-      )}
-      {openPicker === "time" && reminder && (
-        <TimePickerModal
-          value={{ hour: reminder.hour, minute: reminder.minute }}
-          onConfirm={confirmPickedTime}
-          onClose={() => setOpenPicker(null)}
-        />
       )}
     </>
   );
@@ -507,17 +377,10 @@ const ShareSheetContainer = forwardRef<
 function EntrySheet({
   url,
   isSaving,
-  folders,
   selectedFolderId,
   onSelectFolder,
-  onFolderCreated,
   reminder,
-  selectedPresetDays,
-  onToggleReminder,
-  onSelectPreset,
-  onSelectRandomDate,
-  onOpenDatePicker,
-  onOpenTimePicker,
+  onChangeReminder,
   memo,
   onChangeMemo,
   onSave,
@@ -525,17 +388,10 @@ function EntrySheet({
 }: {
   url: string;
   isSaving: boolean;
-  folders: FolderSummary[];
   selectedFolderId: number | null;
   onSelectFolder: (folderId: number | null) => void;
-  onFolderCreated: (folder: FolderSummary) => void;
   reminder: ReminderValue | null;
-  selectedPresetDays: number | null;
-  onToggleReminder: (isEnabled: boolean) => void;
-  onSelectPreset: (days: number) => void;
-  onSelectRandomDate: () => void;
-  onOpenDatePicker: () => void;
-  onOpenTimePicker: () => void;
+  onChangeReminder: (reminder: ReminderValue | null) => void;
   memo: string;
   onChangeMemo: (memo: string) => void;
   onSave: () => void;
@@ -552,26 +408,14 @@ function EntrySheet({
   return (
     <View style={sheetStyles.container}>
       <View style={sheetStyles.handle} />
-      <View style={styles.header}>
-        <Pressable
-          style={styles.headerButton}
-          disabled={isSaving}
-          onPress={onCancel}
-        >
-          <SheetText style={styles.headerButtonText}>취소</SheetText>
-        </Pressable>
-        <SheetText style={styles.headerTitle}>링크 저장</SheetText>
-        <Pressable
-          style={[styles.headerButton, styles.saveButton]}
-          disabled={isSaving}
-          onPress={onSave}
-        >
-          {isSaving ? (
-            <ActivityIndicator size="small" color="#1a1a1a" />
-          ) : (
-            <SheetText style={styles.saveButtonText}>저장</SheetText>
-          )}
-        </Pressable>
+      {/* 헤더가 자체 좌우 여백을 가져 시트 컨테이너의 여백을 상쇄한다. */}
+      <View pointerEvents={isSaving ? "none" : "auto"} className="-mx-5">
+        <BottomSheetHeader
+          title="링크 저장"
+          onCancel={onCancel}
+          onConfirm={onSave}
+          isConfirmPending={isSaving}
+        />
       </View>
       {/* 시트 높이는 빌드 타임 고정(iOS) — 콘텐츠가 넘치는 작은 화면·리마인드 On 상태는
           세로 스크롤로 흡수한다. 헤더(취소·저장)는 스크롤 밖에 고정. */}
@@ -588,156 +432,51 @@ function EntrySheet({
           automaticallyAdjustKeyboardInsets
           contentContainerStyle={styles.entryScrollContent}
         >
-          {/* 시안 통합 카드(인앱 CreateLinkSheet 미러) — 프리뷰(파비콘·제목)와 URL 을 한 카드로. */}
-          <View style={styles.urlCard}>
-            <LinkPreviewCard url={url} isBare />
-            <SheetText style={styles.urlText} numberOfLines={2}>
-              {url}
-            </SheetText>
-          </View>
-
-          <View style={styles.sectionHeaderRow}>
-            <SheetText style={[styles.sectionTitle, styles.sectionTitleInRow]}>
-              폴더
-            </SheetText>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="폴더 추가"
-              hitSlop={8}
-              disabled={isSaving}
-              onPress={() => setIsCreatingFolder((isOpen) => !isOpen)}
-            >
-              <Plus size={24} color="#fffe66" />
-            </Pressable>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.folderRow}
-          >
-            <FolderChip
-              name="미분류"
-              color={null}
-              isSelected={selectedFolderId === null}
-              isDisabled={isSaving}
-              onPress={() => onSelectFolder(null)}
-            />
-            {folders.map((folder) => (
-              <FolderChip
-                key={folder.folderId}
-                name={folder.folderName}
-                color={folder.color}
-                isSelected={selectedFolderId === folder.folderId}
-                isDisabled={isSaving}
-                onPress={() => onSelectFolder(folder.folderId)}
-              />
-            ))}
-          </ScrollView>
-          {isCreatingFolder && (
-            <FolderCreateModal
-              onClose={() => setIsCreatingFolder(false)}
-              onCreated={(folder) => {
-                setIsCreatingFolder(false);
-                onFolderCreated(folder);
-              }}
-            />
-          )}
-
-          <View style={styles.reminderHeader}>
-            <SheetText style={[styles.sectionTitle, styles.sectionTitleInRow]}>
-              리마인드
-            </SheetText>
-            <ReminderToggle
-              isOn={reminder !== null}
-              isDisabled={isSaving}
-              onToggle={onToggleReminder}
-            />
-          </View>
-          {reminder === null ? (
-            <View style={[styles.reminderCard, styles.reminderOffRow]}>
-              <BellIcon color="#8A8A93" />
-              <SheetText style={styles.reminderPlaceholder}>
-                잊지 않도록 다시 알려드려요
-              </SheetText>
+          <View pointerEvents={isSaving ? "none" : "auto"} className="gap-6">
+            {/* 시안 통합 카드(인앱 CreateLinkSheet 미러) — 프리뷰(파비콘·제목)와 URL 을 한 카드로. */}
+            <View className="w-full rounded-[20px] bg-opacity-white-10">
+              <View className="px-4 pt-4">
+                <LinkPreviewCard url={url} isBare />
+                <View className="mt-4 h-px w-full bg-opacity-white-10" />
+              </View>
+              <View className="px-4 py-3">
+                <Text
+                  variant="body-2-normal"
+                  className="text-text-alternative"
+                  numberOfLines={2}
+                >
+                  {url}
+                </Text>
+              </View>
             </View>
-          ) : (
-            <ReminderOnCard
-              reminder={reminder}
-              selectedPresetDays={selectedPresetDays}
-              isDisabled={isSaving}
-              onSelectPreset={onSelectPreset}
-              onSelectRandomDate={onSelectRandomDate}
-              onOpenDatePicker={onOpenDatePicker}
-              onOpenTimePicker={onOpenTimePicker}
-            />
-          )}
 
-          <SheetText style={styles.sectionTitle}>메모</SheetText>
-          <TextInput
-            allowFontScaling={
-              globalThis.__promise9ShareExtension ? false : undefined
-            }
-            style={styles.memoInput}
-            multiline
-            maxLength={MEMO_MAX_LENGTH}
-            editable={!isSaving}
-            placeholder="저장한 이유나 기억하고 싶은 점을 적어보세요"
-            placeholderTextColor="#6b6b6b"
-            value={memo}
-            onChangeText={onChangeMemo}
-          />
-          <SheetText style={styles.memoCounter}>
-            {memo.length}/{MEMO_MAX_LENGTH}
-          </SheetText>
+            {/* 폴더는 부가 기능 — 조회가 실패하면 칩만 숨기고 미분류 저장은 계속된다. */}
+            <AsyncBoundary pending={null} fallback={null}>
+              <FolderChipList
+                value={selectedFolderId}
+                onChange={onSelectFolder}
+                onAddFolder={() => setIsCreatingFolder(true)}
+              />
+            </AsyncBoundary>
+
+            <ReminderSection value={reminder} onChange={onChangeReminder} />
+
+            <MemoField memo={memo} onChangeMemo={onChangeMemo} />
+          </View>
+          {isCreatingFolder && (
+            <FolderCreateModal onClose={() => setIsCreatingFolder(false)} />
+          )}
         </ScrollView>
       </Reanimated.View>
     </View>
   );
 }
 
-// 미분류 folder 아이콘 색 — 인앱 FolderChipList 와 동일한 Figma 기준(folder/gray).
-const UNCLASSIFIED_FOLDER_COLOR = "#65656B";
-
-const FOLDER_NAME_MAX_LENGTH = 20;
-
-// 인앱 폴더 생성 모달(FolderFormSheet)의 익스텐션판 — 같은 카드(Dialog·Input·색상 그리드)를
-// 재사용하고, 폼 상태만 로컬로 든다. 성공 시 목록 반영은 부모(onCreated)가 맡는다.
-function FolderCreateModal({
-  onClose,
-  onCreated,
-}: {
-  onClose: () => void;
-  onCreated: (folder: FolderSummary) => void;
-}) {
-  const [name, setName] = useState("");
-  const [color, setColor] = useState<SelectableFolderColor>("blue");
-  const [isDuplicateOpen, setIsDuplicateOpen] = useState(false);
+// 인앱 폴더 생성 카드를 익스텐션 시트 위에 띄운다 — 시트는 라우트가 아니라 화면 안이라
+// RN Modal 로 감싼다. 생성한 폴더의 선택은 FolderChipList 의 목록 재조회가 맡는다.
+function FolderCreateModal({ onClose }: { onClose: () => void }) {
+  const { mutateAsync } = useCreateFolderMutation();
   const [hasFailed, setHasFailed] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const submit = async () => {
-    const folderName = name.trim();
-    if (folderName === "" || isSubmitting) {
-      return;
-    }
-    setIsSubmitting(true);
-    setHasFailed(false);
-    try {
-      const { data } = await apiClient.post<SuccessResponse<FolderSummary>>(
-        "/folders",
-        { folderName, color: folderToneToHex(color) },
-      );
-      onCreated(data.data);
-    } catch (error) {
-      if (isDuplicateFolderNameError(error)) {
-        setIsDuplicateOpen(true);
-      } else {
-        setHasFailed(true);
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <Modal
@@ -747,259 +486,17 @@ function FolderCreateModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Dialog onDismiss={onClose}>
-        <View className="w-full max-w-[335px] gap-10 rounded-[36px] border border-opacity-white-05 bg-gray-800 p-5">
-          <View className="gap-4">
-            <UIText
-              variant="heading-2"
-              className="text-center text-text-strong"
-            >
-              새 폴더 만들기
-            </UIText>
-
-            <View className="gap-5">
-              <View className="gap-2">
-                <UIText variant="heading-3" className="text-icon-normal">
-                  이름
-                </UIText>
-                <Input variant="field">
-                  <InputField
-                    allowFontScaling={
-                      globalThis.__promise9ShareExtension ? false : undefined
-                    }
-                    placeholder="폴더 이름을 입력하세요."
-                    maxLength={FOLDER_NAME_MAX_LENGTH}
-                    editable={!isSubmitting}
-                    value={name}
-                    onChangeText={setName}
-                  />
-                </Input>
-              </View>
-
-              <View className="gap-5">
-                <UIText variant="heading-3" className="text-icon-normal">
-                  색상
-                </UIText>
-                <FolderColorPicker value={color} onChange={setColor} />
-              </View>
-
-              {hasFailed && (
-                <UIText variant="caption-1" className="text-action-destructive">
-                  폴더를 만들지 못했어요. 다시 시도해주세요
-                </UIText>
-              )}
-            </View>
-          </View>
-
-          <View className="flex-row gap-2">
-            <ActionButton
-              variant="assistive"
-              className="flex-1"
-              onPress={onClose}
-            >
-              취소
-            </ActionButton>
-            <ActionButton
-              className="flex-1"
-              disabled={isSubmitting || name.trim() === ""}
-              onPress={submit}
-            >
-              저장
-            </ActionButton>
-          </View>
-        </View>
-      </Dialog>
-
-      <DuplicateFolderNameAlert
-        isOpen={isDuplicateOpen}
-        onClose={() => setIsDuplicateOpen(false)}
+      <FolderFormCard
+        title="새 폴더 만들기"
+        defaultValues={{ folderName: "", color: "blue" }}
+        onSubmit={(values) => mutateAsync(values)}
+        onClose={onClose}
+        onError={() => setHasFailed(true)}
+        errorMessage={
+          hasFailed ? "폴더를 만들지 못했어요. 다시 시도해주세요" : null
+        }
       />
     </Modal>
-  );
-}
-
-function FolderChip({
-  name,
-  color,
-  isSelected,
-  isDisabled,
-  onPress,
-}: {
-  name: string;
-  color: string | null;
-  isSelected: boolean;
-  isDisabled: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={name}
-      accessibilityState={{ selected: isSelected }}
-      style={[styles.folderChip, isSelected && styles.folderChipSelected]}
-      disabled={isDisabled}
-      onPress={onPress}
-    >
-      <FolderIcon size={16} color={color ?? UNCLASSIFIED_FOLDER_COLOR} />
-      <SheetText
-        style={[
-          styles.folderChipText,
-          isSelected && styles.folderChipTextSelected,
-        ]}
-      >
-        {name}
-      </SheetText>
-    </Pressable>
-  );
-}
-
-// 인앱 ReminderSection 의 프리셋과 동일(컴포넌트는 NativeWind 의존이라 값만 미러링).
-const REMINDER_PRESETS = [
-  { days: 1, label: "내일" },
-  { days: 3, label: "3일 후" },
-  { days: 7, label: "7일 후" },
-  { days: 14, label: "14일 후" },
-];
-
-// 인앱 Toggle 시안 미러 — 트랙 On=gray-50/Off=gray-400, 노브 On=20/Off=16 모두 gray-800.
-function ReminderToggle({
-  isOn,
-  isDisabled,
-  onToggle,
-}: {
-  isOn: boolean;
-  isDisabled: boolean;
-  onToggle: (isEnabled: boolean) => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="switch"
-      accessibilityLabel="리마인드"
-      accessibilityState={{ checked: isOn }}
-      hitSlop={8}
-      disabled={isDisabled}
-      onPress={() => onToggle(!isOn)}
-      style={[styles.toggleTrack, isOn && styles.toggleTrackOn]}
-    >
-      <View style={[styles.toggleKnob, isOn && styles.toggleKnobOn]} />
-    </Pressable>
-  );
-}
-
-function ReminderOnCard({
-  reminder,
-  selectedPresetDays,
-  isDisabled,
-  onSelectPreset,
-  onSelectRandomDate,
-  onOpenDatePicker,
-  onOpenTimePicker,
-}: {
-  reminder: ReminderValue;
-  selectedPresetDays: number | null;
-  isDisabled: boolean;
-  onSelectPreset: (days: number) => void;
-  onSelectRandomDate: () => void;
-  onOpenDatePicker: () => void;
-  onOpenTimePicker: () => void;
-}) {
-  return (
-    <View style={styles.reminderCardOn}>
-      <View style={styles.reminderQuestionRow}>
-        <BellIcon color="#E9E9EB" />
-        <SheetText style={styles.reminderQuestion}>
-          언제 알려드릴까요?
-        </SheetText>
-      </View>
-      <View style={styles.presetRow}>
-        {REMINDER_PRESETS.map((preset) => (
-          <PresetChip
-            key={preset.days}
-            label={preset.label}
-            isSelected={selectedPresetDays === preset.days}
-            isDisabled={isDisabled}
-            onPress={() => onSelectPreset(preset.days)}
-          />
-        ))}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="랜덤 날짜"
-          style={styles.presetChip}
-          disabled={isDisabled}
-          onPress={onSelectRandomDate}
-        >
-          <DiceIcon />
-        </Pressable>
-      </View>
-      <View style={styles.reminderDivider} />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="날짜 선택"
-        style={styles.reminderValueRow}
-        disabled={isDisabled}
-        onPress={onOpenDatePicker}
-      >
-        <View style={styles.reminderValueItem}>
-          <Calendar size={16} color="#E9E9EB" />
-          <SheetText style={styles.reminderValueText}>
-            {formatReminderDate(reminder.date)}
-          </SheetText>
-        </View>
-        <View style={styles.reminderValueItem}>
-          <SheetText style={styles.reminderRemainingText}>
-            {formatRemainingPeriod(reminder.date)}
-          </SheetText>
-          <ChevronRight size={16} color="#8A8A93" />
-        </View>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="시간 선택"
-        style={styles.reminderValueRow}
-        disabled={isDisabled}
-        onPress={onOpenTimePicker}
-      >
-        <View style={styles.reminderValueItem}>
-          <Clock size={16} color="#E9E9EB" />
-          <SheetText style={styles.reminderValueText}>
-            {formatReminderTime(reminder.hour, reminder.minute)}
-          </SheetText>
-        </View>
-        <ChevronRight size={16} color="#8A8A93" />
-      </Pressable>
-    </View>
-  );
-}
-
-function PresetChip({
-  label,
-  isSelected,
-  isDisabled,
-  onPress,
-}: {
-  label: string;
-  isSelected: boolean;
-  isDisabled: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: isSelected }}
-      disabled={isDisabled}
-      onPress={onPress}
-      style={[styles.presetChip, isSelected && styles.presetChipSelected]}
-    >
-      <SheetText
-        style={[
-          styles.presetChipText,
-          isSelected && styles.presetChipTextSelected,
-        ]}
-      >
-        {label}
-      </SheetText>
-    </Pressable>
   );
 }
 
@@ -1117,220 +614,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     overflow: "hidden",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  headerButton: {
-    minWidth: 64,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#2a2a2a",
-  },
-  headerButtonText: {
-    color: "#ffffff",
-    fontSize: 15,
-  },
-  headerTitle: {
-    color: "#ffffff",
-    fontSize: 17,
-  },
-  saveButton: {
-    backgroundColor: "#ffffff",
-  },
-  saveButtonText: {
-    color: "#1a1a1a",
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  urlCard: {
-    backgroundColor: "#242424",
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-  },
-  urlText: {
-    color: "#d0d0d0",
-    fontSize: 14,
-  },
-  sectionTitle: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "600",
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  folderRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  // 인앱 Folder Chip / SaveSheet 미러 — h40·px12·gap4, 선택=white-10 bg, 비선택=white-05 테두리.
-  folderChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    height: 40,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#ffffff0d",
-  },
-  folderChipSelected: {
-    backgroundColor: "#ffffff1a",
-    borderColor: "transparent",
-  },
-  folderChipText: {
-    color: "#8a8a93",
-    fontSize: 14,
-  },
-  folderChipTextSelected: {
-    color: "#fafafa",
-  },
   entryScrollArea: {
     flex: 1,
   },
   entryScrollContent: {
     paddingBottom: 16,
-  },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  reminderHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  sectionTitleInRow: {
-    marginTop: 0,
-    marginBottom: 0,
-  },
-  // 인앱 카드 토큰 미러 — bg opacity-white-10(#ffffff1a), placeholder text-alternative 근사.
-  reminderCard: {
-    borderRadius: 16,
-    backgroundColor: "#ffffff1a",
-    padding: 16,
-  },
-  reminderPlaceholder: {
-    color: "#8A8A93",
-    fontSize: 14,
-  },
-  reminderCardOn: {
-    borderRadius: 16,
-    backgroundColor: "#ffffff1a",
-    padding: 16,
-    gap: 12,
-  },
-  reminderOffRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  reminderQuestionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  reminderQuestion: {
-    color: "#ffffff",
-    fontSize: 14,
-  },
-  presetRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: 4,
-  },
-  presetChip: {
-    height: 36,
-    paddingHorizontal: 12,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#0000004d",
-  },
-  presetChipSelected: {
-    backgroundColor: "#ffffffcc",
-  },
-  presetChipText: {
-    color: "#ffffffb2",
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  presetChipTextSelected: {
-    color: "#17171b",
-  },
-  reminderDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: "#ffffff1a",
-  },
-  reminderValueRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  reminderValueItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  reminderRemainingText: {
-    color: "#fbffc2",
-    fontSize: 14,
-  },
-  reminderValueText: {
-    color: "#ffffff",
-    fontSize: 14,
-  },
-  toggleTrack: {
-    width: 44,
-    height: 24,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-start",
-    padding: 4,
-    backgroundColor: "#65656b",
-  },
-  toggleTrackOn: {
-    justifyContent: "flex-end",
-    padding: 2,
-    backgroundColor: "#fafafa",
-  },
-  toggleKnob: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "#242426",
-  },
-  toggleKnobOn: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-  },
-  memoInput: {
-    minHeight: 96,
-    borderRadius: 16,
-    backgroundColor: "#242424",
-    padding: 14,
-    color: "#ffffff",
-    fontSize: 14,
-    textAlignVertical: "top",
-  },
-  memoCounter: {
-    alignSelf: "flex-end",
-    color: "#6b6b6b",
-    fontSize: 12,
-    marginTop: 6,
   },
   ctaButton: {
     height: 52,
