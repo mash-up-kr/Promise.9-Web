@@ -1,27 +1,13 @@
-import { zodResolver } from "@hookform/resolvers/zod";
 import type { SelectableFolderColor } from "@shared/folder/folder.constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { View } from "react-native";
 
-import { ActionButton } from "@/components/ui/action-button/ActionButton";
-import { Dialog } from "@/components/ui/dialog/Dialog";
-import { Input, InputField } from "@/components/ui/input/Input";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
-import { Text } from "@/components/ui/text/Text";
-import { isDuplicateFolderNameError } from "@/entities/folder/folder.errors";
 import {
   useCreateFolderMutation,
   useUpdateFolderMutation,
 } from "@/entities/folder/folder.queries";
 import { FOLDER_COLOR_OPTIONS } from "./archive.constants";
-import {
-  type CreateFolderInput,
-  createFolderSchema,
-} from "./archive.contracts";
-import { DuplicateFolderNameAlert } from "./components/DuplicateFolderNameAlert";
-import { FolderColorPicker } from "./components/FolderColorPicker";
+import { FolderFormCard } from "./components/FolderFormCard";
 
 export type FolderFormMode = "create" | "edit";
 
@@ -43,19 +29,26 @@ export function FolderFormSheet({ mode }: FolderFormSheetProps) {
 }
 
 function CreateFolderForm() {
+  const router = useRouter();
+  const { show } = useSnackbar();
   const { mutateAsync } = useCreateFolderMutation();
 
   return (
     <FolderFormCard
       title="새 폴더 만들기"
       defaultValues={{ folderName: "", color: "blue" }}
-      failureMessage="폴더를 만들지 못했어요. 다시 시도해주세요."
       onSubmit={(values) => mutateAsync(values)}
+      onClose={() => router.back()}
+      onError={() =>
+        show({ message: "폴더를 만들지 못했어요. 다시 시도해주세요." })
+      }
     />
   );
 }
 
 function EditFolderForm() {
+  const router = useRouter();
+  const { show } = useSnackbar();
   const { mutateAsync } = useUpdateFolderMutation();
   // 목록에서 이미 가진 값이라 상세를 다시 조회하지 않고 params 로 받는다.
   const { id, name, color } = useLocalSearchParams<{
@@ -71,7 +64,6 @@ function EditFolderForm() {
         folderName: name ?? "",
         color: toSelectableColor(color),
       }}
-      failureMessage="폴더를 수정하지 못했어요. 다시 시도해주세요."
       onSubmit={(values, dirtyFields) =>
         mutateAsync({
           folderId: id,
@@ -80,6 +72,10 @@ function EditFolderForm() {
           // 폼에 폴백 색이 잡혀 있어, 그대로 보내면 이름만 고쳐도 색이 덮인다.
           color: dirtyFields.color ? values.color : undefined,
         })
+      }
+      onClose={() => router.back()}
+      onError={() =>
+        show({ message: "폴더를 수정하지 못했어요. 다시 시도해주세요." })
       }
     />
   );
@@ -90,130 +86,4 @@ function toSelectableColor(color?: string): SelectableFolderColor {
   return FOLDER_COLOR_OPTIONS.includes(color as SelectableFolderColor)
     ? (color as SelectableFolderColor)
     : "blue";
-}
-
-/** 사용자가 실제로 건드린 필드. 편집은 바뀐 필드만 보내야 해서 제출 시 함께 넘긴다. */
-type FolderFormDirtyFields = Partial<Record<keyof CreateFolderInput, boolean>>;
-
-interface FolderFormCardProps {
-  /** 카드 상단 문구 — "새 폴더 만들기" / "폴더 편집". */
-  title: string;
-  defaultValues: CreateFolderInput;
-  /** 중복 이름 외 실패를 알릴 스낵바 문구. */
-  failureMessage: string;
-  onSubmit: (
-    values: CreateFolderInput,
-    dirtyFields: FolderFormDirtyFields,
-  ) => Promise<unknown>;
-}
-
-/** 두 모드가 공유하는 폼·레이아웃과, 성공/실패 뒤처리(닫기·중복 안내·스낵바). */
-function FolderFormCard({
-  title,
-  defaultValues,
-  failureMessage,
-  onSubmit,
-}: FolderFormCardProps) {
-  const router = useRouter();
-  const { show } = useSnackbar();
-  const [isDuplicateOpen, setIsDuplicateOpen] = useState(false);
-  const { control, handleSubmit, formState } = useForm<CreateFolderInput>({
-    resolver: zodResolver(createFolderSchema),
-    mode: "onChange",
-    defaultValues,
-  });
-
-  // 렌더 중에 읽어야 RHF 가 변화를 구독해 최신 값을 유지한다.
-  const { dirtyFields, isValid, isSubmitting } = formState;
-  const saveDisabled = !isValid || isSubmitting;
-
-  const close = () => router.back();
-
-  const submit = handleSubmit(async (values) => {
-    try {
-      await onSubmit(values, dirtyFields);
-      close();
-    } catch (error) {
-      // 중복 이름은 고쳐 쓸 수 있게 다이얼로그로 잡아두고, 그 외는 스낵바로 알린다.
-      if (isDuplicateFolderNameError(error)) {
-        setIsDuplicateOpen(true);
-        return;
-      }
-      show({ message: failureMessage });
-    }
-  });
-
-  return (
-    <>
-      <Dialog onDismiss={close}>
-        {/* Figma Card: gray-800 + white-05 테두리, radius 36, padding 20, 최대 폭 335. */}
-        <View className="w-full max-w-[335px] gap-10 rounded-[36px] border border-opacity-white-05 bg-gray-800 p-5">
-          <View className="gap-4">
-            <Text variant="heading-2" className="text-center text-text-strong">
-              {title}
-            </Text>
-
-            <View className="gap-5">
-              <View className="gap-2">
-                <Text variant="heading-3" className="text-icon-normal">
-                  이름
-                </Text>
-                <Controller
-                  control={control}
-                  name="folderName"
-                  render={({ field }) => (
-                    <Input variant="field">
-                      <InputField
-                        placeholder="폴더 이름을 입력하세요."
-                        value={field.value}
-                        onChangeText={field.onChange}
-                      />
-                    </Input>
-                  )}
-                />
-              </View>
-
-              <View className="gap-5">
-                <Text variant="heading-3" className="text-icon-normal">
-                  색상
-                </Text>
-                <Controller
-                  control={control}
-                  name="color"
-                  render={({ field }) => (
-                    <FolderColorPicker
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  )}
-                />
-              </View>
-            </View>
-          </View>
-
-          <View className="flex-row gap-2">
-            <ActionButton
-              variant="assistive"
-              className="flex-1"
-              onPress={close}
-            >
-              취소
-            </ActionButton>
-            <ActionButton
-              className="flex-1"
-              disabled={saveDisabled}
-              onPress={submit}
-            >
-              저장
-            </ActionButton>
-          </View>
-        </View>
-      </Dialog>
-
-      <DuplicateFolderNameAlert
-        isOpen={isDuplicateOpen}
-        onClose={() => setIsDuplicateOpen(false)}
-      />
-    </>
-  );
 }
