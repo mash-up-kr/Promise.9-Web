@@ -276,26 +276,32 @@ function useInvalidateFolderCaches() {
   };
 }
 
-export interface UpdateLinkFolderVariables {
-  linkId: number;
+export interface MoveLinksToFolderVariables {
+  linkIds: number[];
   /** null 은 미분류로 이동한다는 뜻(서버 계약). */
   folderId: number | null;
 }
 
-// PATCH /links/{linkId} — 링크를 다른 폴더로 옮긴다. 벌크 API 가 없어 호출부가 선택 개수만큼 부른다.
-export function useUpdateLinkFolderMutation() {
+/**
+ * PATCH /links/folder — 선택한 링크를 한 요청으로 옮긴다.
+ *
+ * 서버가 목적지 폴더와 모든 링크를 한 transaction 에서 검증·이동해 전부 옮기거나 전부
+ * 실패시킨다(Promise.9-Server#87). 링크마다 단건 PATCH 를 보내던 때와 달리 일부만 옮겨진
+ * 상태가 남지 않으므로 호출부는 실패 시 그대로 다시 보내면 된다.
+ */
+export function useMoveLinksToFolderMutation() {
   const queryClient = useQueryClient();
   const invalidateFolderCaches = useInvalidateFolderCaches();
 
   return useMutation({
-    mutationFn: async ({ linkId, folderId }: UpdateLinkFolderVariables) => {
-      await apiClient.patch(`/links/${linkId}`, { folderId });
+    mutationFn: async ({ linkIds, folderId }: MoveLinksToFolderVariables) => {
+      await apiClient.patch("/links/folder", { linkIds, folderId });
     },
-    // 상세 화면이 열려 있으면 폴더가 바로 바뀌도록 그 링크의 detail 도 무효화한다.
-    onSuccess: (_data, { linkId }) => {
-      queryClient.invalidateQueries({
-        queryKey: linkKeys.detail(String(linkId)),
-      });
+    // 상세 화면이 열려 있으면 폴더가 바로 바뀌도록 detail 도 무효화한다. 옮긴 링크만
+    // 골라내지 않고 details 전체를 fuzzy 무효화한다 — 비활성 캐시는 다음 마운트 때만
+    // refetch 되므로 과잉 비용이 없다.
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: linkKeys.details() });
       invalidateFolderCaches();
     },
   });

@@ -5,7 +5,8 @@ import type { LinkListParams } from "./link.queries";
 export const linkKeys = {
   root: () => ["link"] as const,
   preview: (url: string) => [...linkKeys.root(), "preview", url] as const,
-  detail: (linkId: string) => [...linkKeys.root(), "detail", linkId] as const,
+  details: () => [...linkKeys.root(), "detail"] as const,
+  detail: (linkId: string) => [...linkKeys.details(), linkId] as const,
   lists: () => [...linkKeys.root(), "list"] as const,
   list: (params: LinkListParams) => [...linkKeys.lists(), params] as const,
   infiniteList: (params: LinkListParams) =>
