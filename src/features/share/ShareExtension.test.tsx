@@ -8,6 +8,7 @@ jest.mock("@shared/api", () => {
   const contracts = jest.requireActual("@shared/api/auth.contracts");
   return {
     apiClient: { get: jest.fn(), post: jest.fn() },
+    refreshAccessToken: jest.fn(),
     ...errors,
     ...token,
     ...contracts,
@@ -21,6 +22,8 @@ jest.mock("@/features/auth/hooks/useSocialAuth", () => ({
 import {
   apiClient,
   clearTokens,
+  refreshAccessToken,
+  setAccessToken,
   setTokenPersistence,
   setTokens,
 } from "@shared/api";
@@ -97,8 +100,13 @@ function unauthorizedError() {
 
 let storedRefreshToken: string | null = "rtk";
 
+const mockRefreshAccessToken = refreshAccessToken as jest.Mock;
+
 beforeEach(() => {
   jest.clearAllMocks();
+  mockRefreshAccessToken.mockResolvedValue("atk");
+  // 메모리 액세스 토큰은 모듈 전역 — 앞 테스트의 로그인이 남긴 값을 비워 진입 조건을 통일한다.
+  setAccessToken(null);
   storedRefreshToken = "rtk";
   setTokenPersistence({
     getRefreshToken: async () => storedRefreshToken,
@@ -531,4 +539,17 @@ test("URL 형식이 아니면 서버에 보내지 않고 저장 불가 시트를
 
   await user.press(screen.getByText("닫기"));
   await waitFor(() => expect(close).toHaveBeenCalled());
+});
+
+test("로그인 상태로 진입하면 저장 시트를 띄우기 전에 액세스 토큰을 한 번 재발급한다", async () => {
+  await render(<ShareExtension url="https://toss.tech/a" />);
+
+  expect(await screen.findByText("저장")).toBeOnTheScreen();
+  expect(mockRefreshAccessToken).toHaveBeenCalledTimes(1);
+});
+
+test("저장 시트 스크롤은 키보드 높이만큼 인셋을 넣어 메모 입력이 가려지지 않게 한다", async () => {
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  const scroll = await screen.findByTestId("share-entry-scroll");
+  expect(scroll.props.automaticallyAdjustKeyboardInsets).toBe(true);
 });

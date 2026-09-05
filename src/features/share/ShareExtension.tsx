@@ -1,4 +1,4 @@
-import { apiClient } from "@shared/api";
+import { apiClient, isUnauthorizedError } from "@shared/api";
 import type { SuccessResponse } from "@shared/api/api.types";
 import {
   folderToneToHex,
@@ -30,6 +30,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import { Dialog } from "@/components/ui/dialog/Dialog";
 import { BellIcon } from "@/components/ui/icon/BellIcon";
@@ -45,6 +46,10 @@ import {
 } from "@/entities/link/link.errors";
 import { DuplicateFolderNameAlert } from "@/features/archive/components/DuplicateFolderNameAlert";
 import { FolderColorPicker } from "@/features/archive/components/FolderColorPicker";
+import {
+  type AuthGateStatus,
+  useAuthGate,
+} from "@/features/auth/hooks/useAuthGate";
 import { DatePickerModal } from "@/features/link/components/DatePickerModal";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { TimePickerModal } from "@/features/link/components/TimePickerModal";
@@ -74,10 +79,7 @@ import {
 } from "./share.reducer";
 import { close, openHostApp } from "./shareHost";
 import { SheetText, sheetStyles } from "./sheet.primitives";
-import {
-  type ExtensionSessionStatus,
-  useExtensionSession,
-} from "./useExtensionSession";
+import { useAccessTokenWarmup } from "./useAccessTokenWarmup";
 
 // 익스텐션 엔트리도 global.css 를 로드해 NativeWind(className)·인앱 컴포넌트를 쓸 수 있다.
 // 기존 스타일은 StyleSheet 로 남겨둔다(동작 동일, 전환은 불필요한 churn).
@@ -98,16 +100,14 @@ interface FoldersResponse {
 
 const MEMO_MAX_LENGTH = 300;
 
-// 익스텐션 프로세스 전용 클라이언트 — LinkPreviewCard(react-query) 재사용을 위해 둔다.
-const extensionQueryClient = new QueryClient();
-
 /**
  * iOS Share Extension 루트 — 공유받은 URL 을 익스텐션 안에서 바로 저장한다.
  * 결과 시트(성공/실패/중복/반복실패) 전이는 share.reducer 가 정한다.
  */
 export function ShareExtension({ url }: { url?: string }) {
   const sharedUrl = url ?? "";
-  const status = useExtensionSession();
+  const status = useAuthGate();
+  const isTokenReady = useAccessTokenWarmup(status);
   // 한 번 인증됐다가 풀린 경우(저장 중 401 → refresh 실패)는 "다시 로그인" 안내로 구분한다.
   const wasAuthenticated = useRef(false);
   // 렌더 중 기록하지만 단조 래치라 멱등 — effect 로 옮기면 만료 안내가 한 렌더 늦어진다.
@@ -134,38 +134,43 @@ export function ShareExtension({ url }: { url?: string }) {
     if (status !== "authenticated") setIsEditing(true);
   }, [status]);
 
+  // 익스텐션 프로세스 전용 클라이언트 — LinkPreviewCard(react-query) 재사용을 위해 둔다.
+  // 모듈 싱글턴이 아니라 마운트마다 새로 만들어 테스트 간 캐시가 새지 않게 한다.
+  const [queryClient] = useState(() => new QueryClient());
+
   return (
-    <QueryClientProvider client={extensionQueryClient}>
-      <ShareSheetContainer
-        ref={sheetRef}
-        height={sheetHeightFor(status, isEditing)}
-        onClosed={() => close()}
-      >
-        {status === "checking" && <CheckingSheet />}
-        {status === "unauthenticated" && (
-          <ExtensionLoginSheet
-            sharedUrl={sharedUrl}
-            isSessionExpired={isSessionExpired}
-          />
-        )}
-        {status === "authenticated" && (
-          <ShareSaveFlow
-            url={sharedUrl}
-            onDismiss={dismissSheet}
-            onEditingChange={setIsEditing}
-          />
-        )}
-      </ShareSheetContainer>
+    <QueryClientProvider client={queryClient}>
+      {/* Dialog(폴더 생성·피커)의 키보드 회피는 KeyboardProvider 가 있어야 동작한다 — 앱 _layout 처럼 감싼다. */}
+      <KeyboardProvider>
+        <ShareSheetContainer
+          ref={sheetRef}
+          height={sheetHeightFor(status, isEditing)}
+          onClosed={close}
+        >
+          {(status === "checking" ||
+            (status === "authenticated" && !isTokenReady)) && <CheckingSheet />}
+          {status === "unauthenticated" && (
+            <ExtensionLoginSheet
+              sharedUrl={sharedUrl}
+              isSessionExpired={isSessionExpired}
+            />
+          )}
+          {status === "authenticated" && isTokenReady && (
+            <ShareSaveFlow
+              url={sharedUrl}
+              onDismiss={dismissSheet}
+              onEditingChange={setIsEditing}
+            />
+          )}
+        </ShareSheetContainer>
+      </KeyboardProvider>
     </QueryClientProvider>
   );
 }
 
 // 편집·확인 중 시트는 길고(600) 결과 시트만 짧다(400). 확인 중을 600 으로 두는 이유:
 // 컨테이너가 마운트 시점 높이로 슬라이드 거리를 잡아, 400 이면 iOS 첫 프레임에 시트 일부가 보인다.
-function sheetHeightFor(
-  status: ExtensionSessionStatus,
-  isEditing: boolean,
-): number {
+function sheetHeightFor(status: AuthGateStatus, isEditing: boolean): number {
   if (status === "unauthenticated") return EXTENSION_LOGIN_SHEET_HEIGHT;
   if (status === "authenticated" && !isEditing) return 400;
   return 600;
@@ -293,6 +298,10 @@ function ShareSaveFlow({
         });
         return;
       }
+      // 401 은 refresh 실패 → clearTokens 로 가드가 로그인 시트를 띄운다 — 실패 시트를 스치지 않게 여기선 끝낸다.
+      if (isUnauthorizedError(error)) {
+        return;
+      }
       dispatch({ type: "SAVE_FAILED" });
     }
   };
@@ -350,6 +359,9 @@ function ShareSaveFlow({
 // 닫힐 때는 시트가 먼저 내려간 뒤 스르륵 사라진다(iOS dim 은 시스템 프레젠테이션 담당).
 const SHEET_ENTER_MS = 260;
 const SHEET_EXIT_MS = 220;
+// iOS 시트는 네이티브가 고정한 컨테이너(app.json expo-share-extension height) 를 꽉 채우므로,
+// 슬라이드 거리는 논리 높이(400·520)가 아니라 이 값이어야 화면 밖까지 완전히 나간다.
+const IOS_SHEET_CONTAINER_HEIGHT = 600;
 const DIM_FADE_MS = 180;
 const DRAG_DISMISS_DISTANCE = 120;
 const DRAG_DISMISS_VELOCITY = 0.8;
@@ -365,10 +377,13 @@ const ShareSheetContainer = forwardRef<
   ShareSheetHandle,
   PropsWithChildren<{ height: number; onClosed: () => void }>
 >(function ShareSheetContainer({ height, onClosed, children }, ref) {
-  const sheetY = useRef(new Animated.Value(height)).current;
+  const slideDistance = isAndroid ? height : IOS_SHEET_CONTAINER_HEIGHT;
+  const sheetY = useRef(new Animated.Value(slideDistance)).current;
   const dimOpacity = useRef(new Animated.Value(0)).current;
-  const heightRef = useRef(height);
-  heightRef.current = height;
+  const slideDistanceRef = useRef(slideDistance);
+  slideDistanceRef.current = slideDistance;
+  // 퇴장은 한 번만 — 스와이프 중 탭아웃처럼 겹치면 첫 애니메이션이 중단된 채 닫혀 시트가 반쯤 남는다.
+  const isClosingRef = useRef(false);
 
   useEffect(
     function enterAnimation() {
@@ -390,12 +405,15 @@ const ShareSheetContainer = forwardRef<
   );
 
   const dismiss = useCallback(() => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
     Animated.timing(sheetY, {
-      toValue: heightRef.current,
+      toValue: slideDistanceRef.current,
       duration: SHEET_EXIT_MS,
       easing: Easing.in(Easing.cubic),
       useNativeDriver: true,
-    }).start(() => {
+    }).start(({ finished }) => {
+      if (!finished) return;
       if (!isAndroid) {
         onClosed();
         return;
@@ -418,11 +436,12 @@ const ShareSheetContainer = forwardRef<
       onMoveShouldSetPanResponder: (_, gesture) =>
         gesture.dy > 6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
       onPanResponderMove: (_, gesture) => {
-        if (gesture.dy > 0) {
+        if (!isClosingRef.current && gesture.dy > 0) {
           sheetY.setValue(gesture.dy);
         }
       },
       onPanResponderRelease: (_, gesture) => {
+        if (isClosingRef.current) return;
         if (
           gesture.dy > DRAG_DISMISS_DISTANCE ||
           gesture.vy > DRAG_DISMISS_VELOCITY
@@ -544,8 +563,11 @@ function EntrySheet({
       {/* 시트 높이는 빌드 타임 고정(iOS) — 콘텐츠가 넘치는 작은 화면·리마인드 On 상태는
           세로 스크롤로 흡수한다. 헤더(취소·저장)는 스크롤 밖에 고정. */}
       <ScrollView
+        testID="share-entry-scroll"
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        // 시트 컨테이너는 키보드에 밀리지 않는다 — 스크롤 인셋으로 메모 입력이 키보드 위로 올라오게 한다(iOS).
+        automaticallyAdjustKeyboardInsets
         contentContainerStyle={styles.entryScrollContent}
       >
         {/* 시안 통합 카드(인앱 CreateLinkSheet 미러) — 프리뷰(파비콘·제목)와 URL 을 한 카드로. */}
@@ -1063,12 +1085,13 @@ const styles = StyleSheet.create({
   iosSheet: {
     flex: 1,
   },
+  // 핸들 영역(8+4+12pt)만 덮는다 — 헤더 버튼(24pt 부터)까지 덮으면 그 윗부분 탭이 먹지 않는다.
   dragZone: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    height: 40,
+    height: 24,
   },
   androidSheet: {
     borderTopLeftRadius: 24,
