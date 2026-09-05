@@ -104,7 +104,6 @@ const extensionQueryClient = new QueryClient();
 /**
  * iOS Share Extension 루트 — 공유받은 URL 을 익스텐션 안에서 바로 저장한다.
  * 결과 시트(성공/실패/중복/반복실패) 전이는 share.reducer 가 정한다.
- * TODO(#85 후속): 폴더 선택·리마인드·메모 입력, 마스코트 그래픽.
  */
 export function ShareExtension({ url }: { url?: string }) {
   const sharedUrl = url ?? "";
