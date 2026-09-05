@@ -40,7 +40,17 @@ async function doRefresh(): Promise<string> {
     await setTokens(parsed.accessToken, parsed.refreshToken);
     return parsed.accessToken;
   } catch (error) {
-    await clearTokens();
+    // 서버가 토큰을 거절했을 때만 지운다 — 네트워크·타임아웃·5xx 같은 일시 장애로 세션을 날리지 않도록
+    // (공유 익스텐션은 매 실행마다 refresh 를 거치므로 그 영향이 메인 앱까지 미친다).
+    if (isTokenRejected(error)) {
+      await clearTokens();
+    }
     throw error;
   }
+}
+
+function isTokenRejected(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false;
+  const status = error.response?.status;
+  return status === 401 || status === 403;
 }
