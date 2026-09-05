@@ -1,11 +1,12 @@
 import type { SocialProvider } from "@shared/api";
-import { Image, StyleSheet, View } from "react-native";
+import { Image, View } from "react-native";
 
+import { Text } from "@/components/ui/text/Text";
 import { SOCIAL_PROVIDERS } from "@/features/auth/auth.constants";
 import { AgreementText } from "@/features/auth/components/AgreementText";
 import { SocialLoginButton } from "@/features/auth/components/SocialLoginButton";
 
-import { SheetText, sheetStyles } from "./sheet.primitives";
+import { SheetFrame } from "./components/SheetFrame";
 import { useExtensionSocialLogin } from "./useExtensionSocialLogin";
 
 export const EXTENSION_LOGIN_SHEET_HEIGHT = 520;
@@ -26,65 +27,54 @@ export function ExtensionLoginSheet({
     useExtensionSocialLogin(sharedUrl);
 
   return (
-    <View style={[sheetStyles.container, sheetStyles.resultContainer]}>
-      <View style={sheetStyles.handle} />
-      <View style={sheetStyles.resultBody}>
-        <Image
-          testID="share-login-graphic"
-          source={LOGIN_GRAPHIC}
-          style={styles.graphic}
-        />
-        <SheetText style={sheetStyles.resultTitle}>로그인이 필요해요</SheetText>
-        <SheetText style={sheetStyles.resultSubtitle}>
-          {isSessionExpired
-            ? "다시 로그인해주세요"
-            : "로그인하면 이 링크를 바로 저장할 수 있어요"}
-        </SheetText>
+    <SheetFrame>
+      <View className="flex-1 justify-end px-5">
+        <View className="flex-1 items-center justify-center gap-2">
+          <Image
+            testID="share-login-graphic"
+            source={LOGIN_GRAPHIC}
+            className="size-30"
+          />
+          <Text variant="heading-2" className="text-text-strong">
+            로그인이 필요해요
+          </Text>
+          <Text variant="body-2-reading" className="text-text-alternative">
+            {isSessionExpired
+              ? "다시 로그인해주세요"
+              : "로그인하면 이 링크를 바로 저장할 수 있어요"}
+          </Text>
+        </View>
+        <View className="gap-3">
+          {Object.entries(SOCIAL_PROVIDERS)
+            .filter(([, config]) => config.enabled)
+            .map(([key, config]) => {
+              const provider = key as SocialProvider;
+              return (
+                <SocialLoginButton
+                  key={provider}
+                  provider={provider}
+                  label={config.label}
+                  onPress={login}
+                  loading={pendingProvider === provider}
+                  disabled={
+                    pendingProvider !== null && pendingProvider !== provider
+                  }
+                />
+              );
+            })}
+        </View>
+        {errorMessage !== null && (
+          <Text
+            variant="label-2-medium"
+            className="mt-3 text-center text-action-destructive"
+          >
+            {errorMessage}
+          </Text>
+        )}
+        <View className="mt-4">
+          <AgreementText />
+        </View>
       </View>
-      <View style={styles.buttons}>
-        {Object.entries(SOCIAL_PROVIDERS)
-          .filter(([, config]) => config.enabled)
-          .map(([key, config]) => {
-            const provider = key as SocialProvider;
-            return (
-              <SocialLoginButton
-                key={provider}
-                provider={provider}
-                label={config.label}
-                onPress={login}
-                loading={pendingProvider === provider}
-                disabled={
-                  pendingProvider !== null && pendingProvider !== provider
-                }
-              />
-            );
-          })}
-      </View>
-      {errorMessage !== null && (
-        <SheetText style={styles.error}>{errorMessage}</SheetText>
-      )}
-      <View style={styles.agreement}>
-        <AgreementText />
-      </View>
-    </View>
+    </SheetFrame>
   );
 }
-
-const styles = StyleSheet.create({
-  graphic: {
-    width: 120,
-    height: 120,
-  },
-  buttons: {
-    gap: 12,
-  },
-  error: {
-    color: "#ff6b6b",
-    fontSize: 13,
-    textAlign: "center",
-    marginTop: 12,
-  },
-  agreement: {
-    marginTop: 16,
-  },
-});

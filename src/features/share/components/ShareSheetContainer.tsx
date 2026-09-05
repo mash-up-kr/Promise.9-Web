@@ -6,14 +6,7 @@ import {
   useImperativeHandle,
   useRef,
 } from "react";
-import {
-  Animated,
-  Easing,
-  PanResponder,
-  Pressable,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Animated, Easing, PanResponder, Pressable, View } from "react-native";
 
 import { isAndroid } from "@/constants/platform.constants";
 
@@ -128,15 +121,17 @@ export const ShareSheetContainer = forwardRef<
 
   const sheet = (
     <Animated.View
+      className={isAndroid ? "overflow-hidden rounded-t-3xl" : "flex-1"}
       style={[
-        isAndroid ? [styles.androidSheet, { height }] : styles.iosSheet,
+        isAndroid ? { height } : null,
         { transform: [{ translateY: sheetY }] },
       ]}
     >
       {children}
+      {/* 핸들 영역(8+4+12pt)만 덮는다 — 헤더 버튼(24pt 부터)까지 덮으면 그 윗부분 탭이 먹지 않는다. */}
       <View
         accessibilityLabel="시트 끌어서 닫기"
-        style={styles.dragZone}
+        className="absolute top-0 right-0 left-0 h-6"
         {...panResponder.panHandlers}
       />
     </Animated.View>
@@ -146,46 +141,17 @@ export const ShareSheetContainer = forwardRef<
     return sheet;
   }
   return (
-    <View style={styles.androidRoot}>
+    <View className="flex-1 justify-end">
       <Animated.View
-        style={[
-          StyleSheet.absoluteFill,
-          styles.androidDim,
-          { opacity: dimOpacity },
-        ]}
+        className="absolute inset-0 bg-opacity-black-50"
+        style={{ opacity: dimOpacity }}
       />
       <Pressable
         accessibilityLabel="닫기"
-        style={StyleSheet.absoluteFill}
+        className="absolute inset-0"
         onPress={() => dismissRef.current()}
       />
       {sheet}
     </View>
   );
-});
-
-const styles = StyleSheet.create({
-  androidRoot: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  androidDim: {
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  iosSheet: {
-    flex: 1,
-  },
-  // 핸들 영역(8+4+12pt)만 덮는다 — 헤더 버튼(24pt 부터)까지 덮으면 그 윗부분 탭이 먹지 않는다.
-  dragZone: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 24,
-  },
-  androidSheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: "hidden",
-  },
 });

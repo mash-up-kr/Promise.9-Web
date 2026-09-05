@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
 import Reanimated, { useAnimatedStyle } from "react-native-reanimated";
 
@@ -13,8 +13,8 @@ import { MemoField } from "@/features/link/components/MemoField";
 import { ReminderSection } from "@/features/link/components/ReminderSection";
 import type { ReminderValue } from "@/features/link/reminder.utils";
 
-import { sheetStyles } from "../sheet.primitives";
 import { FolderCreateModal } from "./FolderCreateModal";
+import { SheetFrame } from "./SheetFrame";
 
 export interface EntrySheetProps {
   url: string;
@@ -50,10 +50,8 @@ export function EntrySheet({
   }));
 
   return (
-    <View style={sheetStyles.container}>
-      <View style={sheetStyles.handle} />
-      {/* 헤더가 자체 좌우 여백을 가져 시트 컨테이너의 여백을 상쇄한다. */}
-      <View pointerEvents={isSaving ? "none" : "auto"} className="-mx-5">
+    <SheetFrame>
+      <View pointerEvents={isSaving ? "none" : "auto"}>
         <BottomSheetHeader
           title="링크 저장"
           onCancel={onCancel}
@@ -67,14 +65,15 @@ export function EntrySheet({
           adjustResize 로 줄지 않음)는 패딩으로 스크롤 영역을 줄여 메모 입력이 키보드 위로 올라오게 한다. */}
       <Reanimated.View
         testID="share-entry-keyboard-area"
-        style={[styles.entryScrollArea, keyboardPaddingStyle]}
+        className="flex-1"
+        style={keyboardPaddingStyle}
       >
         <ScrollView
           testID="share-entry-scroll"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets
-          contentContainerStyle={styles.entryScrollContent}
+          contentContainerClassName="px-5 pb-4"
         >
           <View pointerEvents={isSaving ? "none" : "auto"} className="gap-6">
             {/* 시안 통합 카드(인앱 CreateLinkSheet 미러) — 프리뷰(파비콘·제목)와 URL 을 한 카드로. */}
@@ -112,15 +111,6 @@ export function EntrySheet({
           )}
         </ScrollView>
       </Reanimated.View>
-    </View>
+    </SheetFrame>
   );
 }
-
-const styles = StyleSheet.create({
-  entryScrollArea: {
-    flex: 1,
-  },
-  entryScrollContent: {
-    paddingBottom: 16,
-  },
-});

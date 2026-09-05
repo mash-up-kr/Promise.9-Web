@@ -1,11 +1,13 @@
-import { Image, Pressable, StyleSheet, View } from "react-native";
+import { Image, Pressable, View } from "react-native";
+
+import { Text } from "@/components/ui/text/Text";
 
 import type { ShareSaveState } from "../share.reducer";
 import { openHostApp } from "../shareHost";
-import { SheetText, sheetStyles } from "../sheet.primitives";
+import { SheetFrame } from "./SheetFrame";
 
 // 시안(외부 공유 저장): 결과 4종은 같은 시트 구조에 그래픽·문구·CTA 만 다르다.
-// 그래픽은 시트 배경(#1a1a1a)과 같은 색으로 flatten 된 통짜 PNG(@2x·@3x 밀도 선택).
+// 그래픽은 시트 배경(background-base)과 같은 색으로 flatten 된 통짜 PNG(@2x·@3x 밀도 선택).
 const RESULT_GRAPHICS = {
   success: require("@/assets/images/share/result-success.png"),
   duplicate: require("@/assets/images/share/result-duplicate.png"),
@@ -43,11 +45,7 @@ const RESULT_CONTENT = {
 } as const;
 
 export function CheckingSheet() {
-  return (
-    <View style={[sheetStyles.container, sheetStyles.resultContainer]}>
-      <View style={sheetStyles.handle} />
-    </View>
-  );
+  return <SheetFrame />;
 }
 
 export interface ResultSheetProps {
@@ -80,37 +78,31 @@ export function ResultSheet({ state, onRetry, onClose }: ResultSheetProps) {
   };
 
   return (
-    <View style={[sheetStyles.container, sheetStyles.resultContainer]}>
-      <View style={sheetStyles.handle} />
-      <View style={sheetStyles.resultBody}>
-        <Image
-          testID={`share-result-${state.phase}`}
-          source={RESULT_GRAPHICS[state.phase]}
-          style={sheetStyles.resultImage}
-        />
-        <SheetText style={sheetStyles.resultTitle}>{content.title}</SheetText>
-        <SheetText style={sheetStyles.resultSubtitle}>
-          {content.subtitle}
-        </SheetText>
+    <SheetFrame>
+      <View className="flex-1 justify-end px-5">
+        <View className="flex-1 items-center justify-center gap-2">
+          <Image
+            testID={`share-result-${state.phase}`}
+            source={RESULT_GRAPHICS[state.phase]}
+            className="size-40"
+          />
+          <Text variant="heading-2" className="text-text-strong">
+            {content.title}
+          </Text>
+          <Text variant="body-2-reading" className="text-text-alternative">
+            {content.subtitle}
+          </Text>
+        </View>
+        {/* 시안 CTA — 높이 52·라벨 16/600 이라 ActionButton(medium=48/500) 과 값이 다르다. */}
+        <Pressable
+          className="h-13 items-center justify-center rounded-full bg-opacity-white-100"
+          onPress={handleCta}
+        >
+          <Text variant="heading-3" className="text-text-inverse">
+            {content.cta}
+          </Text>
+        </Pressable>
       </View>
-      <Pressable style={styles.ctaButton} onPress={handleCta}>
-        <SheetText style={styles.ctaText}>{content.cta}</SheetText>
-      </Pressable>
-    </View>
+    </SheetFrame>
   );
 }
-
-const styles = StyleSheet.create({
-  ctaButton: {
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "#ffffff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ctaText: {
-    color: "#1a1a1a",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
