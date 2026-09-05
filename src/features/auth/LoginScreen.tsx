@@ -5,7 +5,10 @@ import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
-import { isInternalHref, ROUTES } from "@/constants/routes.constants";
+import {
+  ROUTES,
+  SHARE_LOGIN_NEXT_CREATE_LINK,
+} from "@/constants/routes.constants";
 
 import { useSocialLoginMutation } from "./api/auth.queries";
 import { SOCIAL_PROVIDERS, type SocialProvider } from "./auth.constants";
@@ -29,9 +32,15 @@ export function LoginScreen() {
   const [pendingProvider, setPendingProvider] = useState<SocialProvider | null>(
     null,
   );
-  // 공유 익스텐션 인계처럼 로그인 뒤 돌아갈 곳이 있으면 next 로 받는다(내부 경로만).
-  const { next } = useLocalSearchParams<{ next?: string }>();
-  const destination: Href = isInternalHref(next) ? (next as Href) : ROUTES.HOME;
+  // 공유 익스텐션 인계: next 가 화이트리스트 키면 공유 URL(share)을 들고 저장 시트로, 아니면 홈.
+  const { next, share } = useLocalSearchParams<{
+    next?: string;
+    share?: string;
+  }>();
+  const destination: Href =
+    next === SHARE_LOGIN_NEXT_CREATE_LINK && typeof share === "string"
+      ? { pathname: ROUTES.CREATE_LINK, params: { share } }
+      : ROUTES.HOME;
 
   const handleSocialLogin = async (provider: SocialProvider) => {
     setPendingProvider(provider);

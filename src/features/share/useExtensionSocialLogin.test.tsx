@@ -33,6 +33,7 @@ import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { openHostApp } from "expo-share-extension";
 import type { PropsWithChildren } from "react";
 
+import { encodeSharedUrl } from "@/constants/routes.constants";
 import { SocialLoginCancelledError } from "@/features/auth/auth.errors";
 
 import {
@@ -98,9 +99,7 @@ test("iOS 카카오는 익스텐션에서 끝낼 수 없어 앱 로그인으로 
   await act(() => result.current.login("kakao"));
 
   expect(openHostApp).toHaveBeenCalledWith(
-    `login?next=${encodeURIComponent(
-      `/create-link?url=${encodeURIComponent("https://toss.tech/a")}`,
-    )}`,
+    `login?next=create-link&share=${encodeSharedUrl("https://toss.tech/a")}`,
   );
   expect(mockGetIdToken).not.toHaveBeenCalled();
 });

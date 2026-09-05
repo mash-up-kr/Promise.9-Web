@@ -20,7 +20,7 @@ import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { Text } from "@/components/ui/text/Text";
 import { isWeb } from "@/constants/platform.constants";
-import { linkDetailHref } from "@/constants/routes.constants";
+import { decodeSharedUrl, linkDetailHref } from "@/constants/routes.constants";
 import {
   getDuplicateLinkId,
   isDuplicateLinkError,
@@ -47,7 +47,8 @@ export function CreateLinkSheet() {
   const router = useRouter();
   const { show } = useSnackbar();
   // 공유 익스텐션에서 로그인 인계로 들어오면 URL 을 이미 알고 있다 — 필드·프리뷰를 채워 시작한다.
-  const { url: initialUrl = "" } = useLocalSearchParams<{ url?: string }>();
+  const { share } = useLocalSearchParams<{ share?: string }>();
+  const initialUrl = decodeSharedUrl(share) ?? "";
   const hasValidInitialUrl = linkUrlSchema.safeParse(initialUrl).success;
   const { control, handleSubmit, setValue } = useForm<CreateLinkForm>({
     resolver: zodResolver(createLinkSchema),

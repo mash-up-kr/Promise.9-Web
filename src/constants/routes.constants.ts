@@ -46,21 +46,50 @@ export function searchHref(keyword: string) {
   } as const satisfies Href;
 }
 
+/** 로그인 화면이 `next` 로 받는 인계 목적지 — 경로 문자열 대신 화이트리스트 키만 허용한다. */
+export const SHARE_LOGIN_NEXT_CREATE_LINK = "create-link";
+
 /**
- * 공유 익스텐션 → 앱 인계 경로(스킴 뒤, 선행 슬래시 없음). 로그인 화면이 `next` 로
- * 인앱 저장 시트(`url` 프리필)까지 이어준다 — iOS 카카오처럼 익스텐션 안에서 끝낼 수 없는 로그인용.
+ * 공유 익스텐션 → 앱 인계 경로(스킴 뒤, 선행 슬래시 없음). 로그인 화면이 `next` 를 보고
+ * 인앱 저장 시트를 `share`(공유 URL) 로 채워 연다 — iOS 카카오처럼 익스텐션 안에서 끝낼 수 없는 로그인용.
  */
 export function shareLoginHandoffPath(sharedUrl: string): string {
-  const next = `${ROUTES.CREATE_LINK}?url=${encodeURIComponent(sharedUrl)}`;
-  return `login?next=${encodeURIComponent(next)}`;
+  return `login?next=${SHARE_LOGIN_NEXT_CREATE_LINK}&share=${encodeSharedUrl(sharedUrl)}`;
 }
 
-// 로그인 후 이동 대상은 앱 내부 경로만 — 외부 URL·프로토콜 상대 경로는 홈으로 대체한다.
-export function isInternalHref(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.startsWith("/") &&
-    !value.startsWith("//") &&
-    !value.startsWith("/\\")
-  );
+/**
+ * 공유 URL 을 라우터 파라미터로 나르기 위한 UTF-8 바이트 16진수 인코딩.
+ * expo-router 는 딥링크·href 의 파라미터를 여러 번 디코딩하고 다시 파싱하므로 `&`·`%`·`#` 가
+ * 든 URL 은 percent-encoding 으로는 살아남지 못한다 — 0-9a-f 만 남기면 몇 번을 거쳐도 그대로다.
+ */
+export function encodeSharedUrl(url: string): string {
+  const percentEncoded = encodeURIComponent(url);
+  let hex = "";
+  for (let i = 0; i < percentEncoded.length; i += 1) {
+    if (percentEncoded[i] === "%") {
+      hex += percentEncoded.slice(i + 1, i + 3).toLowerCase();
+      i += 2;
+    } else {
+      hex += percentEncoded.charCodeAt(i).toString(16).padStart(2, "0");
+    }
+  }
+  return hex;
+}
+
+export function decodeSharedUrl(value: unknown): string | null {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    value.length % 2 !== 0
+  ) {
+    return null;
+  }
+  if (!/^[0-9a-f]+$/i.test(value)) {
+    return null;
+  }
+  try {
+    return decodeURIComponent(value.replace(/[0-9a-f]{2}/gi, "%$&"));
+  } catch {
+    return null;
+  }
 }

@@ -333,10 +333,8 @@ describe("LoginScreen", () => {
     );
   });
 
-  test("next 가 내부 경로면 로그인 후 그 경로로 이동한다", async () => {
-    mockSearchParams.current = {
-      next: "/create-link?url=https%3A%2F%2Ftoss.tech%2Fa",
-    };
+  test("next 가 create-link 이면 로그인 후 공유 URL 을 들고 저장 시트로 이동한다", async () => {
+    mockSearchParams.current = { next: "create-link", share: "6162" };
     mockSignIn.mockResolvedValue(googleSuccess());
     mockPost.mockResolvedValue({
       data: {
@@ -351,13 +349,14 @@ describe("LoginScreen", () => {
     );
 
     await waitFor(() =>
-      expect(mockReplace).toHaveBeenCalledWith(
-        "/create-link?url=https%3A%2F%2Ftoss.tech%2Fa",
-      ),
+      expect(mockReplace).toHaveBeenCalledWith({
+        pathname: "/create-link",
+        params: { share: "6162" },
+      }),
     );
   });
 
-  test("next 가 외부 URL 이면 홈으로 이동한다", async () => {
+  test("next 가 모르는 값이면 홈으로 이동한다", async () => {
     mockSearchParams.current = { next: "https://evil.com" };
     mockSignIn.mockResolvedValue(googleSuccess());
     mockPost.mockResolvedValue({

@@ -44,6 +44,7 @@ jest.mock("@shared/api", () => ({
 import { apiClient } from "@shared/api";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
+import { encodeSharedUrl } from "@/constants/routes.constants";
 
 import { CreateLinkSheet } from "./CreateLinkSheet";
 
@@ -550,19 +551,23 @@ describe("CreateLinkSheet", () => {
     }
   });
 
-  test("url 파라미터가 있으면 URL 필드와 프리뷰를 미리 채운다", async () => {
-    mockSearchParams.current = { url: "https://toss.tech/a" };
+  test("share 파라미터가 있으면 공유 URL 로 필드와 프리뷰를 미리 채운다", async () => {
+    mockSearchParams.current = {
+      share: encodeSharedUrl("https://toss.tech/a?b=1&c=2"),
+    };
     mockGetByUrl();
     await renderSheet();
 
     expect(screen.getByPlaceholderText("URL").props.value).toBe(
-      "https://toss.tech/a",
+      "https://toss.tech/a?b=1&c=2",
     );
     await waitFor(() =>
       expect(mockGet).toHaveBeenCalledWith(
         "/links/preview",
         expect.objectContaining({
-          params: expect.objectContaining({ url: "https://toss.tech/a" }),
+          params: expect.objectContaining({
+            url: "https://toss.tech/a?b=1&c=2",
+          }),
         }),
       ),
     );
