@@ -1,10 +1,14 @@
-import { useRouter } from "expo-router";
+import type { Href } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
-import { ROUTES } from "@/constants/routes.constants";
+import {
+  ROUTES,
+  SHARE_LOGIN_NEXT_CREATE_LINK,
+} from "@/constants/routes.constants";
 
 import { useSocialLoginMutation } from "./api/auth.queries";
 import { SOCIAL_PROVIDERS, type SocialProvider } from "./auth.constants";
@@ -28,6 +32,15 @@ export function LoginScreen() {
   const [pendingProvider, setPendingProvider] = useState<SocialProvider | null>(
     null,
   );
+  // 공유 익스텐션 인계: next 가 화이트리스트 키면 공유 URL(share)을 들고 저장 시트로, 아니면 홈.
+  const { next, share } = useLocalSearchParams<{
+    next?: string;
+    share?: string;
+  }>();
+  const destination: Href =
+    next === SHARE_LOGIN_NEXT_CREATE_LINK && typeof share === "string"
+      ? { pathname: ROUTES.CREATE_LINK, params: { share } }
+      : ROUTES.HOME;
 
   const handleSocialLogin = async (provider: SocialProvider) => {
     setPendingProvider(provider);
@@ -52,7 +65,7 @@ export function LoginScreen() {
         onSuccess: () => {
           setPendingProvider(null);
           // TODO(#53): 온보딩 화면이 생기면 isNewUser 로 분기한다. 지금은 신규·기존 모두 홈으로.
-          router.replace(ROUTES.HOME);
+          router.replace(destination);
         },
         onError: (error) => {
           setPendingProvider(null);

@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as Clipboard from "expo-clipboard";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   type Control,
@@ -20,8 +20,11 @@ import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { Text } from "@/components/ui/text/Text";
 import { isWeb } from "@/constants/platform.constants";
-import { linkDetailHref } from "@/constants/routes.constants";
-import { isDuplicateLinkError } from "@/entities/link/link.errors";
+import { decodeSharedUrl, linkDetailHref } from "@/constants/routes.constants";
+import {
+  getDuplicateLinkId,
+  isDuplicateLinkError,
+} from "@/entities/link/link.errors";
 import { useCreateLinkMutation } from "@/entities/link/link.queries";
 import { FolderChipList } from "@/features/link/components/FolderChipList";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
@@ -43,15 +46,19 @@ const SAVE_SNACKBAR_DURATION = 4000;
 export function CreateLinkSheet() {
   const router = useRouter();
   const { show } = useSnackbar();
+  // 공유 익스텐션에서 로그인 인계로 들어오면 URL 을 이미 알고 있다 — 필드·프리뷰를 채워 시작한다.
+  const { share } = useLocalSearchParams<{ share?: string }>();
+  const initialUrl = decodeSharedUrl(share) ?? "";
+  const hasValidInitialUrl = linkUrlSchema.safeParse(initialUrl).success;
   const { control, handleSubmit, setValue } = useForm<CreateLinkForm>({
     resolver: zodResolver(createLinkSchema),
     mode: "onChange",
     defaultValues: {
-      url: "",
+      url: initialUrl,
       folderId: null,
       reminder: null,
       memo: "",
-      previewUrl: "",
+      previewUrl: hasValidInitialUrl ? initialUrl : "",
     },
   });
   const createLinkMutation = useCreateLinkMutation();
@@ -104,9 +111,15 @@ export function CreateLinkSheet() {
           },
           onError: (error) => {
             if (isDuplicateLinkError(error)) {
-              // 409 응답에 기존 linkId 가 없어 '보기' 액션은 서버 보강 후 붙인다(스펙 결정).
+              // 409 가 담아준 기존 linkId 로 '보기'를 연결한다(서버 PR #109). 없으면(구버전) 문구만.
+              const duplicateLinkId = getDuplicateLinkId(error);
               show({
-                ...snackbarPresets.duplicate("이미 저장된 링크예요"),
+                ...snackbarPresets.duplicate(
+                  "이미 저장된 링크예요",
+                  duplicateLinkId != null
+                    ? () => router.push(linkDetailHref(String(duplicateLinkId)))
+                    : undefined,
+                ),
                 duration: SAVE_SNACKBAR_DURATION,
               });
               return;
@@ -122,7 +135,7 @@ export function CreateLinkSheet() {
   return (
     <SheetScreen
       onClose={closeSheet}
-      backdropPressBehavior="none"
+      backdropPressBehavior={isSaving ? "none" : "close"}
       isLocked={isSaving}
       header={
         <CreateLinkSheetHeader
@@ -133,7 +146,11 @@ export function CreateLinkSheet() {
       }
     >
       <View pointerEvents={isSaving ? "none" : "auto"} className="gap-6">
-        <UrlPreviewField control={control} setValue={setValue} />
+        <UrlPreviewField
+          control={control}
+          setValue={setValue}
+          initialUrl={initialUrl}
+        />
         <AsyncBoundary pending={null} fallback={null}>
           <Controller
             control={control}
@@ -196,11 +213,16 @@ function CreateLinkSheetHeader({
 interface UrlPreviewFieldProps {
   control: Control<CreateLinkForm>;
   setValue: UseFormSetValue<CreateLinkForm>;
+  initialUrl: string;
 }
 
 // 시안 통합 카드: previewUrl 이 있으면 LinkPreviewCard(셸 없이) + URL 입력을 하나의 라운드
 // 컨테이너로 합치고(frame-skeleton/save-success), 없으면 URL 입력 하나만 보인다(frame-empty).
-function UrlPreviewField({ control, setValue }: UrlPreviewFieldProps) {
+function UrlPreviewField({
+  control,
+  setValue,
+  initialUrl,
+}: UrlPreviewFieldProps) {
   // 클립보드를 자동으로 읽으면 iOS 가 시트를 열 때마다 붙여넣기 권한 팝업을 띄운다.
   // 존재 확인(hasStringAsync)은 팝업이 없으므로 버튼 노출만 결정하고, 실제 읽기는
   // 사용자가 붙여넣기를 눌렀을 때만 한다. 웹은 존재 확인조차 권한 프롬프트를
@@ -216,18 +238,23 @@ function UrlPreviewField({ control, setValue }: UrlPreviewFieldProps) {
     setValue("previewUrl", isValid ? value : "");
   };
 
-  useEffect(function checkClipboardHasText() {
-    if (isWeb) return;
-    let active = true;
-    Clipboard.hasStringAsync()
-      .then((hasString) => {
-        if (active) setCanPaste(hasString);
-      })
-      .catch(console.error);
-    return () => {
-      active = false;
-    };
-  }, []);
+  useEffect(
+    function checkClipboardHasText() {
+      if (isWeb) return;
+      // 인계로 들어온 URL 을 클립보드 값으로 덮어쓰지 않도록 붙여넣기 제안 자체를 건너뛴다.
+      if (initialUrl) return;
+      let active = true;
+      Clipboard.hasStringAsync()
+        .then((hasString) => {
+          if (active) setCanPaste(hasString);
+        })
+        .catch(console.error);
+      return () => {
+        active = false;
+      };
+    },
+    [initialUrl],
+  );
 
   const handlePasteUrl = () => {
     Clipboard.getStringAsync()

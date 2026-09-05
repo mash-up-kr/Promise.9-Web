@@ -4,7 +4,7 @@
 // 이 stub 은 BottomSheet 테스트(children 렌더·백드롭 탭)에 필요한 API 만 제공한다.
 // 실제 animation·gesture·keyboard 동작은 device 테스트(Task 13)에서 검증한다.
 const React = require("react");
-const { View, Text, Image, ScrollView } = require("react-native");
+const { View, Text, Image, ScrollView, FlatList } = require("react-native");
 
 const NOOP = () => {};
 const ID = (t) => t;
@@ -77,10 +77,16 @@ const AnimatedScrollView = React.forwardRef((props, ref) =>
 );
 AnimatedScrollView.displayName = "Animated.ScrollView";
 
+const AnimatedFlatList = React.forwardRef((props, ref) =>
+  React.createElement(FlatList, { ...props, ref }),
+);
+AnimatedFlatList.displayName = "Animated.FlatList";
+
 const Animated = {
   View: AnimatedView,
   Text: AnimatedText,
   ScrollView: AnimatedScrollView,
+  FlatList: AnimatedFlatList,
   Image,
   createAnimatedComponent: ID,
 };

@@ -120,7 +120,11 @@ describe("ArchiveDetailScreen", () => {
     expect(mockGet).toHaveBeenCalledWith(
       "/links",
       expect.objectContaining({
-        params: { sortBy: "savedAt", order: "desc" },
+        params: expect.objectContaining({
+          sortBy: "savedAt",
+          order: "desc",
+          limit: 30,
+        }),
       }),
     );
   });
@@ -202,7 +206,11 @@ describe("ArchiveDetailScreen", () => {
       expect(mockGet).toHaveBeenCalledWith(
         "/links",
         expect.objectContaining({
-          params: { sortBy: "savedAt", order: "asc" },
+          params: expect.objectContaining({
+            sortBy: "savedAt",
+            order: "asc",
+            limit: 30,
+          }),
         }),
       ),
     );

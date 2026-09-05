@@ -31,8 +31,14 @@ import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { AUTH_ERROR_CODE } from "./auth.errors";
 
 const mockReplace = jest.fn();
+// jest.mock 팩토리가 참조하는 변수(mock 접두사)는 재할당이 아니라 프로퍼티 변경으로 다뤄야 한다 —
+// LinkDetailScreen.test.tsx 의 mockDetailData 와 같은 방식.
+const mockSearchParams: { current: Record<string, string | undefined> } = {
+  current: {},
+};
 jest.mock("expo-router", () => ({
   useRouter: () => ({ replace: mockReplace }),
+  useLocalSearchParams: () => mockSearchParams.current,
 }));
 
 import { LoginScreen } from "./LoginScreen";
@@ -85,6 +91,7 @@ describe("LoginScreen", () => {
 
   beforeEach(() => {
     mockReplace.mockClear();
+    mockSearchParams.current = {};
     mockPost.mockReset();
     mockSignIn.mockReset();
     mockKakaoLogin.mockReset();
@@ -324,5 +331,46 @@ describe("LoginScreen", () => {
           .accessibilityState.disabled,
       ).toBe(false),
     );
+  });
+
+  test("next 가 create-link 이면 로그인 후 공유 URL 을 들고 저장 시트로 이동한다", async () => {
+    mockSearchParams.current = { next: "create-link", share: "6162" };
+    mockSignIn.mockResolvedValue(googleSuccess());
+    mockPost.mockResolvedValue({
+      data: {
+        success: true,
+        data: { accessToken: "atk", refreshToken: "rtk", isNewUser: false },
+      },
+    });
+    await renderScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Google로 계속하기" }),
+    );
+
+    await waitFor(() =>
+      expect(mockReplace).toHaveBeenCalledWith({
+        pathname: "/create-link",
+        params: { share: "6162" },
+      }),
+    );
+  });
+
+  test("next 가 모르는 값이면 홈으로 이동한다", async () => {
+    mockSearchParams.current = { next: "https://evil.com" };
+    mockSignIn.mockResolvedValue(googleSuccess());
+    mockPost.mockResolvedValue({
+      data: {
+        success: true,
+        data: { accessToken: "atk", refreshToken: "rtk", isNewUser: false },
+      },
+    });
+    await renderScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Google로 계속하기" }),
+    );
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
   });
 });

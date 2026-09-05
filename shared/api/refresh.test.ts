@@ -2,8 +2,19 @@
 const mockPost = jest.fn();
 jest.mock("axios", () => ({
   __esModule: true,
-  default: { create: () => ({ post: mockPost }) },
+  default: {
+    create: () => ({ post: mockPost }),
+    isAxiosError: (error: unknown) =>
+      typeof error === "object" && error !== null && "isAxiosError" in error,
+  },
 }));
+
+function axiosStatusError(status: number) {
+  return Object.assign(new Error(`HTTP ${status}`), {
+    isAxiosError: true,
+    response: { status },
+  });
+}
 
 jest.mock("./token", () => ({
   getRefreshToken: jest.fn(),
@@ -50,8 +61,25 @@ test("refreshToken 이 없으면 clearTokens 후 throw 한다", async () => {
   expect(mockPost).not.toHaveBeenCalled();
 });
 
-test("재발급 요청이 실패하면 clearTokens 후 throw 한다", async () => {
-  mockPost.mockRejectedValue(new Error("401"));
+test("서버가 토큰을 거절(401)하면 clearTokens 후 throw 한다", async () => {
+  mockPost.mockRejectedValue(axiosStatusError(401));
   await expect(refreshAccessToken()).rejects.toThrow();
   expect(clearTokens).toHaveBeenCalled();
+});
+
+test("네트워크 오류·타임아웃처럼 일시 장애면 토큰을 지우지 않고 throw 한다", async () => {
+  mockPost.mockRejectedValue(
+    Object.assign(new Error("timeout"), {
+      isAxiosError: true,
+      code: "ECONNABORTED",
+    }),
+  );
+  await expect(refreshAccessToken()).rejects.toThrow();
+  expect(clearTokens).not.toHaveBeenCalled();
+});
+
+test("서버 오류(5xx)면 토큰을 지우지 않고 throw 한다", async () => {
+  mockPost.mockRejectedValue(axiosStatusError(503));
+  await expect(refreshAccessToken()).rejects.toThrow();
+  expect(clearTokens).not.toHaveBeenCalled();
 });

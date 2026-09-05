@@ -1,6 +1,6 @@
 {
   "name": "promise9-web",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "version": "1.0.0",
   "packageManager": "pnpm@11.7.0",
   "dependencies": {
@@ -8,6 +8,7 @@
     "@expo/ui": "~56.0.17",
     "@gorhom/bottom-sheet": "^5.2.14",
     "@hookform/resolvers": "^5.4.0",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-google-signin/google-signin": "^16.1.4",
     "@react-native-masked-view/masked-view": "^0.3.2",
     "@react-native-seoul/kakao-login": "^6.0.4",
@@ -32,6 +33,7 @@
     "expo-notifications": "~56.0.18",
     "expo-router": "~56.2.10",
     "expo-secure-store": "~56.0.4",
+    "expo-share-extension": "5.0.6",
     "expo-splash-screen": "~56.0.10",
     "expo-status-bar": "~56.0.4",
     "expo-symbols": "~56.0.6",

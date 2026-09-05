@@ -72,6 +72,11 @@ export interface TextProps
   className?: string;
 }
 
+// iOS 공유 익스텐션 플래그 — index.share.js 가 세운다(Fabric Dynamic Type 배율 우회용).
+declare global {
+  var __promise9ShareExtension: boolean | undefined;
+}
+
 export function Text({
   className,
   variant,
@@ -88,6 +93,9 @@ export function Text({
   const resolvedSize = size ?? (variant ? undefined : "md");
   return (
     <RNText
+      // iOS 공유 익스텐션에서는 Fabric Dynamic Type 배율이 깨져 fontSize 가 무효화된다 —
+      // 익스텐션 플래그에서만 폰트 스케일링을 꺼서 우회한다(index.share.js 주석 참고).
+      allowFontScaling={globalThis.__promise9ShareExtension ? false : undefined}
       className={textStyles({
         variant,
         isTruncated,

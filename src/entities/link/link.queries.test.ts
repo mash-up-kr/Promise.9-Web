@@ -178,6 +178,78 @@ describe("linkQueries.list", () => {
   });
 });
 
+describe("linkQueries.infiniteList", () => {
+  it("일반 목록과 다른 queryKey 공간을 쓴다", () => {
+    expect(linkQueries.infiniteList({ folderId: 3 }).queryKey).not.toEqual(
+      linkQueries.list({ folderId: 3 }).queryKey,
+    );
+  });
+
+  it("queryFn 이 커서와 목록 limit(30)을 붙여 /links 를 호출한다", async () => {
+    jest
+      .mocked(apiClient.get)
+      .mockResolvedValue({ data: { data: validResponse } });
+    const { queryFn } = linkQueries.infiniteList({ folderId: 3 });
+    const signal = new AbortController().signal;
+
+    await (
+      queryFn as (ctx: {
+        signal: AbortSignal;
+        pageParam: string;
+      }) => Promise<unknown>
+    )({ signal, pageParam: "cursor-1" });
+
+    expect(apiClient.get).toHaveBeenCalledWith("/links", {
+      params: { folderId: 3, limit: 30, cursor: "cursor-1" },
+      signal,
+    });
+  });
+
+  it("첫 페이지는 커서 없이 호출한다", async () => {
+    jest
+      .mocked(apiClient.get)
+      .mockResolvedValue({ data: { data: validResponse } });
+    const { queryFn } = linkQueries.infiniteList({ deleted: true });
+    const signal = new AbortController().signal;
+
+    await (
+      queryFn as (ctx: {
+        signal: AbortSignal;
+        pageParam: string;
+      }) => Promise<unknown>
+    )({ signal, pageParam: "" });
+
+    expect(apiClient.get).toHaveBeenCalledWith("/links", {
+      params: { deleted: true, limit: 30, cursor: undefined },
+      signal,
+    });
+  });
+
+  it("다음 커서는 hasNext 일 때만 반환한다", () => {
+    const { getNextPageParam } = linkQueries.infiniteList({});
+    const more = {
+      ...validResponse,
+      pagination: { nextCursor: "c2", hasNext: true, limit: 30 },
+    };
+
+    expect(getNextPageParam?.(more, [more], "", [])).toBe("c2");
+    expect(
+      getNextPageParam?.(validResponse, [validResponse], "", []),
+    ).toBeUndefined();
+  });
+
+  it("select 가 페이지들을 하나의 UI 목록으로 펼친다", () => {
+    const { select } = linkQueries.infiniteList({});
+
+    const result = select?.({
+      pages: [validResponse, validResponse],
+      pageParams: ["", "c2"],
+    });
+    expect(result).toHaveLength(2);
+    expect(result?.[0]).toMatchObject({ linkId: 1, title: "제목" });
+  });
+});
+
 const detailResponse = {
   linkId: 42,
   url: "https://toss.tech/article/example",

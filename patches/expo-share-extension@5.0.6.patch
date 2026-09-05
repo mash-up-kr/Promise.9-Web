@@ -1,0 +1,115 @@
+diff --git a/metro.js b/metro.js
+index c58058c0ddd077d877954a187966f312c5b601a2..7eae5a9fe96457525f8deee02f82f3ef8421f4a6 100644
+--- a/metro.js
++++ b/metro.js
+@@ -20,7 +20,10 @@ const withShareExtension = (config) => {
+     const rewrittenUrl = originalRewriteRequestUrl(url);
+ 
+     if (isShareExtension) {
+-      return rewrittenUrl.replace("index.bundle", "index.share.bundle");
++      return rewrittenUrl
++        .replace("index.bundle", "index.share.bundle")
++        // 템플릿은 .expo/.virtual-metro-entry 를 요청한다 — 치환이 안 걸리면 메인 앱 엔트리가 로드된다.
++        .replace(".expo/.virtual-metro-entry.bundle", "index.share.bundle");
+     }
+ 
+     return rewrittenUrl;
+diff --git a/plugin/build/withShareExtensionInfoPlist.js b/plugin/build/withShareExtensionInfoPlist.js
+index ac2693dda6d3478ebce0ea72131dd5020f3bc7dc..fb10b2d41853a0aa346fcdd4926de0a95c3b123d 100644
+--- a/plugin/build/withShareExtensionInfoPlist.js
++++ b/plugin/build/withShareExtensionInfoPlist.js
+@@ -42,10 +42,6 @@ const withShareExtensionInfoPlist = (config, { fonts = [], activationRules = [{
+             ],
+             UIUserInterfaceStyle: "Automatic",
+             UIViewControllerBasedStatusBarAppearance: false,
+-            UIApplicationSceneManifest: {
+-                UIApplicationSupportsMultipleScenes: true,
+-                UISceneConfigurations: {},
+-            },
+             UIAppFonts: fonts.map((font) => path_1.default.basename(font)) ?? [],
+             AppGroup: appGroup,
+             AppGroupIdentifier: appGroup,
+diff --git a/plugin/build/xcode/addToXCConfigurationList.js b/plugin/build/xcode/addToXCConfigurationList.js
+index 3816339ae033c7b49c7d683d4c432888d5080788..27f41d12b95e29fa951d46c48abb0ebcb890b4ad 100644
+--- a/plugin/build/xcode/addToXCConfigurationList.js
++++ b/plugin/build/xcode/addToXCConfigurationList.js
+@@ -6,7 +6,7 @@ function addXCConfigurationList(xcodeProject, { targetName, currentProjectVersio
+         CLANG_ENABLE_MODULES: "YES",
+         CURRENT_PROJECT_VERSION: `"${currentProjectVersion}"`,
+         INFOPLIST_FILE: `${targetName}/Info.plist`,
+-        IPHONEOS_DEPLOYMENT_TARGET: `"15.1"`,
++        IPHONEOS_DEPLOYMENT_TARGET: `"16.4"`,
+         LD_RUNPATH_SEARCH_PATHS: `"$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"`,
+         PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
+         PRODUCT_NAME: `"${targetName}"`,
+diff --git a/plugin/swift/ShareExtensionViewController.swift b/plugin/swift/ShareExtensionViewController.swift
+index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..94c4085db3a424010f862d3de1e3a32c04cbfc29 100644
+--- a/plugin/swift/ShareExtensionViewController.swift
++++ b/plugin/swift/ShareExtensionViewController.swift
+@@ -1,6 +1,7 @@
+ import UIKit
+ import React
+ import React_RCTAppDelegate
++internal import Expo
+ import ReactAppDependencyProvider
+ import AVFoundation
+ import UniformTypeIdentifiers
+@@ -12,7 +13,7 @@ import FirebaseCore
+ import FirebaseAuth
+ #endif
+ 
+-class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
++class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
+   override func sourceURL(for bridge: RCTBridge) -> URL? {
+     self.bundleURL()
+   }
+@@ -20,9 +21,10 @@ class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
+   override func bundleURL() -> URL? {
+ #if DEBUG
+     let settings = RCTBundleURLProvider.sharedSettings()
++    settings.jsLocation = "localhost:8090"
+     settings.enableDev = true
+     settings.enableMinification = false
+-    if let bundleURL = settings.jsBundleURL(forBundleRoot: ".expo/.virtual-metro-entry") {
++    if let bundleURL = settings.jsBundleURL(forBundleRoot: "index.share") {
+       if var components = URLComponents(url: bundleURL, resolvingAgainstBaseURL: false) {
+         components.queryItems = (components.queryItems ?? []) + [URLQueryItem(name: "shareExtension", value: "true")]
+         return components.url ?? bundleURL
+@@ -84,6 +86,10 @@ class ShareExtensionViewController: UIViewController {
+   }
+   
+   func close() {
++    // 완료 요청과 동시에 RN 리소스를 해체하면 Fabric 서피스가 콘텐츠·변환을 잃고
++    // 기본(흰) 배경으로 리셋된 채 시스템 dismiss 애니메이션에 노출된다(흰 시트 플래시).
++    // 해체 전에 화면에서 먼저 숨겨 플래시를 막는다.
++    view.subviews.forEach { $0.isHidden = true }
+     self.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
+     // we need to clean up when the view is closed via the close() method in react native
+     cleanupAfterClose()
+@@ -98,7 +104,7 @@ class ShareExtensionViewController: UIViewController {
+       
+       reactNativeFactoryDelegate = ReactNativeDelegate()
+       reactNativeFactoryDelegate!.dependencyProvider = RCTAppDependencyProvider()
+-      reactNativeFactory = RCTReactNativeFactory(delegate: reactNativeFactoryDelegate!)
++      reactNativeFactory = ExpoReactNativeFactory(delegate: reactNativeFactoryDelegate!)
+       
+       var initialProps = sharedData ?? [:]
+       
+@@ -130,6 +136,9 @@ class ShareExtensionViewController: UIViewController {
+       
+       configureRootView(reactNativeRootView, withBackgroundColorDict: backgroundFromInfoPlist, withHeight: heightFromInfoPlist)
+       view.addSubview(reactNativeRootView)
++      // 익스텐션 프로세스에선 RCTSharedApplication() 이 nil 이라 RCTPresentedViewController() 도
++      // nil 이다 — 소셜 로그인 SDK 가 프레젠팅 VC 를 찾도록 RN 오버라이드 훅에 이 VC 를 넣는다.
++      RCTUtilsUIOverride.setPresentedViewController(self)
+ 
+       // Hide loading indicator once React content is ready
+       self.loadingIndicator.stopAnimating()
+@@ -247,6 +256,7 @@ class ShareExtensionViewController: UIViewController {
+   private func cleanupAfterClose() {
+     if isCleanedUp { return }
+     isCleanedUp = true
++    RCTUtilsUIOverride.setPresentedViewController(nil)
+     
+     NotificationCenter.default.removeObserver(self)
+     

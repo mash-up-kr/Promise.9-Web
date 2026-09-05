@@ -1,9 +1,13 @@
 import type { Link } from "@shared/types/link.types";
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useQueryClient,
+  useSuspenseInfiniteQuery,
+} from "@tanstack/react-query";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Check, Search } from "lucide-react-native";
 import { useState } from "react";
+import type { ListRenderItemInfo } from "react-native";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -342,8 +346,13 @@ function ArchiveDetailLinkList({
   ...itemProps
 }: ArchiveDetailLinkListProps) {
   const scrollHandler = useHeaderAwareScrollHandler("archive-detail");
-  const { data: links } = useSuspenseQuery(
-    linkQueries.list(toLinkListParams(folderId, sort)),
+  const {
+    data: links,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useSuspenseInfiniteQuery(
+    linkQueries.infiniteList(toLinkListParams(folderId, sort)),
   );
 
   if (links.length === 0) {
@@ -351,29 +360,53 @@ function ArchiveDetailLinkList({
   }
 
   return (
-    <Animated.ScrollView
+    <Animated.FlatList
       className="flex-1 bg-background-base"
+      data={links}
+      keyExtractor={(link: Link) => String(link.linkId)}
+      numColumns={2}
+      renderItem={({ item }: ListRenderItemInfo<Link>) => (
+        <LinkGridItem link={item} selectedIds={selectedIds} {...itemProps} />
+      )}
       showsVerticalScrollIndicator={false}
       onScroll={scrollHandler}
       scrollEventThrottle={16}
-    >
-      <View
-        className="flex-row flex-wrap justify-between gap-y-5 px-5 pt-2 pb-6"
+      // 커서 페이지네이션 — 끝에 다다르면 다음 페이지를 이어 붙인다.
+      onEndReached={() => {
+        if (hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      }}
+      onEndReachedThreshold={0.5}
+      ListFooterComponent={
+        isFetchingNextPage ? (
+          <ActivityIndicator className="py-4" color="#a0a0a0" />
+        ) : null
+      }
+      columnWrapperStyle={styles.linkGridRow}
+      contentContainerStyle={[
+        styles.linkGridContent,
         // 선택 모드에서는 하단 액션 바가 마지막 줄을 가리지 않도록 여백을 더 준다.
-        style={selectedIds !== null ? { paddingBottom: 130 } : undefined}
-      >
-        {links.map((link) => (
-          <LinkGridItem
-            key={link.linkId}
-            link={link}
-            selectedIds={selectedIds}
-            {...itemProps}
-          />
-        ))}
-      </View>
-    </Animated.ScrollView>
+        selectedIds !== null && styles.linkGridContentSelecting,
+      ]}
+    />
   );
 }
+
+const styles = StyleSheet.create({
+  linkGridRow: {
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  linkGridContent: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  linkGridContentSelecting: {
+    paddingBottom: 130,
+  },
+});
 
 interface LinkGridItemProps
   extends Omit<ArchiveDetailLinkListProps, "folderId" | "sort"> {

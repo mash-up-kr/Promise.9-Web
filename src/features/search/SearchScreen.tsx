@@ -29,9 +29,8 @@ import { SearchBar } from "@/features/search/components/SearchBar";
 import { LinkGrid } from "./components/LinkGrid";
 import { RecentLinksSection } from "./components/RecentLinksSection";
 import { RecentSearchesSection } from "./components/RecentSearchesSection";
-import { RECENT_SEARCH_KEYWORDS } from "./mocks";
 import { SEARCH_DEBOUNCE_MS, SEARCH_POLICY } from "./search.constants";
-import { addRecentKeyword } from "./search.utils";
+import { useRecentKeywords } from "./useRecentKeywords";
 
 // 시안 모션 — 기본↔결과 크로스페이드, 로딩 후 결과 페이드인.
 const CONTENT_FADE_MS = 280;
@@ -65,7 +64,11 @@ export function SearchScreen() {
   const { q } = useLocalSearchParams<{ q?: string }>();
   // 커밋된 검색어는 URL 이 단일 진실원 — 새로고침·딥링크에도 결과 상태가 복원된다
   const submittedQuery = isString(q) ? q : "";
-  const [recentKeywords, setRecentKeywords] = useState(RECENT_SEARCH_KEYWORDS);
+  const {
+    keywords: recentKeywords,
+    addKeyword,
+    clearKeywords,
+  } = useRecentKeywords();
 
   const { control, setValue, subscribe } = useForm<SearchFormValues>({
     defaultValues: { keyword: submittedQuery },
@@ -106,7 +109,7 @@ export function SearchScreen() {
     }
     debouncedCommit.cancel();
     router.setParams({ q: trimmed });
-    setRecentKeywords((keywords) => addRecentKeyword(keywords, trimmed));
+    addKeyword(trimmed);
   }
 
   function searchKeyword(value: string) {
@@ -171,7 +174,7 @@ export function SearchScreen() {
             <SearchDefaultContent
               keywords={recentKeywords}
               onPressKeyword={searchKeyword}
-              onClearKeywords={() => setRecentKeywords([])}
+              onClearKeywords={clearKeywords}
             />
           </Animated.View>
         )}

@@ -27,13 +27,18 @@ const BottomSheet = React.forwardRef(
     React.useImperativeHandle(ref, () => commands);
     // "sheet-dismiss" 를 누르면 시트 닫힘(index -1)을 시뮬레이션한다(pan-down 대체).
     // enablePanDownToClose=false(isLocked) 면 무시한다.
+    // 백드롭에는 onDismiss 를 주입해 pressBehavior="close" 탭 닫힘을 시뮬레이션한다.
     return React.createElement(
       SheetContext.Provider,
       { value: commands },
       React.createElement(
         View,
         null,
-        Backdrop ? React.createElement(Backdrop, {}) : null,
+        Backdrop
+          ? React.createElement(Backdrop, {
+              onDismiss: () => onChange?.(-1),
+            })
+          : null,
         React.createElement(Pressable, {
           accessibilityLabel: "sheet-dismiss",
           onPress: () => {
@@ -65,7 +70,14 @@ module.exports = {
   BottomSheetView: passthrough("BottomSheetView", View),
   BottomSheetScrollView: passthrough("BottomSheetScrollView", ScrollView),
   BottomSheetTextInput: passthrough("BottomSheetTextInput", TextInput),
-  BottomSheetBackdrop: passthrough("BottomSheetBackdrop", View),
+  // pressBehavior="close" 백드롭 탭 닫힘 시뮬레이션 — BottomSheet mock 이 onDismiss 를 주입한다.
+  BottomSheetBackdrop: ({ pressBehavior, onDismiss }) =>
+    React.createElement(Pressable, {
+      accessibilityLabel: "sheet-backdrop",
+      onPress: () => {
+        if (pressBehavior === "close") onDismiss?.();
+      },
+    }),
   BottomSheetHandle: passthrough("BottomSheetHandle", View),
   BottomSheetFooter: passthrough("BottomSheetFooter", View),
 };
