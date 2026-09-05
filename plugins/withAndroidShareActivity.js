@@ -83,6 +83,10 @@ function withShareActivityManifest(config) {
         "android:taskAffinity": "",
         "android:excludeFromRecents": "true",
         "android:launchMode": "singleTop",
+        // 시트 높이가 세로 기준 고정값이라 가로에선 헤더가 화면 밖으로 밀린다 — 앱과 같이 세로 고정.
+        "android:screenOrientation": "portrait",
+        // 메모 입력 시 창을 줄여 키보드 위로 시트가 올라오게 한다(MainActivity 와 동일).
+        "android:windowSoftInputMode": "adjustResize",
         "android:configChanges":
           "keyboard|keyboardHidden|orientation|screenSize|uiMode",
       },
