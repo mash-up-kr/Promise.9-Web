@@ -1,4 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { isAlreadySavedLinkError } from "@shared/entities/link/link.errors";
+import { useCreateLinkMutation } from "@shared/entities/link/link.queries";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -21,8 +23,6 @@ import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { Text } from "@/components/ui/text/Text";
 import { isWeb } from "@/constants/platform.constants";
 import { linkDetailHref } from "@/constants/routes.constants";
-import { isDuplicateLinkError } from "@/entities/link/link.errors";
-import { useCreateLinkMutation } from "@/entities/link/link.queries";
 import { FolderChipList } from "@/features/link/components/FolderChipList";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { MemoField } from "@/features/link/components/MemoField";
@@ -103,7 +103,7 @@ export function CreateLinkSheet() {
             dismiss();
           },
           onError: (error) => {
-            if (isDuplicateLinkError(error)) {
+            if (isAlreadySavedLinkError(error)) {
               // 409 응답에 기존 linkId 가 없어 '보기' 액션은 서버 보강 후 붙인다(스펙 결정).
               show({
                 ...snackbarPresets.duplicate("이미 저장된 링크예요"),

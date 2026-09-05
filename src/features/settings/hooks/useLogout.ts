@@ -1,8 +1,7 @@
 import { clearTokens, getRefreshToken } from "@shared/api";
+import { useLogoutMutation } from "@shared/entities/auth/auth.queries";
 import { useRouter } from "expo-router";
 import { useCallback } from "react";
-
-import { useLogoutMutation } from "../api/auth-actions.queries";
 
 /**
  * 로그아웃 — "빠져나가기"가 목적이라 서버 실패해도 로컬 세션은 정리하고 로그인으로 보낸다.

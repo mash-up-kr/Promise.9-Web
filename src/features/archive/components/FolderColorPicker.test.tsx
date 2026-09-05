@@ -1,6 +1,6 @@
+import { FOLDER_COLOR_OPTIONS } from "@shared/folder/folder.constants";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
-import { FOLDER_COLOR_OPTIONS } from "../archive.constants";
 import { FolderColorPicker } from "./FolderColorPicker";
 
 describe("FolderColorPicker", () => {

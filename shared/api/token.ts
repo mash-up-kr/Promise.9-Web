@@ -28,6 +28,17 @@ export async function getAccessToken(): Promise<string | null> {
 export interface TokenPersistence {
   getRefreshToken(): Promise<string | null>;
   setRefreshToken(token: string | null): Promise<void>;
+  /**
+   * 재발급을 실행 컨텍스트 사이에서 직렬화한다(구현하지 않아도 된다).
+   *
+   * 익스텐션은 사이드패널과 service worker 가 각각 다른 문서로 돌면서 이 저장소 하나를
+   * 공유한다. 재발급 쪽의 모듈 변수는 자기 문서 안에서만 유효하므로, 둘이 동시에 같은
+   * 리프레시 토큰으로 재발급하면 RTR 이 뒤늦은 쪽을 재사용으로 거부하고 — 그 실패가
+   * `clearTokens` 로 이어져 방금 회전된 토큰까지 지워 양쪽이 로그아웃된다.
+   *
+   * 앱·웹은 컨텍스트가 하나뿐이라 구현하지 않는다.
+   */
+  runExclusive?<T>(run: () => Promise<T>): Promise<T>;
 }
 
 let persistence: TokenPersistence | null = null;
@@ -39,6 +50,12 @@ export function setTokenPersistence(impl: TokenPersistence | null): void {
 export async function getRefreshToken(): Promise<string | null> {
   if (!persistence) return null;
   return persistence.getRefreshToken();
+}
+
+// 저장소가 배타 실행을 제공하면 그 안에서, 아니면 그냥 실행한다(TokenPersistence.runExclusive).
+export function runExclusive<T>(run: () => Promise<T>): Promise<T> {
+  if (!persistence?.runExclusive) return run();
+  return persistence.runExclusive(run);
 }
 
 // 로그인·재발급(RTR) 성공 시 호출 — accessToken 은 메모리에, refreshToken 은 주입된 저장소에 반영.

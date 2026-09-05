@@ -9,6 +9,7 @@ jest.mock("@shared/api", () => {
 });
 
 import { ApiError, apiClient } from "@shared/api";
+import { FOLDER_ERROR_CODE } from "@shared/entities/folder/folder.errors";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
@@ -18,10 +19,7 @@ import {
 } from "@testing-library/react-native";
 import type { AxiosResponse } from "axios";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
-
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
-
-import { FOLDER_ERROR_CODE } from "@/entities/folder/folder.errors";
 
 const mockBack = jest.fn();
 const mockParams = jest.fn();

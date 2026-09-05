@@ -23,6 +23,7 @@ jest.mock("@shared/api", () => {
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ replace: jest.fn() }),
+  useLocalSearchParams: () => ({}),
 }));
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

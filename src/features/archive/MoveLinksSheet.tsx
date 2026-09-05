@@ -1,8 +1,9 @@
+import { folderQueries } from "@shared/entities/folder/folder.queries";
+import { useMoveLinksToFolderMutation } from "@shared/entities/link/link.queries";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
-
 import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
@@ -13,8 +14,6 @@ import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { Spinner } from "@/components/ui/spinner/Spinner";
 import { Text } from "@/components/ui/text/Text";
-import { folderQueries } from "@/entities/folder/folder.queries";
-import { useMoveLinksToFolderMutation } from "@/entities/link/link.queries";
 import { UNCATEGORIZED_FOLDER } from "./archive.constants";
 import type { ArchiveFolder } from "./archive.types";
 import { toArchiveFolderData } from "./archive.utils";

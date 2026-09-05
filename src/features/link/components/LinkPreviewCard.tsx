@@ -1,3 +1,4 @@
+import { linkQueries } from "@shared/entities/link/link.queries";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "lucide-react-native";
 import { type ReactNode, useEffect, useState } from "react";
@@ -5,7 +6,6 @@ import { Image, View } from "react-native";
 import { Icon } from "@/components/ui/icon/Icon";
 import { Skeleton } from "@/components/ui/skeleton/Skeleton";
 import { Text } from "@/components/ui/text/Text";
-import { linkQueries } from "@/entities/link/link.queries";
 import { getDomain } from "@/features/link/link.utils";
 
 const FALLBACK_TITLE = "제목을 불러오지 못했어요";

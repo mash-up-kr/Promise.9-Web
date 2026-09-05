@@ -1,0 +1,48 @@
+@import "tailwindcss";
+/* 디자인 토큰은 앱·웹과 같은 파일을 쓴다 — 값이 갈라지지 않게. */
+@import "../../../shared/styles/tokens.css";
+
+/*
+ * 앱과 같은 Pretendard. 루트 assets 의 ttf 를 Vite 가 번들한다.
+ * 타이포 토큰이 쓰는 굵기(400·500·600)만 싣는다 — 700 은 쓰는 토큰이 없다.
+ * TODO: ttf 3종이 8MB 가 넘는다. woff2 서브셋으로 줄이기.
+ */
+@font-face {
+  font-family: "Pretendard";
+  src: url("../../../assets/fonts/Pretendard-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Pretendard";
+  src: url("../../../assets/fonts/Pretendard-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Pretendard";
+  src: url("../../../assets/fonts/Pretendard-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-display: swap;
+}
+@layer base {
+  /*
+   * 사이드패널은 크기를 브라우저가 정해준다 — 세로는 창 전체, 가로는 사용자가 드래그로
+   * 바꾼다(대략 240~600px). 그래서 팝업과 반대로 뷰포트를 꽉 채우고,
+   * 가로는 고정하지 않고 내용이 폭을 따라 늘어나게 둔다.
+   */
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    overflow: hidden;
+    background-color: var(--color-background-base);
+    color: var(--color-text-normal);
+    font-family: "Pretendard", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
