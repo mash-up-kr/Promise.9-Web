@@ -75,6 +75,7 @@
   ```
 - **import 방향은 한 방향** — `features → entities → shared`. 되짚어 올라가지 않는다.
 - **`features` 끼리 import 하지 않는다.** 다른 화면의 것이 필요하면 그건 십중팔구 엔티티다.
+  - 예외: `features/share`(공유 익스텐션 루트)는 라우터 대신 쓰는 두 번째 앱 셸이라 `app/` 처럼 다른 features 를 조합한다. 이 방향(share → 다른 features)만 허용하고, 다른 features 가 share 를 import 하지는 않는다.
 - **`entities` 끼리는 캐시 키만 참조한다.** (예: 폴더 삭제 후 링크 목록 무효화 →
   `folder` 가 `linkQueries.keys.lists()` 참조). 로직·모델을 가져다 쓰지는 않는다.
 - `shared/` 와의 구분: 세 표면(앱·웹·익스텐션) 공용 순수 TS 는 `shared/`,
