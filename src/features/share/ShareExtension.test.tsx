@@ -103,6 +103,10 @@ const PREVIEW_RESPONSE = {
   },
 };
 
+function folderRequestCount() {
+  return mockGet.mock.calls.filter(([path]) => path === "/folders").length;
+}
+
 // 리마인드 프리셋은 "오늘 + N일" 을 저장한다 — 실행 시각에 맞춰 기대 날짜를 만든다.
 function dateAfterDays(days: number) {
   const target = new Date();
@@ -375,9 +379,7 @@ test("폴더 추가 → 이름 입력·만들기 → 새 폴더가 목록에 추
     screen.getByLabelText("새폴더").props.accessibilityState.selected,
   ).toBe(true);
   // 새 칩은 로컬 추가가 아니라 목록 재조회로 들어온다.
-  expect(
-    mockGet.mock.calls.filter(([path]) => path === "/folders"),
-  ).toHaveLength(2);
+  expect(folderRequestCount()).toBe(2);
 
   await user.press(screen.getByText("저장"));
   expect(mockPost).toHaveBeenCalledWith(
@@ -529,12 +531,31 @@ test("메모를 입력해 저장하면 앞뒤 공백을 제거해 실린다", as
 });
 
 test("폴더 목록 로딩이 실패해도 미분류로 저장할 수 있다", async () => {
+  // 경계가 에러를 잡으면 React 가 그 에러를 console.error 로 넘긴다 —
+  // 칩이 안 보이는 게 pending 때문이 아니라는 유일한 관측 지점(폴백이 null 이라 화면엔 흔적이 없다).
   const spy = jest.spyOn(console, "error").mockImplementation(() => {});
-  mockGet.mockRejectedValue(new Error("network"));
+  const hasCaughtFolderError = () =>
+    spy.mock.calls.some(
+      ([, error]) => error instanceof Error && error.message === "network",
+    );
+  // 프리뷰는 살려두고 폴더 조회만 실패시켜야 재시도 횟수가 정확해진다.
+  mockGet.mockImplementation((url: string) => {
+    if (url === "/links/preview") {
+      return Promise.resolve(PREVIEW_RESPONSE);
+    }
+    return Promise.reject(new Error("network"));
+  });
   mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 1 } } });
   await render(<ShareExtension url="https://toss.tech/a" />);
 
-  await userEvent.setup().press(await screen.findByText("저장"));
+  // 재시도 1회까지 소진되면 AsyncBoundary 의 에러 폴백(null)이 칩을 대신한다.
+  await waitFor(() => expect(hasCaughtFolderError()).toBe(true), {
+    timeout: 4000,
+  });
+  expect(folderRequestCount()).toBe(2);
+  expect(screen.queryByText("미분류")).toBeNull();
+
+  await userEvent.setup().press(screen.getByText("저장"));
 
   expect(await screen.findByText("링크 저장을 완료했어요")).toBeOnTheScreen();
   expect(mockPost).toHaveBeenCalledWith(

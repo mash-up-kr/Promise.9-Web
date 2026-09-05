@@ -1,6 +1,6 @@
 import { isUnauthorizedError } from "@shared/api";
 import { extractFirstUrl } from "@shared/link/link.utils";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import type { PropsWithChildren } from "react";
 import {
   forwardRef,
@@ -52,6 +52,7 @@ import {
   type ReminderValue,
   toReminderAtIso,
 } from "@/features/link/reminder.utils";
+import { createQueryClient } from "@/lib/queryClient";
 
 import {
   EXTENSION_LOGIN_SHEET_HEIGHT,
@@ -105,9 +106,9 @@ export function ShareExtension({ url }: { url?: string }) {
     if (status !== "authenticated") setIsEditing(true);
   }, [status]);
 
-  // 익스텐션 프로세스 전용 클라이언트 — LinkPreviewCard(react-query) 재사용을 위해 둔다.
+  // 익스텐션 프로세스 전용 클라이언트 — 기본값(재시도 1회 등)은 앱과 같은 팩토리에서 온다.
   // 모듈 싱글턴이 아니라 마운트마다 새로 만들어 테스트 간 캐시가 새지 않게 한다.
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(createQueryClient);
 
   return (
     <QueryClientProvider client={queryClient}>
