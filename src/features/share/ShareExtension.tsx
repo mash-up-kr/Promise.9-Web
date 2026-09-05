@@ -1017,8 +1017,9 @@ function ResultSheet({
         openHostApp(`link/${state.linkId}`);
         return;
       case "duplicate":
-        // 409 가 담아준 기존 링크 상세로 이동(서버 PR #109). 없으면(구버전) 홈.
-        openHostApp(state.linkId != null ? `link/${state.linkId}` : "");
+        // 409 가 담아준 기존 링크 상세로 이동(서버 PR #109). 없으면(구버전) 홈 —
+        // 빈 경로는 iOS 네이티브가 첫 세그먼트를 읽다 크래시하므로 "/" 로 보낸다.
+        openHostApp(state.linkId != null ? `link/${state.linkId}` : "/");
         return;
       case "failed":
         onRetry();

@@ -181,7 +181,7 @@ test("중복인데 linkId 가 없으면(구버전 응답) '링크 보러가기'�
 
   await user.press(await screen.findByText("저장"));
   await user.press(await screen.findByText("링크 보러가기"));
-  expect(openHostApp).toHaveBeenCalledWith("");
+  expect(openHostApp).toHaveBeenCalledWith("/");
 });
 
 test("저장 실패 → 실패 시트, '다시 시도'가 같은 URL 로 재요청한다", async () => {
