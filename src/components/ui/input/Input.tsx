@@ -100,6 +100,10 @@ export function InputField({
         placeholderTextColor={PLACEHOLDER_COLOR[variant]}
         cursorColor={CURSOR_COLOR}
         selectionColor={SELECTION_COLOR}
+        // iOS 공유 익스텐션 폰트 배율 버그 우회 — ui/Text 와 동일
+        allowFontScaling={
+          globalThis.__promise9ShareExtension ? false : undefined
+        }
         className={inputFieldStyles({ variant, class: className })}
         {...props}
       />

@@ -52,3 +52,24 @@ describe("MemoField", () => {
     expect(screen.getByPlaceholderText(PLACEHOLDER).props.maxLength).toBe(300);
   });
 });
+
+describe("공유 익스텐션 플래그", () => {
+  afterEach(() => {
+    globalThis.__promise9ShareExtension = undefined;
+  });
+
+  test("익스텐션에서는 allowFontScaling 을 끈다", async () => {
+    globalThis.__promise9ShareExtension = true;
+    await render(<MemoField memo="" onChangeMemo={jest.fn()} />);
+    expect(
+      screen.getByPlaceholderText(PLACEHOLDER).props.allowFontScaling,
+    ).toBe(false);
+  });
+
+  test("앱에서는 기본값을 건드리지 않는다", async () => {
+    await render(<MemoField memo="" onChangeMemo={jest.fn()} />);
+    expect(
+      screen.getByPlaceholderText(PLACEHOLDER).props.allowFontScaling,
+    ).toBeUndefined();
+  });
+});
