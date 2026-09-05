@@ -85,7 +85,7 @@ function withShareActivityManifest(config) {
         "android:launchMode": "singleTop",
         // 시트 높이가 세로 기준 고정값이라 가로에선 헤더가 화면 밖으로 밀린다 — 앱과 같이 세로 고정.
         "android:screenOrientation": "portrait",
-        // 메모 입력 시 창을 줄여 키보드 위로 시트가 올라오게 한다(MainActivity 와 동일).
+        // edge-to-edge 창이라 창 자체는 줄지 않지만, IME 인셋이 전달되려면 필요하다(keyboard-controller 전제).
         "android:windowSoftInputMode": "adjustResize",
         "android:configChanges":
           "keyboard|keyboardHidden|orientation|screenSize|uiMode",

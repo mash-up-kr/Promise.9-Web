@@ -30,7 +30,11 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { KeyboardProvider } from "react-native-keyboard-controller";
+import {
+  KeyboardProvider,
+  useReanimatedKeyboardAnimation,
+} from "react-native-keyboard-controller";
+import Reanimated, { useAnimatedStyle } from "react-native-reanimated";
 import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import { Dialog } from "@/components/ui/dialog/Dialog";
 import { BellIcon } from "@/components/ui/icon/BellIcon";
@@ -535,6 +539,12 @@ function EntrySheet({
   onCancel: () => void;
 }) {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  // Android 시트는 화면 바닥에 붙어 있어 키보드 높이(열리면 음수)만큼 스크롤 영역 아래를 띄우면 된다.
+  // KeyboardAvoidingView 는 부모 기준 좌표로 겹침을 계산해 시트 안에서는 0 이 나온다.
+  const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
+  const keyboardPaddingStyle = useAnimatedStyle(() => ({
+    paddingBottom: isAndroid ? -keyboardHeight.value : 0,
+  }));
 
   return (
     <View style={sheetStyles.container}>
@@ -562,116 +572,122 @@ function EntrySheet({
       </View>
       {/* 시트 높이는 빌드 타임 고정(iOS) — 콘텐츠가 넘치는 작은 화면·리마인드 On 상태는
           세로 스크롤로 흡수한다. 헤더(취소·저장)는 스크롤 밖에 고정. */}
-      <ScrollView
-        testID="share-entry-scroll"
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        // 시트 컨테이너는 키보드에 밀리지 않는다 — 스크롤 인셋으로 메모 입력이 키보드 위로 올라오게 한다(iOS).
-        automaticallyAdjustKeyboardInsets
-        contentContainerStyle={styles.entryScrollContent}
+      {/* 시트 컨테이너는 키보드에 밀리지 않는다 — iOS 는 스크롤 인셋, Android(edge-to-edge 창은
+          adjustResize 로 줄지 않음)는 패딩으로 스크롤 영역을 줄여 메모 입력이 키보드 위로 올라오게 한다. */}
+      <Reanimated.View
+        testID="share-entry-keyboard-area"
+        style={[styles.entryScrollArea, keyboardPaddingStyle]}
       >
-        {/* 시안 통합 카드(인앱 CreateLinkSheet 미러) — 프리뷰(파비콘·제목)와 URL 을 한 카드로. */}
-        <View style={styles.urlCard}>
-          <LinkPreviewCard url={url} isBare />
-          <SheetText style={styles.urlText} numberOfLines={2}>
-            {url}
-          </SheetText>
-        </View>
-
-        <View style={styles.sectionHeaderRow}>
-          <SheetText style={[styles.sectionTitle, styles.sectionTitleInRow]}>
-            폴더
-          </SheetText>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="폴더 추가"
-            hitSlop={8}
-            disabled={isSaving}
-            onPress={() => setIsCreatingFolder((isOpen) => !isOpen)}
-          >
-            <Plus size={24} color="#fffe66" />
-          </Pressable>
-        </View>
         <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.folderRow}
+          testID="share-entry-scroll"
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+          contentContainerStyle={styles.entryScrollContent}
         >
-          <FolderChip
-            name="미분류"
-            color={null}
-            isSelected={selectedFolderId === null}
-            isDisabled={isSaving}
-            onPress={() => onSelectFolder(null)}
-          />
-          {folders.map((folder) => (
-            <FolderChip
-              key={folder.folderId}
-              name={folder.folderName}
-              color={folder.color}
-              isSelected={selectedFolderId === folder.folderId}
-              isDisabled={isSaving}
-              onPress={() => onSelectFolder(folder.folderId)}
-            />
-          ))}
-        </ScrollView>
-        {isCreatingFolder && (
-          <FolderCreateModal
-            onClose={() => setIsCreatingFolder(false)}
-            onCreated={(folder) => {
-              setIsCreatingFolder(false);
-              onFolderCreated(folder);
-            }}
-          />
-        )}
-
-        <View style={styles.reminderHeader}>
-          <SheetText style={[styles.sectionTitle, styles.sectionTitleInRow]}>
-            리마인드
-          </SheetText>
-          <ReminderToggle
-            isOn={reminder !== null}
-            isDisabled={isSaving}
-            onToggle={onToggleReminder}
-          />
-        </View>
-        {reminder === null ? (
-          <View style={[styles.reminderCard, styles.reminderOffRow]}>
-            <BellIcon color="#8A8A93" />
-            <SheetText style={styles.reminderPlaceholder}>
-              잊지 않도록 다시 알려드려요
+          {/* 시안 통합 카드(인앱 CreateLinkSheet 미러) — 프리뷰(파비콘·제목)와 URL 을 한 카드로. */}
+          <View style={styles.urlCard}>
+            <LinkPreviewCard url={url} isBare />
+            <SheetText style={styles.urlText} numberOfLines={2}>
+              {url}
             </SheetText>
           </View>
-        ) : (
-          <ReminderOnCard
-            reminder={reminder}
-            selectedPresetDays={selectedPresetDays}
-            isDisabled={isSaving}
-            onSelectPreset={onSelectPreset}
-            onSelectRandomDate={onSelectRandomDate}
-            onOpenDatePicker={onOpenDatePicker}
-            onOpenTimePicker={onOpenTimePicker}
-          />
-        )}
 
-        <SheetText style={styles.sectionTitle}>메모</SheetText>
-        <TextInput
-          allowFontScaling={
-            globalThis.__promise9ShareExtension ? false : undefined
-          }
-          style={styles.memoInput}
-          multiline
-          maxLength={MEMO_MAX_LENGTH}
-          editable={!isSaving}
-          placeholder="저장한 이유나 기억하고 싶은 점을 적어보세요"
-          placeholderTextColor="#6b6b6b"
-          value={memo}
-          onChangeText={onChangeMemo}
-        />
-        <SheetText style={styles.memoCounter}>
-          {memo.length}/{MEMO_MAX_LENGTH}
-        </SheetText>
-      </ScrollView>
+          <View style={styles.sectionHeaderRow}>
+            <SheetText style={[styles.sectionTitle, styles.sectionTitleInRow]}>
+              폴더
+            </SheetText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="폴더 추가"
+              hitSlop={8}
+              disabled={isSaving}
+              onPress={() => setIsCreatingFolder((isOpen) => !isOpen)}
+            >
+              <Plus size={24} color="#fffe66" />
+            </Pressable>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.folderRow}
+          >
+            <FolderChip
+              name="미분류"
+              color={null}
+              isSelected={selectedFolderId === null}
+              isDisabled={isSaving}
+              onPress={() => onSelectFolder(null)}
+            />
+            {folders.map((folder) => (
+              <FolderChip
+                key={folder.folderId}
+                name={folder.folderName}
+                color={folder.color}
+                isSelected={selectedFolderId === folder.folderId}
+                isDisabled={isSaving}
+                onPress={() => onSelectFolder(folder.folderId)}
+              />
+            ))}
+          </ScrollView>
+          {isCreatingFolder && (
+            <FolderCreateModal
+              onClose={() => setIsCreatingFolder(false)}
+              onCreated={(folder) => {
+                setIsCreatingFolder(false);
+                onFolderCreated(folder);
+              }}
+            />
+          )}
+
+          <View style={styles.reminderHeader}>
+            <SheetText style={[styles.sectionTitle, styles.sectionTitleInRow]}>
+              리마인드
+            </SheetText>
+            <ReminderToggle
+              isOn={reminder !== null}
+              isDisabled={isSaving}
+              onToggle={onToggleReminder}
+            />
+          </View>
+          {reminder === null ? (
+            <View style={[styles.reminderCard, styles.reminderOffRow]}>
+              <BellIcon color="#8A8A93" />
+              <SheetText style={styles.reminderPlaceholder}>
+                잊지 않도록 다시 알려드려요
+              </SheetText>
+            </View>
+          ) : (
+            <ReminderOnCard
+              reminder={reminder}
+              selectedPresetDays={selectedPresetDays}
+              isDisabled={isSaving}
+              onSelectPreset={onSelectPreset}
+              onSelectRandomDate={onSelectRandomDate}
+              onOpenDatePicker={onOpenDatePicker}
+              onOpenTimePicker={onOpenTimePicker}
+            />
+          )}
+
+          <SheetText style={styles.sectionTitle}>메모</SheetText>
+          <TextInput
+            allowFontScaling={
+              globalThis.__promise9ShareExtension ? false : undefined
+            }
+            style={styles.memoInput}
+            multiline
+            maxLength={MEMO_MAX_LENGTH}
+            editable={!isSaving}
+            placeholder="저장한 이유나 기억하고 싶은 점을 적어보세요"
+            placeholderTextColor="#6b6b6b"
+            value={memo}
+            onChangeText={onChangeMemo}
+          />
+          <SheetText style={styles.memoCounter}>
+            {memo.length}/{MEMO_MAX_LENGTH}
+          </SheetText>
+        </ScrollView>
+      </Reanimated.View>
     </View>
   );
 }
@@ -1170,6 +1186,9 @@ const styles = StyleSheet.create({
   },
   folderChipTextSelected: {
     color: "#fafafa",
+  },
+  entryScrollArea: {
+    flex: 1,
   },
   entryScrollContent: {
     paddingBottom: 16,

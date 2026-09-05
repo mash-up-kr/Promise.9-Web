@@ -18,6 +18,25 @@ const mockGetIdToken = jest.fn();
 jest.mock("@/features/auth/hooks/useSocialAuth", () => ({
   useSocialAuth: () => ({ getIdToken: mockGetIdToken }),
 }));
+let mockIsAndroid = false;
+jest.mock("@/constants/platform.constants", () => ({
+  get isIOS() {
+    return !mockIsAndroid;
+  },
+  get isAndroid() {
+    return mockIsAndroid;
+  },
+  isWeb: false,
+  isServer: false,
+}));
+let mockKeyboardHeight = 0;
+jest.mock("react-native-keyboard-controller", () => ({
+  ...jest.requireActual("react-native-keyboard-controller"),
+  useReanimatedKeyboardAnimation: () => ({
+    height: { value: mockKeyboardHeight },
+    progress: { value: mockKeyboardHeight === 0 ? 0 : 1 },
+  }),
+}));
 
 import {
   apiClient,
@@ -36,6 +55,7 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 import { close, openHostApp } from "expo-share-extension";
+import { StyleSheet } from "react-native";
 
 import { ShareExtension } from "./ShareExtension";
 
@@ -104,6 +124,8 @@ const mockRefreshAccessToken = refreshAccessToken as jest.Mock;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockIsAndroid = false;
+  mockKeyboardHeight = 0;
   mockRefreshAccessToken.mockResolvedValue("atk");
   // 메모리 액세스 토큰은 모듈 전역 — 앞 테스트의 로그인이 남긴 값을 비워 진입 조건을 통일한다.
   setAccessToken(null);
@@ -552,4 +574,14 @@ test("저장 시트 스크롤은 키보드 높이만큼 인셋을 넣어 메모 
   await render(<ShareExtension url="https://toss.tech/a" />);
   const scroll = await screen.findByTestId("share-entry-scroll");
   expect(scroll.props.automaticallyAdjustKeyboardInsets).toBe(true);
+});
+
+test("Android 에서는 키보드 높이만큼 스크롤 영역 아래를 띄워 메모 입력이 가려지지 않게 한다", async () => {
+  mockIsAndroid = true;
+  mockKeyboardHeight = -300;
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  const area = await screen.findByTestId("share-entry-keyboard-area");
+  expect(StyleSheet.flatten(area.props.style)).toMatchObject({
+    paddingBottom: 300,
+  });
 });
