@@ -17,7 +17,7 @@ export const AUTH_ERROR_CODE = {
   UNSUPPORTED_PROVIDER: 950004,
 } as const;
 
-/** 지원하지 않는 provider(errorCode 950004) — 현재는 카카오가 여기 해당(서버 미구현). */
+/** 지원하지 않는 provider(errorCode 950004) — 계약 외 provider 방어용(현재 카카오·애플은 서버 지원). */
 export function isUnsupportedProviderError(error: unknown): boolean {
   return (
     isApiError(error) &&

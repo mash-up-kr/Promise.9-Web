@@ -1,6 +1,7 @@
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { login as kakaoLogin } from "@react-native-seoul/kakao-login";
 import { renderHook } from "@testing-library/react-native";
+import * as AppleAuthentication from "expo-apple-authentication";
 
 import { SocialLoginCancelledError, useSocialAuth } from "./useSocialAuth";
 
@@ -104,5 +105,49 @@ describe("useSocialAuth", () => {
     const { result } = await renderHook(() => useSocialAuth());
 
     await expect(result.current.getIdToken("kakao")).rejects.toThrow();
+  });
+
+  test("애플 로그인 성공 시 identityToken 을 반환한다", async () => {
+    (AppleAuthentication.signInAsync as jest.Mock).mockResolvedValueOnce({
+      identityToken: "apple-id-token",
+      user: "user-id",
+      email: null,
+      fullName: null,
+      realUserStatus: 1,
+      authorizationCode: "auth-code",
+    });
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).resolves.toBe(
+      "apple-id-token",
+    );
+  });
+
+  test("애플 응답에 identityToken 이 없으면 에러를 던진다", async () => {
+    (AppleAuthentication.signInAsync as jest.Mock).mockResolvedValueOnce({
+      identityToken: null,
+      user: "user-id",
+      email: null,
+      fullName: null,
+      realUserStatus: 1,
+      authorizationCode: "auth-code",
+    });
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).rejects.toThrow();
+  });
+
+  // 애플은 구글처럼 취소 신호(ERR_REQUEST_CANCELED)를 준다 — 취소는 실패 안내 없이 조용히 원복.
+  test("사용자가 애플 로그인을 취소하면 SocialLoginCancelledError 를 던진다", async () => {
+    (AppleAuthentication.signInAsync as jest.Mock).mockRejectedValueOnce(
+      Object.assign(new Error("The user canceled the authorization attempt."), {
+        code: "ERR_REQUEST_CANCELED",
+      }),
+    );
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).rejects.toBeInstanceOf(
+      SocialLoginCancelledError,
+    );
   });
 });

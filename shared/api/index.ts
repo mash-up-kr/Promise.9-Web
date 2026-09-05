@@ -7,6 +7,10 @@ export type {
 export {
   type ExtensionTokenResponse,
   extensionTokenResponseSchema,
+  type KakaoExchangeRequest,
+  type KakaoExchangeResponse,
+  kakaoExchangeRequestSchema,
+  kakaoExchangeResponseSchema,
   type RefreshResponse,
   refreshResponseSchema,
   type SocialLoginRequest,

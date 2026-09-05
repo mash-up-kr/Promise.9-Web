@@ -1,7 +1,21 @@
+// useSocialAuth.web.ts 가 카카오 교환에 apiClient 를 쓴다 — client.ts(env 필수)를 안 태우려고
+// apiClient 만 목하고 contracts 는 실제 구현을 쓴다(LoginScreen.test.tsx 와 동일 패턴).
+jest.mock("@shared/api", () => {
+  const contracts = jest.requireActual("@shared/api/auth.contracts");
+  return { apiClient: { post: jest.fn() }, ...contracts };
+});
+
+import { apiClient } from "@shared/api";
 import { renderHook } from "@testing-library/react-native";
 
 import { SocialLoginCancelledError } from "../auth.errors";
-import { buildGoogleAuthUrl, useSocialAuth } from "./useSocialAuth.web";
+import {
+  buildGoogleAuthUrl,
+  buildKakaoAuthUrl,
+  useSocialAuth,
+} from "./useSocialAuth.web";
+
+const mockPost = apiClient.post as jest.Mock;
 
 const ORIGIN = "https://app.example.com";
 
@@ -167,31 +181,32 @@ describe("useSocialAuth (웹)", () => {
     await expect(promise).rejects.toThrow();
   });
 
-  it("사용자가 팝업을 닫으면 SocialLoginCancelledError 를 던진다", async () => {
+  // 응답이 끝내 오지 않으면(사용자가 팝업을 닫았거나 멈춤) 타임아웃으로 조용히 종료한다.
+  // COOP 환경에선 popup.closed 로 종료를 신뢰성 있게 감지할 수 없어 타임아웃이 유일한 취소 신호다.
+  it("응답 없이 타임아웃되면 SocialLoginCancelledError 로 끝난다", async () => {
     jest.useFakeTimers();
     const { result } = await renderHook(() => useSocialAuth());
 
     const promise = result.current.getIdToken("google");
-    popup.closed = true;
-    jest.advanceTimersByTime(1000);
+    promise.catch(() => {}); // 타이머 진행 전에 unhandled rejection 으로 잡히지 않도록.
+    jest.advanceTimersByTime(10 * 60 * 1000);
 
     await expect(promise).rejects.toBeInstanceOf(SocialLoginCancelledError);
     jest.useRealTimers();
   });
 
-  // COOP(Cross-Origin-Opener-Policy)가 켜진 환경에서는 popup.closed 접근이 막힌다.
-  // 취소 감지를 포기할지언정, 로그인이 성공했는데 "취소됨"으로 끝나는 일은 없어야 한다.
-  it("popup.closed 접근이 COOP 로 막혀도 로그인 결과를 그대로 살린다", async () => {
+  // 회귀: COOP(Cross-Origin-Opener-Policy)가 켜진 구글 페이지는 opener 관계를 끊고, Chrome 은
+  // 그 팝업의 popup.closed 를 (예외가 아니라) true 로 돌려준다. 예전 폴링 구현은 이를 "닫힘"으로
+  // 오판해 로그인 진행 중에 취소해버렸다. 이제 popup.closed 를 보지 않으므로, closed 가 true 라도
+  // 뒤늦게 온 idToken 을 그대로 살려야 한다.
+  it("COOP 로 popup.closed 가 true 여도 뒤늦은 idToken 을 살린다", async () => {
     jest.useFakeTimers();
-    Object.defineProperty(popup, "closed", {
-      get() {
-        throw new Error("Cross-Origin-Opener-Policy would block window.closed");
-      },
-    });
+    popup.closed = true;
     const { result } = await renderHook(() => useSocialAuth());
 
     const promise = result.current.getIdToken("google");
-    jest.advanceTimersByTime(2000);
+    // 동의 화면을 거치느라 오래 걸리는 상황(예전 폴링 주기 400ms 를 훨씬 초과).
+    jest.advanceTimersByTime(30 * 1000);
     jest.useRealTimers();
 
     emitMessage({
@@ -202,11 +217,115 @@ describe("useSocialAuth (웹)", () => {
 
     await expect(promise).resolves.toBe("web-id-token");
   });
+});
 
-  // 웹은 client_secret 없이는 카카오 idToken 을 발급받을 방법이 없다(구조적 제약, useSocialAuth.web.ts 참고).
-  it("카카오 웹 로그인은 아직 지원하지 않아 에러를 던진다", async () => {
+describe("buildKakaoAuthUrl", () => {
+  const url = () =>
+    new URL(
+      buildKakaoAuthUrl({
+        restApiKey: "rest-key",
+        redirectUri: `${ORIGIN}/auth/kakao-callback.html`,
+        state: "state-value",
+      }),
+    );
+
+  it("카카오 authorize 엔드포인트를 가리킨다", () => {
+    expect(url().origin + url().pathname).toBe(
+      "https://kauth.kakao.com/oauth/authorize",
+    );
+  });
+
+  // 서버 exchange 가 idToken 을 돌려주려면 openid scope 의 code 여야 한다.
+  it("code 를 openid scope 로 요청한다", () => {
+    expect(url().searchParams.get("response_type")).toBe("code");
+    expect(url().searchParams.get("scope")).toContain("openid");
+  });
+
+  it("client_id·redirect_uri·state 를 싣는다", () => {
+    expect(url().searchParams.get("client_id")).toBe("rest-key");
+    expect(url().searchParams.get("redirect_uri")).toBe(
+      `${ORIGIN}/auth/kakao-callback.html`,
+    );
+    expect(url().searchParams.get("state")).toBe("state-value");
+  });
+});
+
+describe("useSocialAuth 카카오 (웹)", () => {
+  beforeEach(() => {
+    installFakeWindow();
+    process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY = "kakao-rest-key";
+    mockPost.mockReset();
+  });
+
+  it("팝업 code 를 서버로 교환해 idToken 을 반환한다", async () => {
+    mockPost.mockResolvedValueOnce({
+      data: { success: true, data: { idToken: "kakao-web-id-token" } },
+    });
     const { result } = await renderHook(() => useSocialAuth());
 
-    await expect(result.current.getIdToken("kakao")).rejects.toThrow();
+    const promise = result.current.getIdToken("kakao");
+    emitMessage({
+      source: "promise9-kakao-auth",
+      code: "auth-code",
+      state: sentState(),
+    });
+
+    await expect(promise).resolves.toBe("kakao-web-id-token");
+    expect(mockPost).toHaveBeenCalledWith("/auth/kakao/exchange", {
+      code: "auth-code",
+      redirectUri: `${ORIGIN}/auth/kakao-callback.html`,
+    });
+    expect(popup.close).toHaveBeenCalled();
+  });
+
+  it("REST 키가 없으면 명시적 에러를 던진다", async () => {
+    process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY = "";
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("kakao")).rejects.toThrow(
+      "EXPO_PUBLIC_KAKAO_REST_API_KEY",
+    );
+  });
+
+  // state 불일치는 CSRF 의심 — code 를 서버로 보내지 않는다.
+  it("state 가 다르면 교환하지 않고 실패시킨다", async () => {
+    const { result } = await renderHook(() => useSocialAuth());
+
+    const promise = result.current.getIdToken("kakao");
+    emitMessage({
+      source: "promise9-kakao-auth",
+      code: "auth-code",
+      state: "tampered-state",
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  it("서버 교환이 실패하면 에러가 전파된다", async () => {
+    mockPost.mockRejectedValueOnce(new Error("exchange failed"));
+    const { result } = await renderHook(() => useSocialAuth());
+
+    const promise = result.current.getIdToken("kakao");
+    emitMessage({
+      source: "promise9-kakao-auth",
+      code: "auth-code",
+      state: sentState(),
+    });
+
+    await expect(promise).rejects.toThrow();
+  });
+
+  // 구글 웹과 동일 — COOP 로 popup.closed 를 못 믿으므로, 응답이 오지 않으면 타임아웃으로 종료한다.
+  it("응답 없이 타임아웃되면 SocialLoginCancelledError 로 끝난다", async () => {
+    jest.useFakeTimers();
+    const { result } = await renderHook(() => useSocialAuth());
+
+    const promise = result.current.getIdToken("kakao");
+    promise.catch(() => {}); // 타이머 진행 전에 unhandled rejection 으로 잡히지 않도록.
+    jest.advanceTimersByTime(10 * 60 * 1000);
+
+    await expect(promise).rejects.toBeInstanceOf(SocialLoginCancelledError);
+    jest.useRealTimers();
   });
 });
