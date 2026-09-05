@@ -519,3 +519,16 @@ test("세션 이탈 후 재로그인하면 편집 시트(저장 화면)로 돌�
 
   expect(await screen.findByText("저장")).toBeOnTheScreen();
 });
+
+test("URL 형식이 아니면 서버에 보내지 않고 저장 불가 시트를 보여준다", async () => {
+  await render(<ShareExtension url="이건 링크가 아니에요" />);
+  const user = userEvent.setup();
+
+  await user.press(await screen.findByText("저장"));
+
+  expect(await screen.findByText("저장할 수 없는 링크예요")).toBeOnTheScreen();
+  expect(mockPost).not.toHaveBeenCalled();
+
+  await user.press(screen.getByText("닫기"));
+  await waitFor(() => expect(close).toHaveBeenCalled());
+});

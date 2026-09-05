@@ -48,6 +48,7 @@ import { FolderColorPicker } from "@/features/archive/components/FolderColorPick
 import { DatePickerModal } from "@/features/link/components/DatePickerModal";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { TimePickerModal } from "@/features/link/components/TimePickerModal";
+import { linkUrlSchema } from "@/features/link/link.contracts";
 import {
   formatRemainingPeriod,
   formatReminderDate,
@@ -269,6 +270,10 @@ function ShareSaveFlow({
   }, []);
 
   const save = async () => {
+    if (!linkUrlSchema.safeParse(url).success) {
+      dispatch({ type: "SAVE_REJECTED_INVALID_URL" });
+      return;
+    }
     dispatch({ type: "SAVE_REQUESTED" });
     try {
       const { data } = await apiClient.post<SuccessResponse<CreatedLink>>(
@@ -965,6 +970,7 @@ const RESULT_GRAPHICS = {
   duplicate: require("@/assets/images/share/result-duplicate.png"),
   failed: require("@/assets/images/share/result-failed.png"),
   "retry-limit": require("@/assets/images/share/result-retry-limit.png"),
+  "invalid-url": require("@/assets/images/share/result-failed.png"),
 } as const;
 
 const RESULT_CONTENT = {
@@ -986,6 +992,11 @@ const RESULT_CONTENT = {
   "retry-limit": {
     title: "링크를 저장하지 못했어요",
     subtitle: "잠시 후 다시 시도해주세요",
+    cta: "닫기",
+  },
+  "invalid-url": {
+    title: "저장할 수 없는 링크예요",
+    subtitle: "올바른 주소인지 확인한 뒤 다시 공유해주세요",
     cta: "닫기",
   },
 } as const;
@@ -1014,6 +1025,7 @@ function ResultSheet({
         onRetry();
         return;
       case "retry-limit":
+      case "invalid-url":
         onClose();
         return;
     }

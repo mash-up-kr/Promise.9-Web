@@ -7,13 +7,15 @@ export type ShareSaveState =
   | { phase: "success"; linkId: number }
   | { phase: "duplicate"; linkId: number | null }
   | { phase: "failed"; failCount: number }
-  | { phase: "retry-limit" };
+  | { phase: "retry-limit" }
+  | { phase: "invalid-url" };
 
 export type ShareSaveAction =
   | { type: "SAVE_REQUESTED" }
   | { type: "SAVE_SUCCEEDED"; linkId: number }
   | { type: "SAVE_DUPLICATED"; linkId: number | null }
-  | { type: "SAVE_FAILED" };
+  | { type: "SAVE_FAILED" }
+  | { type: "SAVE_REJECTED_INVALID_URL" };
 
 export const INITIAL_SHARE_SAVE_STATE: ShareSaveState = {
   phase: "editing",
@@ -38,6 +40,12 @@ export function shareSaveReducer(
     case "SAVE_DUPLICATED":
       if (state.phase === "saving") {
         return { phase: "duplicate", linkId: action.linkId };
+      }
+      return state;
+    // 공유 텍스트가 URL 이 아니면(Android EXTRA_TEXT 등) 서버 왕복 없이 안내로 끝낸다.
+    case "SAVE_REJECTED_INVALID_URL":
+      if (state.phase === "editing" || state.phase === "failed") {
+        return { phase: "invalid-url" };
       }
       return state;
     case "SAVE_FAILED":

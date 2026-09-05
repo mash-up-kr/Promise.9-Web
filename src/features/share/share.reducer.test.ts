@@ -55,3 +55,10 @@ test("결과 상태(success 등)에서 무관한 액션은 무시한다", () => 
   const success = { phase: "success", linkId: 1 } as const;
   expect(shareSaveReducer(success, { type: "SAVE_FAILED" })).toBe(success);
 });
+
+test("URL 형식이 아니면 저장 요청 없이 invalid-url 로 전환한다", () => {
+  const state = shareSaveReducer(INITIAL_SHARE_SAVE_STATE, {
+    type: "SAVE_REJECTED_INVALID_URL",
+  });
+  expect(state).toEqual({ phase: "invalid-url" });
+});
