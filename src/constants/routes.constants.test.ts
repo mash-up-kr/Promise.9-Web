@@ -1,8 +1,11 @@
 import {
   archiveDetailHref,
+  decodeSharedUrl,
+  encodeSharedUrl,
   linkDetailHref,
   moveLinksHref,
   ROUTES,
+  shareLoginHandoffPath,
 } from "./routes.constants";
 
 describe("routes.constants", () => {
@@ -42,5 +45,31 @@ describe("routes.constants", () => {
       pathname: "/link/[id]",
       params: { id: "link-1" },
     });
+  });
+
+  test("공유 URL 을 로그인 후 저장 시트로 잇는 인계 경로는 라우터가 건드리지 못하는 16진수로 나른다", () => {
+    const url = "https://toss.tech/a?b=1&c=2";
+
+    expect(shareLoginHandoffPath(url)).toBe(
+      `login?next=create-link&share=${encodeSharedUrl(url)}`,
+    );
+    expect(encodeSharedUrl(url)).toMatch(/^[0-9a-f]+$/);
+  });
+
+  test("공유 URL 인코딩은 &·%·한글·해시를 그대로 되살린다", () => {
+    for (const url of [
+      "https://www.youtube.com/watch?v=abc&t=10s",
+      "https://example.com/?q=100%25&x=a+b#frag",
+      "https://ko.wikipedia.org/wiki/대한민국",
+    ]) {
+      expect(decodeSharedUrl(encodeSharedUrl(url))).toBe(url);
+    }
+  });
+
+  test("공유 URL 파라미터가 문자열이 아니거나 16진수가 아니면 null 이다", () => {
+    expect(decodeSharedUrl(undefined)).toBeNull();
+    expect(decodeSharedUrl(["61", "62"])).toBeNull();
+    expect(decodeSharedUrl("zz")).toBeNull();
+    expect(decodeSharedUrl("")).toBeNull();
   });
 });

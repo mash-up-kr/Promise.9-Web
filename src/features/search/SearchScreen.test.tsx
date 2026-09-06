@@ -1,3 +1,7 @@
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
+
 // client.ts 는 import 시 EXPO_PUBLIC_API_BASE_URL 를 요구하므로 apiClient 만 mock 하고
 // 에러 클래스(NetworkError 등)는 실제 구현을 쓴다.
 jest.mock("@shared/api", () => {
@@ -5,12 +9,14 @@ jest.mock("@shared/api", () => {
   return { apiClient: { get: jest.fn() }, ...errors };
 });
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiClient, NetworkError } from "@shared/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, userEvent } from "@testing-library/react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SearchScreen } from "./SearchScreen";
+import { SEARCH_DEBOUNCE_MS } from "./search.constants";
 
 const mockGet = apiClient.get as jest.Mock;
 const mockPush = jest.fn();
@@ -130,7 +136,7 @@ const setupUser = () =>
 
 const debounce = () =>
   act(async () => {
-    jest.advanceTimersByTime(300);
+    jest.advanceTimersByTime(SEARCH_DEBOUNCE_MS);
   });
 
 const expectResultLinks = async (keyword: string) => {
@@ -138,12 +144,18 @@ const expectResultLinks = async (keyword: string) => {
 };
 
 describe("SearchScreen", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.useFakeTimers();
     mockPush.mockClear();
     mockGet.mockReset();
     routeApi();
     mockParamsStore.reset();
+    // 최근 검색어는 이제 기기 저장소에서 로드된다 — 화면 시나리오용 시드.
+    await AsyncStorage.clear();
+    await AsyncStorage.setItem(
+      "search.recentKeywords",
+      JSON.stringify(["사우나", "오늘의집", "면접", "피그마"]),
+    );
   });
 
   afterEach(() => {

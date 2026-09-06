@@ -52,6 +52,24 @@ export async function getRefreshToken(): Promise<string | null> {
   return persistence.getRefreshToken();
 }
 
+type TokenListener = () => void;
+
+const listeners = new Set<TokenListener>();
+
+function notifyTokenListeners(): void {
+  for (const listener of listeners) {
+    listener();
+  }
+}
+
+// 로그인·재발급·로그아웃으로 토큰이 바뀐 뒤 알린다 — 인증 가드가 세션 상태를 다시 읽는 신호.
+export function subscribeTokens(listener: TokenListener): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 // 저장소가 배타 실행을 제공하면 그 안에서, 아니면 그냥 실행한다(TokenPersistence.runExclusive).
 export function runExclusive<T>(run: () => Promise<T>): Promise<T> {
   if (!persistence?.runExclusive) return run();
@@ -67,10 +85,12 @@ export async function setTokens(
 ): Promise<void> {
   await persistence?.setRefreshToken(newRefreshToken);
   accessToken = newAccessToken;
+  notifyTokenListeners();
 }
 
 // 로그아웃·탈퇴·재발급 실패 시 호출.
 export async function clearTokens(): Promise<void> {
   accessToken = null;
   await persistence?.setRefreshToken(null);
+  notifyTokenListeners();
 }

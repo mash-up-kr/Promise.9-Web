@@ -1,5 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 
+jest.mock("@/constants/platform.constants", () => ({ isIOS: true }));
+
 import { tokenPersistence } from "./tokenStorage";
 
 jest.mock("expo-secure-store", () => ({
@@ -7,6 +9,8 @@ jest.mock("expo-secure-store", () => ({
   setItemAsync: jest.fn(),
   deleteItemAsync: jest.fn(),
 }));
+
+const KEYCHAIN_OPTIONS = { accessGroup: "group.com.mashup.promise9" };
 
 describe("tokenStorage (네이티브 — expo-secure-store)", () => {
   afterEach(() => {
@@ -21,6 +25,7 @@ describe("tokenStorage (네이티브 — expo-secure-store)", () => {
     );
     expect(SecureStore.getItemAsync).toHaveBeenCalledWith(
       "promise9_refresh_token",
+      KEYCHAIN_OPTIONS,
     );
   });
 
@@ -30,6 +35,7 @@ describe("tokenStorage (네이티브 — expo-secure-store)", () => {
     expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
       "promise9_refresh_token",
       "new-refresh",
+      KEYCHAIN_OPTIONS,
     );
   });
 
@@ -38,6 +44,28 @@ describe("tokenStorage (네이티브 — expo-secure-store)", () => {
 
     expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith(
       "promise9_refresh_token",
+      KEYCHAIN_OPTIONS,
     );
+  });
+});
+
+describe("tokenStorage (Android — 접근 그룹 없음)", () => {
+  it("iOS 가 아니면 SecureStore 옵션을 넘기지 않는다", () => {
+    jest.resetModules();
+    const mockSecureStore = {
+      getItemAsync: jest.fn().mockResolvedValue(null),
+      setItemAsync: jest.fn(),
+      deleteItemAsync: jest.fn(),
+    };
+    jest.doMock("expo-secure-store", () => mockSecureStore);
+    jest.doMock("@/constants/platform.constants", () => ({ isIOS: false }));
+    const { tokenPersistence: androidPersistence } = require("./tokenStorage");
+
+    return androidPersistence.getRefreshToken().then(() => {
+      expect(mockSecureStore.getItemAsync).toHaveBeenCalledWith(
+        "promise9_refresh_token",
+        undefined,
+      );
+    });
   });
 });

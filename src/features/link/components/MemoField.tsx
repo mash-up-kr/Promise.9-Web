@@ -1,3 +1,7 @@
+import {
+  BottomSheetTextInput,
+  useBottomSheetInternal,
+} from "@gorhom/bottom-sheet";
 import { useLayoutEffect, useRef } from "react";
 import { TextInput, View } from "react-native";
 import { Text } from "@/components/ui/text/Text";
@@ -16,6 +20,12 @@ export interface MemoFieldProps {
 
 export function MemoField({ memo, onChangeMemo, onBlur }: MemoFieldProps) {
   const inputRef = useRef<TextInput>(null);
+  // gorhom 은 BottomSheetTextInput 이 포커스를 알려줘야 키보드에 맞춰 시트를 올린다 —
+  // 시트 안에서만 그 입력을 쓰고, 상세 화면처럼 시트 밖에서는 일반 TextInput 을 유지한다.
+  // BottomSheetTextInput 은 RN TextInput 의 props·ref 를 그대로 넘기므로 같은 타입으로 다룬다.
+  const Input: typeof TextInput = useBottomSheetInternal(true)
+    ? (BottomSheetTextInput as unknown as typeof TextInput)
+    : TextInput;
 
   // web(react-native-web)의 <textarea>는 내용이 늘어도 자동으로 커지지 않아 직접
   // 리사이즈한다.
@@ -34,7 +44,7 @@ export function MemoField({ memo, onChangeMemo, onBlur }: MemoFieldProps) {
       <View className="w-full gap-2">
         {/* 입력 박스 — 최소 2줄(72px). 카운터는 박스 밖에 둔다(Figma 106:11562). */}
         <View className="min-h-[72px] w-full rounded-[20px] bg-opacity-white-10 p-4">
-          <TextInput
+          <Input
             ref={inputRef}
             multiline
             value={memo}
@@ -44,6 +54,10 @@ export function MemoField({ memo, onChangeMemo, onBlur }: MemoFieldProps) {
             maxLength={MEMO_MAX_LENGTH}
             // placeholderTextColor 는 className 으로 못 받아 리터럴로 지정 — #ffffff4d = --color-opacity-white-30
             placeholderTextColor="#ffffff4d"
+            // iOS 공유 익스텐션 폰트 배율 버그 우회 — ui/Text 와 동일
+            allowFontScaling={
+              globalThis.__promise9ShareExtension ? false : undefined
+            }
             // TODO: 저장 트리거(디바운스/blur) 정책은 백엔드 연동 확정 후 결정 —
             // 지금은 상위 계획 스코프(mock + 로컬 state)에 따라 키 입력마다 즉시 반영한다.
             className="min-h-5 w-full font-pretendard text-body-2-reading text-text-normal web:outline-none"

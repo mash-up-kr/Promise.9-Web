@@ -1,6 +1,5 @@
 import { folderQueries } from "@shared/entities/folder/folder.queries";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
 import { Plus } from "lucide-react-native";
 import { useEffect, useRef } from "react";
 import { Pressable, ScrollView, View } from "react-native";
@@ -26,10 +25,15 @@ const chipStyles = tv({
 export interface FolderChipListProps {
   value: number | null;
   onChange: (folderId: number | null) => void;
+  /** '폴더 추가'(+) 탭. 라우트 이동/모달 열기는 호출부가 정한다. */
+  onAddFolder: () => void;
 }
 
-export function FolderChipList({ value, onChange }: FolderChipListProps) {
-  const router = useRouter();
+export function FolderChipList({
+  value,
+  onChange,
+  onAddFolder,
+}: FolderChipListProps) {
   const { data } = useSuspenseQuery(folderQueries.list());
   const folders = data.folders;
 
@@ -57,7 +61,7 @@ export function FolderChipList({ value, onChange }: FolderChipListProps) {
           accessibilityRole="button"
           accessibilityLabel="폴더 추가"
           hitSlop={8}
-          onPress={() => router.push("/create-folder")}
+          onPress={onAddFolder}
         >
           <Icon iconNode={Plus} size={24} className="text-icon-accent" />
         </Pressable>

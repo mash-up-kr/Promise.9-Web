@@ -17,12 +17,22 @@ export const LINK_ERROR_CODE = {
  * 409 는 "중복 생성 또는 리소스 상태 충돌" 을 모두 포함하므로 상태 코드로는 단정할 수 없다.
  * 서버 계약(errorCode) 해석은 여기서 하고, 사용자 문구는 화면이 정한다.
  *
- * 서버는 이 응답에 기존 링크의 `linkId` 를 담지 않는다 — 중복 화면에서 그 링크로 바로
- * 이동시킬 수 없는 이유다.
  */
 export function isAlreadySavedLinkError(error: unknown): boolean {
   return (
     isApiError(error) &&
     error.payload?.error.errorCode === LINK_ERROR_CODE.ALREADY_SAVED
   );
+}
+
+/**
+ * 중복 저장 409 가 담아주는 기존 링크 ID (서버 PR #109). '보러가기' 딥링크용.
+ * 구버전 응답엔 없으므로 null 을 허용한다. linkId 는 링크 도메인 전용 확장 필드라 공용 ErrorData 타입에는 넣지 않는다.
+ */
+export function getDuplicateLinkId(error: unknown): number | null {
+  if (!isAlreadySavedLinkError(error) || !isApiError(error)) {
+    return null;
+  }
+  const { linkId } = error.payload?.error as { linkId?: unknown };
+  return typeof linkId === "number" ? linkId : null;
 }

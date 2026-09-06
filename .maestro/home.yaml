@@ -7,6 +7,7 @@ appId: com.mashup.promise9
 # 접두 정규식으로 양 플랫폼을 매칭한다 (Maestro 는 전체 일치 정규식).
 # dev client 재시작 후 번들 로드가 Android 에뮬레이터에서 20초를 넘겨,
 # 기본 assert 대기로는 홈 렌더 전에 실패한다 → 명시적 대기.
+# (호스트 부하에 따라 60초도 넘긴 실측이 있어 120초로 여유를 둔다.)
 - extendedWaitUntil:
     visible: "최근 저장.*"
-    timeout: 60000
+    timeout: 120000

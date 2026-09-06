@@ -10,28 +10,6 @@ import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { BottomSheet } from "./BottomSheet";
 
-// toJSON() 트리에서 특정 prop 을 가진 첫 노드를 찾는다 — 백드롭은 gorhom 스텁이 내부적으로
-// 렌더하므로 testID 를 직접 붙일 수 없어, 전달된 props 로 찾는다.
-function findNodeByProp(
-  node: unknown,
-  propKey: string,
-): { props: Record<string, unknown> } | null {
-  if (!node || typeof node !== "object") return null;
-  const current = node as {
-    props?: Record<string, unknown>;
-    children?: unknown;
-  };
-  if (current.props && propKey in current.props) {
-    return current as { props: Record<string, unknown> };
-  }
-  const children = Array.isArray(current.children) ? current.children : [];
-  for (const child of children) {
-    const found = findNodeByProp(child, propKey);
-    if (found) return found;
-  }
-  return null;
-}
-
 const metrics: Metrics = {
   frame: { x: 0, y: 0, width: 375, height: 812 },
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
@@ -62,28 +40,30 @@ describe("BottomSheet", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  test("backdropPressBehavior 기본값 close 를 backdrop 에 전달한다", async () => {
-    const view = await render(
+  test("기본값(close)에선 백드롭 탭으로 닫힌다", async () => {
+    const onClose = jest.fn();
+    await render(
       <SafeAreaProvider initialMetrics={metrics}>
-        <BottomSheet onClose={jest.fn()}>
+        <BottomSheet onClose={onClose}>
           <Text>내용</Text>
         </BottomSheet>
       </SafeAreaProvider>,
     );
-    const backdrop = findNodeByProp(view.toJSON(), "pressBehavior");
-    expect(backdrop?.props.pressBehavior).toBe("close");
+    fireEvent.press(screen.getByLabelText("sheet-backdrop"));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  test('backdropPressBehavior="none" 을 backdrop 에 전달한다', async () => {
-    const view = await render(
+  test('backdropPressBehavior="none" 이면 백드롭 탭에도 닫히지 않는다', async () => {
+    const onClose = jest.fn();
+    await render(
       <SafeAreaProvider initialMetrics={metrics}>
-        <BottomSheet onClose={jest.fn()} backdropPressBehavior="none">
+        <BottomSheet onClose={onClose} backdropPressBehavior="none">
           <Text>내용</Text>
         </BottomSheet>
       </SafeAreaProvider>,
     );
-    const backdrop = findNodeByProp(view.toJSON(), "pressBehavior");
-    expect(backdrop?.props.pressBehavior).toBe("none");
+    fireEvent.press(screen.getByLabelText("sheet-backdrop"));
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   test("isLocked 이면 pan-down 닫힘이 비활성화된다", async () => {

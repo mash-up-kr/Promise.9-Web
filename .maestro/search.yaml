@@ -1,12 +1,13 @@
 # 검색 화면 E2E (네이티브 iOS/Android 공통)
-# 최근 검색어는 목데이터(세션 상태)라 서버 상태와 무관하게 단언할 수 있다.
+# 최근 검색어는 기기 영속 데이터(async-storage)라 첫 실행엔 섹션이 없다 —
+# 검색을 한 번 실행해 직접 만든 뒤 단언한다(영속 저장 동작도 함께 검증).
 appId: com.mashup.promise9
 ---
 - launchApp
 # dev client 재시작 후 번들 로드가 Android 에뮬레이터에서 기본 대기를 넘긴다(홈 플로우와 동일).
 - extendedWaitUntil:
     visible: "링띵동"
-    timeout: 60000
+    timeout: 120000
 # 서버 장애 시 dev LogBox 가 전체 화면을 덮는다 — 있으면 걷어낸다(정상이면 스킵).
 - runFlow:
     when:
@@ -14,7 +15,20 @@ appId: com.mashup.promise9
     commands:
       - tapOn: "Dismiss"
 - openLink: promise9web:///search
-# 검색 화면의 조회 실패도 LogBox 를 띄울 수 있다 — 단언 전에 한 번 더 걷어낸다.
+# 검색 화면의 조회 실패도 LogBox 를 띄울 수 있다 — 입력 전에 한 번 더 걷어낸다.
+- runFlow:
+    when:
+      visible: "Dismiss"
+    commands:
+      - tapOn: "Dismiss"
+# 검색바는 자동 포커스지만 E2E 타이밍에 따라 풀릴 수 있어 명시적으로 탭한다(placeholder 매칭).
+- tapOn: "검색"
+- inputText: "maestro"
+# 제출(즉시 실행)만 최근 검색어에 저장된다 — 자동(디바운스) 검색은 저장하지 않는다.
+- pressKey: Enter
+# 입력을 지우면 기본 화면으로 복귀하고, 방금 저장된 최근 검색어가 보인다.
+- tapOn: "maestro"
+- eraseText
 - runFlow:
     when:
       visible: "Dismiss"
@@ -24,3 +38,4 @@ appId: com.mashup.promise9
     visible: "최근 검색어"
     timeout: 30000
 - assertVisible: "모두 지우기"
+- assertVisible: "maestro"

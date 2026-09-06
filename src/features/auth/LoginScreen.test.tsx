@@ -337,6 +337,47 @@ describe("LoginScreen", () => {
     );
   });
 
+  test("next 가 create-link 이면 로그인 후 공유 URL 을 들고 저장 시트로 이동한다", async () => {
+    mockParams.mockReturnValue({ next: "create-link", share: "6162" });
+    mockSignIn.mockResolvedValue(googleSuccess());
+    mockPost.mockResolvedValue({
+      data: {
+        success: true,
+        data: { accessToken: "atk", refreshToken: "rtk", isNewUser: false },
+      },
+    });
+    await renderScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Google로 계속하기" }),
+    );
+
+    await waitFor(() =>
+      expect(mockReplace).toHaveBeenCalledWith({
+        pathname: "/create-link",
+        params: { share: "6162" },
+      }),
+    );
+  });
+
+  test("next 가 모르는 값이면 홈으로 이동한다", async () => {
+    mockParams.mockReturnValue({ next: "https://evil.com" });
+    mockSignIn.mockResolvedValue(googleSuccess());
+    mockPost.mockResolvedValue({
+      data: {
+        success: true,
+        data: { accessToken: "atk", refreshToken: "rtk", isNewUser: false },
+      },
+    });
+    await renderScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Google로 계속하기" }),
+    );
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+  });
+
   describe("크롬 익스텐션 인계", () => {
     const originalExtensionId = process.env.EXPO_PUBLIC_EXTENSION_ID;
     const chromeGlobal = globalThis as { chrome?: unknown };

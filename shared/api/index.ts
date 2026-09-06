@@ -41,5 +41,6 @@ export {
   setAccessToken,
   setTokenPersistence,
   setTokens,
+  subscribeTokens,
   type TokenPersistence,
 } from "./token";
