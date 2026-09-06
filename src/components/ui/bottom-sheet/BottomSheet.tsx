@@ -95,7 +95,9 @@ export function BottomSheet({
       enablePanDownToClose={!isLocked}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
-      android_keyboardInputMode="adjustResize"
+      // edge-to-edge 창은 adjustResize 로도 줄어들지 않아 gorhom 이 리사이즈를 기다리면 입력이
+      // 키보드에 가려진다 — adjustPan 으로 두면 키보드 높이만큼 시트를 직접 올린다.
+      android_keyboardInputMode="adjustPan"
       onChange={handleChange}
       onClose={notifyClose}
       animationConfigs={animationConfigs}
