@@ -35,11 +35,11 @@ export default defineManifest({
    * 공개키를 여기에 넣으면 로컬과 스토어의 ID 가 같아진다.
    */
   key: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkfy549sPoB49HKtLK+1cOS/bzS2+htKAFzeYUvynm+c39m9lhW/9flOEzpmHxXsJ2KMbZvfcIO1TBGxMK37Dw8GV3l7WkSDPUbRf8+kn9ffPhLRn20eTLIuibqljBZBERQQCO58/OVhetk9zj46I+UmvebDeZ7caoYkXo/YQnHwGquLMWlOHRNk7J7czXmbk+nM2Mx40aVyabx4Qx1F2pKnUHMT/XbifziSjLnWcrrjD45pYAtgTnYOEY8DRv5kKJVtzte1VNx2wRv3LhRHNEX5IAkSxex0oX4XUZaamSvKOJMngxlOBk6tpj5UYW19K3VimKYsL1SlGCkvpS/R0OQIDAQAB",
-  name: "링딩동",
+  name: "링띵동",
   version: pkg.version,
-  description: "보고 있는 페이지를 링딩동에 저장합니다.",
+  description: "보고 있는 페이지를 링띵동에 저장합니다.",
   action: {
-    default_title: "링딩동에 저장",
+    default_title: "링띵동에 저장",
   },
   side_panel: {
     default_path: "src/sidepanel/index.html",

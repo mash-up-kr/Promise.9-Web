@@ -15,7 +15,7 @@ const isPdf = (url: URL): boolean =>
   url.pathname.toLowerCase().endsWith(".pdf");
 
 /**
- * 이 URL 을 링딩동에 저장할 수 있는지.
+ * 이 URL 을 링띵동에 저장할 수 있는지.
  *
  * 저장할 수 없는 페이지(브라우저 내부 페이지·웹 스토어·PDF)에서는 패널이 저장 화면 대신
  * 안내 화면을 띄운다 — 시안 `chrome-extension / restricted-url`.

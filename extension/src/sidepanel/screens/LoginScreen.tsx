@@ -38,7 +38,7 @@ export function LoginScreen() {
         <p className="mt-1.5 text-center text-body-2-reading text-text-alternative">
           {hasOpened
             ? "열린 탭에서 로그인하면 여기로 바로 이어져요"
-            : "이 링크를 저장하려면 링딩동 로그인이 필요해요"}
+            : "이 링크를 저장하려면 링띵동 로그인이 필요해요"}
         </p>
         <div className="mt-6">
           <ActionButton onClick={start}>
