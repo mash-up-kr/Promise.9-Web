@@ -28,14 +28,18 @@ export default defineManifest({
    *
    * 공개키라 공개돼도 무방하다(짝이 되는 개인키는 `extension/key.pem` — gitignore 대상이며
    * 압축해제 로드에는 필요 없다. 자체 배포용 .crx 서명에만 쓰인다).
-   * 스토어 배포 시에는 웹 스토어가 자체 ID 를 부여하므로 그때 URI 를 한 번 더 등록해야 한다.
+   *
+   * 이 필드는 **로컬 압축해제 로드 전용**이다. 웹 스토어는 `key` 가 있으면 업로드를 거부하므로
+   * ("key 입력란은 매니페스트에 허용되지 않습니다") `pnpm package` 가 업로드용 zip 에서만
+   * 빼낸다(scripts/package.mjs). 스토어는 아이템에 자체 ID 를 부여하니, 등록 후 대시보드의
+   * 공개키를 여기에 넣으면 로컬과 스토어의 ID 가 같아진다.
    */
   key: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkfy549sPoB49HKtLK+1cOS/bzS2+htKAFzeYUvynm+c39m9lhW/9flOEzpmHxXsJ2KMbZvfcIO1TBGxMK37Dw8GV3l7WkSDPUbRf8+kn9ffPhLRn20eTLIuibqljBZBERQQCO58/OVhetk9zj46I+UmvebDeZ7caoYkXo/YQnHwGquLMWlOHRNk7J7czXmbk+nM2Mx40aVyabx4Qx1F2pKnUHMT/XbifziSjLnWcrrjD45pYAtgTnYOEY8DRv5kKJVtzte1VNx2wRv3LhRHNEX5IAkSxex0oX4XUZaamSvKOJMngxlOBk6tpj5UYW19K3VimKYsL1SlGCkvpS/R0OQIDAQAB",
-  name: "링딩동",
+  name: "링띵동",
   version: pkg.version,
-  description: "보고 있는 페이지를 링딩동에 저장합니다.",
+  description: "보고 있는 페이지를 링띵동에 저장합니다.",
   action: {
-    default_title: "링딩동에 저장",
+    default_title: "링띵동에 저장",
   },
   side_panel: {
     default_path: "src/sidepanel/index.html",
@@ -48,11 +52,10 @@ export default defineManifest({
   host_permissions: ["https://api.link-ding-dong.com/*"],
   // 웹앱 페이지만 이 익스텐션에 메시지를 보낼 수 있다(로그인 인계). 도메인 단위 허용이라
   // background 가 origin 과 메시지 모양을 한 번 더 검사한다(lib/auth/handoff).
-  // localhost 는 로컬 웹앱(pnpm web)으로 인계를 테스트하기 위한 것 — background 의 origin
-  // 검사가 웹앱 주소(VITE_WEB_APP_BASE_URL)와 일치할 때만 통과시키므로, 배포 빌드(기본값
-  // link-ding-dong.com)에서는 localhost 가 보낸 메시지를 받아도 거부한다.
+  // 배포 도메인만 둔다 — 로컬 웹앱(pnpm web)에서는 인계를 테스트할 수 없다. 스토어 심사에
+  // 불필요한 접근 범위로 잡히지 않게 localhost 는 넣지 않는다.
   externally_connectable: {
-    matches: ["https://link-ding-dong.com/*", "http://localhost/*"],
+    matches: ["https://link-ding-dong.com/*"],
   },
   icons: {
     16: "icons/icon-16.png",

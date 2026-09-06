@@ -14,7 +14,7 @@ type ConnectStatus = "connecting" | "done" | "failed";
 
 const COPY: Record<ConnectStatus, { title: string; description: string }> = {
   connecting: {
-    title: "링딩동 계정 연결",
+    title: "링띵동 계정 연결",
     description: "익스텐션에 계정을 연결하고 있어요",
   },
   done: {
@@ -22,7 +22,7 @@ const COPY: Record<ConnectStatus, { title: string; description: string }> = {
     description: "익스텐션에 계정이 연결됐어요",
   },
   failed: {
-    title: "링딩동 계정 연결",
+    title: "링띵동 계정 연결",
     description: "연결에 실패했어요. 다시 시도해주세요.",
   },
 };

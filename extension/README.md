@@ -1,6 +1,6 @@
-# 링딩동 크롬 익스텐션
+# 링띵동 크롬 익스텐션
 
-보고 있는 페이지를 링딩동에 저장하는 MV3 익스텐션. **사이드패널 형태**이며 시안은
+보고 있는 페이지를 링띵동에 저장하는 MV3 익스텐션. **사이드패널 형태**이며 시안은
 Figma `크롬 웹 스토어 익스텐션 (Chrome Extension)` 섹션이다.
 
 팝업이 아니라 사이드패널을 고른 결과, 시안(400x600 고정 팝업)과 두 가지가 다르다.
@@ -65,6 +65,7 @@ pnpm --filter promise9-extension dev     # 또는 build
 | --- | --- |
 | `pnpm dev` | 개발 서버 + `dist` 갱신 |
 | `pnpm build` | 타입 검사 후 프로덕션 빌드 |
+| `pnpm package` | `dist` → 웹 스토어 업로드용 zip (`manifest.key` 제거) |
 | `pnpm test` | vitest 실행 |
 
 ## 구조
@@ -100,13 +101,17 @@ src/
 
 | 어디 | 무엇 | 왜 |
 | --- | --- | --- |
-| `manifest.config.ts` | `key` 로 확장 ID 고정 (`mniefhlffindhhfnpkbmndbgjdkdkjml`) | 웹앱이 보낼 대상 ID 가 사람마다 달라지면 안 된다 |
+| `manifest.config.ts` | `key` 로 압축해제 로드용 ID 고정 (`mniefhlffindhhfnpkbmndbgjdkdkjml`) | 로컬 확장 ID 가 사람마다 달라지면 안 된다 |
 | `manifest.config.ts` | `externally_connectable.matches` 에 웹앱 도메인 | 그 도메인 페이지만 이 익스텐션에 메시지를 보낼 수 있다 |
-| 루트 `.env.local` | `EXPO_PUBLIC_EXTENSION_ID` = 위 ID | 웹앱이 `sendMessage` 에 넘길 대상 |
+| 루트 `.env.local` | `EXPO_PUBLIC_EXTENSION_ID` = **스토어 ID** `ildmikbfonkjijfippdfholdjcneioab` | 웹앱이 `sendMessage` 에 넘길 대상 |
 
-`extension/key.pem` 은 ID 를 고정하는 개인키다. **gitignore 대상이고 압축해제 로드에는 필요 없다**
-(자체 배포용 `.crx` 서명에만 쓰인다). 팀 비밀번호 관리자 등에 보관한다.
-스토어 배포 시에는 웹 스토어가 자체 ID 를 부여하므로 `EXPO_PUBLIC_EXTENSION_ID` 를 그 값으로 바꾼다.
+**로컬 ID 와 스토어 ID 가 다르다.** 배포된 웹앱은 스토어 ID 로 메시지를 보내므로, 압축해제로
+로드한 확장으로는 인계가 되지 않는다. 로컬 확장으로 테스트하려면 `.env.local` 의 값을
+`mniefhlffindhhfnpkbmndbgjdkdkjml` 로 잠시 바꾸고 웹을 로컬로 띄운다.
+둘을 하나로 합치려면 대시보드(패키지 메뉴)의 공개키를 `manifest.config.ts` 의 `key` 에 넣으면 된다.
+
+`extension/key.pem` 은 로컬 ID 를 고정하는 개인키다. **gitignore 대상이고 압축해제 로드에는
+필요 없다**(자체 배포용 `.crx` 서명에만 쓰인다). 팀 비밀번호 관리자 등에 보관한다.
 
 로컬 웹앱(`localhost:8090`)에서는 인계가 되지 않는다 — `externally_connectable` 이 배포 도메인만
 허용한다. 로그인 확인은 배포된 웹앱으로 한다.
