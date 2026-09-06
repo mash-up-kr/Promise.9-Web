@@ -1,7 +1,6 @@
+import { useCreateFolderMutation } from "@shared/entities/folder/folder.queries";
 import { useState } from "react";
 import { Modal } from "react-native";
-
-import { useCreateFolderMutation } from "@/entities/folder/folder.queries";
 import { FolderFormCard } from "@/features/archive/components/FolderFormCard";
 
 export interface FolderCreateModalProps {

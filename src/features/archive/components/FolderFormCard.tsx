@@ -1,18 +1,16 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { isDuplicateFolderNameError } from "@shared/entities/folder/folder.errors";
+import {
+  type CreateFolderInput,
+  createFolderSchema,
+} from "@shared/folder/folder.contracts";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { View } from "react-native";
-
 import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import { Dialog } from "@/components/ui/dialog/Dialog";
 import { Input, InputField } from "@/components/ui/input/Input";
 import { Text } from "@/components/ui/text/Text";
-import { isDuplicateFolderNameError } from "@/entities/folder/folder.errors";
-
-import {
-  type CreateFolderInput,
-  createFolderSchema,
-} from "../archive.contracts";
 import { DuplicateFolderNameAlert } from "./DuplicateFolderNameAlert";
 import { FolderColorPicker } from "./FolderColorPicker";
 

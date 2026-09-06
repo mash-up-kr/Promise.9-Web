@@ -1,7 +1,6 @@
+import type { FolderListResponse } from "@shared/entities/folder/folder.queries";
+import type { LinkListParams } from "@shared/entities/link/link.queries";
 import { hexToFolderTone } from "@shared/folder/folder.constants";
-
-import type { FolderListResponse } from "@/entities/folder/folder.queries";
-import type { LinkListParams } from "@/entities/link/link.queries";
 
 import { EMPTY_LINKS_MESSAGES, SYSTEM_FOLDERS } from "./archive.constants";
 import type {

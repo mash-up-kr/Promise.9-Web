@@ -3,7 +3,7 @@ jest.mock("@shared/api", () => ({
   clearTokens: jest.fn(),
 }));
 const mockLogout = jest.fn();
-jest.mock("../api/auth-actions.queries", () => ({
+jest.mock("@shared/entities/auth/auth.queries", () => ({
   useLogoutMutation: () => ({ mutateAsync: mockLogout, isPending: false }),
 }));
 const mockReplace = jest.fn();

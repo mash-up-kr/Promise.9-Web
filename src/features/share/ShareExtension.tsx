@@ -1,4 +1,9 @@
 import { isUnauthorizedError } from "@shared/api";
+import {
+  getDuplicateLinkId,
+  isAlreadySavedLinkError,
+} from "@shared/entities/link/link.errors";
+import { useCreateLinkMutation } from "@shared/entities/link/link.queries";
 import { extractFirstUrl } from "@shared/link/link.utils";
 import { QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -10,12 +15,6 @@ import {
   useState,
 } from "react";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-
-import {
-  getDuplicateLinkId,
-  isDuplicateLinkError,
-} from "@/entities/link/link.errors";
-import { useCreateLinkMutation } from "@/entities/link/link.queries";
 import {
   type AuthGateStatus,
   useAuthGate,
@@ -157,7 +156,7 @@ function ShareSaveFlow({
       });
       dispatch({ type: "SAVE_SUCCEEDED", linkId: created.linkId });
     } catch (error) {
-      if (isDuplicateLinkError(error)) {
+      if (isAlreadySavedLinkError(error)) {
         dispatch({
           type: "SAVE_DUPLICATED",
           linkId: getDuplicateLinkId(error),

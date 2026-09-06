@@ -1,12 +1,13 @@
-import type { SelectableFolderColor } from "@shared/folder/folder.constants";
-import { useLocalSearchParams, useRouter } from "expo-router";
-
-import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import {
   useCreateFolderMutation,
   useUpdateFolderMutation,
-} from "@/entities/folder/folder.queries";
-import { FOLDER_COLOR_OPTIONS } from "./archive.constants";
+} from "@shared/entities/folder/folder.queries";
+import type { SelectableFolderColor } from "@shared/folder/folder.constants";
+import { FOLDER_COLOR_OPTIONS } from "@shared/folder/folder.constants";
+import { useLocalSearchParams, useRouter } from "expo-router";
+
+import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
+
 import { FolderFormCard } from "./components/FolderFormCard";
 
 export type FolderFormMode = "create" | "edit";

@@ -20,5 +20,7 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "nativewind-env.d.ts"
-  ]
+  ],
+  // 익스텐션은 자체 tsconfig(Vite/DOM 기준)를 쓴다 — Expo 설정으로 검사하면 안 된다.
+  "exclude": ["extension"]
 }

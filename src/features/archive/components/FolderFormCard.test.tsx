@@ -1,4 +1,6 @@
 import { ApiError } from "@shared/api/errors";
+import { FOLDER_ERROR_CODE } from "@shared/entities/folder/folder.errors";
+import type { CreateFolderInput } from "@shared/folder/folder.contracts";
 import {
   render,
   screen,
@@ -6,10 +8,6 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 import type { AxiosResponse } from "axios";
-
-import { FOLDER_ERROR_CODE } from "@/entities/folder/folder.errors";
-
-import type { CreateFolderInput } from "../archive.contracts";
 import { FolderFormCard } from "./FolderFormCard";
 
 const conflictError = (errorCode: number) =>

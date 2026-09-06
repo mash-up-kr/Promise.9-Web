@@ -58,22 +58,6 @@ export const LINK_SORT_OPTIONS = [
   { value: "oldest", label: "오래된 순" },
 ] as const;
 
-// Figma "새 폴더 만들기" 시트 색상 그리드 순서 (2행 × 6열).
-export const FOLDER_COLOR_OPTIONS = [
-  "slate",
-  "purple",
-  "blue",
-  "teal",
-  "green",
-  "yellow",
-  "orange",
-  "red",
-  "pink",
-  "orange-red",
-  "lime",
-  "yellow-green",
-] as const satisfies readonly SelectableFolderColor[];
-
 // NativeWind 는 동적 클래스(`bg-folder-${color}-solid`)를 스캔하지 못하므로 리터럴로 나열한다.
 export const FOLDER_SOLID_CLASS: Record<SelectableFolderColor, string> = {
   slate: "bg-folder-slate-solid",

@@ -1,9 +1,11 @@
+import type { FolderListResponse } from "@shared/entities/folder/folder.queries";
+import {
+  type LinkListResponse,
+  toLink,
+} from "@shared/entities/link/link.queries";
+import type { RecommendationResponse } from "@shared/entities/recommendation/recommendation.queries";
 import type { Folder } from "@shared/types/folder.types";
 import { uniqBy } from "es-toolkit";
-
-import type { FolderListResponse } from "@/entities/folder/folder.queries";
-import { type LinkListResponse, toLink } from "@/entities/link/link.queries";
-import type { RecommendationResponse } from "@/entities/recommendation/recommendation.queries";
 
 import { HOME_POLICY } from "./home.constants";
 import type { HomeKeyword, RemindLink } from "./home.types";

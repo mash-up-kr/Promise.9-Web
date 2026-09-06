@@ -1,4 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  linkQueries,
+  useDeleteLinkMutation,
+  useUpdateLinkMutation,
+} from "@shared/entities/link/link.queries";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Star } from "lucide-react-native";
@@ -25,11 +30,6 @@ import {
   moveLinksHref,
   ROUTES,
 } from "@/constants/routes.constants";
-import {
-  linkQueries,
-  useDeleteLinkMutation,
-  useUpdateLinkMutation,
-} from "@/entities/link/link.queries";
 import { formatCalendarDate } from "@/utils/format";
 import { shareUrl } from "@/utils/share";
 

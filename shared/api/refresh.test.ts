@@ -20,10 +20,11 @@ jest.mock("./token", () => ({
   getRefreshToken: jest.fn(),
   setTokens: jest.fn(),
   clearTokens: jest.fn(),
+  runExclusive: jest.fn((run: () => Promise<unknown>) => run()),
 }));
 
 import { refreshAccessToken } from "./refresh";
-import { clearTokens, getRefreshToken, setTokens } from "./token";
+import { clearTokens, getRefreshToken, runExclusive, setTokens } from "./token";
 
 const okResponse = {
   data: { data: { accessToken: "atk-new", refreshToken: "rtk-new" } },
@@ -32,6 +33,9 @@ const okResponse = {
 beforeEach(() => {
   jest.clearAllMocks();
   (getRefreshToken as jest.Mock).mockResolvedValue("rtk-old");
+  (runExclusive as jest.Mock).mockImplementation(
+    (run: () => Promise<unknown>) => run(),
+  );
 });
 
 test("refreshToken 으로 재발급하고 새 토큰을 저장한 뒤 accessToken 을 반환한다", async () => {
@@ -82,4 +86,37 @@ test("서버 오류(5xx)면 토큰을 지우지 않고 throw 한다", async () =
   mockPost.mockRejectedValue(axiosStatusError(503));
   await expect(refreshAccessToken()).rejects.toThrow();
   expect(clearTokens).not.toHaveBeenCalled();
+});
+
+// 익스텐션은 패널과 service worker 가 한 저장소를 공유한다 — 모듈 변수 하나로는 두 문서를
+// 가로질러 막을 수 없어, 저장소 구현이 주입한 배타 실행에 재발급 전체를 맡긴다.
+test("재발급은 주입된 배타 실행 안에서 돈다", async () => {
+  mockPost.mockResolvedValue(okResponse);
+
+  await refreshAccessToken();
+
+  expect(runExclusive).toHaveBeenCalledTimes(1);
+});
+
+// 순서가 핵심이다 — 기다리는 쪽이 배타 구간에 들어가기 전에 토큰을 읽어두면, 앞선 쪽이
+// 회전시켜 이미 폐기된 토큰으로 재발급을 시도하게 된다(RTR 거부 → 양쪽 로그아웃).
+test("리프레시 토큰은 배타 구간에 들어간 뒤에 읽는다", async () => {
+  let enter!: () => void;
+  (runExclusive as jest.Mock).mockImplementation(
+    async (run: () => Promise<unknown>) => {
+      await new Promise<void>((resolve) => {
+        enter = resolve;
+      });
+      return run();
+    },
+  );
+  mockPost.mockResolvedValue(okResponse);
+
+  const pending = refreshAccessToken();
+  expect(getRefreshToken).not.toHaveBeenCalled();
+
+  enter();
+  await pending;
+
+  expect(getRefreshToken).toHaveBeenCalled();
 });

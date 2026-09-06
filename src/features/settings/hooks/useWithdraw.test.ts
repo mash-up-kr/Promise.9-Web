@@ -3,7 +3,7 @@ jest.mock("@shared/api", () => ({
   clearTokens: jest.fn(),
 }));
 const mockWithdraw = jest.fn();
-jest.mock("../api/auth-actions.queries", () => ({
+jest.mock("@shared/entities/auth/auth.queries", () => ({
   useWithdrawMutation: () => ({ mutateAsync: mockWithdraw, isPending: false }),
 }));
 const mockReplace = jest.fn();

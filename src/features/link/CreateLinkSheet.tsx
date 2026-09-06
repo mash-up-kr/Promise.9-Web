@@ -1,4 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  getDuplicateLinkId,
+  isAlreadySavedLinkError,
+} from "@shared/entities/link/link.errors";
+import { useCreateLinkMutation } from "@shared/entities/link/link.queries";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -21,11 +26,6 @@ import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { Text } from "@/components/ui/text/Text";
 import { isWeb } from "@/constants/platform.constants";
 import { decodeSharedUrl, linkDetailHref } from "@/constants/routes.constants";
-import {
-  getDuplicateLinkId,
-  isDuplicateLinkError,
-} from "@/entities/link/link.errors";
-import { useCreateLinkMutation } from "@/entities/link/link.queries";
 import { FolderChipList } from "@/features/link/components/FolderChipList";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { MemoField } from "@/features/link/components/MemoField";
@@ -110,7 +110,7 @@ export function CreateLinkSheet() {
             dismiss();
           },
           onError: (error) => {
-            if (isDuplicateLinkError(error)) {
+            if (isAlreadySavedLinkError(error)) {
               // 409 가 담아준 기존 linkId 로 '보기'를 연결한다(서버 PR #109). 없으면(구버전) 문구만.
               const duplicateLinkId = getDuplicateLinkId(error);
               show({

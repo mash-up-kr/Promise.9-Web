@@ -6,7 +6,7 @@ import { Suspense } from "react";
 // 캐시를 직접 시딩해 queryFn 은 호출되지 않는다.
 jest.mock("@shared/api", () => ({ apiClient: { get: jest.fn() } }));
 
-import { folderKeys } from "@/entities/folder/folder.keys";
+import { folderKeys } from "@shared/entities/folder/folder.keys";
 
 import { FolderChipList } from "./FolderChipList";
 

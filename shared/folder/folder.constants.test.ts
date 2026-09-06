@@ -1,6 +1,7 @@
 import type { FolderColor } from "@shared/types/link.types";
 
 import {
+  FOLDER_COLOR_OPTIONS,
   FOLDER_TONE_HEX,
   folderToneToHex,
   hexToFolderTone,
@@ -29,5 +30,15 @@ describe("folder color mapping", () => {
   it("기본색(#000000)·팔레트 밖 값은 gray 로 폴백한다", () => {
     expect(hexToFolderTone("#000000")).toBe<FolderColor>("gray");
     expect(hexToFolderTone("#123456")).toBe<FolderColor>("gray");
+  });
+});
+
+describe("FOLDER_COLOR_OPTIONS", () => {
+  // 그리드 순서(Figma 2행 × 6열)는 팔레트 선언 순서와 달라 튜플로 따로 두지만, 집합은 같아야 한다.
+  // satisfies 는 색 누락을 잡지 못하므로 여기서 강제한다.
+  test("서버 팔레트 12색을 빠짐없이 포함한다", () => {
+    expect(new Set(FOLDER_COLOR_OPTIONS)).toEqual(
+      new Set(Object.keys(FOLDER_TONE_HEX)),
+    );
   });
 });
