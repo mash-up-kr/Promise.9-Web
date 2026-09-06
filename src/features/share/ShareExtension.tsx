@@ -6,19 +6,13 @@ import {
 import { useCreateLinkMutation } from "@shared/entities/link/link.queries";
 import { extractFirstUrl } from "@shared/link/link.utils";
 import { QueryClientProvider } from "@tanstack/react-query";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useReducer,
-  useRef,
-  useState,
-} from "react";
+import { useLayoutEffect, useReducer, useRef, useState } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import {
-  type AuthGateStatus,
-  useAuthGate,
-} from "@/features/auth/hooks/useAuthGate";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+
+import { BottomSheet } from "@/components/ui/bottom-sheet/BottomSheet";
+import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
 import { linkUrlSchema } from "@/features/link/link.contracts";
 import {
   type ReminderValue,
@@ -28,14 +22,7 @@ import { createQueryClient } from "@/lib/queryClient";
 
 import { EntrySheet } from "./components/EntrySheet";
 import { CheckingSheet, ResultSheet } from "./components/ResultSheet";
-import {
-  ShareSheetContainer,
-  type ShareSheetHandle,
-} from "./components/ShareSheetContainer";
-import {
-  EXTENSION_LOGIN_SHEET_HEIGHT,
-  ExtensionLoginSheet,
-} from "./ExtensionLoginSheet";
+import { ExtensionLoginSheet } from "./ExtensionLoginSheet";
 import { INITIAL_SHARE_SAVE_STATE, shareSaveReducer } from "./share.reducer";
 import { close } from "./shareHost";
 import { useAccessTokenWarmup } from "./useAccessTokenWarmup";
@@ -43,7 +30,8 @@ import { useAccessTokenWarmup } from "./useAccessTokenWarmup";
 // 익스텐션 엔트리도 global.css 를 로드해 NativeWind(className)·인앱 컴포넌트를 쓸 수 있다.
 
 /**
- * iOS Share Extension 루트 — 공유받은 URL 을 익스텐션 안에서 바로 저장한다.
+ * 공유 익스텐션 루트 — 공유받은 URL 을 익스텐션 안에서 바로 저장한다.
+ * 시트 크롬(백드롭·핸들·드래그·키보드)은 인앱과 같은 BottomSheet 가 맡고, 컨테이너는 전체 화면이다.
  * 결과 시트(성공/실패/중복/반복실패) 전이는 share.reducer 가 정한다.
  */
 export function ShareExtension({ url }: { url?: string }) {
@@ -60,23 +48,8 @@ export function ShareExtension({ url }: { url?: string }) {
   }
   const isSessionExpired =
     status === "unauthenticated" && wasAuthenticated.current;
-
-  // 닫기 요청은 항상 컨테이너의 퇴장 애니메이션(시트 다운 → dim 페이드)을 거친다.
-  const sheetRef = useRef<ShareSheetHandle>(null);
-  const dismissSheet = useCallback(() => {
-    if (sheetRef.current) {
-      sheetRef.current.dismiss();
-    } else {
-      close();
-    }
-  }, []);
-
-  const [isEditing, setIsEditing] = useState(true);
-
-  // 세션이 끊겨 저장 흐름이 내려가면 다음 로그인은 편집 시트(600)부터 시작해야 한다.
-  useEffect(() => {
-    if (status !== "authenticated") setIsEditing(true);
-  }, [status]);
+  // 저장 중엔 인앱 저장 시트처럼 백드롭 탭·끌어 내리기로 닫히지 않는다.
+  const [isSaving, setIsSaving] = useState(false);
 
   // 익스텐션 프로세스 전용 클라이언트 — 기본값(재시도 1회 등)은 앱과 같은 팩토리에서 온다.
   // 모듈 싱글턴이 아니라 마운트마다 새로 만들어 테스트 간 캐시가 새지 않게 한다.
@@ -84,53 +57,42 @@ export function ShareExtension({ url }: { url?: string }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Dialog(폴더 생성·피커)의 키보드 회피는 KeyboardProvider 가 있어야 동작한다 — 앱 _layout 처럼 감싼다. */}
-      <KeyboardProvider>
-        <ShareSheetContainer
-          ref={sheetRef}
-          height={sheetHeightFor(status, isEditing)}
-          onClosed={close}
-        >
-          {(status === "checking" ||
-            (status === "authenticated" && !isTokenReady)) && <CheckingSheet />}
-          {status === "unauthenticated" && (
-            <ExtensionLoginSheet
-              sharedUrl={sharedUrl}
-              isSessionExpired={isSessionExpired}
-            />
-          )}
-          {status === "authenticated" && isTokenReady && (
-            <ShareSaveFlow
-              url={sharedUrl}
-              onDismiss={dismissSheet}
-              onEditingChange={setIsEditing}
-            />
-          )}
-        </ShareSheetContainer>
-      </KeyboardProvider>
+      {/* 앱 _layout 과 같은 루트 프로바이더 — 시트 제스처(gesture-handler)·인셋·Dialog 키보드 회피. */}
+      <GestureHandlerRootView className="flex-1">
+        <SafeAreaProvider>
+          <KeyboardProvider>
+            <BottomSheet
+              onClose={close}
+              backdropPressBehavior={isSaving ? "none" : "close"}
+              isLocked={isSaving}
+            >
+              {(status === "checking" ||
+                (status === "authenticated" && !isTokenReady)) && (
+                <CheckingSheet />
+              )}
+              {status === "unauthenticated" && (
+                <ExtensionLoginSheet
+                  sharedUrl={sharedUrl}
+                  isSessionExpired={isSessionExpired}
+                />
+              )}
+              {status === "authenticated" && isTokenReady && (
+                <ShareSaveFlow url={sharedUrl} onSavingChange={setIsSaving} />
+              )}
+            </BottomSheet>
+          </KeyboardProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
     </QueryClientProvider>
   );
 }
 
-// 편집·확인 중 시트는 길고(600) 결과 시트만 짧다(400). 확인 중을 600 으로 두는 이유:
-// 컨테이너가 마운트 시점 높이로 슬라이드 거리를 잡아, 400 이면 iOS 첫 프레임에 시트 일부가 보인다.
-function sheetHeightFor(status: AuthGateStatus, isEditing: boolean): number {
-  if (status === "unauthenticated") return EXTENSION_LOGIN_SHEET_HEIGHT;
-  if (status === "authenticated" && !isEditing) return 400;
-  return 600;
-}
-
 interface ShareSaveFlowProps {
   url: string;
-  onDismiss: () => void;
-  onEditingChange: (isEditing: boolean) => void;
+  onSavingChange: (isSaving: boolean) => void;
 }
 
-function ShareSaveFlow({
-  url,
-  onDismiss,
-  onEditingChange,
-}: ShareSaveFlowProps) {
+function ShareSaveFlow({ url, onSavingChange }: ShareSaveFlowProps) {
   const [state, dispatch] = useReducer(
     shareSaveReducer,
     INITIAL_SHARE_SAVE_STATE,
@@ -172,17 +134,18 @@ function ShareSaveFlow({
   };
 
   const isEditing = state.phase === "editing" || state.phase === "saving";
+  const isSaving = state.phase === "saving";
 
   useLayoutEffect(() => {
-    onEditingChange(isEditing);
-  }, [isEditing, onEditingChange]);
+    onSavingChange(isSaving);
+  }, [isSaving, onSavingChange]);
 
   return (
     <>
       {isEditing ? (
         <EntrySheet
           url={url}
-          isSaving={state.phase === "saving"}
+          isSaving={isSaving}
           selectedFolderId={selectedFolderId}
           onSelectFolder={setSelectedFolderId}
           reminder={reminder}
@@ -190,10 +153,9 @@ function ShareSaveFlow({
           memo={memo}
           onChangeMemo={setMemo}
           onSave={save}
-          onCancel={onDismiss}
         />
       ) : (
-        <ResultSheet state={state} onRetry={save} onClose={onDismiss} />
+        <ResultSheet state={state} onRetry={save} />
       )}
     </>
   );

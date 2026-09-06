@@ -1,3 +1,4 @@
+import BottomSheet from "@gorhom/bottom-sheet";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { MemoField } from "./MemoField";
@@ -70,6 +71,28 @@ describe("공유 익스텐션 플래그", () => {
     await render(<MemoField memo="" onChangeMemo={jest.fn()} />);
     expect(
       screen.getByPlaceholderText(PLACEHOLDER).props.allowFontScaling,
+    ).toBeUndefined();
+  });
+});
+
+describe("바텀시트 안팎의 입력 컴포넌트", () => {
+  // gorhom 은 BottomSheetTextInput 이 포커스를 알려줘야 키보드에 맞춰 시트를 올린다 —
+  // 시트 안에서만 그 입력을 쓰고, 상세 화면처럼 시트 밖에서는 일반 TextInput 을 유지한다.
+  test("시트 안에서는 BottomSheetTextInput 을 쓴다", async () => {
+    await render(
+      <BottomSheet onChange={jest.fn()}>
+        <MemoField memo="" onChangeMemo={jest.fn()} />
+      </BottomSheet>,
+    );
+    expect(screen.getByPlaceholderText(PLACEHOLDER).props.nativeID).toBe(
+      "bottom-sheet-text-input",
+    );
+  });
+
+  test("시트 밖에서는 일반 TextInput 을 쓴다", async () => {
+    await render(<MemoField memo="" onChangeMemo={jest.fn()} />);
+    expect(
+      screen.getByPlaceholderText(PLACEHOLDER).props.nativeID,
     ).toBeUndefined();
   });
 });

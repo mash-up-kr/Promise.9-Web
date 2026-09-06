@@ -1,10 +1,11 @@
 import { Image, Pressable, View } from "react-native";
 
+import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { Text } from "@/components/ui/text/Text";
 
 import type { ShareSaveState } from "../share.reducer";
 import { openHostApp } from "../shareHost";
-import { SheetFrame } from "./SheetFrame";
+import { SheetBody } from "./SheetBody";
 
 // 시안(외부 공유 저장): 결과 4종은 같은 시트 구조에 그래픽·문구·CTA 만 다르다.
 // 그래픽은 시트 배경(background-base)과 같은 색으로 flatten 된 통짜 PNG(@2x·@3x 밀도 선택).
@@ -44,18 +45,23 @@ const RESULT_CONTENT = {
   },
 } as const;
 
+// 인증 확인·토큰 워밍업 동안의 빈 시트 — 동적 사이징이 0 으로 접히지 않게 높이만 잡아 둔다.
 export function CheckingSheet() {
-  return <SheetFrame />;
+  return (
+    <SheetBody>
+      <View className="h-60" />
+    </SheetBody>
+  );
 }
 
 export interface ResultSheetProps {
   state: Exclude<ShareSaveState, { phase: "editing" } | { phase: "saving" }>;
   onRetry: () => void;
-  onClose: () => void;
 }
 
-export function ResultSheet({ state, onRetry, onClose }: ResultSheetProps) {
+export function ResultSheet({ state, onRetry }: ResultSheetProps) {
   const content = RESULT_CONTENT[state.phase];
+  const dismiss = useSheetDismiss();
 
   const handleCta = () => {
     switch (state.phase) {
@@ -72,15 +78,15 @@ export function ResultSheet({ state, onRetry, onClose }: ResultSheetProps) {
         return;
       case "retry-limit":
       case "invalid-url":
-        onClose();
+        dismiss();
         return;
     }
   };
 
   return (
-    <SheetFrame>
-      <View className="flex-1 justify-end px-5">
-        <View className="flex-1 items-center justify-center gap-2">
+    <SheetBody>
+      <View className="gap-6">
+        <View className="items-center gap-2 py-6">
           <Image
             testID={`share-result-${state.phase}`}
             source={RESULT_GRAPHICS[state.phase]}
@@ -103,6 +109,6 @@ export function ResultSheet({ state, onRetry, onClose }: ResultSheetProps) {
           </Text>
         </Pressable>
       </View>
-    </SheetFrame>
+    </SheetBody>
   );
 }

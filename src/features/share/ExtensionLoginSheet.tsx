@@ -6,10 +6,8 @@ import { SOCIAL_PROVIDERS } from "@/features/auth/auth.constants";
 import { AgreementText } from "@/features/auth/components/AgreementText";
 import { SocialLoginButton } from "@/features/auth/components/SocialLoginButton";
 
-import { SheetFrame } from "./components/SheetFrame";
+import { SheetBody } from "./components/SheetBody";
 import { useExtensionSocialLogin } from "./useExtensionSocialLogin";
-
-export const EXTENSION_LOGIN_SHEET_HEIGHT = 520;
 
 // 미로그인 시안 확정 전 임시 그래픽 — 결과 시트 4종 중 경고 배지가 없는 쪽을 쓴다.
 const LOGIN_GRAPHIC = require("@/assets/images/share/result-retry-limit.png");
@@ -27,9 +25,9 @@ export function ExtensionLoginSheet({
     useExtensionSocialLogin(sharedUrl);
 
   return (
-    <SheetFrame>
-      <View className="flex-1 justify-end px-5">
-        <View className="flex-1 items-center justify-center gap-2">
+    <SheetBody>
+      <View className="gap-6">
+        <View className="items-center gap-2 py-6">
           <Image
             testID="share-login-graphic"
             source={LOGIN_GRAPHIC}
@@ -75,6 +73,6 @@ export function ExtensionLoginSheet({
           <AgreementText />
         </View>
       </View>
-    </SheetFrame>
+    </SheetBody>
   );
 }

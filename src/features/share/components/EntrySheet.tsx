@@ -1,12 +1,12 @@
+import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { useState } from "react";
-import { ScrollView, View } from "react-native";
-import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
-import Reanimated, { useAnimatedStyle } from "react-native-reanimated";
+import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
+import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { Text } from "@/components/ui/text/Text";
-import { isAndroid } from "@/constants/platform.constants";
 import { FolderChipList } from "@/features/link/components/FolderChipList";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { MemoField } from "@/features/link/components/MemoField";
@@ -14,7 +14,6 @@ import { ReminderSection } from "@/features/link/components/ReminderSection";
 import type { ReminderValue } from "@/features/link/reminder.utils";
 
 import { FolderCreateModal } from "./FolderCreateModal";
-import { SheetFrame } from "./SheetFrame";
 
 export interface EntrySheetProps {
   url: string;
@@ -26,9 +25,10 @@ export interface EntrySheetProps {
   memo: string;
   onChangeMemo: (memo: string) => void;
   onSave: () => void;
-  onCancel: () => void;
 }
 
+// 인앱 저장 시트(SheetScreen)와 같은 스캐폴드 — 헤더는 스크롤뷰의 sticky 첫 요소, 본문은 px-5.
+// 시트 높이는 gorhom 동적 사이징이 콘텐츠만큼 키우고, 넘치면 안에서 스크롤한다.
 export function EntrySheet({
   url,
   isSaving,
@@ -39,78 +39,69 @@ export function EntrySheet({
   memo,
   onChangeMemo,
   onSave,
-  onCancel,
 }: EntrySheetProps) {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
-  // Android 시트는 화면 바닥에 붙어 있어 키보드 높이(열리면 음수)만큼 스크롤 영역 아래를 띄우면 된다.
-  // KeyboardAvoidingView 는 부모 기준 좌표로 겹침을 계산해 시트 안에서는 0 이 나온다.
-  const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
-  const keyboardPaddingStyle = useAnimatedStyle(() => ({
-    paddingBottom: isAndroid ? -keyboardHeight.value : 0,
-  }));
+  const insets = useSafeAreaInsets();
+  const dismiss = useSheetDismiss();
 
   return (
-    <SheetFrame>
-      <View pointerEvents={isSaving ? "none" : "auto"}>
+    <BottomSheetScrollView
+      testID="share-entry-scroll"
+      keyboardShouldPersistTaps="handled"
+      // iOS 익스텐션 프로세스는 RN 키보드 이벤트 높이가 0 으로 와서 gorhom 이 시트를 못 올린다 —
+      // 네이티브 스크롤 인셋으로 포커스한 입력을 키보드 위로 드러낸다(앱에선 gorhom 이 맡는다).
+      automaticallyAdjustKeyboardInsets
+      stickyHeaderIndices={[0]}
+      contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+    >
+      <View
+        pointerEvents={isSaving ? "none" : "auto"}
+        className="bg-background-base"
+      >
         <BottomSheetHeader
           title="링크 저장"
-          onCancel={onCancel}
+          onCancel={dismiss}
           onConfirm={onSave}
           isConfirmPending={isSaving}
         />
       </View>
-      {/* 시트 높이는 빌드 타임 고정(iOS) — 콘텐츠가 넘치는 작은 화면·리마인드 On 상태는
-          세로 스크롤로 흡수한다. 헤더(취소·저장)는 스크롤 밖에 고정. */}
-      {/* 시트 컨테이너는 키보드에 밀리지 않는다 — iOS 는 스크롤 인셋, Android(edge-to-edge 창은
-          adjustResize 로 줄지 않음)는 패딩으로 스크롤 영역을 줄여 메모 입력이 키보드 위로 올라오게 한다. */}
-      <Reanimated.View
-        testID="share-entry-keyboard-area"
-        className="flex-1"
-        style={keyboardPaddingStyle}
+      <View
+        pointerEvents={isSaving ? "none" : "auto"}
+        className="gap-6 px-5 pt-1"
       >
-        <ScrollView
-          testID="share-entry-scroll"
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          automaticallyAdjustKeyboardInsets
-          contentContainerClassName="px-5 pb-4"
-        >
-          <View pointerEvents={isSaving ? "none" : "auto"} className="gap-6">
-            {/* 시안 통합 카드(인앱 CreateLinkSheet 미러) — 프리뷰(파비콘·제목)와 URL 을 한 카드로. */}
-            <View className="w-full rounded-[20px] bg-opacity-white-10">
-              <View className="px-4 pt-4">
-                <LinkPreviewCard url={url} isBare />
-                <View className="mt-4 h-px w-full bg-opacity-white-10" />
-              </View>
-              <View className="px-4 py-3">
-                <Text
-                  variant="body-2-normal"
-                  className="text-text-alternative"
-                  numberOfLines={2}
-                >
-                  {url}
-                </Text>
-              </View>
-            </View>
-
-            {/* 폴더는 부가 기능 — 조회가 실패하면 칩만 숨기고 미분류 저장은 계속된다. */}
-            <AsyncBoundary pending={null} fallback={null}>
-              <FolderChipList
-                value={selectedFolderId}
-                onChange={onSelectFolder}
-                onAddFolder={() => setIsCreatingFolder(true)}
-              />
-            </AsyncBoundary>
-
-            <ReminderSection value={reminder} onChange={onChangeReminder} />
-
-            <MemoField memo={memo} onChangeMemo={onChangeMemo} />
+        {/* 시안 통합 카드(인앱 CreateLinkSheet 미러) — 프리뷰(파비콘·제목)와 URL 을 한 카드로. */}
+        <View className="w-full rounded-[20px] bg-opacity-white-10">
+          <View className="px-4 pt-4">
+            <LinkPreviewCard url={url} isBare />
+            <View className="mt-4 h-px w-full bg-opacity-white-10" />
           </View>
-          {isCreatingFolder && (
-            <FolderCreateModal onClose={() => setIsCreatingFolder(false)} />
-          )}
-        </ScrollView>
-      </Reanimated.View>
-    </SheetFrame>
+          <View className="px-4 py-3">
+            <Text
+              variant="body-2-normal"
+              className="text-text-alternative"
+              numberOfLines={2}
+            >
+              {url}
+            </Text>
+          </View>
+        </View>
+
+        {/* 폴더는 부가 기능 — 조회가 실패하면 칩만 숨기고 미분류 저장은 계속된다. */}
+        <AsyncBoundary pending={null} fallback={null}>
+          <FolderChipList
+            value={selectedFolderId}
+            onChange={onSelectFolder}
+            onAddFolder={() => setIsCreatingFolder(true)}
+          />
+        </AsyncBoundary>
+
+        <ReminderSection value={reminder} onChange={onChangeReminder} />
+
+        <MemoField memo={memo} onChangeMemo={onChangeMemo} />
+      </View>
+      {isCreatingFolder && (
+        <FolderCreateModal onClose={() => setIsCreatingFolder(false)} />
+      )}
+    </BottomSheetScrollView>
   );
 }

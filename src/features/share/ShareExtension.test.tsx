@@ -1,3 +1,8 @@
+// 루트가 SafeAreaProvider 를 직접 감싼다 — jest 엔 네이티브 인셋 측정이 없어 라이브러리 mock 으로 대체한다.
+jest.mock(
+  "react-native-safe-area-context",
+  () => require("react-native-safe-area-context/jest/mock").default,
+);
 jest.mock("expo-share-extension", () => ({
   close: jest.fn(),
   openHostApp: jest.fn(),
@@ -60,7 +65,6 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 import { close, openHostApp } from "expo-share-extension";
-import { StyleSheet } from "react-native";
 
 import { ShareExtension } from "./ShareExtension";
 
@@ -674,12 +678,29 @@ test("저장 시트 스크롤은 키보드 높이만큼 인셋을 넣어 메모 
   expect(scroll.props.automaticallyAdjustKeyboardInsets).toBe(true);
 });
 
-test("Android 에서는 키보드 높이만큼 스크롤 영역 아래를 띄워 메모 입력이 가려지지 않게 한다", async () => {
-  mockIsAndroid = true;
-  mockKeyboardHeight = -300;
+test("백드롭을 탭하면 익스텐션을 닫는다", async () => {
   await render(<ShareExtension url="https://toss.tech/a" />);
-  const area = await screen.findByTestId("share-entry-keyboard-area");
-  expect(StyleSheet.flatten(area.props.style)).toMatchObject({
-    paddingBottom: 300,
-  });
+  await screen.findByTestId("share-entry-scroll");
+  await userEvent.setup().press(screen.getByLabelText("sheet-backdrop"));
+  expect(close).toHaveBeenCalled();
+});
+
+test("시트를 끌어 내리면 익스텐션을 닫는다", async () => {
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  await screen.findByTestId("share-entry-scroll");
+  await userEvent.setup().press(screen.getByLabelText("sheet-dismiss"));
+  expect(close).toHaveBeenCalled();
+});
+
+test("저장 중에는 백드롭 탭·끌어 내리기로 닫히지 않는다", async () => {
+  let resolvePost!: (value: unknown) => void;
+  mockPost.mockReturnValue(new Promise((resolve) => (resolvePost = resolve)));
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  const user = userEvent.setup();
+  await user.press(await screen.findByText("저장"));
+  await user.press(screen.getByLabelText("sheet-backdrop"));
+  await user.press(screen.getByLabelText("sheet-dismiss"));
+  expect(close).not.toHaveBeenCalled();
+  resolvePost({ data: { success: true, data: { linkId: 1 } } });
+  expect(await screen.findByText("링크 저장을 완료했어요")).toBeOnTheScreen();
 });
