@@ -28,7 +28,11 @@ export default defineManifest({
    *
    * 공개키라 공개돼도 무방하다(짝이 되는 개인키는 `extension/key.pem` — gitignore 대상이며
    * 압축해제 로드에는 필요 없다. 자체 배포용 .crx 서명에만 쓰인다).
-   * 스토어 배포 시에는 웹 스토어가 자체 ID 를 부여하므로 그때 URI 를 한 번 더 등록해야 한다.
+   *
+   * 이 필드는 **로컬 압축해제 로드 전용**이다. 웹 스토어는 `key` 가 있으면 업로드를 거부하므로
+   * ("key 입력란은 매니페스트에 허용되지 않습니다") `pnpm package` 가 업로드용 zip 에서만
+   * 빼낸다(scripts/package.mjs). 스토어는 아이템에 자체 ID 를 부여하니, 등록 후 대시보드의
+   * 공개키를 여기에 넣으면 로컬과 스토어의 ID 가 같아진다.
    */
   key: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkfy549sPoB49HKtLK+1cOS/bzS2+htKAFzeYUvynm+c39m9lhW/9flOEzpmHxXsJ2KMbZvfcIO1TBGxMK37Dw8GV3l7WkSDPUbRf8+kn9ffPhLRn20eTLIuibqljBZBERQQCO58/OVhetk9zj46I+UmvebDeZ7caoYkXo/YQnHwGquLMWlOHRNk7J7czXmbk+nM2Mx40aVyabx4Qx1F2pKnUHMT/XbifziSjLnWcrrjD45pYAtgTnYOEY8DRv5kKJVtzte1VNx2wRv3LhRHNEX5IAkSxex0oX4XUZaamSvKOJMngxlOBk6tpj5UYW19K3VimKYsL1SlGCkvpS/R0OQIDAQAB",
   name: "링딩동",

@@ -65,6 +65,7 @@ pnpm --filter promise9-extension dev     # 또는 build
 | --- | --- |
 | `pnpm dev` | 개발 서버 + `dist` 갱신 |
 | `pnpm build` | 타입 검사 후 프로덕션 빌드 |
+| `pnpm package` | `dist` → 웹 스토어 업로드용 zip (`manifest.key` 제거) |
 | `pnpm test` | vitest 실행 |
 
 ## 구조

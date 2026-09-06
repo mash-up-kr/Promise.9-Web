@@ -5,3 +5,6 @@ node_modules/
 
 # 확장 ID 고정용 개인키 — 공개키만 manifest 에 들어간다
 key.pem
+
+# 스토어 업로드용 패키지 (dist 로 매번 다시 만든다)
+*.zip
