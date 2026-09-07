@@ -11,6 +11,12 @@ import { formatRelativeDate } from "@/utils/format";
 
 const LinkCardContext = createContext<Link | null>(null);
 
+// 서버가 제목을 아직 만들지 못한 링크(processingStatus PENDING·실패)는 title 이 빈 문자열로 온다 —
+// 빈 카드 대신 출처 도메인을 보여준다(저장 시트 프리뷰의 title ?? domain 과 같은 정책).
+function getDisplayTitle({ title, source }: Link): string {
+  return title.trim().length > 0 ? title : source;
+}
+
 function useLinkCard(): Link {
   const link = useContext(LinkCardContext);
   if (!link) {
@@ -31,7 +37,7 @@ function Root({ link, className, children, ...props }: RootProps) {
     <LinkCardContext.Provider value={link}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={link.title}
+        accessibilityLabel={getDisplayTitle(link)}
         className={className}
         {...props}
       >
@@ -101,11 +107,11 @@ interface TitleProps {
 
 /** 링크 제목. 시안 최대치(max-height = 3줄)대로 3줄 말줄임으로 렌더한다. */
 function Title({ variant = "body-3", className }: TitleProps) {
-  const { title } = useLinkCard();
+  const link = useLinkCard();
 
   return (
     <Text variant={variant} numberOfLines={3} className={className}>
-      {title}
+      {getDisplayTitle(link)}
     </Text>
   );
 }

@@ -67,6 +67,14 @@ describe("LinkCard", () => {
     ).toBeOnTheScreen();
   });
 
+  // 서버가 아직 제목을 만들지 못한 링크(processingStatus PENDING·실패)는 title 이 빈 문자열로 온다.
+  // 빈 카드 대신 출처 도메인을 보여주고, 접근성 라벨도 같은 값을 쓴다.
+  test("제목이 비어 있으면 출처 도메인을 대신 보여준다", async () => {
+    await renderCard({ title: "" });
+    expect(screen.getByText("toss.tech")).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "toss.tech" })).toBeOnTheScreen();
+  });
+
   test("썸네일 URL 이 있으면 이미지를 렌더한다", async () => {
     await renderCard({ thumbnailUrl: "https://static.example.com/t.png" });
     expect(screen.getByTestId("link-card-thumbnail-image")).toBeOnTheScreen();
