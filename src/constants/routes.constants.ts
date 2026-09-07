@@ -93,3 +93,9 @@ export function decodeSharedUrl(value: unknown): string | null {
     return null;
   }
 }
+
+// 로그인 화면·공유 익스텐션 로그인 시트의 약관 링크가 여는 법적 문서 라우트 (설정 화면과 동일).
+export const LEGAL_ROUTES = {
+  terms: "/settings/terms",
+  privacy: "/settings/privacy",
+} as const;

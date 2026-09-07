@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import {
+  LEGAL_ROUTES,
   ROUTES,
   SHARE_LOGIN_NEXT_CREATE_LINK,
 } from "@/constants/routes.constants";
@@ -159,7 +160,9 @@ export function LoginScreen() {
       </View>
 
       <View className="mt-6 px-5">
-        <AgreementText />
+        <AgreementText
+          onOpenLegal={(kind) => router.push(LEGAL_ROUTES[kind])}
+        />
       </View>
     </View>
   );

@@ -2,11 +2,13 @@ import type { SocialProvider } from "@shared/api";
 import { Image, View } from "react-native";
 
 import { Text } from "@/components/ui/text/Text";
+import { LEGAL_ROUTES } from "@/constants/routes.constants";
 import { SOCIAL_PROVIDERS } from "@/features/auth/auth.constants";
 import { AgreementText } from "@/features/auth/components/AgreementText";
 import { SocialLoginButton } from "@/features/auth/components/SocialLoginButton";
 
 import { SheetBody } from "./components/SheetBody";
+import { openHostApp } from "./shareHost";
 import { useExtensionSocialLogin } from "./useExtensionSocialLogin";
 
 // 미로그인 시안 확정 전 임시 그래픽 — 결과 시트 4종 중 경고 배지가 없는 쪽을 쓴다.
@@ -70,7 +72,10 @@ export function ExtensionLoginSheet({
           </Text>
         )}
         <View className="mt-4">
-          <AgreementText />
+          {/* 익스텐션엔 라우터가 없다 — 본 앱을 해당 문서 화면으로 연다(openHostApp 은 스킴 뒤 경로라 선행 슬래시 없이). */}
+          <AgreementText
+            onOpenLegal={(kind) => openHostApp(LEGAL_ROUTES[kind].slice(1))}
+          />
         </View>
       </View>
     </SheetBody>
