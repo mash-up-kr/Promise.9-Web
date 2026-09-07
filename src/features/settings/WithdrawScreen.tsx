@@ -11,8 +11,7 @@ import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
 
 import { WithdrawGraphic } from "./components/WithdrawGraphic";
 import { useWithdraw } from "./hooks/useWithdraw";
-
-const SUPPORT_EMAIL = "2026promise.9@gmail.com";
+import { SUPPORT_EMAIL } from "./settings.constants";
 
 export function WithdrawScreen() {
   const { withdraw, isPending } = useWithdraw();
