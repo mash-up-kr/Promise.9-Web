@@ -3,12 +3,27 @@ jest.mock("./hooks/useWithdraw", () => ({
   useWithdraw: () => ({ withdraw: mockWithdraw, isPending: false }),
 }));
 
-jest.mock("expo-router", () => ({
-  Stack: { Screen: () => null },
-  useRouter: () => ({ canGoBack: () => true, back: jest.fn() }),
+let mockAuthStatus = "authenticated";
+jest.mock("@/features/auth/hooks/useAuthGate", () => ({
+  useAuthGate: () => mockAuthStatus,
 }));
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
+const mockReplace = jest.fn();
+jest.mock("expo-router", () => ({
+  Stack: { Screen: () => null },
+  useRouter: () => ({
+    canGoBack: () => true,
+    back: jest.fn(),
+    replace: mockReplace,
+  }),
+}));
+
+import {
+  fireEvent,
+  render,
+  screen,
+  userEvent,
+} from "@testing-library/react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { WithdrawScreen } from "./WithdrawScreen";
@@ -28,6 +43,8 @@ const renderScreen = () =>
 describe("WithdrawScreen", () => {
   beforeEach(() => {
     mockWithdraw.mockClear();
+    mockReplace.mockClear();
+    mockAuthStatus = "authenticated";
   });
 
   test("경고 문구와 탈퇴 버튼을 렌더한다", async () => {
@@ -43,5 +60,22 @@ describe("WithdrawScreen", () => {
     await renderScreen();
     fireEvent.press(screen.getByText("탈퇴하기"));
     expect(mockWithdraw).toHaveBeenCalledTimes(1);
+  });
+
+  // 스토어 정책: 앱을 다시 설치하지 않고도 삭제를 요청할 수 있는 웹페이지가 필요하다.
+  // 웹에서 이 주소로 직접 들어온 비로그인 방문자에게 절차·보관 기간·문의처를 안내한다.
+  test("로그아웃 상태면 탈퇴 버튼 대신 절차 안내와 로그인 버튼을 보여준다", async () => {
+    mockAuthStatus = "unauthenticated";
+    await renderScreen();
+
+    expect(screen.getByText(/설정 → 회원 탈퇴/)).toBeOnTheScreen();
+    expect(screen.getByText(/30일/)).toBeOnTheScreen();
+    expect(screen.getByText(/2026promise\.9@gmail\.com/)).toBeOnTheScreen();
+    expect(screen.queryByText("탈퇴하기")).toBeNull();
+
+    await userEvent.setup().press(screen.getByText("로그인하러 가기"));
+
+    expect(mockReplace).toHaveBeenCalledWith("/login");
+    expect(mockWithdraw).not.toHaveBeenCalled();
   });
 });

@@ -28,6 +28,7 @@ import {
   fireEvent,
   render,
   screen,
+  userEvent,
   waitFor,
 } from "@testing-library/react-native";
 import type { AxiosResponse } from "axios";
@@ -39,9 +40,10 @@ import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { AUTH_ERROR_CODE } from "./auth.errors";
 
 const mockReplace = jest.fn();
+const mockPush = jest.fn();
 const mockParams = jest.fn<Record<string, string>, []>(() => ({}));
 jest.mock("expo-router", () => ({
-  useRouter: () => ({ replace: mockReplace }),
+  useRouter: () => ({ replace: mockReplace, push: mockPush }),
   useLocalSearchParams: () => mockParams(),
 }));
 
@@ -568,5 +570,16 @@ describe("LoginScreen", () => {
       expect(sendMessage).not.toHaveBeenCalled();
       expect(mockPost).not.toHaveBeenCalledWith("/auth/extension-token");
     });
+  });
+
+  test("이용약관·개인정보처리방침을 누르면 해당 문서 화면으로 이동한다", async () => {
+    await renderScreen();
+    const user = userEvent.setup();
+
+    await user.press(screen.getByText("이용약관"));
+    expect(mockPush).toHaveBeenCalledWith("/settings/terms");
+
+    await user.press(screen.getByText("개인정보처리방침"));
+    expect(mockPush).toHaveBeenCalledWith("/settings/privacy");
   });
 });

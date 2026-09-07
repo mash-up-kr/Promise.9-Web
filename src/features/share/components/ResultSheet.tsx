@@ -2,8 +2,9 @@ import { Image, Pressable, View } from "react-native";
 
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { Text } from "@/components/ui/text/Text";
-
+import { createLinkHandoffPath } from "@/constants/routes.constants";
 import type { ShareSaveState } from "../share.reducer";
+
 import { openHostApp } from "../shareHost";
 import { SheetBody } from "./SheetBody";
 
@@ -39,9 +40,9 @@ const RESULT_CONTENT = {
     cta: "닫기",
   },
   "invalid-url": {
-    title: "저장할 수 없는 링크예요",
-    subtitle: "올바른 주소인지 확인한 뒤 다시 공유해주세요",
-    cta: "닫기",
+    title: "저장할 수 있는 링크가 없어요",
+    subtitle: "http:// 또는 https:// 로 시작하는 주소만 저장할 수 있어요",
+    cta: "앱에서 직접 입력",
   },
 } as const;
 
@@ -56,10 +57,12 @@ export function CheckingSheet() {
 
 export interface ResultSheetProps {
   state: Exclude<ShareSaveState, { phase: "editing" } | { phase: "saving" }>;
+  /** 공유받은 원문 — URL 이 없을 때 인앱 저장 시트를 미리 채우는 데 쓴다. */
+  sharedText: string;
   onRetry: () => void;
 }
 
-export function ResultSheet({ state, onRetry }: ResultSheetProps) {
+export function ResultSheet({ state, sharedText, onRetry }: ResultSheetProps) {
   const content = RESULT_CONTENT[state.phase];
   const dismiss = useSheetDismiss();
 
@@ -76,8 +79,10 @@ export function ResultSheet({ state, onRetry }: ResultSheetProps) {
       case "failed":
         onRetry();
         return;
-      case "retry-limit":
       case "invalid-url":
+        openHostApp(createLinkHandoffPath(sharedText));
+        return;
+      case "retry-limit":
         dismiss();
         return;
     }
@@ -108,7 +113,23 @@ export function ResultSheet({ state, onRetry }: ResultSheetProps) {
             {content.cta}
           </Text>
         </Pressable>
+        {state.phase === "invalid-url" && <DismissAction onPress={dismiss} />}
       </View>
     </SheetBody>
+  );
+}
+
+// 인앱 입력이 주 동작이 된 상태에서 그냥 닫을 길도 남긴다.
+function DismissAction({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      className="h-12 items-center justify-center"
+      onPress={onPress}
+    >
+      <Text variant="label-2-medium" className="text-text-alternative">
+        닫기
+      </Text>
+    </Pressable>
   );
 }

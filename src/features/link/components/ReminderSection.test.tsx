@@ -1,10 +1,5 @@
 import { render, screen, userEvent } from "@testing-library/react-native";
 
-jest.mock("expo-notifications", () => ({
-  getPermissionsAsync: jest.fn().mockResolvedValue({ status: "undetermined" }),
-  requestPermissionsAsync: jest.fn().mockResolvedValue({ status: "granted" }),
-}));
-
 import { ReminderSection } from "./ReminderSection";
 
 beforeEach(() => {
@@ -91,11 +86,4 @@ it("주사위 탭 → 1~180일 범위 날짜로 변경", async () => {
   // "랜덤 날짜" 툴팁은 웹 hover 전용 — 네이티브 press 만으론(hover 없이) 노출되지 않는다.
   // (hover 자체는 jest 환경에서 검증 불가 — 수동 웹 스모크로 확인)
   expect(screen.queryByText("랜덤 날짜")).toBeNull();
-});
-
-it("최초 토글 on 시 알림 권한을 요청한다", async () => {
-  const notifications = jest.requireMock("expo-notifications");
-  await render(<ReminderSection value={null} onChange={jest.fn()} />);
-  await toggleSwitch();
-  expect(notifications.getPermissionsAsync).toHaveBeenCalled();
 });

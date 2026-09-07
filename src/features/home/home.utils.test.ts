@@ -5,14 +5,19 @@ jest.mock("@shared/api", () => ({ apiClient: {} }));
 import { HOME_POLICY } from "./home.constants";
 import type { HomeKeyword } from "./home.types";
 import {
+  getProcessingRefetchInterval,
   selectFrequentFolders,
   selectRemindLinks,
   selectTopKeywords,
 } from "./home.utils";
 
-const listItem = (linkId: number, reminderAt: string | null) => ({
+const listItem = (
+  linkId: number,
+  reminderAt: string | null,
+  title: string | null = `링크 ${linkId}`,
+) => ({
   linkId,
-  title: `링크 ${linkId}`,
+  title,
   source: "example.com",
   representativeTag: null,
   thumbnailUrl: null,
@@ -207,5 +212,29 @@ describe("selectFrequentFolders", () => {
       linkCount: 3,
       lastSavedAt: null,
     });
+  });
+});
+
+// 저장 직후 서버가 제목·썸네일·요약을 채우는 데 몇 초 걸린다(processingStatus PENDING). 목록 응답엔
+// 상태가 없어 제목이 비어 있는 링크를 "처리 중" 으로 보고, 그동안만 주기적으로 다시 조회한다.
+describe("getProcessingRefetchInterval", () => {
+  it("제목이 비어 있는 링크가 있으면 폴링 간격을 돌려준다", () => {
+    const pending = listItem(1, null, null);
+    expect(
+      getProcessingRefetchInterval(
+        linkListResponse([pending, listItem(2, null)]),
+      ),
+    ).toBe(HOME_POLICY.processing.pollIntervalMs);
+    expect(
+      getProcessingRefetchInterval(linkListResponse([listItem(3, null, "")])),
+    ).toBe(HOME_POLICY.processing.pollIntervalMs);
+  });
+
+  it("모든 링크가 채워졌거나 목록이 비면 폴링하지 않는다", () => {
+    expect(
+      getProcessingRefetchInterval(linkListResponse([listItem(1, null)])),
+    ).toBe(false);
+    expect(getProcessingRefetchInterval(linkListResponse([]))).toBe(false);
+    expect(getProcessingRefetchInterval(undefined)).toBe(false);
   });
 });

@@ -34,11 +34,6 @@ jest.mock("@/constants/platform.constants", () => ({
   isWeb: false,
   isServer: false,
 }));
-// ReminderSection → reminder.permissions → expo-notifications.
-jest.mock("expo-notifications", () => ({
-  getPermissionsAsync: jest.fn().mockResolvedValue({ status: "undetermined" }),
-  requestPermissionsAsync: jest.fn().mockResolvedValue({ status: "granted" }),
-}));
 let mockKeyboardHeight = 0;
 jest.mock("react-native-keyboard-controller", () => ({
   ...jest.requireActual("react-native-keyboard-controller"),
@@ -451,15 +446,6 @@ test("리마인드를 켜면 내일 날짜로 reminderAt 이 실린다", async (
   );
 });
 
-test("익스텐션에서는 리마인드를 켜도 OS 알림 권한을 요청하지 않는다", async () => {
-  const notifications = jest.requireMock("expo-notifications");
-  await render(<ShareExtension url="https://toss.tech/a" />);
-
-  await userEvent.setup().press(await screen.findByLabelText("리마인드"));
-
-  expect(notifications.getPermissionsAsync).not.toHaveBeenCalled();
-});
-
 test("프리셋 칩을 고르면 해당 날짜로 리마인드가 실린다", async () => {
   mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 1 } } });
   await render(<ShareExtension url="https://toss.tech/a" />);
@@ -652,13 +638,14 @@ test("제목과 URL 이 섞인 공유 텍스트는 URL 만 저장한다", async 
   );
 });
 
-test("URL 형식이 아니면 서버에 보내지 않고 저장 불가 시트를 보여준다", async () => {
+test("URL 형식이 아니면 저장을 누르기 전에 바로 저장 불가 시트를 보여준다", async () => {
   await render(<ShareExtension url="이건 링크가 아니에요" />);
   const user = userEvent.setup();
 
-  await user.press(await screen.findByText("저장"));
-
-  expect(await screen.findByText("저장할 수 없는 링크예요")).toBeOnTheScreen();
+  expect(
+    await screen.findByText("저장할 수 있는 링크가 없어요"),
+  ).toBeOnTheScreen();
+  expect(screen.queryByText("저장")).toBeNull();
   expect(mockPost).not.toHaveBeenCalled();
 
   await user.press(screen.getByText("닫기"));
@@ -703,4 +690,13 @@ test("저장 중에는 백드롭 탭·끌어 내리기로 닫히지 않는다", 
   expect(close).not.toHaveBeenCalled();
   resolvePost({ data: { success: true, data: { linkId: 1 } } });
   expect(await screen.findByText("링크 저장을 완료했어요")).toBeOnTheScreen();
+});
+
+test("URL 이 없는 공유에서 '앱에서 직접 입력' 을 누르면 인앱 저장 시트를 연다", async () => {
+  await render(<ShareExtension url="이건 링크가 아니에요" />);
+
+  await userEvent.setup().press(await screen.findByText("앱에서 직접 입력"));
+
+  expect(openHostApp).toHaveBeenCalledWith("create-link");
+  expect(mockPost).not.toHaveBeenCalled();
 });

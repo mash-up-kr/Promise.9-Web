@@ -18,7 +18,7 @@ description: 이 프로젝트 고유의 Expo·NativeWind·RN 함정과 패키지
 3. 네이티브 코드가 딸린 패키지(config plugin·prebuild 필요)는 development build 영향이 있으므로 **도입 전에 사용자에게 확인**한다 — 라이브러리 선택은 설계 갈림길이다 (core-rules "Think Before Coding").
 
 ## 2. NativeWind v5 (preview) — v4 와 다르다
-- v5 는 런타임 `cssInterop()`/`remapProps()` 를 **제거**했다. babel transform 이 모든 컴포넌트의 className 을 자동 처리하므로 수동 등록 금지.
+- v5 는 런타임 `cssInterop()`/`remapProps()` 를 **제거**했다. Metro 리졸버가 **react-native 코어 컴포넌트**(+ safe-area-context)만 감싸 className 을 처리한다. 서드파티 컴포넌트(expo-image 등)는 §7 처럼 `styled` 래퍼가 필요하다.
 - v5 는 CSS cascade 를 충실히 재현한다 → **inline `style` prop 이 className 을 이긴다.**
 
 ## 3. inline style 이 className 을 누르는 컴포넌트
@@ -39,6 +39,7 @@ jest-expo 환경에는 className→style 해석기가 없다. className 스타�
 ## 7. className 으로 안 되는 스타일은 prop/래퍼로
 - `TextInput` 의 placeholder·커서·선택 색은 RN 특성상 prop 전용 (`placeholderTextColor` 등) — 토큰 hex 를 상수로 두고 prop 지정. 적용례: `src/components/ui/input/Input.tsx`.
 - svg 아이콘(lucide 포함) 색은 `src/components/ui/icon/Icon.tsx` 래퍼로만 — className→color 매핑 + WeakMap 캐시가 들어 있다. 아이콘을 직접 styled 로 재래핑하지 않는다 (매 렌더 재생성 → native 크래시 이력).
+- `expo-image` 의 `Image` 는 react-native 코어가 아니라 리졸버가 감싸지 않는다 → 네이티브에서 className 이 통째로 무시돼 **릴리즈 빌드에서 썸네일이 0×0 으로 접혔다**(2026-09-07 TestFlight). className 을 쓰려면 `src/components/ui/image/Image.tsx`(styled 매핑) 를 import 하고, 기존 `style` 사용처는 그대로 둔다.
 
 ## 업그레이드 체크리스트 (expo / nativewind / react-native-css)
 1. https://docs.expo.dev/versions/ 에서 대상 버전 breaking change 확인.

@@ -95,3 +95,17 @@ test("오류 문구가 있으면 시트 안에 보여준다", async () => {
   );
   expect(screen.getByText(EXTENSION_LOGIN_FAILED_MESSAGE)).toBeOnTheScreen();
 });
+
+test("이용약관을 누르면 본 앱의 약관 화면을 연다", async () => {
+  const { openHostApp } = jest.requireMock("expo-share-extension");
+  await render(
+    <ExtensionLoginSheet
+      sharedUrl="https://toss.tech/a"
+      isSessionExpired={false}
+    />,
+  );
+
+  await userEvent.setup().press(screen.getByText("이용약관"));
+
+  expect(openHostApp).toHaveBeenCalledWith("settings/terms");
+});
