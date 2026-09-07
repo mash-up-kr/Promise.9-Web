@@ -31,6 +31,7 @@ import {
   ROUTES,
 } from "@/constants/routes.constants";
 import { formatCalendarDate } from "@/utils/format";
+import { openExternalUrl } from "@/utils/openExternalUrl";
 import { shareUrl } from "@/utils/share";
 
 import { AiSummarySection } from "./components/AiSummarySection";
@@ -166,6 +167,9 @@ function LinkDetailContent() {
     if (result === "copied") show({ message: "링크가 복사됐어요" });
   };
 
+  // 우하단 ↗ 버튼이 잘 안 보인다는 피드백 — 출처 도메인 탭도 원문 이동 경로로 연다.
+  const handleOpenOriginal = () => openExternalUrl(linkDetail.url);
+
   const handleDeleteConfirm = async () => {
     setIsDeleteOpen(false);
     try {
@@ -261,7 +265,16 @@ function LinkDetailContent() {
             />
             <Text variant="heading-1">{linkDetail.title}</Text>
             <Text variant="caption-1" className="text-opacity-white-70">
-              {linkDetail.source}
+              {linkDetail.source ? (
+                <Text
+                  accessibilityRole="link"
+                  onPress={handleOpenOriginal}
+                  variant="caption-1"
+                  className="text-opacity-white-70 underline"
+                >
+                  {linkDetail.source}
+                </Text>
+              ) : null}
               <Text variant="caption-1" className="text-opacity-white-40">
                 {" · "}
               </Text>
