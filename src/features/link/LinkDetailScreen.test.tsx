@@ -8,6 +8,7 @@ import {
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
+import { openExternalUrl } from "@/utils/openExternalUrl";
 import * as share from "@/utils/share";
 
 import { LinkDetailScreen } from "./LinkDetailScreen";
@@ -51,6 +52,7 @@ jest.mock("expo-router", () => ({
 }));
 
 jest.mock("@/utils/share", () => ({ shareUrl: jest.fn() }));
+jest.mock("@/utils/openExternalUrl", () => ({ openExternalUrl: jest.fn() }));
 // useSuspenseQuery 목이 인자를 무시하므로 linkQueries.detail 은 호출만 되면 되는 스텁이면 충분.
 jest.mock("@shared/entities/link/link.queries", () => ({
   linkQueries: {
@@ -123,6 +125,7 @@ describe("LinkDetailScreen", () => {
     // 성공 경로가 기본 — 구현·호출 이력을 함께 비운다(실패 테스트가 심은 onError 구현이 새지 않도록).
     mockUpdate.mockReset();
     (share.shareUrl as jest.Mock).mockResolvedValue("copied");
+    (openExternalUrl as jest.Mock).mockClear();
     mockRoute.id = String(mockLinkDetail.linkId);
     mockDetailData.current = mockLinkDetail;
   });
@@ -228,6 +231,13 @@ describe("LinkDetailScreen", () => {
     expect(screen.getByText(mockLinkDetail.title)).toBeOnTheScreen();
     expect(screen.getByText("디자인")).toBeOnTheScreen();
     expect(screen.getByText("toss.tech · 2026.06.19")).toBeOnTheScreen();
+  });
+
+  test("도메인 주소를 누르면 원문 링크를 연다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+    await user.press(screen.getByText(mockLinkDetail.source));
+    expect(openExternalUrl).toHaveBeenCalledWith(mockLinkDetail.url);
   });
 
   test("AI 요약 섹션을 렌더한다", async () => {
