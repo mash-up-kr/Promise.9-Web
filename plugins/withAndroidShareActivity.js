@@ -96,7 +96,8 @@ function withShareActivityManifest(config) {
           category: [
             { $: { "android:name": "android.intent.category.DEFAULT" } },
           ],
-          data: [{ $: { "android:mimeType": "text/*" } }],
+          // 링크 공유는 plain text 로 온다 — text/html 등 다른 텍스트 타입까지 받지 않는다.
+          data: [{ $: { "android:mimeType": "text/plain" } }],
         },
       ],
     });
