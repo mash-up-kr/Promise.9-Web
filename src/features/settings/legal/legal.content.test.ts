@@ -26,6 +26,16 @@ describe("LEGAL_CONTENT", () => {
     expect(LEGAL_CONTENT.privacy.markdown).toContain("열람청구");
   });
 
+  test("처리방침은 실제 운영과 맞게 미정 문구 없이 리마인드 이메일 발송을 명시한다", () => {
+    const privacy = LEGAL_CONTENT.privacy.markdown;
+    // 앱은 푸시 알림을 보내지 않는다 — 리마인드는 서버가 이메일로 발송한다.
+    expect(privacy).not.toContain("푸시 알림");
+    expect(privacy).toContain("이메일 발송");
+    // 스토어 심사는 플레이스홀더 문구를 미완성으로 본다.
+    expect(privacy).not.toContain("확정되는 대로");
+    expect(privacy).not.toContain("(예:");
+  });
+
   test("약관 면책 조항은 고의·중대한 과실을 면책에서 제외한다", () => {
     // 약관규제법 §7: 고의·중과실 면책은 불공정약관으로 무효
     expect(LEGAL_CONTENT.terms.markdown).toContain("고의 또는 중대한 과실");
