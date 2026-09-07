@@ -30,11 +30,6 @@ jest.mock("expo-clipboard", () => ({
   hasStringAsync: jest.fn().mockResolvedValue(false),
   getStringAsync: jest.fn().mockResolvedValue(""),
 }));
-// ReminderSection → reminder.permissions → expo-notifications.
-jest.mock("expo-notifications", () => ({
-  getPermissionsAsync: jest.fn().mockResolvedValue({ status: "undetermined" }),
-  requestPermissionsAsync: jest.fn().mockResolvedValue({ status: "granted" }),
-}));
 // LinkPreviewCard·FolderChipList 가 각각 useLinkPreview·useSuspenseQuery(folderQueries.list())
 // 로 apiClient 를 쓴다 — client.ts(env 필수) 로드를 피해 apiClient 만 목한다.
 jest.mock("@shared/api", () => ({

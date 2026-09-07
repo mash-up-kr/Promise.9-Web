@@ -34,11 +34,6 @@ jest.mock("@/constants/platform.constants", () => ({
   isWeb: false,
   isServer: false,
 }));
-// ReminderSection → reminder.permissions → expo-notifications.
-jest.mock("expo-notifications", () => ({
-  getPermissionsAsync: jest.fn().mockResolvedValue({ status: "undetermined" }),
-  requestPermissionsAsync: jest.fn().mockResolvedValue({ status: "granted" }),
-}));
 let mockKeyboardHeight = 0;
 jest.mock("react-native-keyboard-controller", () => ({
   ...jest.requireActual("react-native-keyboard-controller"),
@@ -449,15 +444,6 @@ test("리마인드를 켜면 내일 날짜로 reminderAt 이 실린다", async (
       reminderAt: expect.stringContaining(dateAfterDays(1)),
     }),
   );
-});
-
-test("익스텐션에서는 리마인드를 켜도 OS 알림 권한을 요청하지 않는다", async () => {
-  const notifications = jest.requireMock("expo-notifications");
-  await render(<ShareExtension url="https://toss.tech/a" />);
-
-  await userEvent.setup().press(await screen.findByLabelText("리마인드"));
-
-  expect(notifications.getPermissionsAsync).not.toHaveBeenCalled();
 });
 
 test("프리셋 칩을 고르면 해당 날짜로 리마인드가 실린다", async () => {

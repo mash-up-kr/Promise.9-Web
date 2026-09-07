@@ -14,7 +14,6 @@ import { Icon } from "@/components/ui/icon/Icon";
 import { Text } from "@/components/ui/text/Text";
 import { Toggle } from "@/components/ui/toggle/Toggle";
 import { isWeb } from "@/constants/platform.constants";
-import { requestReminderPermission } from "@/features/link/reminder.permissions";
 import {
   formatRemainingPeriod,
   formatReminderDate,
@@ -75,7 +74,6 @@ export function ReminderSection({ value, onChange }: ReminderSectionProps) {
       onChange(null);
       return;
     }
-    requestReminderPermission(); // 결과 무관 — 거부해도 토글 유지(이메일 알림)
     setSelectedPresetDays(1);
     onChange({ date: getTomorrowDate(), ...roundUpToQuarter() });
   };
