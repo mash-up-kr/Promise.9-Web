@@ -3,7 +3,6 @@ import { ExternalLink } from "lucide-react-native";
 import { useState } from "react";
 import {
   type LayoutChangeEvent,
-  Linking,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Pressable,
@@ -16,6 +15,7 @@ import {
 import { GlassView } from "@/components/ui/glass-view/GlassView";
 import { Icon } from "@/components/ui/icon/Icon";
 import { tv } from "@/lib/tv";
+import { openExternalUrl } from "@/utils/openExternalUrl";
 
 // 페이지 인디케이터 닷 — 현재 페이지만 불투명(100), 나머지는 30%.
 const indicatorDot = tv({
@@ -46,22 +46,13 @@ export interface LinkThumbnailProps {
   url: string;
 }
 
-async function openUrl(url: string) {
-  try {
-    await Linking.openURL(url);
-  } catch (error) {
-    // 링크 열기 실패 — 개발 로깅만. 사용자 노출 메시지는 이번 스코프 밖.
-    console.warn("링크를 열지 못했습니다", error);
-  }
-}
-
 // 우하단 원문 이동(↗) 버튼 — 플레이스홀더·단일·캐러셀 공통.
 function OpenOriginalButton({ url }: { url: string }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="링크 열기"
-      onPress={() => openUrl(url)}
+      onPress={() => openExternalUrl(url)}
       className="absolute right-4 bottom-4 size-9 overflow-hidden rounded-full"
     >
       {/* 아이콘은 GlassView 의 자식으로 — 웹에서 svg 가 유리 레이어에 가리지 않게. */}
