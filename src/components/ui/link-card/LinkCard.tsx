@@ -1,11 +1,10 @@
 import type { Link } from "@shared/types/link.types";
-import { Image } from "expo-image";
 import { createContext, useContext } from "react";
 import type { PressableProps } from "react-native";
 import { Pressable } from "react-native";
-
 import { Box } from "@/components/ui/box/Box";
 import { HStack } from "@/components/ui/hstack/HStack";
+import { Image } from "@/components/ui/image/Image";
 import { Text, type TextProps } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
 import { formatRelativeDate } from "@/utils/format";
