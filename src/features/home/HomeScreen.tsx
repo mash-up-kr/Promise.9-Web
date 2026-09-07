@@ -35,6 +35,7 @@ import { RecentSaveSection } from "./components/RecentSaveSection";
 import { RemindSection } from "./components/RemindSection";
 import { HOME_POLICY } from "./home.constants";
 import {
+  getProcessingRefetchInterval,
   selectFrequentFolders,
   selectRemindLinks,
   selectTopKeywords,
@@ -65,18 +66,21 @@ function HomeSections() {
       limit: HOME_POLICY.remind.maxLinks,
     }),
     select: selectRemindLinks,
+    refetchInterval: (query) => getProcessingRefetchInterval(query.state.data),
   });
   const keywordsQuery = useSuspenseQuery({
     ...recommendationQueries.list({ limit: HOME_POLICY.keywords.max }),
     select: selectTopKeywords,
   });
-  const recentLinksQuery = useSuspenseQuery(
-    linkQueries.list({
+  // 방금 저장한 링크는 서버 처리가 끝날 때까지 제목·썸네일이 비어 온다 — 처리 중인 동안만 폴링한다.
+  const recentLinksQuery = useSuspenseQuery({
+    ...linkQueries.list({
       sortBy: "savedAt",
       order: "desc",
       limit: HOME_POLICY.recentSave.maxLinks,
     }),
-  );
+    refetchInterval: (query) => getProcessingRefetchInterval(query.state.data),
+  });
   // 보관함과 같은 GET /folders 캐시를 공유하고 select 만 홈용으로 바꾼다.
   const frequentFoldersQuery = useSuspenseQuery({
     ...folderQueries.list(),
