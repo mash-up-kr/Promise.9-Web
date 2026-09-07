@@ -1,8 +1,13 @@
 import { Stack, useRouter } from "expo-router";
+import { useState } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ActionButton } from "@/components/ui/action-button/ActionButton";
+import {
+  AlertDialog,
+  AlertDialogButton,
+} from "@/components/ui/alert-dialog/AlertDialog";
 import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { Text } from "@/components/ui/text/Text";
@@ -15,6 +20,8 @@ import { SUPPORT_EMAIL } from "./settings.constants";
 
 export function WithdrawScreen() {
   const { withdraw, isPending } = useWithdraw();
+  const [isConfirmOpen, setConfirmOpen] = useState(false);
+  const closeConfirm = () => setConfirmOpen(false);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   // 스토어 정책상 앱 없이도 삭제를 요청할 수 있는 웹페이지가 필요하다 — 웹에서 이 주소로
@@ -58,7 +65,7 @@ export function WithdrawScreen() {
           <ActionButton
             variant="destructive"
             className="w-full"
-            onPress={withdraw}
+            onPress={() => setConfirmOpen(true)}
             isLoading={isPending}
             disabled={isPending}
           >
@@ -66,6 +73,32 @@ export function WithdrawScreen() {
           </ActionButton>
         )}
       </View>
+
+      <AlertDialog
+        isOpen={isConfirmOpen}
+        onClose={closeConfirm}
+        title="정말 탈퇴하시겠어요?"
+        description="탈퇴하면 되돌릴 수 없어요."
+        actions={
+          <>
+            <AlertDialogButton
+              label="취소"
+              variant="secondary"
+              onPress={closeConfirm}
+              disabled={isPending}
+            />
+            <AlertDialogButton
+              label="탈퇴하기"
+              variant="destructive"
+              onPress={() => {
+                closeConfirm();
+                withdraw();
+              }}
+              disabled={isPending}
+            />
+          </>
+        }
+      />
     </View>
   );
 }
