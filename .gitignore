@@ -43,6 +43,10 @@ example
 # Claude Code local settings
 .claude/settings.local.json
 
+# 로컬 에이전트 도구 설정 (개인용, 커밋·EAS 업로드 대상 아님)
+.agents/
+.codex/
+
 # generated native folders
 /ios
 /android
@@ -64,6 +68,7 @@ example
 
 # Local planning docs (never committed)
 plan/
+_workspace/
 
 # 로컬 expo 모듈의 gradle 산출물
 modules/*/android/build/
