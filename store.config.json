@@ -8,10 +8,10 @@
       "automaticRelease": false
     },
     "review": {
-      "contactFirstName": "보경",
-      "contactLastName": "김",
-      "contactEmail": "2026promise.9@gmail.com",
-      "contactPhone": "+821084876263",
+      "firstName": "보경",
+      "lastName": "김",
+      "email": "2026promise.9@gmail.com",
+      "phone": "+821084876263",
       "demoRequired": false,
       "notes": "The app requires sign-in, but no demo account is needed.\n\nHOW TO SIGN IN\nOn the first screen, tap the third button \"Apple로 계속하기\" (Continue with Apple). An account is created instantly with Sign in with Apple - no password, no email verification. Kakao and Google also work, but Kakao requires a Korean Kakao account.\n\nHOW TO TEST THE MAIN FEATURE\n1. After signing in you land on the home screen (empty at first).\n2. Tap the round + button at the bottom center.\n3. Paste any public https URL (for example https://en.wikipedia.org/wiki/Bookmark) and tap \"저장\" (Save).\n4. The link appears on the home screen. Title, thumbnail and an AI summary are filled in by our server within a few seconds - pull the home screen down to refresh.\n5. Tap the card to open the link detail, where the AI summary and memo are shown.\n\nSHARE EXTENSION\nIn Safari, tap the share button and choose 링띵동 to save the page without leaving Safari.\n\nREMINDERS ARE SENT BY EMAIL\nThe app sends no push notifications. When a reminder date is set on a link, our server emails the address on the account on that date. This is why the app never asks for notification permission.\n\nACCOUNT DELETION\n설정 (Settings, gear icon top right) > 회원 탈퇴 (Delete account) deletes the account from inside the app."
     },
