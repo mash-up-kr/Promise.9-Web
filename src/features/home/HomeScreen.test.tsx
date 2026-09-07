@@ -284,7 +284,7 @@ describe("HomeScreen", () => {
 
     await renderScreen();
 
-    expect(await screen.findByText("다시 볼 링크")).toBeOnTheScreen();
+    expect(await screen.findByText("리마인드")).toBeOnTheScreen();
     expect(screen.getByText("다시 볼 사우나 링크")).toBeOnTheScreen();
     expect(screen.getByText("8월 10일")).toBeOnTheScreen();
   });
@@ -294,7 +294,7 @@ describe("HomeScreen", () => {
     await renderScreen();
     await screen.findByText("최근 저장");
 
-    expect(screen.queryByText("다시 볼 링크")).not.toBeOnTheScreen();
+    expect(screen.queryByText("리마인드")).not.toBeOnTheScreen();
   });
 
   test("추천 키워드가 있으면 많이 저장한 키워드 섹션에 칩으로 보여준다", async () => {

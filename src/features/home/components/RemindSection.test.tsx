@@ -28,7 +28,7 @@ describe("RemindSection", () => {
   test("섹션 타이틀과 링크, 알림 날짜 배지를 보여준다", async () => {
     await render(<RemindSection links={links} />);
 
-    expect(screen.getByText("다시 볼 링크")).toBeOnTheScreen();
+    expect(screen.getByText("리마인드")).toBeOnTheScreen();
     expect(
       screen.getByText("무조건 행복해지는 인생 치트키 사우나"),
     ).toBeOnTheScreen();
@@ -39,7 +39,7 @@ describe("RemindSection", () => {
   test("링크가 없으면 아무것도 그리지 않는다", async () => {
     await render(<RemindSection links={[]} />);
 
-    expect(screen.queryByText("다시 볼 링크")).not.toBeOnTheScreen();
+    expect(screen.queryByText("리마인드")).not.toBeOnTheScreen();
   });
 
   test("카드를 누르면 링크 상세로 이동한다", async () => {

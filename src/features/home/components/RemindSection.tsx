@@ -15,7 +15,7 @@ interface RemindSectionProps {
   links: RemindLink[];
 }
 
-/** 다시 볼 링크 — 알림을 설정한 링크를 가까운 순으로 넘겨 보는 가로 캐러셀. */
+/** 리마인드 — 알림을 설정한 링크를 가까운 순으로 넘겨 보는 가로 캐러셀. */
 export function RemindSection({ links }: RemindSectionProps) {
   const router = useRouter();
 
@@ -27,7 +27,7 @@ export function RemindSection({ links }: RemindSectionProps) {
   return (
     <VStack className="gap-4">
       <Text variant="heading-1" className="px-5 text-text-strong">
-        다시 볼 링크
+        리마인드
       </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <HStack className="gap-3 px-5">
