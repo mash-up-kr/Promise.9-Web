@@ -1,0 +1,85 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "version": "1.0.0",
+    "copyright": "2026 Promise.9",
+    "categories": ["PRODUCTIVITY", "UTILITIES"],
+    "release": {
+      "automaticRelease": false
+    },
+    "review": {
+      "contactFirstName": "보경",
+      "contactLastName": "김",
+      "contactEmail": "2026promise.9@gmail.com",
+      "contactPhone": "+821084876263",
+      "demoRequired": false,
+      "notes": "The app requires sign-in, but no demo account is needed.\n\nHOW TO SIGN IN\nOn the first screen, tap the third button \"Apple로 계속하기\" (Continue with Apple). An account is created instantly with Sign in with Apple - no password, no email verification. Kakao and Google also work, but Kakao requires a Korean Kakao account.\n\nHOW TO TEST THE MAIN FEATURE\n1. After signing in you land on the home screen (empty at first).\n2. Tap the round + button at the bottom center.\n3. Paste any public https URL (for example https://en.wikipedia.org/wiki/Bookmark) and tap \"저장\" (Save).\n4. The link appears on the home screen. Title, thumbnail and an AI summary are filled in by our server within a few seconds - pull the home screen down to refresh.\n5. Tap the card to open the link detail, where the AI summary and memo are shown.\n\nSHARE EXTENSION\nIn Safari, tap the share button and choose 링띵동 to save the page without leaving Safari.\n\nREMINDERS ARE SENT BY EMAIL\nThe app sends no push notifications. When a reminder date is set on a link, our server emails the address on the account on that date. This is why the app never asks for notification permission.\n\nACCOUNT DELETION\n설정 (Settings, gear icon top right) > 회원 탈퇴 (Delete account) deletes the account from inside the app."
+    },
+    "advisory": {
+      "alcoholTobaccoOrDrugUseOrReferences": "NONE",
+      "contests": "NONE",
+      "gambling": false,
+      "gamblingSimulated": "NONE",
+      "horrorOrFearThemes": "NONE",
+      "matureOrSuggestiveThemes": "NONE",
+      "medicalOrTreatmentInformation": "NONE",
+      "profanityOrCrudeHumor": "NONE",
+      "sexualContentGraphicAndNudity": "NONE",
+      "sexualContentOrNudity": "NONE",
+      "violenceCartoonOrFantasy": "NONE",
+      "violenceRealistic": "NONE",
+      "violenceRealisticProlongedGraphicOrSadistic": "NONE",
+      "gunsOrOtherWeapons": "NONE",
+      "lootBox": false,
+      "advertising": false,
+      "ageAssurance": false,
+      "healthOrWellnessTopics": false,
+      "messagingAndChat": false,
+      "parentalControls": false,
+      "unrestrictedWebAccess": false,
+      "userGeneratedContent": false,
+      "kidsAgeBand": null,
+      "ageRatingOverride": "NONE",
+      "ageRatingOverrideV2": "NONE",
+      "koreaAgeRatingOverride": "NONE",
+      "developerAgeRatingInfoUrl": null
+    },
+    "info": {
+      "ko": {
+        "title": "링띵동 - 링크 저장과 재발견",
+        "subtitle": "저장한 링크, 다시 꺼내 읽어요",
+        "promoText": "저장하고 잊었던 링크, 링띵동이 다시 꺼내드려요",
+        "description": "저장해두고 결국 다시 못 본 링크, 몇 개나 쌓여 있으세요?\n링띵동은 저장한 링크를 필요한 순간 다시 꺼내주는 앱이에요.\n\n원하는 순간 메일로 다시 알림을 받고, 홈에서 잊고 있던 콘텐츠를 자연스럽게 다시 만나보세요.\n저장하고 잊어버리는 대신, 필요할 때 다시 찾고 활용할 수 있도록 도와드려요.\n\n[주요 기능]\n\n• 쉬운 공유\n공유 버튼 한 번으로 링크를 바로 저장해요.\n\n• 리마인드 메일\n원하는 날짜에 저장한 링크를 이메일로 다시 알려드려요.\n\n• 홈에서 재발견\n잊고 있던 링크도 홈에서 자연스럽게 다시 만나요.\n\n• 빠른 링크 검색\n제목, AI 요약, 태그로 필요한 링크를 빠르게 찾아요.\n\n• AI 링크 요약\n긴 콘텐츠도 핵심 내용만 빠르게 확인해요.\n\n• 폴더 정리\n폴더 이름과 색상을 내 방식대로 정리해요.\n\n저장만 하고 잊어버렸던 링크, 이제 링띵동에서 다시 만나보세요.",
+        "keywords": [
+          "링크저장",
+          "북마크",
+          "나중에읽기",
+          "읽을거리",
+          "링크정리",
+          "스크랩",
+          "아카이브",
+          "AI요약",
+          "리마인드",
+          "즐겨찾기",
+          "링크관리",
+          "콘텐츠저장",
+          "모아보기",
+          "세이브"
+        ],
+        "releaseNotes": "링띵동의 첫 번째 버전이에요.\n\n· 보던 화면에서 공유 버튼으로 바로 링크를 저장해요\n· 저장한 링크의 제목·이미지·AI 요약을 자동으로 정리해요\n· 다시 볼 날짜를 정하면 그날 이메일로 알려드려요\n· 내용까지 이해하는 검색으로 저장한 링크를 찾아요\n· 폴더로 묶어서 한곳에 모아봐요",
+        "supportUrl": "https://link-ding-dong.com/support",
+        "privacyPolicyUrl": "https://link-ding-dong.com/settings/privacy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/screenshots/ios/01-easy-share.png",
+            "store/screenshots/ios/03-keyword.png",
+            "store/screenshots/ios/04-search.png",
+            "store/screenshots/ios/05-save.png",
+            "store/screenshots/ios/06-ai-summary.png",
+            "store/screenshots/ios/07-folder.png"
+          ]
+        }
+      }
+    }
+  }
+}

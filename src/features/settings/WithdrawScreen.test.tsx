@@ -18,12 +18,7 @@ jest.mock("expo-router", () => ({
   }),
 }));
 
-import {
-  fireEvent,
-  render,
-  screen,
-  userEvent,
-} from "@testing-library/react-native";
+import { render, screen, userEvent } from "@testing-library/react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { WithdrawScreen } from "./WithdrawScreen";
@@ -56,10 +51,38 @@ describe("WithdrawScreen", () => {
     expect(screen.getByText("탈퇴하기")).toBeOnTheScreen();
   });
 
-  test("탈퇴하기를 누르면 탈퇴를 실행한다", async () => {
+  // 되돌릴 수 없는 동작이라 버튼 한 번으로 실행하지 않는다(로그아웃과 같은 확인 단계).
+  test("탈퇴하기를 누르면 바로 탈퇴하지 않고 확인을 묻는다", async () => {
+    const user = userEvent.setup();
     await renderScreen();
-    fireEvent.press(screen.getByText("탈퇴하기"));
+    await user.press(screen.getByText("탈퇴하기"));
+
+    expect(await screen.findByText("정말 탈퇴하시겠어요?")).toBeOnTheScreen();
+    expect(mockWithdraw).not.toHaveBeenCalled();
+  });
+
+  test("다이얼로그에서 확정하면 탈퇴를 실행한다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+    await user.press(screen.getByText("탈퇴하기"));
+    await screen.findByText("정말 탈퇴하시겠어요?");
+
+    // 화면 버튼과 다이얼로그 버튼 둘 다 "탈퇴하기" — 다이얼로그 버튼(나중 렌더)을 누른다.
+    const buttons = screen.getAllByText("탈퇴하기");
+    await user.press(buttons[buttons.length - 1]);
+
     expect(mockWithdraw).toHaveBeenCalledTimes(1);
+  });
+
+  test("확인 다이얼로그에서 취소하면 탈퇴하지 않는다", async () => {
+    const user = userEvent.setup();
+    await renderScreen();
+    await user.press(screen.getByText("탈퇴하기"));
+    await screen.findByText("정말 탈퇴하시겠어요?");
+
+    await user.press(screen.getByText("취소"));
+
+    expect(mockWithdraw).not.toHaveBeenCalled();
   });
 
   // 스토어 정책: 앱을 다시 설치하지 않고도 삭제를 요청할 수 있는 웹페이지가 필요하다.

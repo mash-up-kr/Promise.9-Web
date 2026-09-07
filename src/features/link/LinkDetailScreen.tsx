@@ -41,7 +41,7 @@ import { LinkThumbnail } from "./components/LinkThumbnail";
 import { MemoField } from "./components/MemoField";
 import { RelatedLinksList } from "./components/RelatedLinksList";
 import { type LinkDetailForm, linkDetailFormSchema } from "./link.contracts";
-import { shouldShowAiSummary } from "./link.utils";
+import { getDetailRefetchInterval, shouldShowAiSummary } from "./link.utils";
 
 // 로딩·에러 상태에도 뒤로가기는 유지한다(즐겨찾기·더보기는 데이터가 있어야 해 콘텐츠 상태에서만).
 function LinkDetailBackHeader() {
@@ -99,7 +99,11 @@ export function LinkDetailScreen() {
 function LinkDetailContent() {
   const headerHeight = useHeaderHeight();
   const { id } = useLocalSearchParams<"/link/[id]">();
-  const { data: linkDetail } = useSuspenseQuery(linkQueries.detail(id));
+  // 저장 직후엔 제목·요약이 비어 온다 — 처리 중인 동안만 다시 조회하고, 확정되면 멈춘다.
+  const { data: linkDetail } = useSuspenseQuery({
+    ...linkQueries.detail(id),
+    refetchInterval: (query) => getDetailRefetchInterval(query.state.data),
+  });
 
   const router = useRouter();
   const { show } = useSnackbar();

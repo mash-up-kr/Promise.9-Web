@@ -22,11 +22,6 @@ export const HOME_POLICY = {
     /** 최대 노출 링크 수 (저장 최신순) */
     maxLinks: 9,
   },
-  /** 저장 직후 서버 처리(제목·썸네일·요약 생성, 보통 5초 내) 대기 */
-  processing: {
-    /** 처리 중인 링크가 보이는 동안 목록을 다시 조회하는 간격(ms) */
-    pollIntervalMs: 10_000,
-  },
   /** 자주 보는 폴더 */
   frequentFolders: {
     /** 최대 노출 폴더 수 */
