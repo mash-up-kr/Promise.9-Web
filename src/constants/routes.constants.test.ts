@@ -1,5 +1,6 @@
 import {
   archiveDetailHref,
+  createLinkHandoffPath,
   decodeSharedUrl,
   encodeSharedUrl,
   linkDetailHref,
@@ -71,5 +72,17 @@ describe("routes.constants", () => {
     expect(decodeSharedUrl(["61", "62"])).toBeNull();
     expect(decodeSharedUrl("zz")).toBeNull();
     expect(decodeSharedUrl("")).toBeNull();
+  });
+
+  // 공유 텍스트에 저장 가능한 URL 이 없을 때 "앱에서 직접 입력" 이 여는 경로.
+  test("createLinkHandoffPath 는 공백 없는 한 토큰이면 share 로 프리필하고, 아니면 빈 저장 시트를 연다", () => {
+    expect(createLinkHandoffPath("naver.com")).toBe(
+      `create-link?share=${encodeSharedUrl("naver.com")}`,
+    );
+    expect(createLinkHandoffPath("  ftp://files.example.com/a  ")).toBe(
+      `create-link?share=${encodeSharedUrl("ftp://files.example.com/a")}`,
+    );
+    expect(createLinkHandoffPath("이건 링크가 아니에요")).toBe("create-link");
+    expect(createLinkHandoffPath("")).toBe("create-link");
   });
 });

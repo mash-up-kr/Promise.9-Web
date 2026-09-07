@@ -93,9 +93,14 @@ interface ShareSaveFlowProps {
 }
 
 function ShareSaveFlow({ url, onSavingChange }: ShareSaveFlowProps) {
+  // URL 이 아닌 텍스트(Android EXTRA_TEXT 등)는 편집 시트를 거치지 않고 바로 안내로 끝낸다.
   const [state, dispatch] = useReducer(
     shareSaveReducer,
     INITIAL_SHARE_SAVE_STATE,
+    (initial) =>
+      linkUrlSchema.safeParse(url).success
+        ? initial
+        : shareSaveReducer(initial, { type: "SAVE_REJECTED_INVALID_URL" }),
   );
   // 폴더 미선택(null) = 미분류 — 인앱 저장 시트와 동일한 의미.
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
@@ -155,7 +160,7 @@ function ShareSaveFlow({ url, onSavingChange }: ShareSaveFlowProps) {
           onSave={save}
         />
       ) : (
-        <ResultSheet state={state} onRetry={save} />
+        <ResultSheet state={state} sharedText={url} onRetry={save} />
       )}
     </>
   );

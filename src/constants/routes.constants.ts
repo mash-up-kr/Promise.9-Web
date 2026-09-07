@@ -58,6 +58,16 @@ export function shareLoginHandoffPath(sharedUrl: string): string {
 }
 
 /**
+ * 공유 텍스트에 저장 가능한 URL 이 없을 때 "앱에서 직접 입력" 이 여는 인앱 저장 시트 경로.
+ * 공백 없는 한 토큰(스킴이 빠진 주소 등)만 URL 칸에 미리 채우고, 문장은 빈 시트로 연다.
+ */
+export function createLinkHandoffPath(sharedText: string): string {
+  const token = sharedText.trim();
+  if (token.length === 0 || /\s/.test(token)) return "create-link";
+  return `create-link?share=${encodeSharedUrl(token)}`;
+}
+
+/**
  * 공유 URL 을 라우터 파라미터로 나르기 위한 UTF-8 바이트 16진수 인코딩.
  * expo-router 는 딥링크·href 의 파라미터를 여러 번 디코딩하고 다시 파싱하므로 `&`·`%`·`#` 가
  * 든 URL 은 percent-encoding 으로는 살아남지 못한다 — 0-9a-f 만 남기면 몇 번을 거쳐도 그대로다.
