@@ -188,6 +188,9 @@ importers:
       '@biomejs/biome':
         specifier: ^2.5.0
         version: 2.5.0
+      '@expo/plist':
+        specifier: ~0.7.0
+        version: 0.7.0
       '@playwright/test':
         specifier: ^1.61.0
         version: 1.61.0

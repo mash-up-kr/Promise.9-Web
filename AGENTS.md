@@ -34,6 +34,7 @@ https://docs.expo.dev/versions/v56.0.0/
 - 폴더 구조(기능 기반 + 공유 코어): docs/conventions/structure.md
 - 테스트(TDD, unit·integration): docs/conventions/testing.md
 - Git 컨벤션(브랜치 · 커밋 · PR · 이슈): docs/conventions/git.md
+- 스토어 배포 절차(EAS 빌드·제출·함정): docs/release.md
 
 ## Skills
 

@@ -12,6 +12,9 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "CFBundleDisplayName": "링띵동"
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
@@ -97,6 +100,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "2500b250-2b53-41ad-88d9-5b86b054ede1"
+      }
+    },
+    "owner": "bokeeeey"
   }
 }
