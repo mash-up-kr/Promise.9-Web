@@ -2,6 +2,8 @@
 // EXPO_PUBLIC_API_BASE_URL 를 요구한다. 순수 함수만 검증하므로 apiClient 는 비워 둔다.
 jest.mock("@shared/api", () => ({ apiClient: {} }));
 
+import { LINK_PROCESSING } from "@/features/link/link.constants";
+
 import { HOME_POLICY } from "./home.constants";
 import type { HomeKeyword } from "./home.types";
 import {
@@ -15,13 +17,14 @@ const listItem = (
   linkId: number,
   reminderAt: string | null,
   title: string | null = `링크 ${linkId}`,
+  savedAt = "2026-08-01T00:00:00.000Z",
 ) => ({
   linkId,
   title,
   source: "example.com",
   representativeTag: null,
   thumbnailUrl: null,
-  savedAt: "2026-08-01T00:00:00.000Z",
+  savedAt,
   reminderAt,
 });
 
@@ -216,25 +219,55 @@ describe("selectFrequentFolders", () => {
 });
 
 // 저장 직후 서버가 제목·썸네일·요약을 채우는 데 몇 초 걸린다(processingStatus PENDING). 목록 응답엔
-// 상태가 없어 제목이 비어 있는 링크를 "처리 중" 으로 보고, 그동안만 주기적으로 다시 조회한다.
+// 상태가 없어 제목이 비어 있는 링크를 "처리 중" 으로 보되, 서버가 분석 실패를 FAILED 로 확정하면
+// 제목은 끝내 채워지지 않으므로 저장 시각 기준 상한을 함께 본다.
 describe("getProcessingRefetchInterval", () => {
-  it("제목이 비어 있는 링크가 있으면 폴링 간격을 돌려준다", () => {
-    const pending = listItem(1, null, null);
+  const now = Date.parse("2026-09-08T00:00:00.000Z");
+  const justSaved = new Date(now - 30_000).toISOString();
+  const longAgo = new Date(now - LINK_PROCESSING.maxWaitMs - 1).toISOString();
+
+  it("방금 저장됐는데 제목이 비어 있으면 폴링 간격을 돌려준다", () => {
     expect(
       getProcessingRefetchInterval(
-        linkListResponse([pending, listItem(2, null)]),
+        linkListResponse([
+          listItem(1, null, null, justSaved),
+          listItem(2, null),
+        ]),
+        now,
       ),
-    ).toBe(HOME_POLICY.processing.pollIntervalMs);
+    ).toBe(LINK_PROCESSING.pollIntervalMs);
     expect(
-      getProcessingRefetchInterval(linkListResponse([listItem(3, null, "")])),
-    ).toBe(HOME_POLICY.processing.pollIntervalMs);
+      getProcessingRefetchInterval(
+        linkListResponse([listItem(3, null, "", justSaved)]),
+        now,
+      ),
+    ).toBe(LINK_PROCESSING.pollIntervalMs);
   });
 
   it("모든 링크가 채워졌거나 목록이 비면 폴링하지 않는다", () => {
     expect(
-      getProcessingRefetchInterval(linkListResponse([listItem(1, null)])),
+      getProcessingRefetchInterval(linkListResponse([listItem(1, null)]), now),
     ).toBe(false);
-    expect(getProcessingRefetchInterval(linkListResponse([]))).toBe(false);
-    expect(getProcessingRefetchInterval(undefined)).toBe(false);
+    expect(getProcessingRefetchInterval(linkListResponse([]), now)).toBe(false);
+    expect(getProcessingRefetchInterval(undefined, now)).toBe(false);
+  });
+
+  // 분석에 실패한 링크는 제목이 영영 비어 있다 — 상한이 없으면 폴링이 멈추지 않는다.
+  it("제목이 비어 있어도 저장한 지 오래됐으면 폴링하지 않는다", () => {
+    expect(
+      getProcessingRefetchInterval(
+        linkListResponse([listItem(1, null, null, longAgo)]),
+        now,
+      ),
+    ).toBe(false);
+  });
+
+  it("저장 시각을 해석할 수 없으면 폴링하지 않는다", () => {
+    expect(
+      getProcessingRefetchInterval(
+        linkListResponse([listItem(1, null, null, "언제인지 모름")]),
+        now,
+      ),
+    ).toBe(false);
   });
 });

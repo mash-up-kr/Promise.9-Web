@@ -245,6 +245,36 @@ describe("LinkDetailScreen", () => {
     expect(screen.getByText("AI 요약으로 미리보기")).toBeOnTheScreen();
   });
 
+  // 처리 중인 링크는 상세 쿼리가 주기적으로 다시 조회한다. 폼이 `values` 로 서버 데이터를
+  // 싣고 있어, 갱신이 입력 중인 메모를 지워버리면 안 된다.
+  test("처리 중 링크가 갱신돼도 입력 중인 메모가 남는다", async () => {
+    mockDetailData.current = {
+      ...mockLinkDetail,
+      title: "",
+      aiSummary: null,
+      processingStatus: "PENDING",
+    };
+    const user = userEvent.setup();
+    const { rerender } = await renderScreen();
+    const memoInput = () =>
+      screen.getByPlaceholderText(
+        "저장한 이유나 기억하고 싶은 점을 적어보세요",
+      );
+    await user.type(memoInput(), "!");
+
+    // 서버 처리가 끝나 제목·요약이 채워진 응답이 도착한 상황(메모는 그대로).
+    mockDetailData.current = { ...mockLinkDetail, processingStatus: "SUCCESS" };
+    rerender(
+      <SafeAreaProvider initialMetrics={metrics}>
+        <SnackbarProvider>
+          <LinkDetailScreen />
+        </SnackbarProvider>
+      </SafeAreaProvider>,
+    );
+
+    expect(memoInput().props.value).toBe(`${mockLinkDetail.memo}!`);
+  });
+
   test("메모 입력값이 controlled state로 반영된다", async () => {
     const user = userEvent.setup();
     await renderScreen();

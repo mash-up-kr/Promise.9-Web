@@ -7,6 +7,9 @@ import type { RecommendationResponse } from "@shared/entities/recommendation/rec
 import type { Folder } from "@shared/types/folder.types";
 import { uniqBy } from "es-toolkit";
 
+import { LINK_PROCESSING } from "@/features/link/link.constants";
+import { isWithinProcessingWindow } from "@/features/link/link.utils";
+
 import { HOME_POLICY } from "./home.constants";
 import type { HomeKeyword, RemindLink } from "./home.types";
 
@@ -44,16 +47,22 @@ export function selectTopKeywords(res: RecommendationResponse): HomeKeyword[] {
 
 /**
  * 저장 직후 서버가 제목·썸네일·요약을 채우는 동안(processingStatus PENDING) 목록을 다시 조회할 간격.
- * 목록 응답엔 처리 상태가 없어 제목이 비어 있는 링크를 처리 중으로 본다. 링크 목록 쿼리의
- * `refetchInterval` 함수로 쓰며, 모두 채워지면 폴링을 멈춘다.
+ * 링크 목록 쿼리의 `refetchInterval` 함수로 쓴다.
+ *
+ * 목록 응답엔 처리 상태가 없어 제목이 비어 있는 링크를 처리 중으로 본다. 다만 분석에 실패한
+ * 링크(FAILED)도 제목이 비어 있어 그것만으로는 폴링이 끝나지 않으므로, 저장 시각이 처리 대기
+ * 상한 안에 있는 링크만 센다.
  */
 export function getProcessingRefetchInterval(
   res: LinkListResponse | undefined,
+  now: number = Date.now(),
 ): number | false {
   const hasProcessingLink = res?.links.some(
-    (item) => item.title === null || item.title.trim().length === 0,
+    (item) =>
+      (item.title === null || item.title.trim().length === 0) &&
+      isWithinProcessingWindow(item.savedAt, now),
   );
-  return hasProcessingLink ? HOME_POLICY.processing.pollIntervalMs : false;
+  return hasProcessingLink ? LINK_PROCESSING.pollIntervalMs : false;
 }
 
 type FolderListItem = FolderListResponse["folders"][number];
