@@ -8,6 +8,10 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: release-tag
+  cancel-in-progress: false
+
 jobs:
   tag:
     runs-on: ubuntu-latest
@@ -15,6 +19,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-tags: true
 
       - name: 앱+웹 태그·릴리즈
         env:
@@ -55,24 +60,28 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-tags: true
 
       - name: 동기화 PR 생성
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git fetch origin dev main
-          if [ -z "$(git log origin/dev..origin/main --oneline)" ]; then
+          AHEAD=$(git log origin/dev..origin/main --oneline)
+          if [ -z "$AHEAD" ]; then
             echo "dev 가 main 을 이미 포함한다 — 동기화 불필요"
             exit 0
           fi
-          git push -f origin origin/main:refs/heads/chore/sync-main-to-dev
-          # 열린 PR 이 있는지 먼저 확인한다 — gh pr create 실패를 통째로 삼키면
-          # 권한 미설정 같은 진짜 실패가 "이미 있음"으로 위장돼 백머지 감시가 무력해진다.
+          # 열린 PR 이 있으면 push 하지 않는다 — gh pr create 실패를 통째로 삼키지 않기 위함이자,
+          # 인간이 sync 브랜치에서 푼 conflict 해결 커밋을 force-push 로 덮어쓰지 않기 위함이다.
           OPEN=$(gh pr list --head chore/sync-main-to-dev --base dev --state open --json number -q '.[].number')
           if [ -n "$OPEN" ]; then
-            echo "이미 열린 동기화 PR 이 있습니다 (#$OPEN)"
+            echo "이미 열린 동기화 PR 이 있습니다 (#$OPEN) — 브랜치를 건드리지 않는다"
             exit 0
           fi
+          git push -f origin origin/main:refs/heads/chore/sync-main-to-dev
           gh pr create --base dev --head chore/sync-main-to-dev \
             --title "chore: main 을 dev 로 동기화" \
-            --body "릴리즈·핫픽스로 main 에만 들어간 커밋을 dev 에 반영합니다."
+            --body "릴리즈·핫픽스로 main 에만 들어간 커밋을 dev 에 반영합니다.
+
+          **이 PR 은 반드시 \"Create a merge commit\" 으로 머지하세요.** squash 로 머지하면 main 의 커밋이 dev 에서 도달 불가라, 동기화 감지기가 이후 모든 main push 에서 계속 오탐합니다."
