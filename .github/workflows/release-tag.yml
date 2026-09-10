@@ -66,7 +66,13 @@ jobs:
             exit 0
           fi
           git push -f origin origin/main:refs/heads/chore/sync-main-to-dev
+          # 열린 PR 이 있는지 먼저 확인한다 — gh pr create 실패를 통째로 삼키면
+          # 권한 미설정 같은 진짜 실패가 "이미 있음"으로 위장돼 백머지 감시가 무력해진다.
+          OPEN=$(gh pr list --head chore/sync-main-to-dev --base dev --state open --json number -q '.[].number')
+          if [ -n "$OPEN" ]; then
+            echo "이미 열린 동기화 PR 이 있습니다 (#$OPEN)"
+            exit 0
+          fi
           gh pr create --base dev --head chore/sync-main-to-dev \
             --title "chore: main 을 dev 로 동기화" \
-            --body "릴리즈·핫픽스로 main 에만 들어간 커밋을 dev 에 반영합니다." \
-            || echo "이미 열린 동기화 PR 이 있습니다"
+            --body "릴리즈·핫픽스로 main 에만 들어간 커밋을 dev 에 반영합니다."
