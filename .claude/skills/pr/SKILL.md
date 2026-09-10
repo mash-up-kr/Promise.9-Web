@@ -59,6 +59,6 @@ description: |
 gh pr create --title "<title>" --body "<filled template>"
 ```
 
-- base 브랜치는 `main`.
+- base 브랜치는 `dev`. 릴리즈·핫픽스 PR 만 `main` 을 base 로 한다.
 
 상세 컨벤션 (Branch · Commit · PR · Issue 통합): `docs/conventions/git.md`
