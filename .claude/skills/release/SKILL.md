@@ -21,6 +21,8 @@ description: 앱·웹·익스텐션 릴리즈를 끊고 버전을 올린다. Use
 
 ## 브랜치 모델 요약
 
+아래는 운영용 요약이다 — `docs/conventions/git.md` · `docs/release.md` 와 어긋나면 그쪽이 맞다.
+
 - `main` — 릴리즈 브랜치. 사용자에게 실제로 나가 있는 코드. Cloudflare 프로덕션.
 - `dev` — 통합 브랜치이자 기본 브랜치. 모든 feature 의 base. Cloudflare preview(스테이징).
 - `release/<version>` — `dev` 에서 분기. 심사 대응.
