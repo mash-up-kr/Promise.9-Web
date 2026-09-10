@@ -20,6 +20,43 @@ eas whoami                # 로그인 확인
 
 ---
 
+## 0.5 릴리즈 절차 (브랜치·버전)
+
+브랜치 모델의 단일 출처는 `docs/conventions/git.md`. 여기서는 릴리즈 실행만 다룬다.
+
+### 버전은 어디서 오나
+
+| 트랙 | 출처 | 태그 |
+| --- | --- | --- |
+| 앱 + 웹 | `app.json` 의 `expo.version` | `v1.1.0` |
+| 익스텐션 | `extension/package.json` 의 `version` | `ext-v1.0.1` |
+
+`buildNumber` · `versionCode` 는 EAS 가 자동 증가시킨다. 사람이 정하는 건 마케팅 버전뿐이다.
+루트 `package.json` 의 `version` 은 **어디서도 읽지 않는 값**이다. 릴리즈와 무관하니 고치지 않아도 된다.
+
+### 앱 릴리즈
+
+1. `dev` 에서 `release/<version>` 을 자른다.
+2. 그 브랜치에서 `app.json` 의 `version` 을 올린다.
+3. EAS 빌드·제출한다(2장).
+4. 심사 중 버그는 **`dev` 에 먼저 고치고 릴리즈 브랜치로 cherry-pick** 한다.
+5. **심사 통과 후** `main` 에 머지한다 → 웹 배포 + 태그·GitHub Release 자동 생성.
+6. 자동 생성된 `chore: main 을 dev 로 동기화` PR 을 머지한다.
+
+심사 통과 전에 `main` 에 머지하지 않는다. 리젝되면 웹에만 새 버전이 나가 있는 상태가 된다.
+
+### 익스텐션 릴리즈
+
+`release/ext-<version>` 에서 `extension/package.json` 의 `version` 을 올리고, zip 을 만들어 업로드한 뒤 심사 통과 후 `main` 에 머지한다.
+
+### 핫픽스
+
+`main` 에서 `hotfix/<issue#>-<slug>` 를 자르고 패치 버전을 올려 `main` 에 머지한다. 백머지 PR 을 반드시 머지한다.
+
+### 릴리즈 노트
+
+GitHub Release 가 직전 같은 계열 태그 이후의 PR 목록으로 자동 생성한다. 별도 CHANGELOG 파일은 두지 않는다.
+
 ## 1. 설정 파일이 하는 일
 
 | 파일 | 역할 |
