@@ -129,6 +129,27 @@ describe("ArchiveDetailScreen", () => {
     );
   });
 
+  // 시안은 375 폭에 2열·카드 160 — 더 넓은 화면(웹 768)에서는 열을 늘리고 카드가 폭을 나눠 갖는다.
+  test("그리드 폭에 맞춰 열 수와 카드 폭을 정한다", async () => {
+    await renderScreen();
+    await screen.findByText(sampleLink.title);
+
+    await fireEvent(screen.getByTestId("archive-link-grid"), "layout", {
+      nativeEvent: { layout: { width: 375 } },
+    });
+    expect(screen.getByLabelText(sampleLink.title)).toHaveStyle({
+      width: 160,
+    });
+
+    // 768 − 패딩 40 = 728 → 4열일 때만 나오는 폭
+    await fireEvent(screen.getByTestId("archive-link-grid"), "layout", {
+      nativeEvent: { layout: { width: 768 } },
+    });
+    expect(screen.getByLabelText(sampleLink.title)).toHaveStyle({
+      width: 170.75,
+    });
+  });
+
   test("링크를 누르면 링크 상세로 이동한다", async () => {
     await renderScreen();
     await fireEvent.press(await screen.findByLabelText(sampleLink.title));

@@ -27,6 +27,11 @@ import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { LinkTile } from "@/components/ui/link-card/LinkTile";
+import {
+  LINK_GRID_COLUMN_GAP,
+  LINK_GRID_ROW_GAP,
+} from "@/components/ui/link-card/link-grid.utils";
+import { useLinkGridLayout } from "@/components/ui/link-card/useLinkGridLayout";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { Text } from "@/components/ui/text/Text";
@@ -353,6 +358,9 @@ function ArchiveDetailLinkList({
   } = useSuspenseInfiniteQuery(
     linkQueries.infiniteList(toLinkListParams(folderId, sort)),
   );
+  const { columns, tileWidth, onLayout } = useLinkGridLayout({
+    horizontalPadding: GRID_HORIZONTAL_PADDING * 2,
+  });
 
   if (links.length === 0) {
     return <EmptyLinks folderId={folderId} />;
@@ -360,12 +368,21 @@ function ArchiveDetailLinkList({
 
   return (
     <Animated.FlatList
+      // numColumns 는 마운트 뒤 바꿀 수 없어 열 수가 바뀌면 다시 그린다.
+      key={columns}
+      testID="archive-link-grid"
       className="flex-1 bg-background-base"
       data={links}
       keyExtractor={(link: Link) => String(link.linkId)}
-      numColumns={2}
+      numColumns={columns}
+      onLayout={onLayout}
       renderItem={({ item }: ListRenderItemInfo<Link>) => (
-        <LinkGridItem link={item} selectedIds={selectedIds} {...itemProps} />
+        <LinkGridItem
+          link={item}
+          tileWidth={tileWidth}
+          selectedIds={selectedIds}
+          {...itemProps}
+        />
       )}
       showsVerticalScrollIndicator={false}
       onScroll={scrollHandler}
@@ -392,13 +409,15 @@ function ArchiveDetailLinkList({
   );
 }
 
+const GRID_HORIZONTAL_PADDING = 20;
+
 const styles = StyleSheet.create({
   linkGridRow: {
-    justifyContent: "space-between",
-    marginBottom: 20,
+    gap: LINK_GRID_COLUMN_GAP,
+    marginBottom: LINK_GRID_ROW_GAP,
   },
   linkGridContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: GRID_HORIZONTAL_PADDING,
     paddingTop: 8,
     paddingBottom: 4,
   },
@@ -410,11 +429,13 @@ const styles = StyleSheet.create({
 interface LinkGridItemProps
   extends Omit<ArchiveDetailLinkListProps, "folderId" | "sort"> {
   link: Link;
+  tileWidth: number;
 }
 
 // 선택 모드에서는 탭이 선택 토글이 되고 컨텍스트 메뉴도 열리지 않는다.
 function LinkGridItem({
   link,
+  tileWidth,
   isTrash,
   selectedIds,
   onOpenLink,
@@ -429,6 +450,7 @@ function LinkGridItem({
     return (
       <LinkTile
         link={link}
+        width={tileWidth}
         isSelected={selectedIds.includes(link.linkId)}
         onPress={() => onToggleSelection(link.linkId)}
       />
@@ -439,6 +461,7 @@ function LinkGridItem({
     return (
       <LinkContextMenu
         link={link}
+        tileWidth={tileWidth}
         variant="trash"
         onOpenLink={() => onOpenLink(link.linkId)}
         onRestore={() => onRestore(link.linkId)}
@@ -449,6 +472,7 @@ function LinkGridItem({
   return (
     <LinkContextMenu
       link={link}
+      tileWidth={tileWidth}
       onOpenLink={() => onOpenLink(link.linkId)}
       onOpen={() => onMenuOpen(link.linkId)}
       onMove={() => onMove(link.linkId)}
