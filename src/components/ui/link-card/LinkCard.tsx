@@ -48,15 +48,17 @@ function Root({ link, className, children, ...props }: RootProps) {
 }
 
 const thumbnailStyles = tv({
-  base: "bg-background-thumbnail",
+  base: "overflow-hidden bg-background-thumbnail",
 });
 
 interface ThumbnailProps {
   className?: string;
+  /** 폭에 따라 계산된 크기 — 고정 크기는 className 으로 준다. */
+  size?: { width: number; height: number };
 }
 
 /** 링크 썸네일. URL 이 없으면 placeholder 를 렌더한다. 크기·모서리는 className 으로 지정한다. */
-function Thumbnail({ className }: ThumbnailProps) {
+function Thumbnail({ className, size }: ThumbnailProps) {
   const { thumbnailUrl } = useLinkCard();
 
   if (!thumbnailUrl) {
@@ -64,16 +66,21 @@ function Thumbnail({ className }: ThumbnailProps) {
       <Box
         testID="link-card-thumbnail-placeholder"
         className={thumbnailStyles({ class: className })}
+        style={size}
       />
     );
   }
+  // 크기·모서리는 래퍼가 갖고 이미지는 채우기만 한다 — expo-image 는 웹에서 style 을 평탄화해
+  // className 과 숫자 style 이 한 객체로 섞이면 react-native-web(styleq)이 거부한다.
   return (
-    <Image
-      testID="link-card-thumbnail-image"
-      source={{ uri: thumbnailUrl }}
-      contentFit="cover"
-      className={thumbnailStyles({ class: className })}
-    />
+    <Box className={thumbnailStyles({ class: className })} style={size}>
+      <Image
+        testID="link-card-thumbnail-image"
+        source={{ uri: thumbnailUrl }}
+        contentFit="cover"
+        className="size-full"
+      />
+    </Box>
   );
 }
 
