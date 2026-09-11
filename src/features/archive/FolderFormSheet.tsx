@@ -89,5 +89,5 @@ function EditFolderForm() {
 function toSelectableColor(color?: string): SelectableFolderColor {
   return FOLDER_COLOR_OPTIONS.includes(color as SelectableFolderColor)
     ? (color as SelectableFolderColor)
-    : "blue";
+    : DEFAULT_FOLDER_COLOR;
 }
