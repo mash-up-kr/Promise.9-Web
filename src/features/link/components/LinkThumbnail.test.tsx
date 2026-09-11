@@ -82,4 +82,27 @@ describe("LinkThumbnail", () => {
     fireEvent.press(screen.getByLabelText("링크 열기"));
     expect(Linking.openURL).toHaveBeenCalledWith(URL);
   });
+
+  // 만료된 CDN URL·404 처럼 URL 은 있는데 못 불러오면 빈 박스 대신 플레이스홀더를 보여준다.
+  test("이미지 1장이 로드에 실패하면 플레이스홀더를 렌더한다", async () => {
+    await render(<LinkThumbnail imageUrls={[THUMB]} url={URL} />);
+
+    await fireEvent(screen.getByTestId("thumb-image"), "error", {
+      nativeEvent: { error: "load failed" },
+    });
+
+    expect(screen.getByTestId("thumb-placeholder")).toBeOnTheScreen();
+    expect(screen.queryByTestId("thumb-image")).toBeNull();
+  });
+
+  test("캐러셀에서 한 장이 실패하면 그 장만 빼고 나머지를 보여준다", async () => {
+    await render(<LinkThumbnail imageUrls={THUMBS} url={URL} />);
+
+    await fireEvent(screen.getAllByTestId("thumb-image")[0], "error", {
+      nativeEvent: { error: "load failed" },
+    });
+
+    expect(screen.getAllByTestId("thumb-image")).toHaveLength(2);
+    expect(screen.getAllByTestId("thumb-indicator")).toHaveLength(2);
+  });
 });

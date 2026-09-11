@@ -1,11 +1,12 @@
 import type { Link } from "@shared/types/link.types";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import type { PressableProps } from "react-native";
 import { Pressable } from "react-native";
 import { Box } from "@/components/ui/box/Box";
 import { HStack } from "@/components/ui/hstack/HStack";
 import { Image } from "@/components/ui/image/Image";
 import { Text, type TextProps } from "@/components/ui/text/Text";
+import { ThumbnailFallback } from "@/components/ui/thumbnail/ThumbnailFallback";
 import { tv } from "@/lib/tv";
 import { formatRelativeDate } from "@/utils/format";
 
@@ -48,32 +49,42 @@ function Root({ link, className, children, ...props }: RootProps) {
 }
 
 const thumbnailStyles = tv({
-  base: "bg-background-thumbnail",
+  base: "overflow-hidden bg-background-thumbnail",
 });
 
 interface ThumbnailProps {
   className?: string;
+  /** 폭에 따라 계산된 크기 — 고정 크기는 className 으로 준다. */
+  size?: { width: number; height: number };
 }
 
 /** 링크 썸네일. URL 이 없으면 placeholder 를 렌더한다. 크기·모서리는 className 으로 지정한다. */
-function Thumbnail({ className }: ThumbnailProps) {
+function Thumbnail({ className, size }: ThumbnailProps) {
   const { thumbnailUrl } = useLinkCard();
+  // 못 불러온 URL 을 기억한다 — 서버가 썸네일을 다시 수집해 URL 이 바뀌면 자연히 다시 시도한다.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
 
-  if (!thumbnailUrl) {
+  if (!thumbnailUrl || thumbnailUrl === failedUrl) {
     return (
-      <Box
+      <ThumbnailFallback
         testID="link-card-thumbnail-placeholder"
-        className={thumbnailStyles({ class: className })}
+        className={className}
+        style={size}
       />
     );
   }
+  // 크기·모서리는 래퍼가 갖고 이미지는 채우기만 한다 — expo-image 는 웹에서 style 을 평탄화해
+  // className 과 숫자 style 이 한 객체로 섞이면 react-native-web(styleq)이 거부한다.
   return (
-    <Image
-      testID="link-card-thumbnail-image"
-      source={{ uri: thumbnailUrl }}
-      contentFit="cover"
-      className={thumbnailStyles({ class: className })}
-    />
+    <Box className={thumbnailStyles({ class: className })} style={size}>
+      <Image
+        testID="link-card-thumbnail-image"
+        source={{ uri: thumbnailUrl }}
+        contentFit="cover"
+        className="size-full"
+        onError={() => setFailedUrl(thumbnailUrl)}
+      />
+    </Box>
   );
 }
 

@@ -24,7 +24,8 @@
       "ios": {
         "ascAppId": "6808223727",
         "appName": "링띵동",
-        "language": "ko"
+        "language": "ko",
+        "metadataPath": "./store.config.js"
       }
     }
   }

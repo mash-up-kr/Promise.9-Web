@@ -5,7 +5,7 @@ import { View } from "react-native";
 import { Header } from "@/components/ui/header/Header";
 import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
-import { Logo } from "@/components/ui/logo/Logo";
+import { LogoSymbol } from "@/components/ui/logo/LogoSymbol";
 import { TabBar } from "@/components/ui/tab-bar/TabBar";
 import { ROUTES } from "@/constants/routes.constants";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
@@ -47,7 +47,7 @@ export default function TabsLayout() {
           header: () => (
             <Header
               scrollScope="home"
-              left={<Logo />}
+              left={<LogoSymbol />}
               right={
                 <>
                   <IconButton
@@ -66,7 +66,8 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* 보관함은 정렬 편집 모드 상태를 헤더↔리스트가 공유하므로 화면이 자체 헤더를 렌더한다. */}
+      {/* 보관함은 정렬 편집 모드 상태를 헤더↔리스트가 공유하므로 화면이 Tabs.Screen options 로
+          헤더를 넘긴다(투명 오버레이 슬롯 공유). 넘기기 전 기본 헤더가 비치지 않게 숨겨 둔다. */}
       <Tabs.Screen
         name="archive"
         options={{ title: "보관함", headerShown: false }}

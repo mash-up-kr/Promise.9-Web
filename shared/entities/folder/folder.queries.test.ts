@@ -3,7 +3,13 @@
 jest.mock("@shared/api", () => {
   const errors = jest.requireActual("@shared/api/errors");
   return {
-    apiClient: { get: jest.fn(), post: jest.fn(), put: jest.fn() },
+    apiClient: {
+      get: jest.fn(),
+      post: jest.fn(),
+      put: jest.fn(),
+      patch: jest.fn(),
+      delete: jest.fn(),
+    },
     ...errors,
   };
 });
@@ -19,7 +25,10 @@ import {
   folderListResponseSchema,
   folderQueries,
   toReorderRequest,
+  useCreateFolderMutation,
+  useDeleteFolderMutation,
   useReorderFoldersMutation,
+  useUpdateFolderMutation,
 } from "./folder.queries";
 
 describe("folderListResponseSchema", () => {
@@ -180,5 +189,86 @@ describe("useReorderFoldersMutation", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(invalidate).not.toHaveBeenCalled();
+  });
+});
+
+// 폴더 CRUD 뒤 낡는 캐시: 폴더 목록 · 홈 키워드(폴더별 링크 수·이름) · 링크 상세(소속 폴더 이름) ·
+// 삭제 시엔 링크 목록(폴더의 링크가 미분류로 옮겨진다).
+describe("폴더 생성·수정·삭제 캐시 무효화", () => {
+  const mockPost = apiClient.post as jest.Mock;
+  const mockPatch = apiClient.patch as jest.Mock;
+  const mockDelete = apiClient.delete as jest.Mock;
+
+  const renderMutation = async <T>(useMutationHook: () => T) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { mutations: { retry: false, gcTime: 0 } },
+    });
+    const invalidate = jest.spyOn(queryClient, "invalidateQueries");
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children);
+    const { result } = await renderHook(useMutationHook, { wrapper });
+    return { result, invalidate };
+  };
+
+  const invalidatedKeys = (invalidate: jest.SpyInstance) =>
+    invalidate.mock.calls.map(([options]) => options?.queryKey);
+
+  beforeEach(() => {
+    mockPost.mockReset().mockResolvedValue({
+      data: {
+        success: true,
+        data: { folderId: 9, folderName: "새", color: "#d5d76a" },
+      },
+    });
+    mockPatch.mockReset().mockResolvedValue({ data: { success: true } });
+    mockDelete.mockReset().mockResolvedValue({ data: { success: true } });
+  });
+
+  it("생성하면 폴더 목록과 홈 키워드 캐시를 버린다", async () => {
+    const { result, invalidate } = await renderMutation(
+      useCreateFolderMutation,
+    );
+    result.current.mutate({ folderName: "새", color: "yellow-green" });
+
+    await waitFor(() =>
+      expect(invalidatedKeys(invalidate)).toEqual(
+        expect.arrayContaining([["folder"], ["recommendation"]]),
+      ),
+    );
+  });
+
+  it("수정하면 폴더 목록·홈 키워드에 더해 링크 상세 캐시도 버린다(상세의 폴더 이름)", async () => {
+    const { result, invalidate } = await renderMutation(
+      useUpdateFolderMutation,
+    );
+    result.current.mutate({ folderId: "3", folderName: "바뀐 이름" });
+
+    await waitFor(() =>
+      expect(invalidatedKeys(invalidate)).toEqual(
+        expect.arrayContaining([
+          ["folder"],
+          ["recommendation"],
+          ["link", "detail"],
+        ]),
+      ),
+    );
+  });
+
+  it("삭제하면 폴더 목록·홈 키워드·링크 목록·링크 상세 캐시를 버린다", async () => {
+    const { result, invalidate } = await renderMutation(
+      useDeleteFolderMutation,
+    );
+    result.current.mutate("3");
+
+    await waitFor(() =>
+      expect(invalidatedKeys(invalidate)).toEqual(
+        expect.arrayContaining([
+          ["folder"],
+          ["recommendation"],
+          ["link", "list"],
+          ["link", "detail"],
+        ]),
+      ),
+    );
   });
 });

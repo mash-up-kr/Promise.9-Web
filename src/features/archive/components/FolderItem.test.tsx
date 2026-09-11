@@ -1,18 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
-import { FolderItem, folderToneFill } from "./FolderItem";
-
-describe("folderToneFill", () => {
-  test("각 tone 을 해당 폴더 색 hex 로 매핑한다", () => {
-    expect(folderToneFill("blue")).toBe("#61a8ef");
-    expect(folderToneFill("orange")).toBe("#f1a23f");
-    expect(folderToneFill("purple")).toBe("#b282cc");
-  });
-
-  test("gray 는 목록 전용 회색을 쓴다", () => {
-    expect(folderToneFill("gray")).toBe("#65656b");
-  });
-});
+import { FolderItem } from "./FolderItem";
 
 describe("FolderItem", () => {
   test("이름과 개수를 렌더한다", async () => {
@@ -28,6 +16,14 @@ describe("FolderItem", () => {
     );
     fireEvent.press(screen.getByLabelText("AI"));
     expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  // 행 배경(gray-800)과 기본 블록 색이 같아 스켈레톤이 보이지 않았다.
+  test("개수를 아직 모르면 리스트용 스켈레톤을 보여준다", async () => {
+    await render(<FolderItem name="AI" tone="blue" />);
+    expect(
+      screen.getByTestId("folder-count-skeleton").props.className,
+    ).toContain("bg-background-list-selected");
   });
 });
 

@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/icon/Icon";
 import { VStack } from "@/components/ui/vstack/VStack";
 
 import { LinkCard } from "./LinkCard";
+import { LINK_TILE_THUMBNAIL_RATIO, LINK_TILE_WIDTH } from "./link-grid.utils";
 
 interface LinkTileProps extends Omit<PressableProps, "children"> {
   link: Link;
@@ -14,6 +15,8 @@ interface LinkTileProps extends Omit<PressableProps, "children"> {
   showMeta?: boolean;
   /** 다중 선택 모드의 선택 상태 — 썸네일에 yellow 보더·딤·체크 뱃지를 얹는다(Figma Content Card/Selected). */
   isSelected?: boolean;
+  /** 카드 폭 — 그리드가 화면 폭에 맞춰 넘긴다. 썸네일은 시안 비율(160×200)을 유지한다. */
+  width?: number;
 }
 
 // 선택 상태 오버레이 — 딤 + 체크 뱃지(Figma Content Card/Selected).
@@ -41,10 +44,11 @@ export function LinkTile({
   link,
   showMeta = true,
   isSelected = false,
+  width = LINK_TILE_WIDTH,
   ...props
 }: LinkTileProps) {
   return (
-    <LinkCard.Root link={link} className="w-40 gap-2" {...props}>
+    <LinkCard.Root link={link} className="gap-2" style={{ width }} {...props}>
       <Box
         className={
           isSelected
@@ -52,7 +56,10 @@ export function LinkTile({
             : undefined
         }
       >
-        <LinkCard.Thumbnail className="h-[200px] w-40 rounded-[20px]" />
+        <LinkCard.Thumbnail
+          className="rounded-[20px]"
+          size={{ width, height: width * LINK_TILE_THUMBNAIL_RATIO }}
+        />
         {isSelected && <SelectedOverlay />}
       </Box>
       <VStack className="gap-0.5">

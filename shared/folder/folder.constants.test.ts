@@ -41,4 +41,23 @@ describe("FOLDER_COLOR_OPTIONS", () => {
       new Set(Object.keys(FOLDER_TONE_HEX)),
     );
   });
+
+  // 순서 자체가 시안이다 — 집합 검사만으로는 시안이 재배열돼도 드러나지 않는다.
+  // 앞 6개가 1행(난색), 뒤 6개가 2행(한색)이고 첫 항목이 곧 생성 폼의 기본 선택색이다.
+  test("Figma 그리드 순서(난색 행 → 한색 행)를 그대로 따른다", () => {
+    expect(FOLDER_COLOR_OPTIONS).toEqual([
+      "yellow-green",
+      "yellow",
+      "orange",
+      "orange-red",
+      "red",
+      "pink",
+      "lime",
+      "green",
+      "teal",
+      "blue",
+      "slate",
+      "purple",
+    ]);
+  });
 });

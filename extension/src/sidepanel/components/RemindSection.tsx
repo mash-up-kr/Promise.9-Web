@@ -6,6 +6,7 @@ import {
   formatReminderTime,
   matchedPresetDays,
   REMIND_PRESETS,
+  randomReminderDate,
   relativeDayLabel,
 } from "@/lib/remind";
 
@@ -72,17 +73,11 @@ export function RemindSection({
               ))}
               <button
                 type="button"
-                aria-label="날짜 직접 선택"
-                aria-pressed={presetDays === null}
-                onClick={onPickDate}
-                className={clsx(
-                  "flex size-9 shrink-0 items-center justify-center rounded-full",
-                  presetDays === null
-                    ? "bg-action-inverse text-text-inverse"
-                    : "bg-background-list-selected text-icon-normal",
-                )}
+                aria-label="랜덤 날짜"
+                onClick={() => onChange(randomReminderDate(value, now))}
+                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-background-list-selected text-opacity-white-60"
               >
-                <CalendarPlusIcon />
+                <DiceIcon />
               </button>
             </div>
 
@@ -195,24 +190,14 @@ function CalendarIcon() {
   );
 }
 
-function CalendarPlusIcon() {
+// 웹 `DiceIcon` 과 같은 시안 에셋(Icon/Dices, 채움형 이중 주사위) — lucide 에 대응 항목이 없다.
+function DiceIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-      <rect
-        x="2.5"
-        y="4"
-        width="13"
-        height="11"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="1.4"
-      />
-      <path
-        d="M2.5 7.5h13M9 9.5v4M7 11.5h4"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+      <g transform="translate(1, 1.16)" fill="currentColor">
+        <path d="M13.8776 2.61714V2.76067H6.79424C4.37928 2.76067 2.96772 4.13677 2.96772 6.52595V13.778H2.6701C0.892895 13.778 3.8147e-05 12.8999 3.8147e-05 11.1608V2.61714C3.8147e-05 0.878013 0.892895 1.0848e-05 2.6701 1.0848e-05H11.2075C12.9762 1.0848e-05 13.8776 0.878013 13.8776 2.61714Z" />
+        <path d="M18.0017 6.52595V15.0696C18.0017 16.8087 17.1004 17.6867 15.3316 17.6867H6.79424C5.01704 17.6867 4.12417 16.8087 4.12417 15.0696V6.52595C4.12417 4.77839 5.01704 3.90882 6.79424 3.90882H15.3316C17.1004 3.90882 18.0017 4.78683 18.0017 6.52595ZM6.39458 14.217C6.39458 14.9008 6.9388 15.458 7.62757 15.458C8.30783 15.458 8.86058 14.9008 8.86058 14.217C8.86058 13.5332 8.30783 12.9929 7.62757 12.9929C6.9388 12.9929 6.39458 13.5332 6.39458 14.217ZM13.2568 14.217C13.2568 14.9008 13.8096 15.458 14.4898 15.458C15.1701 15.458 15.7313 14.9008 15.7313 14.217C15.7313 13.5332 15.1701 12.9929 14.4898 12.9929C13.8096 12.9929 13.2568 13.5332 13.2568 14.217ZM9.82145 10.7978C9.82145 11.4901 10.3742 12.0473 11.0544 12.0473C11.7347 12.0473 12.2959 11.4901 12.2959 10.7978C12.2959 10.1224 11.7347 9.58206 11.0544 9.58206C10.3742 9.58206 9.82145 10.1224 9.82145 10.7978ZM6.38608 7.38708C6.38608 8.07939 6.9388 8.6197 7.62757 8.62809C8.30783 8.64503 8.86903 8.07939 8.86903 7.38708C8.86903 6.71169 8.30783 6.16293 7.62757 6.16293C6.9388 6.16293 6.38608 6.71169 6.38608 7.38708ZM13.2483 7.38708C13.2483 8.07939 13.8096 8.6197 14.4898 8.62809C15.1701 8.64503 15.7313 8.07939 15.7313 7.38708C15.7313 6.71169 15.1701 6.16293 14.4898 6.16293C13.8096 6.16293 13.2483 6.71169 13.2483 7.38708Z" />
+      </g>
     </svg>
   );
 }

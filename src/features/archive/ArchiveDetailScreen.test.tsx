@@ -22,6 +22,7 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 
+import { StyleSheet } from "react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
@@ -34,12 +35,19 @@ const mockPush = jest.fn();
 const mockRouteParams: { current: { id?: string; name?: string } } = {
   current: { id: "all", name: "전체" },
 };
+const mockStackOptions: { current?: { headerTransparent?: boolean } } = {};
 jest.mock("expo-router", () => ({
   // 헤더는 Stack.Screen 의 options.header 로 넘긴다 — 화면 테스트에서 헤더 동작(더보기·완료)을
   // 검증해야 하므로 목이 그 렌더 함수를 실제로 그린다.
   Stack: {
-    Screen: ({ options }: { options?: { header?: () => React.ReactNode } }) =>
-      options?.header?.() ?? null,
+    Screen: ({
+      options,
+    }: {
+      options?: { header?: () => React.ReactNode; headerTransparent?: boolean };
+    }) => {
+      mockStackOptions.current = options;
+      return options?.header?.() ?? null;
+    },
   },
   useLocalSearchParams: () => mockRouteParams.current,
   useRouter: () => ({ push: mockPush }),
@@ -127,6 +135,27 @@ describe("ArchiveDetailScreen", () => {
         }),
       }),
     );
+  });
+
+  // 시안은 375 폭에 2열·카드 160 — 더 넓은 화면(웹 768)에서는 열을 늘리고 카드가 폭을 나눠 갖는다.
+  test("그리드 폭에 맞춰 열 수와 카드 폭을 정한다", async () => {
+    await renderScreen();
+    await screen.findByText(sampleLink.title);
+
+    await fireEvent(screen.getByTestId("archive-link-grid"), "layout", {
+      nativeEvent: { layout: { width: 375 } },
+    });
+    expect(screen.getByLabelText(sampleLink.title)).toHaveStyle({
+      width: 160,
+    });
+
+    // 768 − 패딩 40 = 728 → 4열일 때만 나오는 폭
+    await fireEvent(screen.getByTestId("archive-link-grid"), "layout", {
+      nativeEvent: { layout: { width: 768 } },
+    });
+    expect(screen.getByLabelText(sampleLink.title)).toHaveStyle({
+      width: 170.75,
+    });
   });
 
   test("링크를 누르면 링크 상세로 이동한다", async () => {
@@ -530,5 +559,31 @@ describe("ArchiveDetailScreen 링크 컨텍스트 메뉴", () => {
     expect(
       await screen.findByText("링크 주소를 복사했어요."),
     ).toBeOnTheScreen();
+  });
+});
+
+// 시안(header / scroll): 배경 있는 헤더는 스크롤 시 콘텐츠와 함께 밀려 올라간다 — 홈처럼 헤더를
+// 투명 오버레이로 얹어야 헤더가 올라간 자리에 빈 배경이 남지 않는다.
+describe("ArchiveDetailScreen 헤더 오버레이", () => {
+  beforeEach(() => {
+    mockGet.mockReset();
+    mockGet.mockResolvedValue(linksResponse([sampleLink]));
+    mockRouteParams.current = { id: "all", name: "전체" };
+  });
+
+  test("헤더를 투명 오버레이로 얹는다", async () => {
+    await renderScreen();
+    await screen.findByText(sampleLink.title);
+    expect(mockStackOptions.current?.headerTransparent).toBe(true);
+  });
+
+  test("그리드는 헤더 높이(safe-area 47 + 바 60)에 상단 여백 8 을 더해 시작한다", async () => {
+    await renderScreen();
+    await screen.findByText(sampleLink.title);
+
+    const grid = screen.getByTestId("archive-link-grid");
+    expect(StyleSheet.flatten(grid.props.contentContainerStyle)).toMatchObject({
+      paddingTop: 115,
+    });
   });
 });

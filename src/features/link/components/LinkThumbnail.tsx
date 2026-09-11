@@ -72,13 +72,28 @@ function OpenOriginalButton({ url }: { url: string }) {
 }
 
 export function LinkThumbnail({ imageUrls, url }: LinkThumbnailProps) {
-  if (imageUrls.length === 0) {
+  // 못 불러온 URL(만료된 CDN·404)은 뺀다 — 한 장이면 플레이스홀더로, 여러 장이면 나머지만 보여준다.
+  const [failedUrls, setFailedUrls] = useState<string[]>([]);
+  const markFailed = (uri: string) => {
+    setFailedUrls((prev) => (prev.includes(uri) ? prev : [...prev, uri]));
+  };
+  const urls = imageUrls.filter((uri) => !failedUrls.includes(uri));
+
+  if (urls.length === 0) {
     return <ThumbnailPlaceholder url={url} />;
   }
-  if (imageUrls.length === 1) {
-    return <SingleThumbnail imageUrl={imageUrls[0]} url={url} />;
+  if (urls.length === 1) {
+    return (
+      <SingleThumbnail
+        imageUrl={urls[0]}
+        url={url}
+        onError={() => markFailed(urls[0])}
+      />
+    );
   }
-  return <ThumbnailCarousel imageUrls={imageUrls} url={url} />;
+  return (
+    <ThumbnailCarousel imageUrls={urls} url={url} onImageError={markFailed} />
+  );
 }
 
 // 썸네일 없음 — 어두운 박스 가운데 일러스트 + 원문 이동 버튼.
@@ -100,7 +115,15 @@ function ThumbnailPlaceholder({ url }: { url: string }) {
 }
 
 // 단일 이미지 — 로드 후 실제 치수로 가로/세로형 판정(세로형은 흐린 배경으로 여백을 메운다).
-function SingleThumbnail({ imageUrl, url }: { imageUrl: string; url: string }) {
+function SingleThumbnail({
+  imageUrl,
+  url,
+  onError,
+}: {
+  imageUrl: string;
+  url: string;
+  onError: () => void;
+}) {
   const [size, setSize] = useState<{ width: number; height: number } | null>(
     null,
   );
@@ -137,6 +160,7 @@ function SingleThumbnail({ imageUrl, url }: { imageUrl: string; url: string }) {
         contentFit="cover"
         style={StyleSheet.absoluteFill}
         onLoad={handleLoad}
+        onError={onError}
       />
 
       <OpenOriginalButton url={url} />
@@ -148,9 +172,11 @@ function SingleThumbnail({ imageUrl, url }: { imageUrl: string; url: string }) {
 function ThumbnailCarousel({
   imageUrls,
   url,
+  onImageError,
 }: {
   imageUrls: string[];
   url: string;
+  onImageError: (uri: string) => void;
 }) {
   const [page, setPage] = useState(0);
   // 초기 폭을 화면 폭으로 추정해 첫 페인트의 width:0 깜빡임을 없앤다. onLayout 이 실제 폭으로 보정한다.
@@ -188,6 +214,7 @@ function ThumbnailCarousel({
               source={{ uri }}
               contentFit="cover"
               style={{ width, height: "100%" }}
+              onError={() => onImageError(uri)}
             />
           ))}
         </ScrollView>

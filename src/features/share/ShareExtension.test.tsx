@@ -368,7 +368,7 @@ test("폴더 추가 → 이름 입력·만들기 → 새 폴더가 목록에 추
 
   await user.press(await screen.findByLabelText("폴더 추가"));
   await user.type(
-    screen.getByPlaceholderText("폴더 이름을 입력하세요."),
+    screen.getByPlaceholderText("폴더 이름을 입력해주세요"),
     "새폴더",
   );
   await user.press(screen.getAllByText("저장").at(-1) as never);
@@ -408,7 +408,7 @@ test("폴더 이름이 중복이면 안내 문구를 보여준다", async () => 
 
   await user.press(await screen.findByLabelText("폴더 추가"));
   await user.type(
-    screen.getByPlaceholderText("폴더 이름을 입력하세요."),
+    screen.getByPlaceholderText("폴더 이름을 입력해주세요"),
     "디자인",
   );
   await user.press(screen.getAllByText("저장").at(-1) as never);

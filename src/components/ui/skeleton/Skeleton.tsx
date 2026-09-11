@@ -5,13 +5,21 @@ import { tv } from "@/lib/tv";
 
 // gluestack-ui v5 Skeleton 을 차용해 우리 tv + 토큰으로 작성. pulse 는 animate-pulse.
 export const skeletonStyles = tv({
-  base: "animate-pulse rounded-md bg-background-thumbnail",
+  base: "animate-pulse rounded-md",
   variants: {
     variant: {
       sharp: "rounded-none",
       circular: "rounded-full",
       rounded: "rounded-md",
     },
+    // 놓이는 면보다 한 단계 밝은 블록 — 리스트 배경(gray-800)은 기본 블록 색과 같아 구분해야 펄스가 보인다.
+    surface: {
+      base: "bg-background-thumbnail",
+      list: "bg-background-list-selected",
+    },
+  },
+  defaultVariants: {
+    surface: "base",
   },
 });
 
@@ -30,6 +38,8 @@ const skeletonTextStyles = tv({
 export interface SkeletonProps extends Omit<ViewProps, "className"> {
   className?: string;
   variant?: "sharp" | "circular" | "rounded";
+  /** 놓이는 면 — 리스트 배경 위에서는 `list`. */
+  surface?: "base" | "list";
   isLoaded?: boolean;
   children?: ReactNode;
 }
@@ -37,6 +47,7 @@ export interface SkeletonProps extends Omit<ViewProps, "className"> {
 export function Skeleton({
   className,
   variant,
+  surface,
   isLoaded = false,
   children,
   ...props
@@ -47,7 +58,7 @@ export function Skeleton({
 
   return (
     <View
-      className={skeletonStyles({ variant, class: className })}
+      className={skeletonStyles({ variant, surface, class: className })}
       {...props}
     />
   );

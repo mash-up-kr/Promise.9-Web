@@ -47,6 +47,7 @@ https://docs.expo.dev/versions/v56.0.0/
 - `expo-pitfalls` — Expo·NativeWind 프로젝트 고유 함정 + 패키지 도입 기준 (자동 트리거)
 - `good-code` — 코드 작성/리뷰 시 품질 4원칙 (자동 트리거)
 - `good-debug` — 버그/에러 대응 시 디버깅 절차 (자동 트리거)
+- `/release` — 릴리즈 끊기 · 버전 올리기 (브랜치 모델 · 태그)
 - `/commit` — 관심사별 atomic 커밋
 - `/pr` — 템플릿 기반 PR 생성
 - `/new-issue` — GitHub MCP 로 이슈 생성

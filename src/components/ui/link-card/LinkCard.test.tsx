@@ -67,6 +67,16 @@ describe("LinkCard", () => {
     ).toBeOnTheScreen();
   });
 
+  test("placeholder 는 no-thumbnail 일러스트를 렌더한다", async () => {
+    await renderCard();
+    const image = screen.getByTestId("thumbnail-fallback-image");
+    expect(image).toBeOnTheScreen();
+    // expo-image 는 source 를 배열로 정규화한다.
+    expect(image.props.source).toEqual([
+      require("@/assets/images/no-thumbnail.png"),
+    ]);
+  });
+
   // 서버가 아직 제목을 만들지 못한 링크(processingStatus PENDING·실패)는 title 이 빈 문자열로 온다.
   // 빈 카드 대신 출처 도메인을 보여주고, 접근성 라벨도 같은 값을 쓴다.
   test("제목이 비어 있으면 출처 도메인을 대신 보여준다", async () => {
@@ -77,6 +87,42 @@ describe("LinkCard", () => {
 
   test("썸네일 URL 이 있으면 이미지를 렌더한다", async () => {
     await renderCard({ thumbnailUrl: "https://static.example.com/t.png" });
+    expect(screen.getByTestId("link-card-thumbnail-image")).toBeOnTheScreen();
+  });
+
+  // 만료된 CDN URL(인스타그램 등)·404 처럼 URL 은 있는데 못 불러오면 빈 박스 대신 placeholder 를 보여준다.
+  test("썸네일 이미지를 불러오지 못하면 placeholder 로 바꾼다", async () => {
+    await renderCard({ thumbnailUrl: "https://static.example.com/t.png" });
+
+    await fireEvent(screen.getByTestId("link-card-thumbnail-image"), "error", {
+      nativeEvent: { error: "load failed" },
+    });
+
+    expect(
+      screen.getByTestId("link-card-thumbnail-placeholder"),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByTestId("link-card-thumbnail-image"),
+    ).not.toBeOnTheScreen();
+  });
+
+  // 서버가 썸네일을 다시 수집하면(TTL 갱신) URL 이 바뀐다 — 이전 실패에 묶이지 않고 새 URL 을 시도한다.
+  test("실패한 뒤 썸네일 URL 이 바뀌면 이미지를 다시 시도한다", async () => {
+    const { rerender } = await renderCard({
+      thumbnailUrl: "https://static.example.com/old.png",
+    });
+    await fireEvent(screen.getByTestId("link-card-thumbnail-image"), "error", {
+      nativeEvent: { error: "load failed" },
+    });
+
+    await rerender(
+      <LinkCard.Root
+        link={{ ...link, thumbnailUrl: "https://static.example.com/new.png" }}
+      >
+        <LinkCard.Thumbnail />
+      </LinkCard.Root>,
+    );
+
     expect(screen.getByTestId("link-card-thumbnail-image")).toBeOnTheScreen();
   });
 });

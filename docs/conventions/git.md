@@ -14,8 +14,12 @@
 - 이슈 없는 잡일은 `chore/<slug>` 허용.
 - monorepo scope 는 slug prefix 로 녹임: `feat/2-app-link-card`, `chore/3-extension-build`.
 - slug: kebab-case 영문, ~50자 권장. 짧고 의도 명확하게.
+- base 는 **`dev`** (통합 브랜치). `main` 은 릴리즈 브랜치다 — 사용자에게 실제로 나가 있는 코드만 담는다.
+- 릴리즈 준비: `release/<version>` (앱 `release/1.1.0`, 익스텐션 `release/ext-1.0.1`). `dev` 에서 분기.
+- 긴급 수정: `hotfix/<issue#>-<slug>`. `main` 에서 분기.
+- `main` 에 머지한 뒤에는 **반드시 `dev` 로 백머지**한다. 빠뜨리면 다음 릴리즈에 같은 버그가 재발한다(워크플로가 동기화 PR 을 자동 생성한다).
 - 머지된 브랜치는 즉시 삭제.
-- `main` 직접 push 금지.
+- `main` · `dev` 직접 push 금지.
 
 ## Commit · PR · Issue 제목 (통일)
 

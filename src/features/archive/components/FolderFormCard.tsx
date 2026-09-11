@@ -90,7 +90,7 @@ export function FolderFormCard({
                   render={({ field }) => (
                     <Input variant="field">
                       <InputField
-                        placeholder="폴더 이름을 입력하세요."
+                        placeholder="폴더 이름을 입력해주세요"
                         value={field.value}
                         onChangeText={field.onChange}
                       />

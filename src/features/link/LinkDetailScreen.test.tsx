@@ -309,6 +309,32 @@ describe("LinkDetailScreen", () => {
     }
   });
 
+  test("리마인드가 설정돼 있으면 켜진 상태로 렌더한다", async () => {
+    mockDetailData.current = {
+      ...mockLinkDetail,
+      reminderAt: "2027-01-01T09:00:00+09:00",
+    };
+    await renderScreen();
+    // 켜짐 카드에만 나오는 문구.
+    expect(screen.getByText("언제 알려드릴까요?")).toBeOnTheScreen();
+  });
+
+  test("리마인드를 켜면 reminderAt 을 저장한다", async () => {
+    // mock 은 reminderAt: null → 토글하면 내일 시각으로 켜진다.
+    const user = userEvent.setup();
+    await renderScreen();
+    await user.press(screen.getByLabelText("리마인드"));
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        linkId: mockLinkDetail.linkId,
+        reminderAt: expect.stringMatching(
+          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/,
+        ),
+      }),
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+  });
+
   test("링크 공유 → shareUrl 을 호출하고, 복사면 토스트를 띄운다", async () => {
     const user = userEvent.setup();
     await renderScreen();

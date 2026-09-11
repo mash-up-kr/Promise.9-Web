@@ -9,12 +9,11 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 
-import { FolderIcon } from "@/components/ui/icon/FolderIcon";
 import { Icon } from "@/components/ui/icon/Icon";
 import { Text } from "@/components/ui/text/Text";
 
 import type { ArchiveFolder } from "../archive.types";
-import { folderToneFill } from "./FolderItem";
+import { FolderToneIcon } from "./FolderToneIcon";
 import {
   ITEM_HEIGHT,
   SORTABLE_SPRING,
@@ -111,7 +110,7 @@ export function SortableFolderItem({ folder }: SortableFolderItemProps) {
     <Animated.View style={rowStyle} className="absolute right-0 left-0">
       <View className="h-[52px] flex-row items-center justify-between overflow-hidden bg-background-list px-4">
         <View className="flex-row items-center gap-3">
-          <FolderIcon color={folderToneFill(folder.tone)} size={28} />
+          <FolderToneIcon tone={folder.tone} />
           <Text variant="body-2-normal" className="text-text-normal">
             {folder.name}
           </Text>

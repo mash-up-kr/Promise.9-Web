@@ -5,7 +5,7 @@ import {
   useReorderFoldersMutation,
 } from "@shared/entities/folder/folder.queries";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import { Check, Search } from "lucide-react-native";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
@@ -20,7 +20,7 @@ import {
   AlertDialogButton,
 } from "@/components/ui/alert-dialog/AlertDialog";
 import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
-import { Header } from "@/components/ui/header/Header";
+import { Header, useHeaderHeight } from "@/components/ui/header/Header";
 import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { ListGroup } from "@/components/ui/list-group/ListGroup";
@@ -136,9 +136,20 @@ export function ArchiveScreen() {
     </>
   );
 
+  const headerHeight = useHeaderHeight();
+
   return (
     <View className="flex-1 bg-background-base">
-      <Header scrollScope="archive" title="보관함" right={headerRight} />
+      {/* 헤더는 편집 모드에 따라 바뀌어 화면이 탭 헤더 슬롯에 넘긴다(탭 기본은 숨김). 슬롯은 투명
+          오버레이라 시안(header / scroll)대로 스크롤 시 헤더가 콘텐츠와 함께 밀려 올라간다. */}
+      <Tabs.Screen
+        options={{
+          headerShown: true,
+          header: () => (
+            <Header scrollScope="archive" title="보관함" right={headerRight} />
+          ),
+        }}
+      />
       <AsyncBoundary
         // 기본 폴더는 이름·순서가 고정이라 응답을 기다리지 않고 그대로 보여주고,
         // 서버에서 오는 링크 수와 내 폴더 목록만 스켈레톤으로 채운다.
@@ -151,7 +162,10 @@ export function ArchiveScreen() {
           </ArchiveScrollContent>
         }
         fallback={({ reset }) => (
-          <View className="flex-1 items-center justify-center gap-3 px-5">
+          <View
+            className="flex-1 items-center justify-center gap-3 px-5"
+            style={{ paddingTop: headerHeight }}
+          >
             <Text variant="body-2-normal" className="text-text-alternative">
               폴더를 불러오지 못했어요.
             </Text>
@@ -233,6 +247,7 @@ function ArchiveFolders({
     [data.myFolders, orderedIds],
   );
 
+  const headerHeight = useHeaderHeight();
   // 드래그 중에는 바깥 ScrollView 스크롤을 끄고, 자동 스크롤(scrollTo)만 동작시킨다.
   const [isDragging, setIsDragging] = useState(false);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
@@ -266,7 +281,13 @@ function ArchiveFolders({
           scrollContentHeight.value = height;
         }}
       >
-        <View className="gap-12 pt-5" style={{ paddingBottom: bottomPadding }}>
+        <View
+          className="gap-12"
+          style={{
+            paddingTop: headerHeight + CONTENT_TOP_PADDING,
+            paddingBottom: bottomPadding,
+          }}
+        >
           {basicSection}
           <ListSection
             title="내 폴더"
@@ -345,6 +366,9 @@ function BasicFolderSection({
   );
 }
 
+// 헤더 아래 첫 섹션까지의 여백(시안 pt-5).
+const CONTENT_TOP_PADDING = 20;
+
 /** 로딩·일반 모드가 공유하는 스크롤 본문 껍데기. */
 function ArchiveScrollContent({
   bottomPadding,
@@ -355,6 +379,7 @@ function ArchiveScrollContent({
 }) {
   // 정렬 편집 모드 스크롤러는 드래그 자동 스크롤 전용이라 헤더 연동은 일반 모드에만 건다.
   const scrollHandler = useHeaderAwareScrollHandler("archive");
+  const headerHeight = useHeaderHeight();
 
   return (
     <Animated.ScrollView
@@ -362,7 +387,15 @@ function ArchiveScrollContent({
       onScroll={scrollHandler}
       scrollEventThrottle={16}
     >
-      <View className="gap-12 pt-5" style={{ paddingBottom: bottomPadding }}>
+      {/* 헤더가 투명 오버레이라 콘텐츠가 그 아래에서 시작한다. */}
+      <View
+        testID="archive-scroll-content"
+        className="gap-12"
+        style={{
+          paddingTop: headerHeight + CONTENT_TOP_PADDING,
+          paddingBottom: bottomPadding,
+        }}
+      >
         {children}
       </View>
     </Animated.ScrollView>

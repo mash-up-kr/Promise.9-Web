@@ -1,5 +1,6 @@
 import { apiClient, type SuccessResponse } from "@shared/api";
 import { folderKeys } from "@shared/entities/folder/folder.keys";
+import { recommendationKeys } from "@shared/entities/recommendation/recommendation.keys";
 import { hexToFolderTone } from "@shared/folder/folder.constants";
 import type { Link, LinkDetail, LinkPreview } from "@shared/types/link.types";
 import {
@@ -20,6 +21,14 @@ const linkTagSchema = z.looseObject({
   sortOrder: z.number().nullable(),
 });
 
+// 요약·태그·임베딩 처리 상태 — 목록·상세가 같은 값을 쓴다.
+const linkProcessingStatusSchema = z.enum([
+  "PENDING",
+  "SUCCESS",
+  "NEEDS_REVIEW",
+  "FAILED",
+]);
+
 // GET /links 목록 아이템 — title·source 는 OG 미수집 시 null 일 수 있다.
 const linkListItemSchema = z.looseObject({
   linkId: z.number(),
@@ -30,6 +39,8 @@ const linkListItemSchema = z.looseObject({
   savedAt: z.string(),
   // 홈 "다시 볼 링크" 가 알림 날짜 배지로 쓴다. 설정하지 않았으면 null.
   reminderAt: z.string().nullable(),
+  // 저장 직후 목록 재조회 판단에 쓴다(서버 PR #142). 안 내려주는 응답도 통과하도록 옵션.
+  processingStatus: linkProcessingStatusSchema.optional(),
 });
 
 /**
@@ -111,10 +122,12 @@ export const linkDetailResponseSchema = z.looseObject({
   savedAt: z.string(),
   isFavorite: z.boolean(),
   viewedAt: z.string().nullable(),
-  processingStatus: z.enum(["PENDING", "SUCCESS", "NEEDS_REVIEW", "FAILED"]),
+  processingStatus: linkProcessingStatusSchema,
   aiSummary: z.string().nullable(),
   tags: z.array(linkTagSchema),
   memo: z.string().nullable(),
+  // 서버는 항상 내려주지만(설정 안 했으면 null), 누락돼도 깨지지 않게 nullish 로 둔다.
+  reminderAt: z.string().nullish(),
   relatedLinks: z.array(relatedLinkResponseSchema),
 });
 
@@ -143,6 +156,7 @@ export function toLinkDetail(item: LinkDetailResponse): LinkDetail {
     aiSummary: item.aiSummary,
     tags: item.tags,
     memo: item.memo,
+    reminderAt: item.reminderAt ?? null,
     relatedLinks: item.relatedLinks.map((related) => ({
       linkId: related.linkId,
       title: related.title ?? "",
@@ -274,17 +288,20 @@ export function useCreateLinkMutation() {
       queryClient.invalidateQueries({ queryKey: linkKeys.root() });
       // 폴더 칩·목록의 linkCount 도 저장 직후 갱신돼야 한다.
       queryClient.invalidateQueries({ queryKey: folderKeys.root() });
+      // 홈 키워드(폴더·태그별 링크 수)도 낡는다.
+      queryClient.invalidateQueries({ queryKey: recommendationKeys.root() });
     },
   });
 }
 
-// 링크가 옮겨지거나 삭제되면 링크 목록과 폴더 카운트가 함께 낡는다.
+// 링크가 옮겨지거나 삭제되면 링크 목록·폴더 카운트·홈 키워드(폴더·태그별 링크 수)가 함께 낡는다.
 function useInvalidateFolderCaches() {
   const queryClient = useQueryClient();
 
   return () => {
     queryClient.invalidateQueries({ queryKey: linkKeys.lists() });
     queryClient.invalidateQueries({ queryKey: folderKeys.root() });
+    queryClient.invalidateQueries({ queryKey: recommendationKeys.root() });
   };
 }
 
@@ -337,9 +354,11 @@ export interface UpdateLinkVariables {
   folderId?: number | null;
   memo?: string;
   isFavorite?: boolean;
+  /** 리마인드 시각(타임존 포함 ISO 8601 미래 시각). null 이면 해제. */
+  reminderAt?: string | null;
 }
 
-// PATCH /links/{linkId} — folder·memo·isFavorite 중 전달된 필드만 변경한다(상세 화면 저장용).
+// PATCH /links/{linkId} — folder·memo·isFavorite·reminderAt 중 전달된 필드만 변경한다(상세 화면 저장용).
 export function useUpdateLinkMutation() {
   const queryClient = useQueryClient();
   const invalidateFolderCaches = useInvalidateFolderCaches();

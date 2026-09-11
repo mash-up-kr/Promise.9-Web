@@ -279,11 +279,15 @@ function UrlPreviewField({
       render={({ field }) => (
         <>
           <InputField
-            placeholder="URL"
+            placeholder="링크 주소를 입력해주세요"
             autoCapitalize="none"
             keyboardType="url"
             value={field.value}
-            onChangeText={field.onChange}
+            onChangeText={(text) => {
+              field.onChange(text);
+              // 비우면(clear 버튼·전부 삭제) 확정할 URL 이 없다 — blur 를 기다리면 지운 뒤에도 카드가 남는다.
+              if (text.length === 0) commitPreview("");
+            }}
             onBlur={() => {
               field.onBlur();
               commitPreview(field.value);

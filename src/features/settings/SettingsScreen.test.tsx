@@ -89,7 +89,10 @@ describe("SettingsScreen", () => {
   test("이메일 로딩 중에는 스켈레톤을 보여준다", async () => {
     mockGet.mockReturnValue(new Promise(() => {}));
     await renderScreen();
-    expect(await screen.findByTestId("email-skeleton")).toBeOnTheScreen();
+    const skeleton = await screen.findByTestId("email-skeleton");
+    expect(skeleton).toBeOnTheScreen();
+    // 리스트 행(gray-800) 위라 기본 블록 색으로는 보이지 않는다.
+    expect(skeleton.props.className).toContain("bg-background-list-selected");
   });
 
   test("이메일 조회 실패 시 '-' 를 보여준다", async () => {
