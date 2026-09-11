@@ -51,6 +51,9 @@ const thumbnailStyles = tv({
   base: "bg-background-thumbnail",
 });
 
+// 썸네일 없음 플레이스홀더 일러스트(투명 240×240) — LinkThumbnail 과 같은 에셋 재사용.
+const PLACEHOLDER_SOURCE = require("@/assets/images/no-thumbnail.png");
+
 interface ThumbnailProps {
   className?: string;
 }
@@ -63,8 +66,18 @@ function Thumbnail({ className }: ThumbnailProps) {
     return (
       <Box
         testID="link-card-thumbnail-placeholder"
-        className={thumbnailStyles({ class: className })}
-      />
+        className={thumbnailStyles({
+          class: ["items-center justify-center overflow-hidden", className],
+        })}
+      >
+        {/* Figma Image Placeholder: 구름 일러스트를 박스 폭 75% 정사각으로 중앙 배치. */}
+        <Image
+          testID="link-card-thumbnail-placeholder-image"
+          source={PLACEHOLDER_SOURCE}
+          contentFit="contain"
+          className="aspect-square w-3/4"
+        />
+      </Box>
     );
   }
   return (
