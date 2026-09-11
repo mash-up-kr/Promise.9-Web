@@ -28,7 +28,11 @@ export function FolderSection({ folder, links }: FolderSectionProps) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${folder.folderName} 폴더 열기`}
-        onPress={() => router.push(archiveDetailHref(String(folder.folderId)))}
+        onPress={() =>
+          router.push(
+            archiveDetailHref(String(folder.folderId), folder.folderName),
+          )
+        }
       >
         <HStack className="items-center gap-1 pl-5">
           <Text variant="heading-2">{folder.folderName}</Text>

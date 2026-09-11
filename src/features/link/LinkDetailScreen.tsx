@@ -153,7 +153,12 @@ function LinkDetailContent() {
   // 지정 폴더 칩 탭 → 해당 폴더 상세로 이동
   const handleOpenFolder = () => {
     if (linkDetail.folder) {
-      router.push(archiveDetailHref(String(linkDetail.folder.folderId)));
+      router.push(
+        archiveDetailHref(
+          String(linkDetail.folder.folderId),
+          linkDetail.folder.folderName,
+        ),
+      );
     }
   };
 
