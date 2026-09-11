@@ -22,7 +22,7 @@ import {
   AlertDialogButton,
 } from "@/components/ui/alert-dialog/AlertDialog";
 import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
-import { Header } from "@/components/ui/header/Header";
+import { Header, useHeaderHeight } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
@@ -59,10 +59,15 @@ function toUserFolderId(id?: string): string | undefined {
   return id && /^[1-9]\d*$/.test(id) ? id : undefined;
 }
 
-// 화면 가운데 안내 문구 — 없음·빈 목록·에러 상태가 공유한다.
+// 화면 가운데 안내 문구 — 없음·빈 목록·에러 상태가 공유한다. 헤더가 오버레이라 그 높이만큼 내려 가운데를 맞춘다.
 function CenteredMessage({ children }: { children: React.ReactNode }) {
+  const headerHeight = useHeaderHeight();
+
   return (
-    <View className="flex-1 items-center justify-center gap-3 bg-background-base px-5">
+    <View
+      className="flex-1 items-center justify-center gap-3 bg-background-base px-5"
+      style={{ paddingTop: headerHeight }}
+    >
       {children}
     </View>
   );
@@ -203,7 +208,17 @@ export function ArchiveDetailScreen() {
 
   return (
     <View className="flex-1">
-      <Stack.Screen options={{ header: () => header }} />
+      <Stack.Screen
+        options={{
+          // 시안(header / scroll): 배경 있는 헤더는 스크롤 시 콘텐츠와 함께 밀려 올라간다 — 홈처럼
+          // 투명 오버레이로 얹고 콘텐츠가 헤더 높이만큼 아래에서 시작한다.
+          headerTransparent: true,
+          // Android 에서 ScrollView 의 bg 클래스가 이 라우트에선 칠해지지 않아 흰 배경이
+          // 드러난다 — 탭 sceneStyle 과 같은 방식으로 씬을 직접 칠한다(raw hex, 신규 base).
+          contentStyle: { backgroundColor: "#1a1a1a" },
+          header: () => header,
+        }}
+      />
       <ArchiveDetailContent
         id={id}
         sort={sort}
@@ -299,6 +314,7 @@ function ArchiveDetailContent({
   sort,
   ...listProps
 }: ArchiveDetailContentProps) {
+  const headerHeight = useHeaderHeight();
   // 잘못된 id 는 조회 이전 분기라 경계 밖에 남는다 — useSuspenseQuery 는 끌 수 없어서
   // 여기서 막지 않으면 NaN 파라미터가 서버로 새어나간다.
   if (!isFolderRouteId(id)) {
@@ -315,7 +331,10 @@ function ArchiveDetailContent({
     <AsyncBoundary
       resetKeys={[id, sort]}
       pending={
-        <View className="flex-1 items-center justify-center bg-background-base">
+        <View
+          className="flex-1 items-center justify-center bg-background-base"
+          style={{ paddingTop: headerHeight }}
+        >
           <ActivityIndicator testID="archive-detail-loading" />
         </View>
       }
@@ -350,6 +369,7 @@ function ArchiveDetailLinkList({
   ...itemProps
 }: ArchiveDetailLinkListProps) {
   const scrollHandler = useHeaderAwareScrollHandler("archive-detail");
+  const headerHeight = useHeaderHeight();
   const {
     data: links,
     fetchNextPage,
@@ -402,6 +422,8 @@ function ArchiveDetailLinkList({
       columnWrapperStyle={styles.linkGridRow}
       contentContainerStyle={[
         styles.linkGridContent,
+        // 헤더가 투명 오버레이라 콘텐츠가 그 아래에서 시작한다.
+        { paddingTop: headerHeight + GRID_TOP_PADDING },
         // 선택 모드에서는 하단 액션 바가 마지막 줄을 가리지 않도록 여백을 더 준다.
         selectedIds !== null && styles.linkGridContentSelecting,
       ]}
@@ -410,6 +432,7 @@ function ArchiveDetailLinkList({
 }
 
 const GRID_HORIZONTAL_PADDING = 20;
+const GRID_TOP_PADDING = 8;
 
 const styles = StyleSheet.create({
   linkGridRow: {
@@ -418,7 +441,6 @@ const styles = StyleSheet.create({
   },
   linkGridContent: {
     paddingHorizontal: GRID_HORIZONTAL_PADDING,
-    paddingTop: 8,
     paddingBottom: 4,
   },
   linkGridContentSelecting: {

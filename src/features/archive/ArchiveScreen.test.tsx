@@ -34,6 +34,12 @@ const mockDelete = apiClient.delete as jest.Mock;
 const mockPush = jest.fn();
 const mockNavigate = jest.fn();
 jest.mock("expo-router", () => ({
+  // 헤더는 Tabs.Screen 의 options.header 로 넘긴다 — 화면 테스트에서 헤더 동작(더보기·완료)을
+  // 검증해야 하므로 목이 그 렌더 함수를 실제로 그린다.
+  Tabs: {
+    Screen: ({ options }: { options?: { header?: () => React.ReactNode } }) =>
+      options?.header?.() ?? null,
+  },
   useRouter: () => ({ push: mockPush, navigate: mockNavigate }),
 }));
 
@@ -292,5 +298,18 @@ describe("ArchiveScreen", () => {
 
     expect(await screen.findByText("디자인")).toBeOnTheScreen();
     expect(screen.getByText("전체")).toBeOnTheScreen();
+  });
+});
+
+// 시안(header / scroll): 배경 있는 헤더는 스크롤 시 콘텐츠와 함께 밀려 올라간다 — 홈처럼 헤더를
+// 콘텐츠 위에 얹어야 헤더가 올라간 자리에 빈 배경이 남지 않는다.
+describe("ArchiveScreen 헤더 오버레이", () => {
+  test("스크롤 본문은 헤더 높이(safe-area 47 + 바 60)에 상단 여백 20 을 더해 시작한다", async () => {
+    await renderScreen();
+    await screen.findByText("내 폴더");
+
+    expect(screen.getByTestId("archive-scroll-content")).toHaveStyle({
+      paddingTop: 127,
+    });
   });
 });
