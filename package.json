@@ -90,6 +90,7 @@
     "assert-no-master-token": "node scripts/assert-no-master-token.mjs",
     "assert-required-public-env": "node scripts/assert-required-public-env.mjs",
     "deploy": "pnpm assert-no-master-token && pnpm assert-required-public-env && pnpm expo export -p web && wrangler deploy",
+    "build:web": "pnpm assert-no-master-token && pnpm assert-required-public-env && pnpm expo export -p web",
     "preview": "pnpm assert-no-master-token && pnpm assert-required-public-env && pnpm expo export -p web && wrangler dev",
     "eas-build-pre-install": "pnpm assert-no-master-token"
   },
