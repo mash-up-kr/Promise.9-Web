@@ -6,9 +6,6 @@ import { HStack } from "@/components/ui/hstack/HStack";
 import { Skeleton } from "@/components/ui/skeleton/Skeleton";
 import { VStack } from "@/components/ui/vstack/VStack";
 
-// 시안 스켈레톤 블록 색 — 배경 위에 흰색 5% (합성값 ≈ #262626).
-const BLOCK = "bg-opacity-white-05";
-
 const CARD_COUNT = 2;
 const LIST_ROW_COUNT = 3;
 const CHIP_WIDTHS = [
@@ -21,6 +18,7 @@ const CHIP_WIDTHS = [
  *
  * 시안 정책상 콘텐츠가 가장 많은 상태(리마인드 + 키워드까지 4섹션)를 기준으로 그리고,
  * 로드가 끝나면 섹션별이 아니라 전체가 한 번에 실제 콘텐츠로 바뀐다.
+ * 블록 색은 공용 Skeleton 기본값 — 시안의 흰색 5% 는 펄스가 보이지 않아 쓰지 않는다.
  */
 export function HomeSkeleton() {
   const headerHeight = useHeaderHeight();
@@ -44,7 +42,7 @@ export function HomeSkeleton() {
                   <Skeleton
                     key={index}
                     variant="circular"
-                    className={`h-[42px] ${width} ${BLOCK}`}
+                    className={`h-[42px] ${width}`}
                   />
                 ))}
               </HStack>
@@ -63,7 +61,7 @@ export function HomeSkeleton() {
         <SkeletonSection>
           <VStack className="gap-10">
             <VStack className="gap-4">
-              <Skeleton className={`ml-5 h-6 w-24 ${BLOCK}`} />
+              <Skeleton className="ml-5 h-6 w-24" />
               <HStack className="gap-3 px-5">
                 {Array.from({ length: CARD_COUNT }).map((_, index) => (
                   <CardBlock key={index} />
@@ -81,7 +79,7 @@ export function HomeSkeleton() {
 function SkeletonSection({ children }: PropsWithChildren) {
   return (
     <VStack testID="home-skeleton-section" className="gap-4">
-      <Skeleton className={`ml-5 h-7 w-28 ${BLOCK}`} />
+      <Skeleton className="ml-5 h-7 w-28" />
       {children}
     </VStack>
   );
@@ -91,10 +89,10 @@ function SkeletonSection({ children }: PropsWithChildren) {
 function CardBlock() {
   return (
     <VStack className="w-40 gap-2">
-      <Skeleton className={`h-[200px] w-40 rounded-[20px] ${BLOCK}`} />
+      <Skeleton className="h-[200px] w-40 rounded-[20px]" />
       <VStack className="gap-1">
-        <Skeleton className={`h-4 w-40 ${BLOCK}`} />
-        <Skeleton className={`h-4 w-24 ${BLOCK}`} />
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-4 w-24" />
       </VStack>
     </VStack>
   );
@@ -104,10 +102,10 @@ function CardBlock() {
 function ListRowBlock() {
   return (
     <HStack className="items-center gap-3">
-      <Skeleton className={`size-24 rounded-2xl ${BLOCK}`} />
+      <Skeleton className="size-24 rounded-2xl" />
       <VStack className="gap-2">
-        <Skeleton className={`h-4 w-48 ${BLOCK}`} />
-        <Skeleton className={`h-4 w-32 ${BLOCK}`} />
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-4 w-32" />
       </VStack>
     </HStack>
   );
