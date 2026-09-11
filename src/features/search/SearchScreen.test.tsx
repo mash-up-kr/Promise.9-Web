@@ -173,7 +173,10 @@ describe("SearchScreen", () => {
     const user = setupUser();
     await renderScreen();
 
-    await user.type(screen.getByPlaceholderText("검색"), "디자인");
+    await user.type(
+      screen.getByPlaceholderText("제목이나 키워드를 입력해주세요"),
+      "디자인",
+    );
     expect(screen.getByText("최근 검색어")).toBeOnTheScreen();
 
     await debounce();
@@ -186,7 +189,7 @@ describe("SearchScreen", () => {
     const user = setupUser();
     await renderScreen();
 
-    const input = screen.getByPlaceholderText("검색");
+    const input = screen.getByPlaceholderText("제목이나 키워드를 입력해주세요");
     await user.type(input, "디자인");
     await debounce();
     await expectResultLinks("디자인");
@@ -202,9 +205,13 @@ describe("SearchScreen", () => {
     const user = setupUser();
     await renderScreen();
 
-    await user.type(screen.getByPlaceholderText("검색"), "디자인", {
-      submitEditing: true,
-    });
+    await user.type(
+      screen.getByPlaceholderText("제목이나 키워드를 입력해주세요"),
+      "디자인",
+      {
+        submitEditing: true,
+      },
+    );
 
     await expectResultLinks("디자인");
   });
@@ -223,7 +230,7 @@ describe("SearchScreen", () => {
     const user = setupUser();
     await renderScreen();
 
-    const input = screen.getByPlaceholderText("검색");
+    const input = screen.getByPlaceholderText("제목이나 키워드를 입력해주세요");
     await user.type(input, "디자인", { submitEditing: true });
     await user.clear(input);
 
@@ -235,12 +242,18 @@ describe("SearchScreen", () => {
     const user = setupUser();
     await renderScreen();
 
-    await user.type(screen.getByPlaceholderText("검색"), "디자인", {
-      submitEditing: true,
-    });
+    await user.type(
+      screen.getByPlaceholderText("제목이나 키워드를 입력해주세요"),
+      "디자인",
+      {
+        submitEditing: true,
+      },
+    );
     await user.press(screen.getByRole("button", { name: "입력 지우기" }));
 
-    expect(screen.getByPlaceholderText("검색")).toHaveDisplayValue("");
+    expect(
+      screen.getByPlaceholderText("제목이나 키워드를 입력해주세요"),
+    ).toHaveDisplayValue("");
     expect(screen.getByText("최근 검색어")).toBeOnTheScreen();
   });
 
@@ -249,7 +262,7 @@ describe("SearchScreen", () => {
     const user = setupUser();
     await renderScreen();
 
-    const input = screen.getByPlaceholderText("검색");
+    const input = screen.getByPlaceholderText("제목이나 키워드를 입력해주세요");
     await user.type(input, "새 검색어", { submitEditing: true });
     await user.press(screen.getByRole("button", { name: "입력 지우기" }));
 
@@ -286,9 +299,13 @@ describe("SearchScreen", () => {
 
     await user.press(screen.getByRole("button", { name: "모두 지우기" }));
     // 시안 제거 시점(320ms)이 오기 전에 새 검색을 실행한다.
-    await user.type(screen.getByPlaceholderText("검색"), "레시피", {
-      submitEditing: true,
-    });
+    await user.type(
+      screen.getByPlaceholderText("제목이나 키워드를 입력해주세요"),
+      "레시피",
+      {
+        submitEditing: true,
+      },
+    );
     await act(async () => {
       jest.advanceTimersByTime(320);
     });
@@ -309,9 +326,13 @@ describe("SearchScreen", () => {
     const user = setupUser();
     await renderScreen();
 
-    await user.type(screen.getByPlaceholderText("검색"), "없는말", {
-      submitEditing: true,
-    });
+    await user.type(
+      screen.getByPlaceholderText("제목이나 키워드를 입력해주세요"),
+      "없는말",
+      {
+        submitEditing: true,
+      },
+    );
 
     expect(
       await screen.findByText('"없는말"에 대한 결과가 없어요'),
@@ -325,9 +346,13 @@ describe("SearchScreen", () => {
     const user = setupUser();
     await renderScreen();
 
-    await user.type(screen.getByPlaceholderText("검색"), "디자인", {
-      submitEditing: true,
-    });
+    await user.type(
+      screen.getByPlaceholderText("제목이나 키워드를 입력해주세요"),
+      "디자인",
+      {
+        submitEditing: true,
+      },
+    );
 
     expect(
       await screen.findByText("일시적인 오류가 발생했어요"),
@@ -345,9 +370,13 @@ describe("SearchScreen", () => {
     const user = setupUser();
     await renderScreen();
 
-    await user.type(screen.getByPlaceholderText("검색"), "디자인", {
-      submitEditing: true,
-    });
+    await user.type(
+      screen.getByPlaceholderText("제목이나 키워드를 입력해주세요"),
+      "디자인",
+      {
+        submitEditing: true,
+      },
+    );
 
     expect(
       await screen.findByText("인터넷 연결을 확인해주세요"),

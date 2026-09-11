@@ -127,7 +127,10 @@ const renderSheet = () =>
   );
 
 async function fillValidUrl(url = "https://example.com") {
-  await fireEvent.changeText(screen.getByPlaceholderText("URL"), url);
+  await fireEvent.changeText(
+    screen.getByPlaceholderText("링크 주소를 입력해주세요"),
+    url,
+  );
   await waitFor(() =>
     expect(
       screen.getByLabelText("저장").props.accessibilityState.disabled,
@@ -170,7 +173,10 @@ describe("CreateLinkSheet", () => {
     ).toBe(true);
 
     // 시안 정책: 형식 무관 — "abc" 입력만으로 활성화된다.
-    await fireEvent.changeText(screen.getByPlaceholderText("URL"), "abc");
+    await fireEvent.changeText(
+      screen.getByPlaceholderText("링크 주소를 입력해주세요"),
+      "abc",
+    );
     await waitFor(() =>
       expect(
         screen.getByLabelText("저장").props.accessibilityState.disabled,
@@ -283,7 +289,9 @@ describe("CreateLinkSheet", () => {
     expect(await screen.findByText("저장하지 못했어요")).toBeTruthy();
     expect(mockPost).not.toHaveBeenCalled();
     expect(mockBack).not.toHaveBeenCalled();
-    expect(screen.getByPlaceholderText("URL").props.value).toBe("abc");
+    expect(
+      screen.getByPlaceholderText("링크 주소를 입력해주세요").props.value,
+    ).toBe("abc");
   });
 
   test("저장 실패(500) → 실패 스낵바 + 입력 보존, '다시 시도'가 저장을 재실행한다", async () => {
@@ -295,9 +303,9 @@ describe("CreateLinkSheet", () => {
     expect(await screen.findByText("저장하지 못했어요")).toBeTruthy();
     expect(screen.getByText("다시 시도")).toBeTruthy();
     expect(mockBack).not.toHaveBeenCalled();
-    expect(screen.getByPlaceholderText("URL").props.value).toBe(
-      "https://example.com",
-    );
+    expect(
+      screen.getByPlaceholderText("링크 주소를 입력해주세요").props.value,
+    ).toBe("https://example.com");
 
     const user = userEvent.setup();
     await user.press(screen.getByText("다시 시도"));
@@ -452,9 +460,9 @@ describe("CreateLinkSheet", () => {
     await waitFor(() => expect(screen.getByText("붙여넣기")).toBeTruthy());
     await fireEvent.press(screen.getByText("붙여넣기"));
     await waitFor(() =>
-      expect(screen.getByPlaceholderText("URL").props.value).toBe(
-        "https://example.com",
-      ),
+      expect(
+        screen.getByPlaceholderText("링크 주소를 입력해주세요").props.value,
+      ).toBe("https://example.com"),
     );
   });
 
@@ -471,7 +479,9 @@ describe("CreateLinkSheet", () => {
     await waitFor(() => expect(screen.getByText("붙여넣기")).toBeTruthy());
     await fireEvent.press(screen.getByText("붙여넣기"));
     await waitFor(() => expect(consoleError).toHaveBeenCalledWith(error));
-    expect(screen.getByPlaceholderText("URL")).toBeTruthy();
+    expect(
+      screen.getByPlaceholderText("링크 주소를 입력해주세요"),
+    ).toBeTruthy();
 
     consoleError.mockRestore();
   });
@@ -485,7 +495,7 @@ describe("CreateLinkSheet", () => {
       },
     });
     await renderSheet();
-    const input = screen.getByPlaceholderText("URL");
+    const input = screen.getByPlaceholderText("링크 주소를 입력해주세요");
     await fireEvent.changeText(input, "https://toss.tech/x");
     await fireEvent(input, "blur");
     expect(await screen.findByText("프리뷰 제목")).toBeOnTheScreen();
@@ -501,7 +511,7 @@ describe("CreateLinkSheet", () => {
       },
     });
     await renderSheet();
-    const input = screen.getByPlaceholderText("URL");
+    const input = screen.getByPlaceholderText("링크 주소를 입력해주세요");
     await fireEvent.changeText(input, "https://toss.tech/x");
     await fireEvent(input, "blur");
     await screen.findByText("프리뷰 제목");
@@ -509,7 +519,10 @@ describe("CreateLinkSheet", () => {
     await fireEvent.press(screen.getByLabelText("입력 지우기"));
 
     expect(screen.queryByText("프리뷰 제목")).not.toBeOnTheScreen();
-    expect(screen.getByPlaceholderText("URL")).toHaveProp("value", "");
+    expect(screen.getByPlaceholderText("링크 주소를 입력해주세요")).toHaveProp(
+      "value",
+      "",
+    );
   });
 
   test("추출 실패 시 도메인 폴백 카드를 보여준다", async () => {
@@ -523,7 +536,7 @@ describe("CreateLinkSheet", () => {
       return Promise.reject(new Error(`unhandled GET ${url}`));
     });
     await renderSheet();
-    const input = screen.getByPlaceholderText("URL");
+    const input = screen.getByPlaceholderText("링크 주소를 입력해주세요");
     await fireEvent.changeText(input, "https://toss.tech/x");
     await fireEvent(input, "blur");
     expect(await screen.findByText("toss.tech")).toBeOnTheScreen();
@@ -532,7 +545,7 @@ describe("CreateLinkSheet", () => {
 
   test("무효 URL 로 blur 하면 프리뷰를 요청하지 않는다", async () => {
     await renderSheet();
-    const input = screen.getByPlaceholderText("URL");
+    const input = screen.getByPlaceholderText("링크 주소를 입력해주세요");
     await fireEvent.changeText(input, "not-a-url");
     await fireEvent(input, "blur");
     expect(mockGet).not.toHaveBeenCalledWith(
@@ -581,9 +594,9 @@ describe("CreateLinkSheet", () => {
     mockGetByUrl();
     await renderSheet();
 
-    expect(screen.getByPlaceholderText("URL").props.value).toBe(
-      "https://toss.tech/a?b=1&c=2",
-    );
+    expect(
+      screen.getByPlaceholderText("링크 주소를 입력해주세요").props.value,
+    ).toBe("https://toss.tech/a?b=1&c=2");
     await waitFor(() =>
       expect(mockGet).toHaveBeenCalledWith(
         "/links/preview",

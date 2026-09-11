@@ -279,7 +279,7 @@ function UrlPreviewField({
       render={({ field }) => (
         <>
           <InputField
-            placeholder="URL"
+            placeholder="링크 주소를 입력해주세요"
             autoCapitalize="none"
             keyboardType="url"
             value={field.value}

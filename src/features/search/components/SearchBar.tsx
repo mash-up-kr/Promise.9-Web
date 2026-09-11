@@ -15,7 +15,7 @@ export interface SearchBarProps extends Omit<TextInputProps, "className"> {
 
 export function SearchBar({
   className,
-  placeholder = "검색",
+  placeholder = "제목이나 키워드를 입력해주세요",
   ...props
 }: SearchBarProps) {
   return (

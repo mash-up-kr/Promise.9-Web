@@ -51,7 +51,7 @@ describe("NewFolderScreen", () => {
 
     renderPanel(<NewFolderScreen onCancel={vi.fn()} onCreated={vi.fn()} />);
 
-    const input = screen.getByPlaceholderText("새 폴더");
+    const input = screen.getByPlaceholderText("폴더 이름을 입력해주세요");
     await user.type(input, "가".repeat(FOLDER_NAME_MAX_LENGTH + 5));
 
     expect(input).toHaveValue("가".repeat(FOLDER_NAME_MAX_LENGTH));
@@ -66,7 +66,10 @@ describe("NewFolderScreen", () => {
 
     renderPanel(<NewFolderScreen onCancel={vi.fn()} onCreated={onCreated} />);
 
-    await user.type(screen.getByPlaceholderText("새 폴더"), "개발");
+    await user.type(
+      screen.getByPlaceholderText("폴더 이름을 입력해주세요"),
+      "개발",
+    );
     await user.click(screen.getByRole("button", { name: "green" }));
     await user.click(screen.getByRole("button", { name: "저장" }));
 
@@ -84,7 +87,10 @@ describe("NewFolderScreen", () => {
 
     renderPanel(<NewFolderScreen onCancel={vi.fn()} onCreated={vi.fn()} />);
 
-    await user.type(screen.getByPlaceholderText("새 폴더"), "디자인");
+    await user.type(
+      screen.getByPlaceholderText("폴더 이름을 입력해주세요"),
+      "디자인",
+    );
     await user.click(screen.getByRole("button", { name: "저장" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(

@@ -75,7 +75,7 @@ export function NewFolderScreen({ onCancel, onCreated }: NewFolderScreenProps) {
                 submit();
               }
             }}
-            placeholder="새 폴더"
+            placeholder="폴더 이름을 입력해주세요"
             maxLength={FOLDER_NAME_MAX_LENGTH}
             // 화면에 들어오자마자 이름부터 치도록.
             // biome-ignore lint/a11y/noAutofocus: 이 화면의 유일한 입력이고 진입 목적이 이름 입력이다

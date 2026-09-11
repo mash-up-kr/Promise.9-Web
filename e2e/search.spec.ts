@@ -48,7 +48,7 @@ test("검색을 제출하면 최근 검색어에 저장되어 기본 화면에 �
 }) => {
   await page.goto("/search");
 
-  const input = page.getByPlaceholder("검색");
+  const input = page.getByPlaceholder("제목이나 키워드를 입력해주세요");
   await input.fill("디자인");
   await input.press("Enter");
   await expect(page.getByText("E2E 검색 결과 링크")).toBeVisible();
@@ -63,7 +63,7 @@ test("검색을 제출하면 최근 검색어에 저장되어 기본 화면에 �
 test("검색어를 제출하면 결과 그리드가 뜬다", async ({ page }) => {
   await page.goto("/search");
 
-  const input = page.getByPlaceholder("검색");
+  const input = page.getByPlaceholder("제목이나 키워드를 입력해주세요");
   await input.fill("디자인");
   await input.press("Enter");
 
