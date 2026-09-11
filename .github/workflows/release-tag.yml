@@ -48,9 +48,9 @@ jobs:
           git tag "$TAG"
           git push origin "$TAG"
           if [ -n "$PREV" ]; then
-            gh release create "$TAG" --title "$TAG" --generate-notes --notes-start-tag "$PREV"
+            gh release create "$TAG" --title "$TAG" --generate-notes --notes-start-tag "$PREV" --latest=false
           else
-            gh release create "$TAG" --title "$TAG" --generate-notes
+            gh release create "$TAG" --title "$TAG" --generate-notes --latest=false
           fi
 
   sync-dev:
