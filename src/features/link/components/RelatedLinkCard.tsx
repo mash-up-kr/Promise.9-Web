@@ -65,7 +65,7 @@ export function RelatedLinkCard({ link }: RelatedLinkCardProps) {
           </>
         ) : null}
       </View>
-      <Text variant="body-4" className="w-[120px]">
+      <Text variant="body-4" numberOfLines={2} className="w-[120px]">
         {link.title}
       </Text>
     </Pressable>

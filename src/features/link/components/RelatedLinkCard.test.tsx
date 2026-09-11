@@ -35,6 +35,12 @@ describe("RelatedLinkCard", () => {
     expect(screen.getByText(baseLink.title)).toBeOnTheScreen();
   });
 
+  // 카드 폭이 고정(120px)이라 긴 제목은 최대 2줄까지만 보이고 이후는 말줄임한다.
+  test("제목은 최대 2줄로 제한된다", async () => {
+    await render(<RelatedLinkCard link={baseLink} />);
+    expect(screen.getByText(baseLink.title).props.numberOfLines).toBe(2);
+  });
+
   test("카드를 누르면 해당 링크 상세로 이동한다", async () => {
     await render(<RelatedLinkCard link={baseLink} />);
     fireEvent.press(screen.getByRole("button"));
