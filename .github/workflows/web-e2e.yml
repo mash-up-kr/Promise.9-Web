@@ -5,7 +5,7 @@ on:
   pull_request:
     paths-ignore: [ "**/*.md", "docs/**", ".maestro/**" ]
   push:
-    branches: [main]
+    branches: [main, dev]
     paths-ignore: [ "**/*.md", "docs/**", ".maestro/**" ]
 
 jobs:
