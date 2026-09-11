@@ -60,6 +60,13 @@ export function toReminderAtIso(value: ReminderValue): string {
   return dayjs(`${value.date} ${time}`).format("YYYY-MM-DDTHH:mm:ssZ");
 }
 
+// toReminderAtIso 의 역변환 — 서버가 준 reminderAt(ISO)를 로컬 기준 날짜·시각으로 분해해
+// 리마인드 섹션을 채운다. 같은 타임존에서 toReminderAtIso 와 왕복 일치한다.
+export function fromReminderAtIso(iso: string): ReminderValue {
+  const d = dayjs(iso);
+  return { date: d.format(DATE_FORMAT), hour: d.hour(), minute: d.minute() };
+}
+
 // 서버가 "현재보다 이후"만 허용하므로 같은 시각도 과거로 취급한다.
 export function isPastReminder(
   value: ReminderValue,

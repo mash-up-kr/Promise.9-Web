@@ -115,6 +115,8 @@ export const linkDetailResponseSchema = z.looseObject({
   aiSummary: z.string().nullable(),
   tags: z.array(linkTagSchema),
   memo: z.string().nullable(),
+  // 서버는 항상 내려주지만(설정 안 했으면 null), 누락돼도 깨지지 않게 nullish 로 둔다.
+  reminderAt: z.string().nullish(),
   relatedLinks: z.array(relatedLinkResponseSchema),
 });
 
@@ -143,6 +145,7 @@ export function toLinkDetail(item: LinkDetailResponse): LinkDetail {
     aiSummary: item.aiSummary,
     tags: item.tags,
     memo: item.memo,
+    reminderAt: item.reminderAt ?? null,
     relatedLinks: item.relatedLinks.map((related) => ({
       linkId: related.linkId,
       title: related.title ?? "",
@@ -337,9 +340,11 @@ export interface UpdateLinkVariables {
   folderId?: number | null;
   memo?: string;
   isFavorite?: boolean;
+  /** 리마인드 시각(타임존 포함 ISO 8601 미래 시각). null 이면 해제. */
+  reminderAt?: string | null;
 }
 
-// PATCH /links/{linkId} — folder·memo·isFavorite 중 전달된 필드만 변경한다(상세 화면 저장용).
+// PATCH /links/{linkId} — folder·memo·isFavorite·reminderAt 중 전달된 필드만 변경한다(상세 화면 저장용).
 export function useUpdateLinkMutation() {
   const queryClient = useQueryClient();
   const invalidateFolderCaches = useInvalidateFolderCaches();

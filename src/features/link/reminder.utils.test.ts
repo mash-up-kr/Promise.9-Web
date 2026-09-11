@@ -1,5 +1,6 @@
 import {
   formatRemainingPeriod,
+  fromReminderAtIso,
   getRandomReminderDays,
   getReminderDateRange,
   isPastReminder,
@@ -47,6 +48,17 @@ it("reminderAt 은 로컬 오프셋 포함 ISO", () => {
   expect(toReminderAtIso({ date: "2026-08-27", hour: 9, minute: 0 })).toMatch(
     /^2026-08-27T09:00:00[+-]\d{2}:\d{2}$/,
   );
+});
+
+// 서버가 준 reminderAt(ISO)로 리마인드 섹션을 채우려면 역변환이 필요하다.
+it("fromReminderAtIso 는 toReminderAtIso 의 역변환이다(왕복 일치)", () => {
+  for (const v of [
+    { date: "2026-08-27", hour: 9, minute: 0 },
+    { date: "2026-12-31", hour: 23, minute: 45 },
+    { date: "2027-01-01", hour: 0, minute: 15 },
+  ]) {
+    expect(fromReminderAtIso(toReminderAtIso(v))).toEqual(v);
+  }
 });
 
 it("과거 시각 판정 — 같은 시각도 과거로 본다(서버가 미래만 허용)", () => {
