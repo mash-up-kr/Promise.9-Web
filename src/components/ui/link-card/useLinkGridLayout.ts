@@ -6,6 +6,9 @@ import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
 
 import { getLinkGridLayout, type LinkGridLayout } from "./link-grid.utils";
 
+// 그리드는 화면 좌우 패딩(20) 안에 놓인다 — 측정 전 첫 페인트 추정에만 쓴다.
+const SCREEN_HORIZONTAL_PADDING = 20 * 2;
+
 interface UseLinkGridLayoutOptions {
   /** 측정하는 요소가 좌우 패딩을 포함하면(FlatList contentContainerStyle 등) 그만큼 뺀다. */
   horizontalPadding?: number;
@@ -23,11 +26,13 @@ export function useLinkGridLayout({
   horizontalPadding = 0,
 }: UseLinkGridLayoutOptions = {}): UseLinkGridLayoutResult {
   const { width: windowWidth } = useWindowDimensions();
-  const [width, setWidth] = useState(Math.min(windowWidth, CONTENT_MAX_WIDTH));
+  const [contentWidth, setContentWidth] = useState(
+    Math.min(windowWidth, CONTENT_MAX_WIDTH) - SCREEN_HORIZONTAL_PADDING,
+  );
 
   const onLayout = (event: LayoutChangeEvent) => {
-    setWidth(event.nativeEvent.layout.width);
+    setContentWidth(event.nativeEvent.layout.width - horizontalPadding);
   };
 
-  return { ...getLinkGridLayout(width - horizontalPadding), onLayout };
+  return { ...getLinkGridLayout(contentWidth), onLayout };
 }

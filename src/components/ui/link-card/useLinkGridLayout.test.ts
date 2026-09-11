@@ -8,13 +8,11 @@ const layoutEvent = (width: number) =>
   ({ nativeEvent: { layout: { width } } }) as LayoutChangeEvent;
 
 describe("useLinkGridLayout", () => {
-  test("측정 전에는 창 폭을 콘텐츠 최대 폭(768)으로 눌러 계산한다", async () => {
+  test("측정 전에는 창 폭을 콘텐츠 최대 폭(768)으로 누르고 화면 패딩(40)을 뺀 값으로 계산한다", async () => {
     Dimensions.set({
       window: { width: 1440, height: 900, scale: 2, fontScale: 1 },
     });
-    const { result } = await renderHook(() =>
-      useLinkGridLayout({ horizontalPadding: 40 }),
-    );
+    const { result } = await renderHook(() => useLinkGridLayout());
     expect(result.current).toMatchObject({ columns: 4, tileWidth: 170.75 });
   });
 

@@ -18,4 +18,11 @@ describe("getLinkGridLayout", () => {
   test("카드 두 장이 안 들어갈 만큼 좁아도 2열은 유지한다", () => {
     expect(getLinkGridLayout(300)).toEqual({ columns: 2, tileWidth: 142.5 });
   });
+
+  // flex-wrap 그리드에서 부동소수점 오차로 한 줄 폭을 넘겨 마지막 카드가 다음 줄로 밀리지 않도록 내림한다.
+  test("카드 폭은 소수 둘째 자리로 내려 한 줄 폭을 넘지 않게 한다", () => {
+    const { columns, tileWidth } = getLinkGridLayout(550);
+    expect({ columns, tileWidth }).toEqual({ columns: 3, tileWidth: 173.33 });
+    expect(tileWidth * columns + 15 * (columns - 1)).toBeLessThanOrEqual(550);
+  });
 });

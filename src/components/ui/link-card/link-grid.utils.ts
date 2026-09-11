@@ -19,7 +19,11 @@ export function getLinkGridLayout(contentWidth: number): LinkGridLayout {
         (LINK_TILE_WIDTH + LINK_GRID_COLUMN_GAP),
     ),
   );
+  // 소수 둘째 자리로 내림 — flex-wrap 그리드에서 부동소수점 오차로 한 줄 폭을 넘겨
+  // 마지막 카드가 다음 줄로 밀리지 않게 한다.
   const tileWidth =
-    (contentWidth - LINK_GRID_COLUMN_GAP * (columns - 1)) / columns;
+    Math.floor(
+      ((contentWidth - LINK_GRID_COLUMN_GAP * (columns - 1)) / columns) * 100,
+    ) / 100;
   return { columns, tileWidth };
 }
