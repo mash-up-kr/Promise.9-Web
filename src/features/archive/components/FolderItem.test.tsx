@@ -17,6 +17,14 @@ describe("FolderItem", () => {
     fireEvent.press(screen.getByLabelText("AI"));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
+
+  // 행 배경(gray-800)과 기본 블록 색이 같아 스켈레톤이 보이지 않았다.
+  test("개수를 아직 모르면 리스트용 스켈레톤을 보여준다", async () => {
+    await render(<FolderItem name="AI" tone="blue" />);
+    expect(
+      screen.getByTestId("folder-count-skeleton").props.className,
+    ).toContain("bg-background-list-selected");
+  });
 });
 
 // 웹 전용 트리거 — 시안(archive / context-menu)은 hover 때만 "..." 를 노출한다.
