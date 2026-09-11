@@ -1,5 +1,6 @@
 import { clearTokens, getRefreshToken } from "@shared/api";
 import { useLogoutMutation } from "@shared/entities/auth/auth.queries";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useCallback } from "react";
 
@@ -9,6 +10,7 @@ import { useCallback } from "react";
  */
 export function useLogout() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { mutateAsync, isPending } = useLogoutMutation();
 
   const logout = useCallback(async () => {
@@ -21,8 +23,10 @@ export function useLogout() {
       }
     }
     await clearTokens();
+    // 다음 로그인이 다른 계정일 수 있다 — 이전 계정의 화면 캐시를 남기지 않는다.
+    queryClient.clear();
     router.replace("/(auth)/login");
-  }, [mutateAsync, router]);
+  }, [mutateAsync, queryClient, router]);
 
   return { logout, isPending };
 }
