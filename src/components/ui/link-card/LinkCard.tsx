@@ -1,11 +1,12 @@
 import type { Link } from "@shared/types/link.types";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import type { PressableProps } from "react-native";
 import { Pressable } from "react-native";
 import { Box } from "@/components/ui/box/Box";
 import { HStack } from "@/components/ui/hstack/HStack";
 import { Image } from "@/components/ui/image/Image";
 import { Text, type TextProps } from "@/components/ui/text/Text";
+import { ThumbnailFallback } from "@/components/ui/thumbnail/ThumbnailFallback";
 import { tv } from "@/lib/tv";
 import { formatRelativeDate } from "@/utils/format";
 
@@ -51,9 +52,6 @@ const thumbnailStyles = tv({
   base: "overflow-hidden bg-background-thumbnail",
 });
 
-// 썸네일 없음 플레이스홀더 일러스트(투명 240×240) — LinkThumbnail 과 같은 에셋 재사용.
-const PLACEHOLDER_SOURCE = require("@/assets/images/no-thumbnail.png");
-
 interface ThumbnailProps {
   className?: string;
   /** 폭에 따라 계산된 크기 — 고정 크기는 className 으로 준다. */
@@ -63,24 +61,16 @@ interface ThumbnailProps {
 /** 링크 썸네일. URL 이 없으면 placeholder 를 렌더한다. 크기·모서리는 className 으로 지정한다. */
 function Thumbnail({ className, size }: ThumbnailProps) {
   const { thumbnailUrl } = useLinkCard();
+  // 못 불러온 URL 을 기억한다 — 서버가 썸네일을 다시 수집해 URL 이 바뀌면 자연히 다시 시도한다.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
 
-  if (!thumbnailUrl) {
+  if (!thumbnailUrl || thumbnailUrl === failedUrl) {
     return (
-      <Box
+      <ThumbnailFallback
         testID="link-card-thumbnail-placeholder"
-        className={thumbnailStyles({
-          class: ["items-center justify-center", className],
-        })}
+        className={className}
         style={size}
-      >
-        {/* Figma Image Placeholder: 구름 일러스트를 박스 폭 75% 정사각으로 중앙 배치. */}
-        <Image
-          testID="link-card-thumbnail-placeholder-image"
-          source={PLACEHOLDER_SOURCE}
-          contentFit="contain"
-          className="aspect-square w-3/4"
-        />
-      </Box>
+      />
     );
   }
   // 크기·모서리는 래퍼가 갖고 이미지는 채우기만 한다 — expo-image 는 웹에서 style 을 평탄화해
@@ -92,6 +82,7 @@ function Thumbnail({ className, size }: ThumbnailProps) {
         source={{ uri: thumbnailUrl }}
         contentFit="cover"
         className="size-full"
+        onError={() => setFailedUrl(thumbnailUrl)}
       />
     </Box>
   );
