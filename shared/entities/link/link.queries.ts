@@ -1,5 +1,6 @@
 import { apiClient, type SuccessResponse } from "@shared/api";
 import { folderKeys } from "@shared/entities/folder/folder.keys";
+import { recommendationKeys } from "@shared/entities/recommendation/recommendation.keys";
 import { hexToFolderTone } from "@shared/folder/folder.constants";
 import type { Link, LinkDetail, LinkPreview } from "@shared/types/link.types";
 import {
@@ -287,17 +288,20 @@ export function useCreateLinkMutation() {
       queryClient.invalidateQueries({ queryKey: linkKeys.root() });
       // 폴더 칩·목록의 linkCount 도 저장 직후 갱신돼야 한다.
       queryClient.invalidateQueries({ queryKey: folderKeys.root() });
+      // 홈 키워드(폴더·태그별 링크 수)도 낡는다.
+      queryClient.invalidateQueries({ queryKey: recommendationKeys.root() });
     },
   });
 }
 
-// 링크가 옮겨지거나 삭제되면 링크 목록과 폴더 카운트가 함께 낡는다.
+// 링크가 옮겨지거나 삭제되면 링크 목록·폴더 카운트·홈 키워드(폴더·태그별 링크 수)가 함께 낡는다.
 function useInvalidateFolderCaches() {
   const queryClient = useQueryClient();
 
   return () => {
     queryClient.invalidateQueries({ queryKey: linkKeys.lists() });
     queryClient.invalidateQueries({ queryKey: folderKeys.root() });
+    queryClient.invalidateQueries({ queryKey: recommendationKeys.root() });
   };
 }
 
