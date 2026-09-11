@@ -113,6 +113,14 @@ describe('FolderFormSheet mode="create"', () => {
     ).toBe(true);
   });
 
+  test("팔레트 첫 색이 기본 선택이다", async () => {
+    await renderSheet("create");
+    expect(
+      screen.getByTestId("folder-color-yellow-green").props.accessibilityState
+        .selected,
+    ).toBe(true);
+  });
+
   test("저장하면 이름·색상 hex 로 폴더를 생성하고 시트를 닫는다", async () => {
     await renderSheet("create");
     await typeName("디자인");
@@ -121,7 +129,7 @@ describe('FolderFormSheet mode="create"', () => {
     await waitFor(() =>
       expect(mockPost).toHaveBeenCalledWith("/folders", {
         folderName: "디자인",
-        color: "#61a8ef",
+        color: "#d5d76a",
       }),
     );
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
