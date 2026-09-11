@@ -137,6 +137,11 @@ eas submit -p ios --latest   # 가장 최근 production 빌드를 TestFlight 로
 - 업로드 후 Apple 처리에 5~15분 걸린다. 처리가 끝나면 TestFlight 탭에서 내부 테스터에게 배포되고, 수출 규정 질문은 `usesNonExemptEncryption=false` 덕에 뜨지 않는다.
 - 내부 테스터 추가: App Store Connect → 사용자 및 액세스에서 팀원을 초대한 뒤 TestFlight → 내부 테스트 → `Team (Expo)` 그룹에 넣는다.
 
+### 스토어 메타데이터 (EAS Metadata)
+
+- 설정은 `store.config.js`(동적) + `store.config.base.json`(이름·설명·키워드·심사 노트·연락처 이름/이메일). 공개 레포라 **심사 연락처 전화번호만 `.env.local` 의 `EAS_METADATA_REVIEW_PHONE`** 에서 읽는다 — 없으면 `metadata:push`·`metadata:lint` 가 바로 실패한다.
+- `eas metadata:lint` 로 검증하고 `eas metadata:push` 로 올린다. `eas metadata:pull` 은 동적 설정을 갱신하지 못해 `store.config.json`(gitignore) 을 새로 만들고 스크린샷 사본을 `store/` 에 받는다 — 필요한 값만 `store.config.base.json` 으로 옮긴다.
+
 ---
 
 ## 알려진 함정 (실제로 겪은 것)

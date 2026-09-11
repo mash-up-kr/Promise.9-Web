@@ -54,6 +54,10 @@ example
 # Git worktrees
 .worktrees/
 
+# eas metadata:pull 산출물 — 동적 설정(store.config.js)은 갱신하지 못하고 JSON·스크린샷 사본을 새로 만든다
+store.config.json
+/store/
+
 # wrangler files
 .wrangler
 .dev.vars*
