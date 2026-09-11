@@ -1,7 +1,9 @@
 # 앱 스토어 배포 가이드 (EAS)
 
 네이티브 앱(iOS · Android)은 **EAS Build** 로 클라우드에서 빌드하고 **EAS Submit** 으로 스토어에 올린다.
-웹은 별도 트랙(`pnpm deploy` → Cloudflare), 크롬 익스텐션은 `extension/README.md` 를 본다.
+웹은 별도 트랙이다 — Cloudflare Workers Builds 가 빌드한다(`main` → 프로덕션, 그 외 브랜치 → preview). 크롬 익스텐션은 `extension/README.md` 를 본다.
+
+> **웹 빌드 설정 (Cloudflare 대시보드).** 빌드 명령은 `pnpm build:web` 이다 — `EXPO_PUBLIC_*` 누락이나 마스터 토큰 포함을 먼저 검사해 빌드를 실패시킨다. `EXPO_PUBLIC_*` 는 번들에 인라인되므로 런타임 "Variables and Secrets" 가 아니라 **빌드 변수**로 넣고, preview 빌드에도 같은 값이 있어야 한다: `EXPO_PUBLIC_API_BASE_URL` · `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` · `EXPO_PUBLIC_KAKAO_REST_API_KEY` · `EXPO_PUBLIC_EXTENSION_ID`.
 
 > 로컬 시뮬레이터 실행 세팅은 `docs/ios-local-setup.md`. 이 문서는 **스토어에 올라가는 빌드**만 다룬다.
 
