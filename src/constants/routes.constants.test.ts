@@ -26,6 +26,14 @@ describe("routes.constants", () => {
     });
   });
 
+  // 폴더명을 함께 넘기면 상세 헤더가 그 이름을 타이틀로 쓴다(홈·링크 상세에서 진입 시).
+  test("archiveDetailHref 는 폴더명을 함께 담는다", () => {
+    expect(archiveDetailHref("3", "디자인")).toEqual({
+      pathname: "/archive/[id]",
+      params: { id: "3", name: "디자인" },
+    });
+  });
+
   test("moveLinksHref 는 링크 id 를 쉼표로 이어 붙인다", () => {
     expect(moveLinksHref([42, 43])).toEqual({
       pathname: "/move-links",

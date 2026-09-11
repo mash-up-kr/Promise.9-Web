@@ -8,6 +8,7 @@ import {
   isPast,
   matchedPresetDays,
   REMIND_PRESETS,
+  randomReminderDate,
   relativeDayLabel,
   toReminderAt,
   withDate,
@@ -120,5 +121,26 @@ describe("toReminderAt", () => {
     // 로컬 시각을 그대로 보내면 서버가 타임존을 알 수 없다 — UTC(Z) 로 변환해 보낸다.
     expect(toReminderAt(at)).toBe(at.toISOString());
     expect(toReminderAt(at)).toMatch(/Z$/);
+  });
+});
+
+describe("randomReminderDate", () => {
+  it("웹과 같은 1~180일 범위로 고른다", () => {
+    // 경계는 rand 를 주입해 결정적으로 본다 (웹 getRandomReminderDays 와 같은 정책).
+    expect(
+      randomReminderDate(new Date(2026, 7, 15, 9, 0), NOW, () => 0),
+    ).toEqual(new Date(2026, 7, 15, 9, 0));
+    expect(
+      randomReminderDate(new Date(2026, 7, 15, 9, 0), NOW, () => 0.999999),
+    ).toEqual(new Date(2027, 1, 10, 9, 0));
+  });
+
+  it("날짜만 바꾸고 지금 고른 시각은 지킨다", () => {
+    const current = new Date(2026, 7, 15, 21, 45);
+    const next = randomReminderDate(current, NOW, () => 0.5);
+
+    expect(next.getHours()).toBe(21);
+    expect(next.getMinutes()).toBe(45);
+    expect(daysFromToday(next, NOW)).toBe(91);
   });
 });

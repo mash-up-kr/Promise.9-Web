@@ -265,6 +265,7 @@ const detailResponse = {
   aiSummary: "요약",
   tags: [{ tagId: 7, name: "디자인", sourceType: "ai", sortOrder: 1 }],
   memo: "메모",
+  reminderAt: "2026-08-20T12:00:00.000Z",
   relatedLinks: [{ linkId: 41, title: "관련", thumbnailUrl: null }],
 };
 
@@ -322,6 +323,19 @@ describe("toLinkDetail", () => {
   it("folder.color 가 없으면 folderColor 는 undefined 다", () => {
     const d = toLinkDetail(linkDetailResponseSchema.parse(detailResponse));
     expect(d.folderColor).toBeUndefined();
+  });
+
+  it("서버 reminderAt 을 그대로 싣고, 없으면 null 로 폴백한다", () => {
+    const withReminder = toLinkDetail(
+      linkDetailResponseSchema.parse(detailResponse),
+    );
+    expect(withReminder.reminderAt).toBe("2026-08-20T12:00:00.000Z");
+
+    const { reminderAt: _omit, ...withoutReminder } = detailResponse;
+    const parsed = toLinkDetail(
+      linkDetailResponseSchema.parse(withoutReminder),
+    );
+    expect(parsed.reminderAt).toBeNull();
   });
 
   // 서버 문서(docs/api/link.md) 의 실제 예시 hex — 팔레트 밖이면 gray 로 떨어져야 하므로 회귀 방지.

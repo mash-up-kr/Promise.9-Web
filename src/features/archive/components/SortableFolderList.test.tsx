@@ -41,6 +41,8 @@ describe("SortableFolderList", () => {
   test("blue 가 아닌 폴더도 자기 색으로 아이콘을 렌더한다", async () => {
     const view = await render(<Harness />);
     // red 폴더 아이콘이 회색으로 폴백되지 않고 red-solid(#e34647)로 그려진다.
-    expect(JSON.stringify(view.toJSON())).toContain("#e34647");
+    // react-native-svg 는 fill hex 를 ARGB 정수로 직렬화하므로 같은 형태로 비교한다.
+    const RED_SOLID_ARGB = 0xffe34647;
+    expect(JSON.stringify(view.toJSON())).toContain(String(RED_SOLID_ARGB));
   });
 });

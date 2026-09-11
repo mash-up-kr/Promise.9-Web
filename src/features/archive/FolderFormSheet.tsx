@@ -3,7 +3,10 @@ import {
   useUpdateFolderMutation,
 } from "@shared/entities/folder/folder.queries";
 import type { SelectableFolderColor } from "@shared/folder/folder.constants";
-import { FOLDER_COLOR_OPTIONS } from "@shared/folder/folder.constants";
+import {
+  DEFAULT_FOLDER_COLOR,
+  FOLDER_COLOR_OPTIONS,
+} from "@shared/folder/folder.constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
@@ -37,7 +40,7 @@ function CreateFolderForm() {
   return (
     <FolderFormCard
       title="새 폴더 만들기"
-      defaultValues={{ folderName: "", color: "blue" }}
+      defaultValues={{ folderName: "", color: DEFAULT_FOLDER_COLOR }}
       onSubmit={(values) => mutateAsync(values)}
       onClose={() => router.back()}
       onError={() =>
@@ -86,5 +89,5 @@ function EditFolderForm() {
 function toSelectableColor(color?: string): SelectableFolderColor {
   return FOLDER_COLOR_OPTIONS.includes(color as SelectableFolderColor)
     ? (color as SelectableFolderColor)
-    : "blue";
+    : DEFAULT_FOLDER_COLOR;
 }

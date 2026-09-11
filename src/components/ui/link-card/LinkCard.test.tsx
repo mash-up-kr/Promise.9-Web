@@ -67,6 +67,16 @@ describe("LinkCard", () => {
     ).toBeOnTheScreen();
   });
 
+  test("placeholder 는 no-thumbnail 일러스트를 렌더한다", async () => {
+    await renderCard();
+    const image = screen.getByTestId("link-card-thumbnail-placeholder-image");
+    expect(image).toBeOnTheScreen();
+    // expo-image 는 source 를 배열로 정규화한다.
+    expect(image.props.source).toEqual([
+      require("@/assets/images/no-thumbnail.png"),
+    ]);
+  });
+
   // 서버가 아직 제목을 만들지 못한 링크(processingStatus PENDING·실패)는 title 이 빈 문자열로 온다.
   // 빈 카드 대신 출처 도메인을 보여주고, 접근성 라벨도 같은 값을 쓴다.
   test("제목이 비어 있으면 출처 도메인을 대신 보여준다", async () => {

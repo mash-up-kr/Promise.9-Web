@@ -5,7 +5,7 @@ import { View } from "react-native";
 import { Header } from "@/components/ui/header/Header";
 import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
-import { Logo } from "@/components/ui/logo/Logo";
+import { LogoSymbol } from "@/components/ui/logo/LogoSymbol";
 import { TabBar } from "@/components/ui/tab-bar/TabBar";
 import { ROUTES } from "@/constants/routes.constants";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
@@ -47,7 +47,7 @@ export default function TabsLayout() {
           header: () => (
             <Header
               scrollScope="home"
-              left={<Logo />}
+              left={<LogoSymbol />}
               right={
                 <>
                   <IconButton
