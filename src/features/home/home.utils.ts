@@ -49,9 +49,9 @@ export function selectTopKeywords(res: RecommendationResponse): HomeKeyword[] {
  * 저장 직후 서버가 제목·썸네일·요약을 채우는 동안(processingStatus PENDING) 목록을 다시 조회할 간격.
  * 링크 목록 쿼리의 `refetchInterval` 함수로 쓴다.
  *
- * 목록 응답엔 처리 상태가 없어 제목이 비어 있는 링크를 처리 중으로 본다. 다만 분석에 실패한
- * 링크(FAILED)도 제목이 비어 있어 그것만으로는 폴링이 끝나지 않으므로, 저장 시각이 처리 대기
- * 상한 안에 있는 링크만 센다.
+ * 제목이 먼저 채워져도 요약·태그가 끝나기 전이면 PENDING 이라 계속 조회하고, 실패(FAILED)는
+ * 제목이 비어 있어도 멈춘다. 상태가 끝내 확정되지 않는 경우를 대비해 저장 시각 상한도 함께 본다
+ * (상세 재조회와 같은 정책).
  */
 export function getProcessingRefetchInterval(
   res: LinkListResponse | undefined,
@@ -59,7 +59,7 @@ export function getProcessingRefetchInterval(
 ): number | false {
   const hasProcessingLink = res?.links.some(
     (item) =>
-      (item.title === null || item.title.trim().length === 0) &&
+      item.processingStatus === "PENDING" &&
       isWithinProcessingWindow(item.savedAt, now),
   );
   return hasProcessingLink ? LINK_PROCESSING.pollIntervalMs : false;

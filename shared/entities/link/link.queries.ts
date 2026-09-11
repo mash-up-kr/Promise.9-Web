@@ -20,6 +20,14 @@ const linkTagSchema = z.looseObject({
   sortOrder: z.number().nullable(),
 });
 
+// 요약·태그·임베딩 처리 상태 — 목록·상세가 같은 값을 쓴다.
+const linkProcessingStatusSchema = z.enum([
+  "PENDING",
+  "SUCCESS",
+  "NEEDS_REVIEW",
+  "FAILED",
+]);
+
 // GET /links 목록 아이템 — title·source 는 OG 미수집 시 null 일 수 있다.
 const linkListItemSchema = z.looseObject({
   linkId: z.number(),
@@ -30,6 +38,8 @@ const linkListItemSchema = z.looseObject({
   savedAt: z.string(),
   // 홈 "다시 볼 링크" 가 알림 날짜 배지로 쓴다. 설정하지 않았으면 null.
   reminderAt: z.string().nullable(),
+  // 저장 직후 목록 재조회 판단에 쓴다(서버 PR #142). 안 내려주는 응답도 통과하도록 옵션.
+  processingStatus: linkProcessingStatusSchema.optional(),
 });
 
 /**
@@ -111,7 +121,7 @@ export const linkDetailResponseSchema = z.looseObject({
   savedAt: z.string(),
   isFavorite: z.boolean(),
   viewedAt: z.string().nullable(),
-  processingStatus: z.enum(["PENDING", "SUCCESS", "NEEDS_REVIEW", "FAILED"]),
+  processingStatus: linkProcessingStatusSchema,
   aiSummary: z.string().nullable(),
   tags: z.array(linkTagSchema),
   memo: z.string().nullable(),
