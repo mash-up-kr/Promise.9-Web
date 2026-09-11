@@ -491,6 +491,27 @@ describe("CreateLinkSheet", () => {
     expect(await screen.findByText("프리뷰 제목")).toBeOnTheScreen();
   });
 
+  // 프리뷰는 blur 로 확정되지만, 비우는 순간엔 확정할 URL 이 없으니 카드도 바로 걷어야 한다.
+  test("URL 을 (x) 로 지우면 프리뷰 카드도 사라진다", async () => {
+    mockGetByUrl({
+      "/links/preview": {
+        title: "프리뷰 제목",
+        source: "toss.tech",
+        thumbnailUrl: "https://img.test/og.png",
+      },
+    });
+    await renderSheet();
+    const input = screen.getByPlaceholderText("URL");
+    await fireEvent.changeText(input, "https://toss.tech/x");
+    await fireEvent(input, "blur");
+    await screen.findByText("프리뷰 제목");
+
+    await fireEvent.press(screen.getByLabelText("입력 지우기"));
+
+    expect(screen.queryByText("프리뷰 제목")).not.toBeOnTheScreen();
+    expect(screen.getByPlaceholderText("URL")).toHaveProp("value", "");
+  });
+
   test("추출 실패 시 도메인 폴백 카드를 보여준다", async () => {
     const spy = jest.spyOn(console, "error").mockImplementation(() => {});
     mockGet.mockImplementation((url: string) => {
