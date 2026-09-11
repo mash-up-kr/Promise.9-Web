@@ -40,6 +40,7 @@ export const linkDetailFormSchema = z.object({
   folder: z.custom<LinkFolderRef>().nullable(),
   memo: z.string().max(MEMO_MAX_LENGTH, "메모가 너무 깁니다"),
   isFavorite: z.boolean(),
+  reminder: z.custom<ReminderValue>().nullable(),
 });
 
 export type LinkDetailForm = z.infer<typeof linkDetailFormSchema>;

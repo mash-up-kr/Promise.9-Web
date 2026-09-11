@@ -9,8 +9,13 @@ export const ROUTES = {
   CREATE_LINK: "/create-link",
 } as const satisfies Record<string, Href>;
 
-export function archiveDetailHref(id: string) {
-  return { pathname: "/archive/[id]", params: { id } } as const satisfies Href;
+// name 을 넘기면 폴더 상세 헤더가 그 이름을 타이틀로 쓴다 — 홈·링크 상세처럼 이미 폴더명을
+// 손에 쥔 곳에서 넘겨, 상세 화면이 별도 조회 없이 타이틀을 그리게 한다.
+export function archiveDetailHref(id: string, name?: string) {
+  return {
+    pathname: "/archive/[id]",
+    params: { id, ...(name && { name }) },
+  } as const satisfies Href;
 }
 
 /**

@@ -40,8 +40,15 @@ import { LinkPopover } from "./components/LinkPopover";
 import { LinkThumbnail } from "./components/LinkThumbnail";
 import { MemoField } from "./components/MemoField";
 import { RelatedLinksList } from "./components/RelatedLinksList";
+import { ReminderSection } from "./components/ReminderSection";
 import { type LinkDetailForm, linkDetailFormSchema } from "./link.contracts";
 import { getDetailRefetchInterval, shouldShowAiSummary } from "./link.utils";
+import {
+  fromReminderAtIso,
+  isPastReminder,
+  type ReminderValue,
+  toReminderAtIso,
+} from "./reminder.utils";
 
 // 로딩·에러 상태에도 뒤로가기는 유지한다(즐겨찾기·더보기는 데이터가 있어야 해 콘텐츠 상태에서만).
 function LinkDetailBackHeader() {
@@ -145,6 +152,35 @@ function LinkDetailContent() {
     }
   };
 
+  // 리마인드는 별처럼 낙관적으로 먼저 반영하고, PATCH 가 실패하면 이전 값으로 원복 + 스낵바.
+  // 날짜 최소값이 내일이라 과거 선택은 정상 경로에선 생기지 않지만, 서버가 미래만 허용하므로
+  // 방어적으로 막고 저장을 보내지 않는다.
+  const handleReminderChange = (
+    field: ControllerRenderProps<LinkDetailForm, "reminder">,
+    next: ReminderValue | null,
+  ) => {
+    if (next && isPastReminder(next)) {
+      show({
+        message: "선택한 시간이 이미 지났어요. 날짜나 시간을 변경해 주세요",
+      });
+      return;
+    }
+    const prev = field.value;
+    field.onChange(next);
+    updateLink(
+      {
+        linkId: linkDetail.linkId,
+        reminderAt: next ? toReminderAtIso(next) : null,
+      },
+      {
+        onError: () => {
+          field.onChange(prev);
+          show({ message: "리마인드를 변경하지 못했어요. 다시 시도해주세요." });
+        },
+      },
+    );
+  };
+
   // 미분류 "폴더선택" → 폴더 선택 시트(타이틀 "폴더 선택")
   const handleSelectFolder = () => {
     router.push(moveLinksHref([linkDetail.linkId], undefined, "폴더 선택"));
@@ -153,7 +189,12 @@ function LinkDetailContent() {
   // 지정 폴더 칩 탭 → 해당 폴더 상세로 이동
   const handleOpenFolder = () => {
     if (linkDetail.folder) {
-      router.push(archiveDetailHref(String(linkDetail.folder.folderId)));
+      router.push(
+        archiveDetailHref(
+          String(linkDetail.folder.folderId),
+          linkDetail.folder.folderName,
+        ),
+      );
     }
   };
 
@@ -197,6 +238,9 @@ function LinkDetailContent() {
       folder: linkDetail.folder,
       memo: linkDetail.memo ?? "",
       isFavorite: linkDetail.isFavorite,
+      reminder: linkDetail.reminderAt
+        ? fromReminderAtIso(linkDetail.reminderAt)
+        : null,
     },
   });
 
@@ -307,6 +351,19 @@ function LinkDetailContent() {
                   memo={field.value}
                   onChangeMemo={field.onChange}
                   onBlur={() => handleMemoBlur(field.value)}
+                />
+              )}
+            />
+          </View>
+
+          <View className="px-5">
+            <Controller
+              control={control}
+              name="reminder"
+              render={({ field }) => (
+                <ReminderSection
+                  value={field.value}
+                  onChange={(next) => handleReminderChange(field, next)}
                 />
               )}
             />

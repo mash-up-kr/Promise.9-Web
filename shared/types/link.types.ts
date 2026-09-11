@@ -73,6 +73,8 @@ export interface LinkDetail extends LinkBase {
   tags: LinkTag[];
   memo: string | null;
   isFavorite: boolean;
+  /** 리마인드 시각 (ISO 8601). 설정하지 않았으면 null */
+  reminderAt: string | null;
   /** 연관 링크. 서버가 항상 배열을 보장한다(결과 없으면 빈 배열). */
   relatedLinks: RelatedLink[];
 }
