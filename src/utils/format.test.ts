@@ -50,9 +50,9 @@ describe("formatCalendarDate", () => {
     expect(formatCalendarDate("2026-06-19T00:00:00.000Z")).toBe("2026.06.19");
   });
 
-  test("UTC 자정 시각도 로컬 타임존에 따라 날짜가 밀리지 않는다", () => {
-    expect(formatCalendarDate("2026-01-01T00:00:00.000Z")).toBe("2026.01.01");
-    expect(formatCalendarDate("2026-12-31T23:59:59.999Z")).toBe("2026.12.31");
+  test("UTC 로는 전날인 KST 새벽 시각도 기기 타임존 날짜로 보여준다", () => {
+    // 2027-01-01 00:30 KST
+    expect(formatCalendarDate("2026-12-31T15:30:00.000Z")).toBe("2027.01.01");
   });
 });
 
@@ -63,5 +63,10 @@ describe("formatMonthDay", () => {
 
   test("한 자리 월·일은 0 을 붙이지 않는다", () => {
     expect(formatMonthDay("2026-01-05T00:00:00.000Z")).toBe("1월 5일");
+  });
+
+  test("UTC 로는 전날인 KST 새벽 시각도 기기 타임존 날짜로 보여준다", () => {
+    // 2026-09-12 08:00 KST
+    expect(formatMonthDay("2026-09-11T23:00:00.000Z")).toBe("9월 12일");
   });
 });

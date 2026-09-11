@@ -31,14 +31,12 @@ export function formatRelativeDate(
 
 /**
  * 절대 날짜(`YYYY.MM.DD`) 표시 — 상대 표현 없음.
- * 로컬 타임존 변환으로 날짜가 하루 밀리는 것을 막기 위해 UTC 기준으로 파싱한다
- * (캘린더 날짜 의미의 ISO 8601 문자열을 받는다는 전제).
  *
  * @example
  * formatCalendarDate("2026-06-19T00:00:00.000Z"); // "2026.06.19"
  */
 export function formatCalendarDate(date: string): string {
-  return dayjs.utc(date).format("YYYY.MM.DD");
+  return dayjs(date).format("YYYY.MM.DD");
 }
 
 /**
@@ -48,5 +46,5 @@ export function formatCalendarDate(date: string): string {
  * formatMonthDay("2026-08-10T00:00:00.000Z"); // "8월 10일"
  */
 export function formatMonthDay(date: string): string {
-  return dayjs.utc(date).format("M월 D일");
+  return dayjs(date).format("M월 D일");
 }
