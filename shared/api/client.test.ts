@@ -10,10 +10,10 @@ function loadFresh() {
     ...ORIGINAL_ENV,
     EXPO_PUBLIC_API_BASE_URL: "https://api.test",
   };
-  const { setRequestDefaultHeaders } =
+  const { apiClient, setRequestDefaultHeaders } =
     require("./client") as typeof import("./client");
   const { setAccessToken } = require("./token") as typeof import("./token");
-  return { setRequestDefaultHeaders, setAccessToken };
+  return { apiClient, setRequestDefaultHeaders, setAccessToken };
 }
 
 function makeConfig(): InternalAxiosRequestConfig {
@@ -23,6 +23,11 @@ function makeConfig(): InternalAxiosRequestConfig {
 afterEach(() => {
   process.env = ORIGINAL_ENV;
   jest.resetModules();
+});
+
+test("요청 타임아웃은 서버 최대 타임아웃과 같은 25초다", () => {
+  const { apiClient } = loadFresh();
+  expect(apiClient.defaults.timeout).toBe(25_000);
 });
 
 describe("apiClient 요청 인터셉터 — 액세스 토큰", () => {
