@@ -33,8 +33,10 @@ const inputSlotStyles = tv({
 // iOS TextInput 은 lineHeight 가 폰트보다 크면 글리프를 라인박스 하단에 정렬해
 // 텍스트가 내려간다 — line-height 를 해제해 자연 중앙 정렬시킨다.
 // 웹은 브라우저 기본 포커스 아웃라인을 제거한다.
+// min-w-0: Safari 는 <input> 의 최소 폭(min-width: auto)을 넓게 잡아 flex 안에서 줄어들지 않고
+// 우측 clear(X) 를 컨테이너 밖으로 밀어낸다 — 내용 폭보다 작아질 수 있게 한다.
 export const inputFieldStyles = tv({
-  base: "flex-1 text-text-normal web:outline-none ios:leading-[0px]",
+  base: "min-w-0 flex-1 text-text-normal web:outline-none ios:leading-[0px]",
   variants: {
     variant: {
       field: "font-pretendard text-body-2-reading",

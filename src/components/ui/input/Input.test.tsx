@@ -197,3 +197,12 @@ describe("공유 익스텐션 플래그", () => {
     ).toBeUndefined();
   });
 });
+
+// Safari 는 <input> 의 최소 폭(min-width: auto)을 Chrome 보다 넓게 잡아 flex 안에서 줄어들지 않고
+// 우측 clear(X) 버튼을 컨테이너 밖으로 밀어냈다 — 필드는 내용 폭보다 작아질 수 있어야 한다.
+describe("InputField 폭", () => {
+  test("flex 안에서 내용 폭보다 줄어들 수 있다(min-w-0)", () => {
+    expect(inputFieldStyles({ variant: "field" })).toContain("min-w-0");
+    expect(inputFieldStyles({ variant: "pill" })).toContain("min-w-0");
+  });
+});
