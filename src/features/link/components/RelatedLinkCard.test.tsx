@@ -52,13 +52,26 @@ describe("RelatedLinkCard", () => {
     );
   });
 
-  test("썸네일이 없으면(빈 문자열) 이미지를 렌더하지 않는다", async () => {
+  test("썸네일이 없으면(빈 문자열) 이미지 대신 플레이스홀더를 렌더한다", async () => {
     await render(<RelatedLinkCard link={{ ...baseLink, thumbnailUrl: "" }} />);
     // 빈 URI 로 Image 를 렌더하면 웹에서 빈 <img> 테두리가 생긴다 — 아예 렌더하지 않는다.
     expect(screen.queryByTestId("related-thumb-image")).toBeNull();
     expect(screen.queryByTestId("related-thumb-blur")).toBeNull();
+    expect(screen.getByTestId("related-thumb-placeholder")).toBeOnTheScreen();
     // 제목은 그대로 보여야 한다.
     expect(screen.getByText(baseLink.title)).toBeOnTheScreen();
+  });
+
+  // 만료된 CDN URL·404 처럼 URL 은 있는데 못 불러오면 빈 박스 대신 플레이스홀더를 보여준다.
+  test("썸네일을 불러오지 못하면 플레이스홀더로 바꾼다", async () => {
+    await render(<RelatedLinkCard link={baseLink} />);
+
+    await fireEvent(screen.getByTestId("related-thumb-image"), "error", {
+      nativeEvent: { error: "load failed" },
+    });
+
+    expect(screen.getByTestId("related-thumb-placeholder")).toBeOnTheScreen();
+    expect(screen.queryByTestId("related-thumb-image")).toBeNull();
   });
 
   test("이미지 로드 전(치수 미확정)에는 블러 레이어 없이 단일 이미지만 렌더된다", async () => {
