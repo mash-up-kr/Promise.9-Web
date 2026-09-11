@@ -1,4 +1,5 @@
 import { useCreateFolderMutation } from "@shared/entities/folder/folder.queries";
+import { DEFAULT_FOLDER_COLOR } from "@shared/folder/folder.constants";
 import { useState } from "react";
 import { Modal } from "react-native";
 import { FolderFormCard } from "@/features/archive/components/FolderFormCard";
@@ -23,7 +24,7 @@ export function FolderCreateModal({ onClose }: FolderCreateModalProps) {
     >
       <FolderFormCard
         title="새 폴더 만들기"
-        defaultValues={{ folderName: "", color: "blue" }}
+        defaultValues={{ folderName: "", color: DEFAULT_FOLDER_COLOR }}
         onSubmit={(values) => mutateAsync(values)}
         onClose={onClose}
         onError={() => setHasFailed(true)}

@@ -101,6 +101,7 @@
 
   /* ── Semantic: Folder / Accent ── */
   --color-folder-gray: var(--color-gray-400);
+  --color-folder-gray-subtle: var(--color-gray-700);
   --color-folder-blue-solid: #61a8ef;
   --color-folder-blue-subtle: #2a313a;
   --color-folder-blue-subtle-active: #364c62;

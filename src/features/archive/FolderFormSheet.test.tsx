@@ -113,6 +113,14 @@ describe('FolderFormSheet mode="create"', () => {
     ).toBe(true);
   });
 
+  test("팔레트 첫 색이 기본 선택이다", async () => {
+    await renderSheet("create");
+    expect(
+      screen.getByTestId("folder-color-yellow-green").props.accessibilityState
+        .selected,
+    ).toBe(true);
+  });
+
   test("저장하면 이름·색상 hex 로 폴더를 생성하고 시트를 닫는다", async () => {
     await renderSheet("create");
     await typeName("디자인");
@@ -121,7 +129,7 @@ describe('FolderFormSheet mode="create"', () => {
     await waitFor(() =>
       expect(mockPost).toHaveBeenCalledWith("/folders", {
         folderName: "디자인",
-        color: "#61a8ef",
+        color: "#d5d76a",
       }),
     );
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
@@ -271,13 +279,17 @@ describe('FolderFormSheet mode="edit"', () => {
   });
 
   // 서버 팔레트 밖의 색(기본색 등)으로 들어와도 폼이 검증에 걸려 저장이 막히면 안 된다.
-  test("팔레트에 없는 색으로 들어오면 선택 가능한 색으로 폴백한다", async () => {
+  test("팔레트에 없는 색으로 들어오면 팔레트 첫 색으로 폴백한다", async () => {
     mockParams.mockReturnValue({ id: "3", name: "기타", color: "gray" });
     await renderSheet("edit");
 
     expect(
       screen.getByLabelText("저장").props.accessibilityState.disabled,
     ).toBe(false);
+    expect(
+      screen.getByTestId("folder-color-yellow-green").props.accessibilityState
+        .selected,
+    ).toBe(true);
   });
 
   test("취소하면 시트를 닫는다", async () => {

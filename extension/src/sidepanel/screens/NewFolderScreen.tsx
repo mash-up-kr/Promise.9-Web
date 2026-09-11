@@ -1,6 +1,7 @@
 import { isDuplicateFolderNameError } from "@shared/entities/folder/folder.errors";
 import { useCreateFolderMutation } from "@shared/entities/folder/folder.queries";
 import {
+  DEFAULT_FOLDER_COLOR,
   FOLDER_COLOR_OPTIONS,
   FOLDER_TONE_HEX,
   type SelectableFolderColor,
@@ -30,9 +31,8 @@ export interface NewFolderScreenProps {
 /** 시안 `chrome-extension / new folder`. */
 export function NewFolderScreen({ onCancel, onCreated }: NewFolderScreenProps) {
   const [folderName, setFolderName] = useState("");
-  const [color, setColor] = useState<SelectableFolderColor>(
-    FOLDER_COLOR_OPTIONS[0],
-  );
+  const [color, setColor] =
+    useState<SelectableFolderColor>(DEFAULT_FOLDER_COLOR);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const createFolder = useCreateFolderMutation();
