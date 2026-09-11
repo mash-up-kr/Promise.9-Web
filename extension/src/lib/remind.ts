@@ -110,3 +110,21 @@ export function isPast(date: Date, now: Date): boolean {
 export function toReminderAt(date: Date): string {
   return date.toISOString();
 }
+
+/** 웹(`getRandomReminderDays`)과 같은 랜덤 범위 — 내일(1일 뒤)부터 180일 뒤까지. */
+const RANDOM_MAX_DAYS = 180;
+
+/** 시각은 그대로 두고 날짜만 1~180일 뒤 중 하나로 고른다. */
+export function randomReminderDate(
+  current: Date,
+  now: Date,
+  rand: () => number = Math.random,
+): Date {
+  const days = Math.floor(rand() * RANDOM_MAX_DAYS) + 1;
+
+  return withTime(
+    addDaysAtDefaultHour(days, now),
+    current.getHours(),
+    current.getMinutes(),
+  );
+}
