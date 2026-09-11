@@ -13,6 +13,7 @@ import { renderHook, waitFor } from "@testing-library/react-native";
 
 import {
   linkQueries,
+  useCreateLinkMutation,
   useDeleteLinkMutation,
   useMoveLinksToFolderMutation,
   useRestoreLinkMutation,
@@ -20,6 +21,7 @@ import {
 } from "./link.queries";
 
 const mockGet = apiClient.get as jest.Mock;
+const mockPost = apiClient.post as jest.Mock;
 const mockPatch = apiClient.patch as jest.Mock;
 const mockDelete = apiClient.delete as jest.Mock;
 
@@ -39,13 +41,13 @@ async function renderMutation<T>(useMutationHook: () => T) {
   return { result, invalidate };
 }
 
-// 링크가 다른 폴더로 가거나 삭제되면 링크 목록과 폴더 카운트가 함께 낡는다.
+// 링크가 다른 폴더로 가거나 삭제되면 링크 목록·폴더 카운트·홈 키워드(폴더·태그별 링크 수)가 함께 낡는다.
 // 폴더별 링크 목록은 별도 캐시가 아니라 링크 목록 캐시(linkKeys.lists())의 일부다.
 const expectFolderCachesInvalidated = (invalidate: jest.SpyInstance) =>
   waitFor(() =>
     expect(
       invalidate.mock.calls.map(([options]) => options?.queryKey?.[0]),
-    ).toEqual(expect.arrayContaining(["link", "folder"])),
+    ).toEqual(expect.arrayContaining(["link", "folder", "recommendation"])),
   );
 
 describe("useMoveLinksToFolderMutation", () => {
@@ -205,14 +207,30 @@ describe("useUpdateLinkMutation", () => {
     );
   });
 
-  it("성공 시 상세·폴더 캐시를 무효화한다", async () => {
+  it("성공 시 상세·폴더·홈 키워드 캐시를 무효화한다", async () => {
     const { result, invalidate } = await renderMutation(useUpdateLinkMutation);
     result.current.mutate({ linkId: 42, memo: "x" });
 
-    await waitFor(() =>
-      expect(
-        invalidate.mock.calls.map(([options]) => options?.queryKey?.[0]),
-      ).toEqual(expect.arrayContaining(["link", "folder"])),
-    );
+    await expectFolderCachesInvalidated(invalidate);
+  });
+});
+
+describe("useCreateLinkMutation", () => {
+  beforeEach(() => {
+    mockPost
+      .mockReset()
+      .mockResolvedValue({ data: { success: true, data: { linkId: 1 } } });
+  });
+
+  it("성공하면 링크·폴더·홈 키워드 캐시를 버린다", async () => {
+    const { result, invalidate } = await renderMutation(useCreateLinkMutation);
+    result.current.mutate({
+      url: "https://example.com",
+      folderId: null,
+      memo: null,
+      reminderAt: null,
+    });
+
+    await expectFolderCachesInvalidated(invalidate);
   });
 });

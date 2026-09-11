@@ -22,7 +22,7 @@ appId: com.mashup.promise9
     commands:
       - tapOn: "Dismiss"
 # 검색바는 자동 포커스지만 E2E 타이밍에 따라 풀릴 수 있어 명시적으로 탭한다(placeholder 매칭).
-- tapOn: "검색"
+- tapOn: "제목이나 키워드를 입력해주세요"
 - inputText: "maestro"
 # 제출(즉시 실행)만 최근 검색어에 저장된다 — 자동(디바운스) 검색은 저장하지 않는다.
 - pressKey: Enter

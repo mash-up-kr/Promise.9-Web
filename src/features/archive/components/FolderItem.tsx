@@ -73,7 +73,11 @@ export function FolderItem({
         ) : null}
         <View pointerEvents="none" className="flex-row items-center gap-1">
           {count === undefined ? (
-            <Skeleton testID="folder-count-skeleton" className="h-4 w-6" />
+            <Skeleton
+              testID="folder-count-skeleton"
+              surface="list"
+              className="h-4 w-6"
+            />
           ) : (
             <Text variant="body-2-normal" className="text-text-alternative">
               {count}

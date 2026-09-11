@@ -91,7 +91,7 @@ describe('FolderFormSheet mode="create"', () => {
 
   const typeName = async (name: string) => {
     await fireEvent.changeText(
-      screen.getByPlaceholderText("폴더 이름을 입력하세요."),
+      screen.getByPlaceholderText("폴더 이름을 입력해주세요"),
       name,
     );
     await waitFor(() =>
@@ -158,7 +158,7 @@ describe('FolderFormSheet mode="create"', () => {
 
     expect(screen.queryByText("같은 이름의 폴더가 있어요")).toBeNull();
     expect(
-      screen.getByPlaceholderText("폴더 이름을 입력하세요.").props.value,
+      screen.getByPlaceholderText("폴더 이름을 입력해주세요").props.value,
     ).toBe("디자인");
     expect(mockBack).not.toHaveBeenCalled();
   });
@@ -194,7 +194,7 @@ describe('FolderFormSheet mode="edit"', () => {
 
     expect(screen.getByText("폴더 편집")).toBeOnTheScreen();
     expect(
-      screen.getByPlaceholderText("폴더 이름을 입력하세요.").props.value,
+      screen.getByPlaceholderText("폴더 이름을 입력해주세요").props.value,
     ).toBe("디자인");
   });
 
@@ -210,7 +210,7 @@ describe('FolderFormSheet mode="edit"', () => {
   test("이름만 고치면 folderId 로 이름만 보내고 시트를 닫는다", async () => {
     await renderSheet("edit");
     await fireEvent.changeText(
-      screen.getByPlaceholderText("폴더 이름을 입력하세요."),
+      screen.getByPlaceholderText("폴더 이름을 입력해주세요"),
       "디자인 자료",
     );
     await fireEvent.press(screen.getByLabelText("저장"));
@@ -241,7 +241,7 @@ describe('FolderFormSheet mode="edit"', () => {
     mockParams.mockReturnValue({ id: "3", name: "기타", color: "gray" });
     await renderSheet("edit");
     await fireEvent.changeText(
-      screen.getByPlaceholderText("폴더 이름을 입력하세요."),
+      screen.getByPlaceholderText("폴더 이름을 입력해주세요"),
       "기타 자료",
     );
     await fireEvent.press(screen.getByLabelText("저장"));

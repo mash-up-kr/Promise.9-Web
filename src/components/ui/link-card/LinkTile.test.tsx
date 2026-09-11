@@ -49,6 +49,19 @@ describe("LinkTile", () => {
     ).not.toBeOnTheScreen();
   });
 
+  // 그리드가 폭에 맞춰 카드 크기를 정한다 — 썸네일은 시안 비율(160×200)을 유지한다.
+  test("width 를 주면 카드와 썸네일이 그 폭에 맞춰진다", async () => {
+    await render(<LinkTile link={link} width={170} />);
+
+    expect(screen.getByRole("button", { name: link.title })).toHaveStyle({
+      width: 170,
+    });
+    expect(screen.getByTestId("link-card-thumbnail-placeholder")).toHaveStyle({
+      width: 170,
+      height: 212.5,
+    });
+  });
+
   test("제목 버튼을 누르면 onPress 를 호출한다", async () => {
     const onPress = jest.fn();
     await render(<LinkTile link={link} onPress={onPress} />);

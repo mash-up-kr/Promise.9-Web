@@ -38,6 +38,22 @@ describe("LinkGrid", () => {
     });
   });
 
+  // 시안은 375 폭에 2열·카드 160 — 더 넓은 화면(웹 768)에서는 카드가 남는 폭을 나눠 갖는다.
+  test("그리드 폭에 맞춰 카드 폭을 정한다", async () => {
+    await render(<LinkGrid links={makeLinks(2)} />);
+
+    await fireEvent(screen.getByTestId("link-grid"), "layout", {
+      nativeEvent: { layout: { width: 335 } },
+    });
+    expect(screen.getByLabelText("링크 0")).toHaveStyle({ width: 160 });
+
+    // 768 − 패딩 40 = 728 → 4열일 때만 나오는 폭
+    await fireEvent(screen.getByTestId("link-grid"), "layout", {
+      nativeEvent: { layout: { width: 728 } },
+    });
+    expect(screen.getByLabelText("링크 0")).toHaveStyle({ width: 170.75 });
+  });
+
   // 시안 Content Card 는 검색 결과에서도 메타(태그·저장 시기) 라인을 끈다.
   test("타일에 메타 라인을 그리지 않는다", async () => {
     const [link] = makeLinks(1);

@@ -13,6 +13,13 @@ describe("skeletonStyles", () => {
   test("variant=circular 는 rounded-full 을 준다", () => {
     expect(skeletonStyles({ variant: "circular" })).toContain("rounded-full");
   });
+
+  // 리스트 배경(gray-800)은 기본 블록 색과 같아 블록이 안 보인다 — 한 단계 밝은 색을 쓴다.
+  test("surface=list 는 리스트 배경보다 밝은 블록 색을 준다", () => {
+    const cls = skeletonStyles({ surface: "list" });
+    expect(cls).toContain("bg-background-list-selected");
+    expect(cls).not.toContain("bg-background-thumbnail");
+  });
 });
 
 describe("Skeleton", () => {

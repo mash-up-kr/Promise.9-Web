@@ -47,7 +47,10 @@ const renderCard = async (
 
 const typeName = async (name: string) => {
   const user = userEvent.setup();
-  await user.type(screen.getByPlaceholderText("폴더 이름을 입력하세요."), name);
+  await user.type(
+    screen.getByPlaceholderText("폴더 이름을 입력해주세요"),
+    name,
+  );
   await waitFor(() =>
     expect(
       screen.getByLabelText("저장").props.accessibilityState.disabled,

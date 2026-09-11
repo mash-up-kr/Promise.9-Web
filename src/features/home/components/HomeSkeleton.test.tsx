@@ -19,4 +19,17 @@ describe("HomeSkeleton", () => {
 
     expect(screen.getAllByTestId("home-skeleton-section")).toHaveLength(4);
   });
+
+  // 흰색 5% 블록은 펄스(opacity 1→0.5)가 5%→2.5% 로 흔들려 보이지 않았다 — 저장 시트와 같은 불투명 기본 색을 쓴다.
+  test("블록은 공용 스켈레톤 기본 색을 쓴다", async () => {
+    await render(
+      <SafeAreaProvider initialMetrics={metrics}>
+        <HomeSkeleton />
+      </SafeAreaProvider>,
+    );
+
+    const tree = JSON.stringify(screen.toJSON());
+    expect(tree).toContain("bg-background-thumbnail");
+    expect(tree).not.toContain("bg-opacity-white-05");
+  });
 });

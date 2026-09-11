@@ -1,5 +1,6 @@
 import { clearTokens, getRefreshToken } from "@shared/api";
 import { useWithdrawMutation } from "@shared/entities/auth/auth.queries";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useCallback } from "react";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
@@ -12,6 +13,7 @@ import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
  */
 export function useWithdraw() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { show } = useSnackbar();
   const { mutateAsync, isPending } = useWithdrawMutation();
 
@@ -21,6 +23,7 @@ export function useWithdraw() {
     // 재로그인이 답이라, 로컬 세션을 정리하고 로그인으로 보낸다(issue #74).
     if (!refreshToken) {
       await clearTokens();
+      queryClient.clear();
       show({ message: "세션이 만료됐어요. 다시 로그인해주세요." });
       router.replace("/(auth)/login");
       return;
@@ -28,11 +31,13 @@ export function useWithdraw() {
     try {
       await mutateAsync(refreshToken); // DELETE /auth/withdraw
       await clearTokens();
+      // 탈퇴한 계정의 화면 캐시를 남기지 않는다.
+      queryClient.clear();
       router.replace("/(auth)/login");
     } catch {
       show({ message: "회원 탈퇴에 실패했어요. 다시 시도해주세요." });
     }
-  }, [mutateAsync, router, show]);
+  }, [mutateAsync, queryClient, router, show]);
 
   return { withdraw, isPending };
 }

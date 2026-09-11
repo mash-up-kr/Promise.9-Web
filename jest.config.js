@@ -1,3 +1,6 @@
+// 날짜 표시 테스트가 실행 기기 타임존에 따라 달라지지 않게 주 사용자 타임존으로 고정한다.
+process.env.TZ = "Asia/Seoul";
+
 /** @type {import('jest').Config} */
 module.exports = {
   preset: "jest-expo",

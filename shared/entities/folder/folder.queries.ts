@@ -1,5 +1,6 @@
 import { apiClient, type SuccessResponse } from "@shared/api";
 import { linkKeys } from "@shared/entities/link/link.keys";
+import { recommendationKeys } from "@shared/entities/recommendation/recommendation.keys";
 import {
   folderToneToHex,
   type SelectableFolderColor,
@@ -131,6 +132,8 @@ export function useCreateFolderMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: folderKeys.root() });
+      // 홈 키워드는 폴더 이름·링크 수를 함께 보여준다.
+      queryClient.invalidateQueries({ queryKey: recommendationKeys.root() });
     },
   });
 }
@@ -162,6 +165,9 @@ export function useUpdateFolderMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: folderKeys.root() });
+      queryClient.invalidateQueries({ queryKey: recommendationKeys.root() });
+      // 링크 상세는 소속 폴더 이름을 보여준다.
+      queryClient.invalidateQueries({ queryKey: linkKeys.details() });
     },
   });
 }
@@ -176,7 +182,10 @@ export function useDeleteFolderMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: folderKeys.root() });
+      queryClient.invalidateQueries({ queryKey: recommendationKeys.root() });
       queryClient.invalidateQueries({ queryKey: linkKeys.lists() });
+      // 옮겨진 링크의 상세는 소속 폴더가 미분류(null)로 바뀐다.
+      queryClient.invalidateQueries({ queryKey: linkKeys.details() });
     },
   });
 }

@@ -78,7 +78,9 @@ if (!baseURL) {
 
 export const apiClient = axios.create({
   baseURL,
-  timeout: 10_000,
+  // 일부 링크는 서버 처리에 10초 이상 걸린다. 서버의 최대 타임아웃(25초)과 동일하게 맞춰
+  // 서버가 아직 처리 중인데 클라이언트가 먼저 요청을 끊지 않도록 한다.
+  timeout: 25_000,
 });
 
 apiClient.interceptors.request.use(setRequestDefaultHeaders);

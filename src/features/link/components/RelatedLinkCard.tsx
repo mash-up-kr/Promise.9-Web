@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Text } from "@/components/ui/text/Text";
+import { ThumbnailFallback } from "@/components/ui/thumbnail/ThumbnailFallback";
 import { linkDetailHref } from "@/constants/routes.constants";
 
 // landscape 예시가 Figma 에 없어 임시로 잡은 반경 — dev-preview 실측 후 조정.
@@ -17,10 +18,16 @@ export function RelatedLinkCard({ link }: RelatedLinkCardProps) {
   const router = useRouter();
   // 원본 이미지의 실제 치수를 알아야 landscape 여부를 판정할 수 있다(URL만으론 알 수 없음).
   const [isLandscape, setIsLandscape] = useState(false);
+  // 못 불러온 URL 을 기억한다 — 서버가 썸네일을 다시 수집해 URL 이 바뀌면 자연히 다시 시도한다.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
 
   function handleLoad({ source }: ImageLoadEventData) {
     setIsLandscape(source.width > source.height);
   }
+
+  // 썸네일이 없으면(서버가 빈 값) Image 를 그리지 않는다 — 빈 <img> 가 웹에서 테두리를 만든다.
+  const hasThumbnail =
+    link.thumbnailUrl.length > 0 && link.thumbnailUrl !== failedUrl;
 
   return (
     <Pressable
@@ -29,42 +36,45 @@ export function RelatedLinkCard({ link }: RelatedLinkCardProps) {
       onPress={() => router.push(linkDetailHref(String(link.linkId)))}
       className="w-[120px] shrink-0 gap-2"
     >
-      <View className="h-[150px] w-[120px] shrink-0 overflow-hidden rounded-[12px] bg-background-thumbnail">
-        {/* 썸네일이 없으면(서버가 빈 값) Image 를 그리지 않는다 — 빈 <img> 가 웹에서 테두리를 만든다. */}
-        {link.thumbnailUrl ? (
-          <>
-            {isLandscape && (
-              <Image
-                testID="related-thumb-blur"
-                source={{ uri: link.thumbnailUrl }}
-                contentFit="cover"
-                blurRadius={BLUR_RADIUS}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  transform: [{ scale: 1.1 }],
-                }}
-              />
-            )}
+      {hasThumbnail ? (
+        <View className="h-[150px] w-[120px] shrink-0 overflow-hidden rounded-[12px] bg-background-thumbnail">
+          {isLandscape && (
             <Image
-              testID="related-thumb-image"
+              testID="related-thumb-blur"
               source={{ uri: link.thumbnailUrl }}
-              contentFit={isLandscape ? "contain" : "cover"}
+              contentFit="cover"
+              blurRadius={BLUR_RADIUS}
               style={{
                 position: "absolute",
                 top: 0,
                 left: 0,
                 right: 0,
                 bottom: 0,
+                transform: [{ scale: 1.1 }],
               }}
-              onLoad={handleLoad}
             />
-          </>
-        ) : null}
-      </View>
+          )}
+          <Image
+            testID="related-thumb-image"
+            source={{ uri: link.thumbnailUrl }}
+            contentFit={isLandscape ? "contain" : "cover"}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+            onLoad={handleLoad}
+            onError={() => setFailedUrl(link.thumbnailUrl)}
+          />
+        </View>
+      ) : (
+        <ThumbnailFallback
+          testID="related-thumb-placeholder"
+          className="h-[150px] w-[120px] shrink-0 rounded-[12px]"
+        />
+      )}
       <Text variant="body-4" numberOfLines={2} className="w-[120px]">
         {link.title}
       </Text>

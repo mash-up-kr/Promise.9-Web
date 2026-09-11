@@ -14,6 +14,7 @@ import { isWeb } from "@/constants/platform.constants";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
 import { SplashOverlay } from "@/features/splash/components/SplashOverlay";
 import { useSplashPhase } from "@/features/splash/hooks/useSplashPhase";
+import { setupFocusManager } from "@/lib/focus-manager";
 import { setupOnlineManager } from "@/lib/online-manager";
 import { queryClient } from "@/lib/queryClient";
 import { tokenPersistence } from "@/lib/tokenStorage";
@@ -25,6 +26,7 @@ SplashScreen.preventAutoHideAsync();
 // (네이티브: expo-secure-store · 웹: tokenStorage.web.ts, localStorage).
 setTokenPersistence(tokenPersistence);
 setupOnlineManager();
+setupFocusManager();
 
 const transparentBackgroundTheme = {
   ...DefaultTheme,

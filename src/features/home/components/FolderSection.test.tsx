@@ -46,7 +46,7 @@ describe("FolderSection", () => {
     await fireEvent.press(screen.getByLabelText("매쉬업 활동 폴더 열기"));
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/archive/[id]",
-      params: { id: "1" },
+      params: { id: "1", name: "매쉬업 활동" },
     });
   });
 

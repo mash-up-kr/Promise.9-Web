@@ -65,7 +65,11 @@ export function SettingsScreen() {
                 trailing={
                   <AsyncBoundary
                     pending={
-                      <Skeleton testID="email-skeleton" className="h-4 w-40" />
+                      <Skeleton
+                        testID="email-skeleton"
+                        surface="list"
+                        className="h-4 w-40"
+                      />
                     }
                     fallback={<ValueText>-</ValueText>}
                   >

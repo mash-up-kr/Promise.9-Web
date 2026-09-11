@@ -97,6 +97,7 @@ describe("linkDetailFormSchema", () => {
     folder: { folderId: 1, folderName: "디자인" },
     memo: "메모",
     isFavorite: false,
+    reminder: null,
   };
 
   test("유효한 폼을 통과시킨다", () => {

@@ -22,6 +22,8 @@ interface LinkContextMenuBaseProps {
    * 화면이 이 시점에 원문 URL 을 미리 받아둔다.
    */
   onOpen?: () => void;
+  /** 그리드가 화면 폭에 맞춰 정한 카드 폭. */
+  tileWidth?: number;
 }
 
 interface DefaultMenuProps extends LinkContextMenuBaseProps {
@@ -45,7 +47,7 @@ export type LinkContextMenuProps = DefaultMenuProps | TrashMenuProps;
  * 기본은 폴더 이동 / 링크 공유 / 삭제, 최근 삭제 폴더는 복구하기 하나다(Figma 62:7567).
  */
 export function LinkContextMenu(props: LinkContextMenuProps) {
-  const { link, onOpenLink, onOpen } = props;
+  const { link, onOpenLink, onOpen, tileWidth } = props;
   // 이동 시트·삭제 다이얼로그는 또 다른 Modal 이라 메뉴가 사라지는 도중에 띄우면 나타나지 않는다.
   // 고른 동작을 여기 담아뒀다가 팝오버가 완전히 닫힌 뒤에 실행한다.
   const pendingActionRef = useRef<(() => void) | null>(null);
@@ -70,6 +72,7 @@ export function LinkContextMenu(props: LinkContextMenuProps) {
       trigger={(open) => (
         <LinkTrigger
           link={link}
+          tileWidth={tileWidth}
           onOpenLink={onOpenLink}
           onOpenMenu={() => {
             onOpen?.();
@@ -114,18 +117,29 @@ export function LinkContextMenu(props: LinkContextMenuProps) {
 
 interface LinkTriggerProps {
   link: Link;
+  tileWidth?: number;
   onOpenLink: () => void;
   onOpenMenu: () => void;
 }
 
 // 메뉴를 여는 방법이 플랫폼마다 다르다 — 모바일은 롱프레스, 웹은 hover 때 뜨는 "..." 버튼
 // (폴더 행과 같은 방식. 롱프레스는 웹에서 알아챌 방법이 없다).
-function LinkTrigger({ link, onOpenLink, onOpenMenu }: LinkTriggerProps) {
+function LinkTrigger({
+  link,
+  tileWidth,
+  onOpenLink,
+  onOpenMenu,
+}: LinkTriggerProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   if (!isWeb) {
     return (
-      <LinkTile link={link} onPress={onOpenLink} onLongPress={onOpenMenu} />
+      <LinkTile
+        link={link}
+        width={tileWidth}
+        onPress={onOpenLink}
+        onLongPress={onOpenMenu}
+      />
     );
   }
 
@@ -134,7 +148,7 @@ function LinkTrigger({ link, onOpenLink, onOpenMenu }: LinkTriggerProps) {
       onPointerEnter={() => setIsHovered(true)}
       onPointerLeave={() => setIsHovered(false)}
     >
-      <LinkTile link={link} onPress={onOpenLink} />
+      <LinkTile link={link} width={tileWidth} onPress={onOpenLink} />
       {/* 카드 Pressable 안에 두면 눌리지 않으므로(바깥 Pressable 이 포인터를 가져간다)
           형제로 얹는다 — 썸네일 우상단, 선택 뱃지와 같은 여백. */}
       {isHovered ? (
