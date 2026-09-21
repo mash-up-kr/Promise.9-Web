@@ -157,7 +157,7 @@ describe("SidePanelApp", () => {
     await user.click(screen.getByRole("switch", { name: "리마인드" }));
     // 시안 기본값 — '내일' 프리셋이 선택된 상태로 켜진다.
     expect(screen.getByRole("button", { name: "내일" })).toHaveAttribute(
-      "aria-pressed",
+      "aria-selected",
       "true",
     );
     expect(screen.getByText("오전 9:00")).toBeInTheDocument();
