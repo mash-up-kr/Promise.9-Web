@@ -65,6 +65,7 @@ test('링크 목록을 불러온다', async () => {
 });
 ```
 - 네트워크(`shared/api` 의 fetch)는 mock 한다. 실제 백엔드 호출 금지.
+- `jest.mock("@/constants/platform.constants")` 는 **앱 코드의 분기만** 바꾼다 — jest 는 모듈 id 로 mock 하는데 그 파일은 재export 라, 원본을 상대경로로 읽는 `packages/ui` 컴포넌트(`WheelPicker` 등)에는 닿지 않는다. 패키지 컴포넌트의 분기까지 바꾸려면 원본인 `jest.mock("@promise9/ui/constants/platform.constants")` 를 건다 — 이쪽은 패키지 내부와 앱 재export 양쪽에 모두 적용된다.
 
 ## TDD 절차 (요약)
 1. **red** — 원하는 동작을 기술하는 테스트를 먼저 쓴다. 실행 → 실패 확인.

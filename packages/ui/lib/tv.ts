@@ -5,7 +5,7 @@ import { createTV } from "tailwind-variants";
  * `text-` 접두사라, 기본 tailwind-merge 가 같은 그룹 충돌로 보고 하나를 버린다
  * (색상 vs 폰트크기). 커스텀 토큰을 각 그룹에 등록해 색상·크기가 공존하게 한다.
  *
- * 토큰 목록은 src/global.css 의 @theme 정의(--text-*, --color-text-*)와 일치시킨다.
+ * 토큰 목록은 shared/styles/tokens.css 의 @theme 정의(--text-*, --color-text-*)와 일치시킨다.
  */
 const TYPOGRAPHY_PRESETS = [
   "title",
