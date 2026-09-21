@@ -97,6 +97,20 @@ export default defineConfig(({ mode }) => {
         resolve: { extensions: WEB_FIRST_EXTENSIONS },
       },
     },
+    build: {
+      rolldownOptions: {
+        treeshake: {
+          // react-native-css 는 sideEffects 를 선언하지 않아, shim 이 re-export 한 래퍼가 안 쓰여도
+          // 최상위 `copyComponentProperties(...)` 호출 때문에 번들에 남는다(FlatList·VirtualizedList 등).
+          moduleSideEffects: [
+            {
+              test: /react-native-css\/dist\/module\/components\//,
+              sideEffects: false,
+            },
+          ],
+        },
+      },
+    },
     define: {
       // shared/api 는 Expo 규약(EXPO_PUBLIC_*)으로 환경변수를 읽는다. 익스텐션은 Expo 가 아니라
       // Vite 라 그 이름의 값이 존재하지 않으므로, 빌드 타임에 VITE_* 값으로 치환해 넣는다.
