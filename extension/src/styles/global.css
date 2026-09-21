@@ -45,15 +45,19 @@
 /*
  * 앱은 굵기마다 family 이름이 다른 static 폰트를 쓴다(font-pretendard-medium → "Pretendard-Medium").
  * 패키지의 Text 가 그 이름을 요청하므로 같은 파일을 그 이름으로도 등록한다.
+ * 타이포 프리셋이 font-weight 도 함께 요청한다 — 실제 굵기를 선언하지 않으면(기본 400)
+ * 브라우저가 이미 굵은 파일 위에 가짜 bold 를 한 번 더 얹는다.
  */
 @font-face {
   font-family: "Pretendard-Medium";
   src: url("../../../assets/fonts/Pretendard-Medium.ttf") format("truetype");
+  font-weight: 500;
   font-display: swap;
 }
 @font-face {
   font-family: "Pretendard-SemiBold";
   src: url("../../../assets/fonts/Pretendard-SemiBold.ttf") format("truetype");
+  font-weight: 600;
   font-display: swap;
 }
 @layer base {
