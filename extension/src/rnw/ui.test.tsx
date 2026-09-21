@@ -1,4 +1,5 @@
 import { ActionButton } from "@promise9/ui/action-button/ActionButton";
+import { Radio, RadioGroup, RadioLabel } from "@promise9/ui/radio/Radio";
 import { Text } from "@promise9/ui/text/Text";
 import { Toggle } from "@promise9/ui/toggle/Toggle";
 import { render, screen } from "@testing-library/react";
@@ -58,6 +59,46 @@ describe("@promise9/ui 를 익스텐션(react-native-web)에서", () => {
     );
     expect(screen.getByRole("switch", { name: "알림" })).toHaveAttribute(
       "aria-checked",
+      "false",
+    );
+  });
+
+  it("Radio 는 선택 여부를 aria-checked 로 노출한다", () => {
+    render(
+      <RadioGroup value="a" onChange={() => {}}>
+        <Radio value="a">
+          <RadioLabel>가</RadioLabel>
+        </Radio>
+        <Radio value="b">
+          <RadioLabel>나</RadioLabel>
+        </Radio>
+      </RadioGroup>,
+    );
+
+    expect(screen.getByRole("radio", { name: "가" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(screen.getByRole("radio", { name: "나" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+  });
+
+  it("로딩 중인 버튼은 aria-busy 로 알린다", () => {
+    render(
+      <>
+        <ActionButton isLoading>로딩</ActionButton>
+        <ActionButton>평소</ActionButton>
+      </>,
+    );
+
+    expect(screen.getByRole("button", { name: "로딩" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "평소" })).toHaveAttribute(
+      "aria-busy",
       "false",
     );
   });

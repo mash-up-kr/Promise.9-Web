@@ -73,6 +73,8 @@ export function Button({
           disabled: isBlocked,
           busy: isLoading,
         }}
+        // react-native-web 은 accessibilityState 를 aria 속성으로 내보내지 않는다(disabled 는 prop 이 대신한다).
+        aria-busy={isLoading}
         disabled={isBlocked}
         onPressIn={(event) => {
           setIsPressed(true);

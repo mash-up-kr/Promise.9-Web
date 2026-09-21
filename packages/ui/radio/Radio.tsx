@@ -71,6 +71,8 @@ export function Radio({ value, children }: RadioProps) {
       <Pressable
         accessibilityRole="radio"
         accessibilityState={{ checked }}
+        // react-native-web 은 accessibilityState 를 aria 속성으로 내보내지 않는다.
+        aria-checked={checked}
         onPress={() => group.onChange(value)}
         className="h-11 flex-row items-center gap-2"
       >
