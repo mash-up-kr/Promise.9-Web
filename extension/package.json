@@ -12,11 +12,20 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@promise9/ui": "workspace:*",
     "@tanstack/react-query": "5.101.0",
     "axios": "^1.18.0",
     "clsx": "^2.1.1",
+    "es-toolkit": "^1.47.1",
+    "lucide-react-native": "^1.23.0",
+    "nativewind": "5.0.0-preview.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-native-css": "3.0.7",
+    "react-native-svg": "^15.15.5",
+    "react-native-web": "~0.21.0",
+    "tailwind-merge": "^3.6.0",
+    "tailwind-variants": "^3.2.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {

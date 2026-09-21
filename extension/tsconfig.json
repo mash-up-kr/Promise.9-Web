@@ -21,5 +21,14 @@
       "@assets/*": ["../assets/*"]
     }
   },
-  "include": ["src", "vite.config.ts", "manifest.config.ts", "vitest.setup.ts"]
+  "include": [
+    "src",
+    "vite.config.ts",
+    "vite.rnw.ts",
+    "manifest.config.ts",
+    "vitest.setup.ts",
+    "../packages/ui"
+  ],
+  // 패키지 테스트는 jest-expo + RNTL 용이다 — 루트 tsc 가 검사한다.
+  "exclude": ["../packages/ui/**/*.test.ts", "../packages/ui/**/*.test.tsx"]
 }
