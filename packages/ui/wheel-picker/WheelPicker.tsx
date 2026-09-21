@@ -61,9 +61,9 @@ export function WheelPicker<T extends string | number>({
   }, []);
 
   const commit = (offsetY: number) => {
-    if (items.length === 0) return;
     const item = items[offsetToIndex(offsetY, items.length)];
-    if (item.value !== selectedValue) onChange(item.value);
+    if (!item || item.value === selectedValue) return;
+    onChange(item.value);
   };
 
   const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
