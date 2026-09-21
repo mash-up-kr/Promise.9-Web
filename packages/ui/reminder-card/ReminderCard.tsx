@@ -1,8 +1,9 @@
 import { Calendar, ChevronRight, Clock } from "lucide-react-native";
 import type { ReactNode } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, type PressableProps, View } from "react-native";
 import { isWeb } from "../constants/platform.constants";
 import { BellIcon } from "../icon/BellIcon";
+import { DiceIcon } from "../icon/DiceIcon";
 import { Icon } from "../icon/Icon";
 import { tv } from "../lib/tv";
 import { Text } from "../text/Text";
@@ -129,6 +130,34 @@ export function ReminderOnCard({
         />
       </Pressable>
     </View>
+  );
+}
+
+export interface ReminderDiceButtonProps
+  extends Pick<PressableProps, "onHoverIn" | "onHoverOut"> {
+  onPress: () => void;
+  /** 기본은 주사위 아이콘. 앱은 흔들림 애니메이션으로 감싼 아이콘과 hover 툴팁을 넣는다. */
+  children?: ReactNode;
+}
+
+/** `ReminderOnCard` 의 `diceButton` 자리에 넣는 랜덤 날짜 버튼 — 스킨·라벨은 여기 한 곳에 둔다. */
+export function ReminderDiceButton({
+  onPress,
+  onHoverIn,
+  onHoverOut,
+  children,
+}: ReminderDiceButtonProps) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="랜덤 날짜"
+      onPress={onPress}
+      onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
+      className="h-9 items-center justify-center rounded-full bg-opacity-black-30 px-3"
+    >
+      {children ?? <DiceIcon />}
+    </Pressable>
   );
 }
 

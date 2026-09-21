@@ -1,12 +1,14 @@
 import { DiceIcon } from "@promise9/ui/icon/DiceIcon";
 import {
+  ReminderDiceButton,
   ReminderOffRow,
   ReminderOnCard,
 } from "@promise9/ui/reminder-card/ReminderCard";
 import { Text } from "@promise9/ui/text/Text";
 import { Toggle } from "@promise9/ui/toggle/Toggle";
+import { REMINDER_PRESETS } from "@shared/reminder/reminder.constants";
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -29,13 +31,6 @@ import {
 
 import { DatePickerModal } from "./DatePickerModal";
 import { TimePickerModal } from "./TimePickerModal";
-
-const PRESETS = [
-  { days: 1, label: "내일" },
-  { days: 3, label: "3일 후" },
-  { days: 7, label: "7일 후" },
-  { days: 14, label: "14일 후" },
-];
 
 export interface ReminderSectionProps {
   value: ReminderValue | null;
@@ -87,7 +82,7 @@ export function ReminderSection({ value, onChange }: ReminderSectionProps) {
         <ReminderOffRow />
       ) : (
         <ReminderOnCard
-          presets={PRESETS}
+          presets={REMINDER_PRESETS}
           selectedPresetDays={selectedPresetDays}
           onPreset={handlePreset}
           diceButton={<DiceButton onPress={handleRandom} />}
@@ -155,13 +150,10 @@ function DiceButton({ onPress }: DiceButtonProps) {
   };
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="랜덤 날짜"
+    <ReminderDiceButton
       onPress={handlePress}
       onHoverIn={() => isWeb && setIsHovered(true)}
       onHoverOut={() => setIsHovered(false)}
-      className="h-9 items-center justify-center rounded-full bg-opacity-black-30 px-3"
     >
       {isWeb && isHovered && (
         <View
@@ -180,6 +172,6 @@ function DiceButton({ onPress }: DiceButtonProps) {
       <Animated.View style={animatedStyle}>
         <DiceIcon />
       </Animated.View>
-    </Pressable>
+    </ReminderDiceButton>
   );
 }

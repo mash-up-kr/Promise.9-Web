@@ -1,7 +1,11 @@
 import { render, screen, userEvent } from "@testing-library/react-native";
 import { Text } from "react-native";
 
-import { ReminderOffRow, ReminderOnCard } from "./ReminderCard";
+import {
+  ReminderDiceButton,
+  ReminderOffRow,
+  ReminderOnCard,
+} from "./ReminderCard";
 
 const PRESETS = [
   { days: 1, label: "내일" },
@@ -69,5 +73,27 @@ describe("ReminderOnCard", () => {
 
     expect(props.onOpenDate).toHaveBeenCalledTimes(1);
     expect(props.onOpenTime).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("ReminderDiceButton", () => {
+  it("'랜덤 날짜' 버튼으로 읽히고 누르면 onPress 를 부른다", async () => {
+    const user = userEvent.setup();
+    const onPress = jest.fn();
+    await render(<ReminderDiceButton onPress={onPress} />);
+
+    await user.press(screen.getByRole("button", { name: "랜덤 날짜" }));
+
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it("children 을 주면 기본 아이콘 대신 그것을 그린다", async () => {
+    await render(
+      <ReminderDiceButton onPress={jest.fn()}>
+        <Text>흔들리는 주사위</Text>
+      </ReminderDiceButton>,
+    );
+
+    expect(screen.getByText("흔들리는 주사위")).toBeOnTheScreen();
   });
 });

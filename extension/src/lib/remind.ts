@@ -1,13 +1,7 @@
+import { REMINDER_PRESETS } from "@shared/reminder/reminder.constants";
+
 /** 리마인드 기본 시각 — 시안의 프리셋은 모두 오전 9시다. */
 export const DEFAULT_REMIND_HOUR = 9;
-
-/** 시안 `언제 알려드릴까요?` 프리셋 칩. */
-export const REMIND_PRESETS = [
-  { days: 1, label: "내일" },
-  { days: 3, label: "3일 후" },
-  { days: 7, label: "7일 후" },
-  { days: 14, label: "14일 후" },
-] as const;
 
 /** 시안 시간 피커의 분 단위. */
 export const MINUTE_STEP = 15;
@@ -55,7 +49,7 @@ export function matchedPresetDays(date: Date, now: Date): number | null {
 
   const days = daysFromToday(date, now);
 
-  return REMIND_PRESETS.some((preset) => preset.days === days) ? days : null;
+  return REMINDER_PRESETS.some((preset) => preset.days === days) ? days : null;
 }
 
 /** 시안 표기: `2026. 8. 15. 토요일` */

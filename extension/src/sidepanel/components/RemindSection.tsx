@@ -1,17 +1,16 @@
-import { Button } from "@promise9/ui/button/Button";
-import { DiceIcon } from "@promise9/ui/icon/DiceIcon";
 import {
+  ReminderDiceButton,
   ReminderOffRow,
   ReminderOnCard,
 } from "@promise9/ui/reminder-card/ReminderCard";
 import { Toggle } from "@promise9/ui/toggle/Toggle";
+import { REMINDER_PRESETS } from "@shared/reminder/reminder.constants";
 
 import {
   addDaysAtDefaultHour,
   formatReminderDate,
   formatReminderTime,
   matchedPresetDays,
-  REMIND_PRESETS,
   randomReminderDate,
   relativeDayLabel,
 } from "@/lib/remind";
@@ -52,17 +51,13 @@ export function RemindSection({
           <ReminderOffRow />
         ) : (
           <ReminderOnCard
-            presets={REMIND_PRESETS}
+            presets={REMINDER_PRESETS}
             selectedPresetDays={matchedPresetDays(value, now)}
             onPreset={(days) => onChange(addDaysAtDefaultHour(days, now))}
             diceButton={
-              <Button
-                accessibilityLabel="랜덤 날짜"
+              <ReminderDiceButton
                 onPress={() => onChange(randomReminderDate(value, now))}
-                className="h-9 items-center justify-center rounded-full bg-opacity-black-30 px-3"
-              >
-                <DiceIcon />
-              </Button>
+              />
             }
             dateLabel={formatReminderDate(value)}
             remainingLabel={relativeDayLabel(value, now)}
