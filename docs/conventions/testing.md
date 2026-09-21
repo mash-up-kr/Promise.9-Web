@@ -21,11 +21,12 @@ test('...', async () => {
 - 사용자 상호작용은 `const user = userEvent.setup()` 후 `await user.press(...)`.
 
 ## 무엇을 테스트하나 (Zone 별)
-구조는 structure.md 의 3-Zone 을 따른다.
+구조는 structure.md 의 4-Zone 을 따른다.
 
 | 대상 | 종류 | 무엇을 |
 |------|------|--------|
 | `shared/` (분류·검색·URL 정규화·API 변환) | **unit** | 순수 함수 입출력. 표면 무관 핵심 로직 → **1순위 테스트 대상** |
+| `packages/ui/*` 컴포넌트 | **integration** | jest-expo + RNTL 로 렌더·상호작용(루트 `pnpm test`). 익스텐션(react-native-web)에서의 렌더는 `extension/src/rnw/ui.test.tsx` |
 | `src/features/*` 컴포넌트 | **integration** | 사용자 관점 렌더·상호작용 (구현 디테일 X) |
 | `src/features/*/api` react-query 훅 | **integration** | QueryClientProvider 래핑 + 네트워크 mock |
 | `src/utils` 순수 함수 | unit | 입출력 |
