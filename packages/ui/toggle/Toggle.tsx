@@ -36,6 +36,8 @@ export function Toggle({ value, onChange, accessibilityLabel }: ToggleProps) {
       accessibilityRole="switch"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ checked: value }}
+      // react-native-web 은 accessibilityState 를 aria 속성으로 내보내지 않는다.
+      aria-checked={value}
       hitSlop={8}
       onPress={() => onChange(!value)}
       className={trackStyles({ isOn: value })}
