@@ -22,7 +22,7 @@
 /*
  * 앱과 같은 Pretendard. 루트 assets 의 ttf 를 Vite 가 번들한다.
  * 타이포 토큰이 쓰는 굵기(400·500·600)만 싣는다 — 700 은 쓰는 토큰이 없다.
- * TODO: ttf 3종이 8MB 가 넘는다. woff2 서브셋으로 줄이기.
+ * TODO: ttf 4종(아래 Bold 포함)이 10MB 가 넘는다. woff2 서브셋으로 줄이기.
  */
 @font-face {
   font-family: "Pretendard";
@@ -58,6 +58,13 @@
   font-family: "Pretendard-SemiBold";
   src: url("../../../assets/fonts/Pretendard-SemiBold.ttf") format("truetype");
   font-weight: 600;
+  font-display: swap;
+}
+/* 타이포 토큰은 700 을 안 쓰지만 공유 Text 의 `bold` 가 이 family 를 요청한다. 파일은 쓰일 때만 로드된다. */
+@font-face {
+  font-family: "Pretendard-Bold";
+  src: url("../../../assets/fonts/Pretendard-Bold.ttf") format("truetype");
+  font-weight: 700;
   font-display: swap;
 }
 @layer base {
