@@ -2,7 +2,7 @@ name: Extension Check
 
 # packages/ui 는 소스 전용 패키지라 익스텐션의 더 엄격한 tsconfig(noUncheckedIndexedAccess)와
 # react-native-web 런타임도 통과해야 한다. 앱 쪽 검사(루트 tsc·jest)로는 드러나지 않으므로,
-# 공유 코드가 바뀌면 익스텐션의 테스트·타입 검사·빌드를 돌린다.
+# 공유 코드가 바뀌면 익스텐션의 테스트·타입 검사·빌드와, 빌드한 확장을 실제로 설치해 돌리는 E2E 를 돌린다.
 on:
   pull_request:
     paths:
@@ -27,7 +27,7 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -50,3 +50,22 @@ jobs:
         env:
           # 빌드가 되는지만 본다 — 산출물은 배포하지 않는다.
           VITE_API_BASE_URL: https://api.invalid/api/v1
+
+      # 확장은 헤드리스 셸이 아니라 chromium 채널에서만 로드된다.
+      - name: Install Playwright Chromium
+        run: pnpm --filter promise9-extension exec playwright install --with-deps chromium
+
+      # 서버는 로컬 목이라 secret 이 필요 없다(e2e/mockApi.ts).
+      - name: E2E
+        run: pnpm --filter promise9-extension test:e2e
+
+      # 매 실행의 녹화 영상 + 실패 분석용 리포트
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: extension-e2e-artifacts
+          path: |
+            extension/playwright-report/
+            extension/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
