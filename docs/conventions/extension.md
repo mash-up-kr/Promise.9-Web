@@ -6,6 +6,7 @@
 ## 스택
 - React 19 + **Vite** + `@crxjs/vite-plugin` + **Tailwind v4**. 고유 UI 는 plain DOM, 공유 컴포넌트는 react-native-web.
 - 테스트는 **vitest + @testing-library/react** — 루트의 jest-expo 와 분리한다(러너가 다르다).
+- E2E 는 **Playwright**(`extension/e2e`, `pnpm test:e2e`) — 빌드한 확장을 실제로 설치해 패널·background 를 돌리고 서버만 목으로 둔다. 상세: `extension/README.md`.
 - 디자인 토큰은 앱·웹과 같은 파일(`shared/styles/tokens.css`)을 import 한다. 값을 다시 정의하지 않는다.
 
 ## 기본
