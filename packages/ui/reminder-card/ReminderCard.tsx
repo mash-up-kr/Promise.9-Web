@@ -1,7 +1,7 @@
 import { Calendar, ChevronRight, Clock } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
-
+import { isWeb } from "../constants/platform.constants";
 import { BellIcon } from "../icon/BellIcon";
 import { Icon } from "../icon/Icon";
 import { tv } from "../lib/tv";
@@ -139,11 +139,17 @@ interface PresetChipProps {
 }
 
 function PresetChip({ label, isSelected, onPress }: PresetChipProps) {
+  // ARIA 는 button 역할에 aria-selected 를 허용하지 않는다 — 웹은 aria-pressed 로,
+  // 네이티브는 RN 이 selected 상태로 옮겨주는 aria-selected 로 알린다.
+  const selectionProps = isWeb
+    ? { "aria-pressed": isSelected }
+    : { "aria-selected": isSelected };
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      aria-selected={isSelected}
+      {...selectionProps}
       onPress={onPress}
       className={presetChipStyles({ isSelected })}
     >

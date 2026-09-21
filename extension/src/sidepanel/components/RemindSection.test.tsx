@@ -46,11 +46,11 @@ describe("RemindSection 앱과 같은 카드", () => {
     renderSection(new Date(2026, 7, 17, 9, 0));
 
     expect(screen.getByRole("button", { name: "3일 후" })).toHaveAttribute(
-      "aria-selected",
+      "aria-pressed",
       "true",
     );
     expect(screen.getByRole("button", { name: "내일" })).toHaveAttribute(
-      "aria-selected",
+      "aria-pressed",
       "false",
     );
   });
