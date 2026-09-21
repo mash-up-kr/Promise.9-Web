@@ -37,7 +37,8 @@
 │   │   ├─ link/           #     GET/POST /links ...
 │   │   ├─ folder/         #     GET/POST/PATCH/DELETE /folders ...
 │   │   └─ auth/           #     POST /auth/logout · DELETE /auth/withdraw
-│   └─ folder/             #   폴더 색 팔레트 상수 · 이름 규칙(우리가 정한 값)
+│   ├─ folder/             #   폴더 색 팔레트 상수 · 이름 규칙(우리가 정한 값)
+│   └─ reminder/           #   리마인드 프리셋(우리가 정한 값)
 │
 ├─ packages/
 │   └─ ui/                 # ⭐ RN 컴포넌트, 앱·웹·익스텐션 공용 (@promise9/ui). 소스 전용 — 빌드 없음
@@ -103,7 +104,7 @@
 - **`package.json` 에 의존성을 선언하지 않는다**(`dependencies`·`peerDependencies` 모두). 선언하면 pnpm 이 `packages/ui/node_modules` 에 별도 인스턴스를 깔아 nativewind·tailwind-variants 가 둘이 된다(2026-09-21 실측). 루트 `node_modules` 를 위로 걸어 올라가 해석하는 것이 의도된 동작이다 — `shared/` 와 같다.
   - 그 대가로 Biome 이 이 경로의 react·test 도메인을 자동으로 켜지 못한다 → `biome.jsonc` 의 `packages/ui/**` override 가 대신 켠다.
 - **내부 import 는 상대경로만.** `@/` 는 소비자마다 가리키는 곳이 달라 익스텐션 tsc 가 깨진다. 앱 `src/` 를 import 하지 않는다.
-- **두 tsconfig 를 모두 통과해야 한다.** 익스텐션이 더 엄격하다(`noUncheckedIndexedAccess`). 확인: `pnpm --filter promise9-extension exec tsc --noEmit`.
+- **두 tsconfig 를 모두 통과해야 한다.** 익스텐션이 더 엄격하다(`noUncheckedIndexedAccess`). 로컬 확인: `pnpm --filter promise9-extension exec tsc --noEmit`. PR 에서는 `Extension Check` 워크플로가 익스텐션의 테스트·타입 검사·빌드를 돌린다.
 - `exports` 필드·`src/` 디렉터리를 만들지 않는다 — `@promise9/ui/<폴더>/<파일>` 이 파일 해석으로 풀려야 Metro 의 `.web.tsx` 플랫폼 확장자가 산다.
 - 테스트는 jest-expo + RNTL(루트 `pnpm test` 가 집는다). 익스텐션에서의 렌더는 `extension/src/rnw/ui.test.tsx`.
 - 표면 간에 똑같이 보여야 하는 **도메인 표현 컴포넌트**(예: `reminder-card`)도 둔다. 값 모델·정책·포맷은 표면마다 다르므로(앱 `ReminderValue`+dayjs, 익스텐션 `Date`) 컴포넌트는 포맷이 끝난 라벨과 콜백만 받는다.
