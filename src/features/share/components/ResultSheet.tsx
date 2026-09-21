@@ -1,7 +1,6 @@
+import { Text } from "@promise9/ui/text/Text";
 import { Image, Pressable, View } from "react-native";
-
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
-import { Text } from "@/components/ui/text/Text";
 import { createLinkHandoffPath } from "@/constants/routes.constants";
 import type { ShareSaveState } from "../share.reducer";
 

@@ -1,16 +1,15 @@
+import { ActionButton } from "@promise9/ui/action-button/ActionButton";
+import { Text } from "@promise9/ui/text/Text";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import {
   AlertDialog,
   AlertDialogButton,
 } from "@/components/ui/alert-dialog/AlertDialog";
 import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
-import { Text } from "@/components/ui/text/Text";
 import { ROUTES } from "@/constants/routes.constants";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
 

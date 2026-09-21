@@ -1,3 +1,4 @@
+import { Icon } from "@promise9/ui/icon/Icon";
 import { Image, type ImageLoadEventData } from "expo-image";
 import { ExternalLink } from "lucide-react-native";
 import { useState } from "react";
@@ -11,9 +12,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-
 import { GlassView } from "@/components/ui/glass-view/GlassView";
-import { Icon } from "@/components/ui/icon/Icon";
 import { tv } from "@/lib/tv";
 import { openExternalUrl } from "@/utils/openExternalUrl";
 

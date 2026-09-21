@@ -1,7 +1,6 @@
+import { Icon, type IconComponent } from "@promise9/ui/icon/Icon";
+import { Text } from "@promise9/ui/text/Text";
 import { Pressable } from "react-native";
-
-import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
-import { Text } from "@/components/ui/text/Text";
 
 export interface PopoverMenuItemProps {
   icon: IconComponent;

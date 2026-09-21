@@ -1,3 +1,8 @@
+import { BellIcon } from "@promise9/ui/icon/BellIcon";
+import { DiceIcon } from "@promise9/ui/icon/DiceIcon";
+import { Icon } from "@promise9/ui/icon/Icon";
+import { Text } from "@promise9/ui/text/Text";
+import { Toggle } from "@promise9/ui/toggle/Toggle";
 import { Calendar, ChevronRight, Clock } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
@@ -7,12 +12,6 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-
-import { BellIcon } from "@/components/ui/icon/BellIcon";
-import { DiceIcon } from "@/components/ui/icon/DiceIcon";
-import { Icon } from "@/components/ui/icon/Icon";
-import { Text } from "@/components/ui/text/Text";
-import { Toggle } from "@/components/ui/toggle/Toggle";
 import { isWeb } from "@/constants/platform.constants";
 import {
   formatRemainingPeriod,

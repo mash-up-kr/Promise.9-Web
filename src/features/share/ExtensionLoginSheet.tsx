@@ -1,7 +1,6 @@
+import { Text } from "@promise9/ui/text/Text";
 import type { SocialProvider } from "@shared/api";
 import { Image, View } from "react-native";
-
-import { Text } from "@/components/ui/text/Text";
 import { LEGAL_ROUTES } from "@/constants/routes.constants";
 import { SOCIAL_PROVIDERS } from "@/features/auth/auth.constants";
 import { AgreementText } from "@/features/auth/components/AgreementText";

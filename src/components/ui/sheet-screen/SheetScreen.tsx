@@ -1,8 +1,7 @@
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { VStack } from "@promise9/ui/vstack/VStack";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { VStack } from "@/components/ui/vstack/VStack";
 import { SheetShell } from "./SheetShell";
 import type { SheetScreenProps } from "./sheet-screen.types";
 

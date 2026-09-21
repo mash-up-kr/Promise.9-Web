@@ -1,9 +1,9 @@
+import { Text } from "@promise9/ui/text/Text";
 import type { RelatedLink } from "@shared/types/link.types";
 import { Image, type ImageLoadEventData } from "expo-image";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
-import { Text } from "@/components/ui/text/Text";
 import { ThumbnailFallback } from "@/components/ui/thumbnail/ThumbnailFallback";
 import { linkDetailHref } from "@/constants/routes.constants";
 

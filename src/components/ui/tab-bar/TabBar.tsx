@@ -1,3 +1,4 @@
+import { Icon } from "@promise9/ui/icon/Icon";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import type { BottomTabBarProps } from "expo-router/js-tabs";
@@ -13,8 +14,6 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { Icon } from "@/components/ui/icon/Icon";
 import { ROUTES } from "@/constants/routes.constants";
 import { usePressedScale } from "@/hooks/usePressedScale";
 import { tv } from "@/lib/tv";
