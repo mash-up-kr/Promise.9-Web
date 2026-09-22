@@ -55,13 +55,21 @@ export const test = base.extend<ExtensionFixtures>({
       headless: !process.env.E2E_HEADED,
       slowMo: Number(process.env.E2E_SLOW_MO ?? 0),
       viewport: VIEWPORT,
-      recordVideo: { dir: testInfo.outputPath("video"), size: VIEWPORT },
       args: [
         `--disable-extensions-except=${EXTENSION_DIR}`,
         `--load-extension=${EXTENSION_DIR}`,
       ],
     });
+
+    // 직접 띄운 컨텍스트라 config 의 `use.trace` 가 안 붙는다 — 웹 E2E 와 같은 on-first-retry 로 맞춘다.
+    const shouldTrace = testInfo.retry > 0;
+    if (shouldTrace) {
+      await context.tracing.start({ screenshots: true, snapshots: true });
+    }
     await use(context);
+    if (shouldTrace) {
+      await context.tracing.stop({ path: testInfo.outputPath("trace.zip") });
+    }
     await context.close();
   },
 

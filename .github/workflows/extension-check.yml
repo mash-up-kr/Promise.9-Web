@@ -59,7 +59,7 @@ jobs:
       - name: E2E
         run: pnpm --filter promise9-extension test:e2e
 
-      # 매 실행의 녹화 영상 + 실패 분석용 리포트
+      # 실패 분석용 리포트 + 재시도 시 trace (fixtures.ts 의 on-first-retry)
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:

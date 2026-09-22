@@ -77,7 +77,7 @@ pnpm --filter promise9-extension dev     # 또는 build
 
 - 최초 1회: `pnpm exec playwright install chromium`
 - 브라우저를 보면서: `E2E_HEADED=1 E2E_SLOW_MO=400 pnpm test:e2e`
-- 실행마다 `test-results/**/video/` 에 영상이 남는다. CI(`Extension Check`)는 아티팩트로 올린다.
+- 재시도할 때만 trace 를 남긴다(웹 E2E 와 같은 on-first-retry). CI(`Extension Check`)는 리포트·trace 를 아티팩트로 올린다.
 - 패널을 탭으로 열면 "활성 탭" 이 패널 자신이라, 그 조회 하나만 고정한다(`e2e/fixtures.ts`).
 
 ## 구조
