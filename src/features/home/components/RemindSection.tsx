@@ -1,11 +1,10 @@
+import { Box } from "@promise9/ui/box/Box";
+import { HStack } from "@promise9/ui/hstack/HStack";
+import { Text } from "@promise9/ui/text/Text";
+import { VStack } from "@promise9/ui/vstack/VStack";
 import { useRouter } from "expo-router";
 import { ScrollView } from "react-native";
-
-import { Box } from "@/components/ui/box/Box";
-import { HStack } from "@/components/ui/hstack/HStack";
 import { LinkCard } from "@/components/ui/link-card/LinkCard";
-import { Text } from "@/components/ui/text/Text";
-import { VStack } from "@/components/ui/vstack/VStack";
 import { linkDetailHref } from "@/constants/routes.constants";
 import { formatMonthDay } from "@/utils/format";
 

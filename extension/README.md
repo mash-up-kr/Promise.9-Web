@@ -67,10 +67,23 @@ pnpm --filter promise9-extension dev     # 또는 build
 | `pnpm build` | 타입 검사 후 프로덕션 빌드 |
 | `pnpm package` | `dist` → 웹 스토어 업로드용 zip (`manifest.key` 제거) |
 | `pnpm test` | vitest 실행 |
+| `pnpm test:e2e` | 빌드한 확장을 Chromium 에 실제로 설치해 저장 흐름을 돌린다 |
+
+### E2E
+
+`pnpm test:e2e` 는 목 API 를 가리키는 전용 빌드(`e2e-dist/`)를 만들고, 그 확장을 설치한 브라우저에서
+패널 · background(service worker) · 메시징 · `chrome.storage` 를 **실제로** 돌린다. 서버만 로컬 목이다
+(`e2e/mockApi.ts`) — 소셜 로그인과 실서버는 거치지 않는다.
+
+- 최초 1회: `pnpm exec playwright install chromium`
+- 브라우저를 보면서: `E2E_HEADED=1 E2E_SLOW_MO=400 pnpm test:e2e`
+- 재시도할 때만 trace 를 남긴다(웹 E2E 와 같은 on-first-retry). CI(`Extension Check`)는 리포트·trace 를 아티팩트로 올린다.
+- 패널을 탭으로 열면 "활성 탭" 이 패널 자신이라, 그 조회 하나만 고정한다(`e2e/fixtures.ts`).
 
 ## 구조
 
 ```
+e2e/             Playwright E2E (확장 설치 + 목 API)
 src/
 ├─ background/   service worker — 저장 실행(패널이 닫혀도 계속된다) · 아이콘 클릭 시 패널 열기
 ├─ sidepanel/   패널 UI (screens · components · hooks)

@@ -1,11 +1,10 @@
+import { LogoSymbol } from "@promise9/ui/logo/LogoSymbol";
 import { Redirect, Tabs, useRouter } from "expo-router";
 import { Search, Settings } from "lucide-react-native";
 import { View } from "react-native";
-
 import { Header } from "@/components/ui/header/Header";
 import { HeaderActions } from "@/components/ui/header/HeaderActions";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
-import { LogoSymbol } from "@/components/ui/logo/LogoSymbol";
 import { TabBar } from "@/components/ui/tab-bar/TabBar";
 import { ROUTES } from "@/constants/routes.constants";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";

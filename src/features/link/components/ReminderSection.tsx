@@ -1,18 +1,20 @@
-import { Calendar, ChevronRight, Clock } from "lucide-react-native";
+import { DiceIcon } from "@promise9/ui/icon/DiceIcon";
+import {
+  ReminderDiceButton,
+  ReminderOffRow,
+  ReminderOnCard,
+} from "@promise9/ui/reminder-card/ReminderCard";
+import { Text } from "@promise9/ui/text/Text";
+import { Toggle } from "@promise9/ui/toggle/Toggle";
+import { REMINDER_PRESETS } from "@shared/reminder/reminder.constants";
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-
-import { BellIcon } from "@/components/ui/icon/BellIcon";
-import { DiceIcon } from "@/components/ui/icon/DiceIcon";
-import { Icon } from "@/components/ui/icon/Icon";
-import { Text } from "@/components/ui/text/Text";
-import { Toggle } from "@/components/ui/toggle/Toggle";
 import { isWeb } from "@/constants/platform.constants";
 import {
   formatRemainingPeriod,
@@ -21,7 +23,6 @@ import {
   getRandomReminderDays,
   type ReminderValue,
 } from "@/features/link/reminder.utils";
-import { tv } from "@/lib/tv";
 import {
   addDaysDate,
   getTomorrowDate,
@@ -30,31 +31,6 @@ import {
 
 import { DatePickerModal } from "./DatePickerModal";
 import { TimePickerModal } from "./TimePickerModal";
-
-const PRESETS = [
-  { days: 1, label: "내일" },
-  { days: 3, label: "3일 후" },
-  { days: 7, label: "7일 후" },
-  { days: 14, label: "14일 후" },
-];
-
-const presetChipStyles = tv({
-  base: "h-9 items-center justify-center rounded-full px-3",
-  variants: {
-    isSelected: { true: "bg-opacity-white-80", false: "bg-opacity-black-30" },
-  },
-});
-
-const presetChipLabelStyles = tv({
-  base: "",
-  variants: {
-    isSelected: { true: "text-gray-900", false: "text-opacity-white-70" },
-  },
-});
-
-// 시안 벨 색 — 아이콘이 fill 기반이라 토큰 className 대신 raw hex 를 쓴다(BellIcon 주석 참고).
-const BELL_ON_COLOR = "#E9E9EB";
-const BELL_OFF_COLOR = "#8A8A93";
 
 export interface ReminderSectionProps {
   value: ReminderValue | null;
@@ -106,10 +82,13 @@ export function ReminderSection({ value, onChange }: ReminderSectionProps) {
         <ReminderOffRow />
       ) : (
         <ReminderOnCard
-          value={value}
+          presets={REMINDER_PRESETS}
           selectedPresetDays={selectedPresetDays}
           onPreset={handlePreset}
-          onRandom={handleRandom}
+          diceButton={<DiceButton onPress={handleRandom} />}
+          dateLabel={formatReminderDate(value.date)}
+          remainingLabel={formatRemainingPeriod(value.date)}
+          timeLabel={formatReminderTime(value.hour, value.minute)}
           onOpenDate={() => setOpenPicker("date")}
           onOpenTime={() => setOpenPicker("time")}
         />
@@ -136,123 +115,6 @@ export function ReminderSection({ value, onChange }: ReminderSectionProps) {
         />
       )}
     </View>
-  );
-}
-
-function ReminderOffRow() {
-  return (
-    <View className="w-full flex-row items-center gap-2 rounded-[20px] bg-opacity-white-10 p-4">
-      <BellIcon color={BELL_OFF_COLOR} />
-      <Text variant="body-2-normal" className="text-text-alternative">
-        잊지 않도록 다시 알려드려요
-      </Text>
-    </View>
-  );
-}
-
-interface ReminderOnCardProps {
-  value: ReminderValue;
-  selectedPresetDays: number | null;
-  onPreset: (days: number) => void;
-  onRandom: () => void;
-  onOpenDate: () => void;
-  onOpenTime: () => void;
-}
-
-function ReminderOnCard({
-  value,
-  selectedPresetDays,
-  onPreset,
-  onRandom,
-  onOpenDate,
-  onOpenTime,
-}: ReminderOnCardProps) {
-  return (
-    <View className="w-full rounded-[20px] bg-opacity-white-10">
-      <View className="gap-4 px-4 pt-4">
-        <View className="flex-row items-center gap-2">
-          <BellIcon color={BELL_ON_COLOR} />
-          <Text variant="body-2-normal" className="text-text-normal">
-            언제 알려드릴까요?
-          </Text>
-        </View>
-        <View className="flex-row flex-wrap items-center gap-1">
-          {PRESETS.map((preset) => (
-            <PresetChip
-              key={preset.days}
-              label={preset.label}
-              isSelected={selectedPresetDays === preset.days}
-              onPress={() => onPreset(preset.days)}
-            />
-          ))}
-          <DiceButton onPress={onRandom} />
-        </View>
-        <View className="h-px w-full bg-opacity-white-10" />
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={onOpenDate}
-        className="h-13 flex-row items-start justify-between px-4 pt-4 web:hover:bg-opacity-white-05"
-      >
-        <View className="flex-row items-center gap-2">
-          <Icon iconNode={Calendar} size={16} className="text-icon-normal" />
-          <Text variant="body-2-normal" className="text-text-normal">
-            {formatReminderDate(value.date)}
-          </Text>
-        </View>
-        <View className="flex-row items-center gap-1">
-          <Text variant="body-2-normal" className="text-yellow-100">
-            {formatRemainingPeriod(value.date)}
-          </Text>
-          <Icon
-            iconNode={ChevronRight}
-            size={16}
-            className="text-icon-alternative"
-          />
-        </View>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        onPress={onOpenTime}
-        className="h-13 flex-row items-end justify-between rounded-b-[20px] px-4 pt-2.5 pb-4 web:hover:bg-opacity-white-05"
-      >
-        <View className="flex-row items-center gap-2">
-          <Icon iconNode={Clock} size={16} className="text-icon-normal" />
-          <Text variant="body-2-normal" className="text-text-normal">
-            {formatReminderTime(value.hour, value.minute)}
-          </Text>
-        </View>
-        <Icon
-          iconNode={ChevronRight}
-          size={16}
-          className="text-icon-alternative"
-        />
-      </Pressable>
-    </View>
-  );
-}
-
-interface PresetChipProps {
-  label: string;
-  isSelected: boolean;
-  onPress: () => void;
-}
-
-function PresetChip({ label, isSelected, onPress }: PresetChipProps) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      className={presetChipStyles({ isSelected })}
-    >
-      <Text
-        variant="label-2-semibold"
-        className={presetChipLabelStyles({ isSelected })}
-      >
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -288,13 +150,10 @@ function DiceButton({ onPress }: DiceButtonProps) {
   };
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="랜덤 날짜"
+    <ReminderDiceButton
       onPress={handlePress}
       onHoverIn={() => isWeb && setIsHovered(true)}
       onHoverOut={() => setIsHovered(false)}
-      className="h-9 items-center justify-center rounded-full bg-opacity-black-30 px-3"
     >
       {isWeb && isHovered && (
         <View
@@ -313,6 +172,6 @@ function DiceButton({ onPress }: DiceButtonProps) {
       <Animated.View style={animatedStyle}>
         <DiceIcon />
       </Animated.View>
-    </Pressable>
+    </ReminderDiceButton>
   );
 }

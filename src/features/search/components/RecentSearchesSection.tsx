@@ -1,8 +1,7 @@
+import { HStack } from "@promise9/ui/hstack/HStack";
+import { Text } from "@promise9/ui/text/Text";
+import { VStack } from "@promise9/ui/vstack/VStack";
 import { Pressable, ScrollView } from "react-native";
-
-import { HStack } from "@/components/ui/hstack/HStack";
-import { Text } from "@/components/ui/text/Text";
-import { VStack } from "@/components/ui/vstack/VStack";
 
 import { SearchChip } from "./SearchChip";
 

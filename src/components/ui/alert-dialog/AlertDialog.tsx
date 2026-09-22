@@ -1,10 +1,9 @@
+import { ActionButton } from "@promise9/ui/action-button/ActionButton";
+import { Text } from "@promise9/ui/text/Text";
 import type { PropsWithChildren, ReactNode } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import Animated, { withSpring } from "react-native-reanimated";
-
-import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import { Dialog } from "@/components/ui/dialog/Dialog";
-import { Text } from "@/components/ui/text/Text";
 
 import { createAlertDialog } from "./createAlertDialog";
 

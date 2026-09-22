@@ -1,9 +1,8 @@
+import { Icon, type IconComponent } from "@promise9/ui/icon/Icon";
 import { useState } from "react";
 import type { PressableProps } from "react-native";
 import { Pressable } from "react-native";
 import Animated from "react-native-reanimated";
-
-import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
 import { usePressedScale } from "@/hooks/usePressedScale";
 import { tv } from "@/lib/tv";
 

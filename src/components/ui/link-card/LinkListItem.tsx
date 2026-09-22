@@ -1,9 +1,8 @@
+import { Box } from "@promise9/ui/box/Box";
+import { HStack } from "@promise9/ui/hstack/HStack";
+import { VStack } from "@promise9/ui/vstack/VStack";
 import type { Link } from "@shared/types/link.types";
 import type { PressableProps } from "react-native";
-
-import { Box } from "@/components/ui/box/Box";
-import { HStack } from "@/components/ui/hstack/HStack";
-import { VStack } from "@/components/ui/vstack/VStack";
 
 import { LinkCard } from "./LinkCard";
 

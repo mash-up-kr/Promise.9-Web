@@ -42,7 +42,7 @@
 - 조회 **이전** 단계의 검증(잘못된 라우트 파라미터 등)은 경계 밖에서 막는다. 예: `ArchiveDetailScreen`.
 
 ### 경계를 쓰기로 했다면
-직접 `Suspense` + `ErrorBoundary` 를 조합하지 말고 `@/components/ui/async-boundary/AsyncBoundary` 를 쓴다
+직접 `Suspense` + `ErrorBoundary` 를 조합하지 말고 `@promise9/ui/async-boundary/AsyncBoundary` 를 쓴다
 (재시도 시 쿼리 캐시의 에러까지 리셋하는 조합이 이미 들어 있다).
 
 - 자식은 `useSuspenseQuery(xxxQueries.yyy())` 로 조회한다.

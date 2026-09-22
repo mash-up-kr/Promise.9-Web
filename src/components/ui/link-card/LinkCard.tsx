@@ -1,11 +1,11 @@
+import { Box } from "@promise9/ui/box/Box";
+import { HStack } from "@promise9/ui/hstack/HStack";
+import { Text, type TextProps } from "@promise9/ui/text/Text";
 import type { Link } from "@shared/types/link.types";
 import { createContext, useContext, useState } from "react";
 import type { PressableProps } from "react-native";
 import { Pressable } from "react-native";
-import { Box } from "@/components/ui/box/Box";
-import { HStack } from "@/components/ui/hstack/HStack";
 import { Image } from "@/components/ui/image/Image";
-import { Text, type TextProps } from "@/components/ui/text/Text";
 import { ThumbnailFallback } from "@/components/ui/thumbnail/ThumbnailFallback";
 import { tv } from "@/lib/tv";
 import { formatRelativeDate } from "@/utils/format";

@@ -12,8 +12,9 @@ description: 새 컴포넌트·훅·유틸·타입·쿼리를 만들기 전에 �
 1. 만들려는 대상의 핵심 키워드 2~4개를 뽑는다 (예: "저장한 링크 카드" → link, card, list).
 2. **결정 규칙(structure.md) 순서로** 검색한다:
    - 먼저 `shared/` — 타입·API·도메인 로직이 이미 있나? (앱/익스텐션이 또 만들기 쉬운 곳)
+   - UI 면 `packages/ui/` — Button · Text · Toggle · Chip · Input · Icon 등 공용 컴포넌트는 여기 있다(앱·익스텐션 공용, `@promise9/ui/<폴더>/<파일>`)
    - 다음 `src/features/*`, `src/components`, `src/hooks`, `src/utils`
-   - 익스텐션 작업이면 `extension/src/`
+   - 익스텐션 작업이면 `extension/src/` — DOM 으로 새로 짜기 전에 `packages/ui/` 에 같은 컴포넌트가 있는지 먼저 본다
    - 검색법: 파일명 `**/*<Keyword>*.{ts,tsx}` + 내용/시그니처 grep
 3. 결과를 분류해 보고한다:
    - ✅ **재사용**: 그대로 쓸 수 있는 기존 코드 → 경로 제시, 새로 만들지 않는다.
