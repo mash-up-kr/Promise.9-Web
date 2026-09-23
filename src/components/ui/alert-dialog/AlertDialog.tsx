@@ -1,10 +1,11 @@
 import type { PropsWithChildren, ReactNode } from "react";
-import { Modal, Pressable, StyleSheet, View } from "react-native";
-import Animated, { withSpring } from "react-native-reanimated";
+import { useEffect, useRef } from "react";
+import { Animated, Modal, Pressable, StyleSheet, View } from "react-native";
 
 import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import { Dialog } from "@/components/ui/dialog/Dialog";
 import { Text } from "@/components/ui/text/Text";
+import { isWeb } from "@/constants/platform.constants";
 
 import { createAlertDialog } from "./createAlertDialog";
 
@@ -50,29 +51,36 @@ const Core = createAlertDialog({ Overlay, Backdrop });
 
 // 시안 DeleteDialog 주석: enter opacity 0 + scale 0.86→1, spring 520/34 mass 0.7.
 // (exit 스펙은 Modal 이 닫히며 즉시 언마운트되는 구조라 적용하지 않는다.)
+// iOS 공유 익스텐션에서도 쓰여 Reanimated 대신 RN Animated 로 그린다(shareExtension.bundle.test).
 const DIALOG_SPRING = { stiffness: 520, damping: 34, mass: 0.7 };
-
-function enterDialog() {
-  "worklet";
-  return {
-    initialValues: { opacity: 0, transform: [{ scale: 0.86 }] },
-    animations: {
-      opacity: withSpring(1, DIALOG_SPRING),
-      transform: [{ scale: withSpring(1, DIALOG_SPRING) }],
-    },
-  };
-}
 
 // Figma Alert Dialog: 플랫 gray-800 카드 + white-05 헤어라인 보더.
 function AlertDialogContent({ children }: PropsWithChildren) {
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(progress, {
+      toValue: 1,
+      ...DIALOG_SPRING,
+      // react-native-web 은 native driver 가 없어 켜면 경고만 남긴다.
+      useNativeDriver: !isWeb,
+    }).start();
+  }, [progress]);
+
+  const scale = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.86, 1],
+  });
+
   return (
     <Animated.View
-      entering={enterDialog}
       accessibilityViewIsModal
       accessibilityRole="alert"
-      className="w-[304px] gap-5 overflow-hidden rounded-[36px] border border-opacity-white-05 bg-gray-800 px-4 pt-5 pb-4"
+      style={{ opacity: progress, transform: [{ scale }] }}
     >
-      {children}
+      <View className="w-[304px] gap-5 overflow-hidden rounded-[36px] border border-opacity-white-05 bg-gray-800 px-4 pt-5 pb-4">
+        {children}
+      </View>
     </Animated.View>
   );
 }

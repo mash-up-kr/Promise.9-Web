@@ -1,12 +1,6 @@
 import { Calendar, ChevronRight, Clock } from "lucide-react-native";
-import { useState } from "react";
-import { Pressable, View } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSequence,
-  withTiming,
-} from "react-native-reanimated";
+import { useRef, useState } from "react";
+import { Animated, Easing, Pressable, View } from "react-native";
 
 import { BellIcon } from "@/components/ui/icon/BellIcon";
 import { DiceIcon } from "@/components/ui/icon/DiceIcon";
@@ -258,32 +252,49 @@ function PresetChip({ label, isSelected, onPress }: PresetChipProps) {
 
 const WIGGLE_SEQUENCE = [15, -12, 8, -4, 0];
 
+// iOS 공유 익스텐션에서도 쓰여 Reanimated 대신 RN Animated 로 그린다(shareExtension.bundle.test).
+// 기존 Reanimated withTiming 기본값(300ms, inOut quad)을 그대로 옮겼다.
+function timing(value: Animated.Value, toValue: number, duration = 300) {
+  return Animated.timing(value, {
+    toValue,
+    duration,
+    easing: Easing.inOut(Easing.quad),
+    // react-native-web 은 native driver 가 없어 켜면 경고만 남긴다.
+    useNativeDriver: !isWeb,
+  });
+}
+
 interface DiceButtonProps {
   onPress: () => void;
 }
 
 function DiceButton({ onPress }: DiceButtonProps) {
-  const rotate = useSharedValue(0);
-  const scale = useSharedValue(1);
+  const rotate = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
   // 웹 전용 hover 툴팁 — 네이티브에선 onHoverIn/Out 이 발화하지 않지만, 정책상 명시적으로도 막는다.
   const [isHovered, setIsHovered] = useState(false);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotate.value}deg` }, { scale: scale.value }],
-  }));
+  const animatedStyle = {
+    transform: [
+      {
+        rotate: rotate.interpolate({
+          inputRange: [-360, 360],
+          outputRange: ["-360deg", "360deg"],
+        }),
+      },
+      { scale },
+    ],
+  };
 
   const handlePress = () => {
-    rotate.value = withSequence(
-      withTiming(WIGGLE_SEQUENCE[0], { duration: 100 }),
-      withTiming(WIGGLE_SEQUENCE[1]),
-      withTiming(WIGGLE_SEQUENCE[2]),
-      withTiming(WIGGLE_SEQUENCE[3]),
-      withTiming(WIGGLE_SEQUENCE[4]),
-    );
-    scale.value = withSequence(
-      withTiming(1.1, { duration: 125 }),
-      withTiming(1, { duration: 125 }),
-    );
+    Animated.parallel([
+      Animated.sequence(
+        WIGGLE_SEQUENCE.map((angle, index) =>
+          timing(rotate, angle, index === 0 ? 100 : undefined),
+        ),
+      ),
+      Animated.sequence([timing(scale, 1.1, 125), timing(scale, 1, 125)]),
+    ]).start();
     onPress();
   };
 
