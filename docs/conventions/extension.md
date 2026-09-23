@@ -1,11 +1,12 @@
 # 크롬 익스텐션 컨벤션 (Manifest V3)
 
 > 위치: `extension/` (자체 `package.json`, 자체 빌드).
-> **여기서는 Expo / React Native / NativeWind 를 쓰지 않는다.** 공통 규칙은 shared.md.
+> **익스텐션 고유 UI 는 plain DOM + Tailwind 로 쓴다. 앱과 공유하는 컴포넌트만 `@promise9/ui`(react-native-web)로 가져온다 — Expo API 는 쓰지 않는다.** 공통 규칙은 shared.md.
 
 ## 스택
-- React 19 + **Vite** + `@crxjs/vite-plugin` + **Tailwind v4** (plain DOM).
+- React 19 + **Vite** + `@crxjs/vite-plugin` + **Tailwind v4**. 고유 UI 는 plain DOM, 공유 컴포넌트는 react-native-web.
 - 테스트는 **vitest + @testing-library/react** — 루트의 jest-expo 와 분리한다(러너가 다르다).
+- E2E 는 **Playwright**(`extension/e2e`, `pnpm test:e2e`) — 빌드한 확장을 실제로 설치해 패널·background 를 돌리고 서버만 목으로 둔다. 상세: `extension/README.md`.
 - 디자인 토큰은 앱·웹과 같은 파일(`shared/styles/tokens.css`)을 import 한다. 값을 다시 정의하지 않는다.
 
 ## 기본
@@ -26,6 +27,10 @@
 - 앱/웹의 `src/` 는 import 하지 않는다. 공유가 필요하면 `shared/` 로 올린다.
 - `chrome.*` API 는 익스텐션 영역에서만. `shared/` 와 앱/웹 코드로 새어나가지 않게.
 - `shared/` 는 순수 TS 전용 — `chrome.*` 의존 코드를 여기 넣지 않는다.
+- 공용 UI 는 `@promise9/ui/<폴더>/<파일>` 로 import 한다. 디자이너가 **앱과 같은 컴포넌트**라고 확인한 것만 도입한다 — 시안이 다르면 DOM 으로 따로 둔다.
+- `react-native` 해석은 세 파이프라인에 따로 걸려 있다(`vite.rnw.ts` 플러그인 · vitest `server.deps.inline` · `optimizeDeps` 플러그인). NativeWind·react-native-css·Vite 를 올리면 셋 다 다시 확인한다: `pnpm test` · `pnpm build` · `pnpm dev`.
+- `global.css` 의 Tailwind import 를 `@import "tailwindcss"` 한 줄로 되돌리지 않는다 — 유틸리티가 레이어에 들어가 react-native-web 기본 스타일에 전부 진다.
+- 렌더링 스택 버전은 루트 `package.json` 과 같아야 한다(`src/rnw/deps.test.ts` 가 강제).
 
 ## extension/CLAUDE.md
 `extension/CLAUDE.md` 가 `@../docs/conventions/extension.md` 를 import 하므로, 익스텐션 폴더에서

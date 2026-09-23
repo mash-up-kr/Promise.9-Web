@@ -1,10 +1,9 @@
+import { AsyncBoundary } from "@promise9/ui/async-boundary/AsyncBoundary";
+import { Text } from "@promise9/ui/text/Text";
 import { useState } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
-import { Text } from "@/components/ui/text/Text";
 import { FolderChipList } from "@/features/link/components/FolderChipList";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { ReminderSection } from "@/features/link/components/ReminderSection";

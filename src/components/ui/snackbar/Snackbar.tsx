@@ -1,7 +1,6 @@
+import { Text } from "@promise9/ui/text/Text";
 import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
-
-import { Text } from "@/components/ui/text/Text";
 
 export interface SnackbarAction {
   label: string;

@@ -1,6 +1,5 @@
+import { Box } from "@promise9/ui/box/Box";
 import type { ViewProps } from "react-native";
-
-import { Box } from "@/components/ui/box/Box";
 import { Image } from "@/components/ui/image/Image";
 import { tv } from "@/lib/tv";
 

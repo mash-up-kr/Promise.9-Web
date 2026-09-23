@@ -1,6 +1,6 @@
+import { Text } from "@promise9/ui/text/Text";
 import { useLayoutEffect, useRef } from "react";
 import { TextInput, View } from "react-native";
-import { Text } from "@/components/ui/text/Text";
 import { isWeb } from "@/constants/platform.constants";
 
 import { MEMO_MAX_LENGTH } from "../link.contracts";

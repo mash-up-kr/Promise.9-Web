@@ -35,6 +35,12 @@ function resolveLocal(specifier, fromFile) {
     base = path.join(ROOT, "src", specifier.slice(2));
   } else if (specifier.startsWith("@shared/")) {
     base = path.join(ROOT, "shared", specifier.slice("@shared/".length));
+  } else if (specifier.startsWith("@promise9/ui/")) {
+    base = path.join(
+      ROOT,
+      "packages/ui",
+      specifier.slice("@promise9/ui/".length),
+    );
   } else if (specifier.startsWith(".")) {
     base = path.resolve(path.dirname(fromFile), specifier);
   } else {

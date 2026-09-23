@@ -1,10 +1,9 @@
+import { ActionButton } from "@promise9/ui/action-button/ActionButton";
+import { Text } from "@promise9/ui/text/Text";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { ActionButton } from "@/components/ui/action-button/ActionButton";
-import { Text } from "@/components/ui/text/Text";
 import { ROUTES } from "@/constants/routes.constants";
 
 import { connectExtension } from "../extensionHandoff";

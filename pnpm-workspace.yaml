@@ -1,5 +1,6 @@
 packages:
   - extension
+  - packages/*
 
 allowBuilds:
   esbuild: true

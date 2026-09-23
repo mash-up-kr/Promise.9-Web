@@ -1,4 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ActionButton } from "@promise9/ui/action-button/ActionButton";
+import { Input, InputField } from "@promise9/ui/input/Input";
+import { Text } from "@promise9/ui/text/Text";
 import { isDuplicateFolderNameError } from "@shared/entities/folder/folder.errors";
 import {
   type CreateFolderInput,
@@ -7,10 +10,7 @@ import {
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { View } from "react-native";
-import { ActionButton } from "@/components/ui/action-button/ActionButton";
 import { Dialog } from "@/components/ui/dialog/Dialog";
-import { Input, InputField } from "@/components/ui/input/Input";
-import { Text } from "@/components/ui/text/Text";
 import { DuplicateFolderNameAlert } from "./DuplicateFolderNameAlert";
 import { FolderColorPicker } from "./FolderColorPicker";
 

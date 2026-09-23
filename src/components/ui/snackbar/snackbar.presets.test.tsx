@@ -1,6 +1,6 @@
-import { AlertCircleIcon } from "@/components/ui/icon/AlertCircleIcon";
-import { CheckCircleIcon } from "@/components/ui/icon/CheckCircleIcon";
-import { WifiOffIcon } from "@/components/ui/icon/WifiOffIcon";
+import { AlertCircleIcon } from "@promise9/ui/icon/AlertCircleIcon";
+import { CheckCircleIcon } from "@promise9/ui/icon/CheckCircleIcon";
+import { WifiOffIcon } from "@promise9/ui/icon/WifiOffIcon";
 
 import { snackbarPresets } from "./snackbar.presets";
 
