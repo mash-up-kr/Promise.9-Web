@@ -34,10 +34,13 @@ import { useAccessTokenWarmup } from "./useAccessTokenWarmup";
  * 시트 크롬(백드롭·핸들·드래그·키보드)은 인앱과 같은 BottomSheet 가 맡고, 컨테이너는 전체 화면이다.
  * 결과 시트(성공/실패/중복/반복실패) 전이는 share.reducer 가 정한다.
  */
-export function ShareExtension({ url }: { url?: string }) {
-  const sharedText = url ?? "";
-  // Android 는 "제목\nURL" 로 오기도 한다 — URL 이 없으면 원문을 넘겨 기존 '저장할 수 없는 링크' 경로로 흐르게 한다.
-  const sharedUrl = extractFirstUrl(sharedText) ?? sharedText;
+export function ShareExtension({ url, text }: { url?: string; text?: string }) {
+  // iOS 는 URL 로 오지만 지도·SNS 앱은 텍스트로 공유하고, Android 는 "제목\nURL" 처럼 섞어 보낸다 —
+  // 첫 링크를 뽑아 저장할 형태로 보정한다. 링크가 없으면 원문을 넘겨 '저장할 수 없는 링크' 경로로 흐르게 한다.
+  const sharedText = url ?? text ?? "";
+  const extractedUrl = extractFirstUrl(sharedText) ?? sharedText;
+  const parsedUrl = linkUrlSchema.safeParse(extractedUrl);
+  const sharedUrl = parsedUrl.success ? parsedUrl.data : extractedUrl;
   const status = useAuthGate();
   const isTokenReady = useAccessTokenWarmup(status);
   // 한 번 인증됐다가 풀린 경우(저장 중 401 → refresh 실패)는 "다시 로그인" 안내로 구분한다.

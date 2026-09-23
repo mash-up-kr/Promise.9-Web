@@ -40,7 +40,7 @@ const RESULT_CONTENT = {
   },
   "invalid-url": {
     title: "저장할 수 있는 링크가 없어요",
-    subtitle: "http:// 또는 https:// 로 시작하는 주소만 저장할 수 있어요",
+    subtitle: "공유한 내용에서 링크 주소를 찾지 못했어요",
     cta: "앱에서 직접 입력",
   },
 } as const;

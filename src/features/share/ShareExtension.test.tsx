@@ -692,6 +692,47 @@ test("저장 중에는 백드롭 탭·끌어 내리기로 닫히지 않는다", 
   expect(await screen.findByText("링크 저장을 완료했어요")).toBeOnTheScreen();
 });
 
+// iOS 는 지도·SNS 앱이 링크를 텍스트로 공유한다 — 익스텐션이 text 로 받는다.
+test("텍스트로 공유된 스킴 없는 지도 링크를 https 로 보정해 저장한다", async () => {
+  mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 7 } } });
+  await render(
+    <ShareExtension text={"[네이버 지도]\n스타벅스 강남점\nnaver.me/xYz1"} />,
+  );
+
+  expect(await screen.findByText("https://naver.me/xYz1")).toBeOnTheScreen();
+  await userEvent.setup().press(screen.getByText("저장"));
+
+  await waitFor(() =>
+    expect(mockPost).toHaveBeenCalledWith(
+      "/links",
+      expect.objectContaining({ url: "https://naver.me/xYz1" }),
+    ),
+  );
+});
+
+test("앱 전용 스킴 링크 공유를 저장한다", async () => {
+  mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 8 } } });
+  await render(<ShareExtension url="nmap://place?id=123" />);
+
+  await userEvent.setup().press(await screen.findByText("저장"));
+
+  await waitFor(() =>
+    expect(mockPost).toHaveBeenCalledWith(
+      "/links",
+      expect.objectContaining({ url: "nmap://place?id=123" }),
+    ),
+  );
+});
+
+test("위험한 스킴 공유는 저장하지 않고 링크를 찾지 못했다고 안내한다", async () => {
+  await render(<ShareExtension text="javascript:alert(1)" />);
+
+  expect(
+    await screen.findByText("공유한 내용에서 링크 주소를 찾지 못했어요"),
+  ).toBeOnTheScreen();
+  expect(mockPost).not.toHaveBeenCalled();
+});
+
 test("URL 이 없는 공유에서 '앱에서 직접 입력' 을 누르면 인앱 저장 시트를 연다", async () => {
   await render(<ShareExtension url="이건 링크가 아니에요" />);
 
