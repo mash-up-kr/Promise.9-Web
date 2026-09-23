@@ -6,8 +6,9 @@ import GorhomBottomSheet, {
 } from "@gorhom/bottom-sheet";
 import type { ReactNode } from "react";
 import { useCallback, useRef } from "react";
-import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { SheetHandle, SheetSurface } from "./SheetChrome";
 
 export interface BottomSheetProps {
   onClose: () => void;
@@ -19,22 +20,8 @@ export interface BottomSheetProps {
   isLocked?: boolean;
 }
 
-// Figma Sheet Container: gray-900 솔리드 + 상단 radius 24 + 위쪽 그림자.
 function SolidBackground({ style }: BottomSheetBackgroundProps) {
-  return (
-    <View
-      style={style}
-      className="overflow-hidden rounded-t-3xl bg-gray-900 shadow-[0px_-8px_24px_0px_rgba(0,0,0,0.35)]"
-    />
-  );
-}
-
-function Handle() {
-  return (
-    <View className="items-center pt-2 pb-1">
-      <View className="h-1 w-9 rounded-full bg-icon-assistive" />
-    </View>
-  );
+  return <SheetSurface style={style} />;
 }
 
 export function BottomSheet({
@@ -103,7 +90,7 @@ export function BottomSheet({
       animationConfigs={animationConfigs}
       backdropComponent={renderBackdrop}
       backgroundComponent={SolidBackground}
-      handleComponent={Handle}
+      handleComponent={SheetHandle}
     >
       {children}
     </GorhomBottomSheet>
