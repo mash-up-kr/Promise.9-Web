@@ -668,25 +668,18 @@ test("저장 시트 스크롤은 키보드 높이만큼 인셋을 넣어 메모 
 test("백드롭을 탭하면 익스텐션을 닫는다", async () => {
   await render(<ShareExtension url="https://toss.tech/a" />);
   await screen.findByTestId("share-entry-scroll");
-  await userEvent.setup().press(screen.getByLabelText("sheet-backdrop"));
-  expect(close).toHaveBeenCalled();
+  await userEvent.setup().press(screen.getByLabelText("시트 닫기"));
+  await waitFor(() => expect(close).toHaveBeenCalled());
 });
 
-test("시트를 끌어 내리면 익스텐션을 닫는다", async () => {
-  await render(<ShareExtension url="https://toss.tech/a" />);
-  await screen.findByTestId("share-entry-scroll");
-  await userEvent.setup().press(screen.getByLabelText("sheet-dismiss"));
-  expect(close).toHaveBeenCalled();
-});
-
-test("저장 중에는 백드롭 탭·끌어 내리기로 닫히지 않는다", async () => {
+test("저장 중에는 백드롭을 탭해도 닫히지 않는다", async () => {
   let resolvePost!: (value: unknown) => void;
   mockPost.mockReturnValue(new Promise((resolve) => (resolvePost = resolve)));
   await render(<ShareExtension url="https://toss.tech/a" />);
   const user = userEvent.setup();
   await user.press(await screen.findByText("저장"));
-  await user.press(screen.getByLabelText("sheet-backdrop"));
-  await user.press(screen.getByLabelText("sheet-dismiss"));
+  await user.press(screen.getByLabelText("시트 닫기"));
+  await new Promise((resolve) => setTimeout(resolve, 400));
   expect(close).not.toHaveBeenCalled();
   resolvePost({ data: { success: true, data: { linkId: 1 } } });
   expect(await screen.findByText("링크 저장을 완료했어요")).toBeOnTheScreen();

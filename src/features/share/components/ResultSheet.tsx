@@ -1,11 +1,11 @@
 import { Image, Pressable, View } from "react-native";
 
-import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { Text } from "@/components/ui/text/Text";
 import { createLinkHandoffPath } from "@/constants/routes.constants";
 import type { ShareSaveState } from "../share.reducer";
 
 import { openHostApp } from "../shareHost";
+import { useShareSheetDismiss } from "./ShareSheet";
 import { SheetBody } from "./SheetBody";
 
 // 시안(외부 공유 저장): 결과 4종은 같은 시트 구조에 그래픽·문구·CTA 만 다르다.
@@ -64,7 +64,7 @@ export interface ResultSheetProps {
 
 export function ResultSheet({ state, sharedText, onRetry }: ResultSheetProps) {
   const content = RESULT_CONTENT[state.phase];
-  const dismiss = useSheetDismiss();
+  const dismiss = useShareSheetDismiss();
 
   const handleCta = () => {
     switch (state.phase) {

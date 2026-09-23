@@ -7,11 +7,8 @@ import { useCreateLinkMutation } from "@shared/entities/link/link.queries";
 import { extractFirstUrl } from "@shared/link/link.utils";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useLayoutEffect, useReducer, useRef, useState } from "react";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { BottomSheet } from "@/components/ui/bottom-sheet/BottomSheet";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
 import { linkUrlSchema } from "@/features/link/link.contracts";
 import {
@@ -22,6 +19,7 @@ import { createQueryClient } from "@/lib/queryClient";
 
 import { EntrySheet } from "./components/EntrySheet";
 import { CheckingSheet, ResultSheet } from "./components/ResultSheet";
+import { ShareSheet } from "./components/ShareSheet";
 import { ExtensionLoginSheet } from "./ExtensionLoginSheet";
 import { INITIAL_SHARE_SAVE_STATE, shareSaveReducer } from "./share.reducer";
 import { close } from "./shareHost";
@@ -31,7 +29,7 @@ import { useAccessTokenWarmup } from "./useAccessTokenWarmup";
 
 /**
  * 공유 익스텐션 루트 — 공유받은 URL 을 익스텐션 안에서 바로 저장한다.
- * 시트 크롬(백드롭·핸들·드래그·키보드)은 인앱과 같은 BottomSheet 가 맡고, 컨테이너는 전체 화면이다.
+ * 시트 크롬(백드롭·핸들·드래그·키보드)은 ShareSheet 가 맡고(iOS 경량 · Android gorhom), 컨테이너는 전체 화면이다.
  * 결과 시트(성공/실패/중복/반복실패) 전이는 share.reducer 가 정한다.
  */
 export function ShareExtension({ url }: { url?: string }) {
@@ -57,32 +55,21 @@ export function ShareExtension({ url }: { url?: string }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* 앱 _layout 과 같은 루트 프로바이더 — 시트 제스처(gesture-handler)·인셋·Dialog 키보드 회피. */}
-      <GestureHandlerRootView className="flex-1">
-        <SafeAreaProvider>
-          <KeyboardProvider>
-            <BottomSheet
-              onClose={close}
-              backdropPressBehavior={isSaving ? "none" : "close"}
-              isLocked={isSaving}
-            >
-              {(status === "checking" ||
-                (status === "authenticated" && !isTokenReady)) && (
-                <CheckingSheet />
-              )}
-              {status === "unauthenticated" && (
-                <ExtensionLoginSheet
-                  sharedUrl={sharedUrl}
-                  isSessionExpired={isSessionExpired}
-                />
-              )}
-              {status === "authenticated" && isTokenReady && (
-                <ShareSaveFlow url={sharedUrl} onSavingChange={setIsSaving} />
-              )}
-            </BottomSheet>
-          </KeyboardProvider>
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
+      <SafeAreaProvider>
+        <ShareSheet onClose={close} isLocked={isSaving}>
+          {(status === "checking" ||
+            (status === "authenticated" && !isTokenReady)) && <CheckingSheet />}
+          {status === "unauthenticated" && (
+            <ExtensionLoginSheet
+              sharedUrl={sharedUrl}
+              isSessionExpired={isSessionExpired}
+            />
+          )}
+          {status === "authenticated" && isTokenReady && (
+            <ShareSaveFlow url={sharedUrl} onSavingChange={setIsSaving} />
+          )}
+        </ShareSheet>
+      </SafeAreaProvider>
     </QueryClientProvider>
   );
 }
