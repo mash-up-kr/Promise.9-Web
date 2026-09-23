@@ -2,6 +2,7 @@ import { Icon } from "@promise9/ui/icon/Icon";
 import { Skeleton } from "@promise9/ui/skeleton/Skeleton";
 import { Text } from "@promise9/ui/text/Text";
 import { linkQueries } from "@shared/entities/link/link.queries";
+import { isWebUrl } from "@shared/link/link.utils";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "lucide-react-native";
 import { type ReactNode, useEffect, useState } from "react";
@@ -24,9 +25,11 @@ export interface LinkPreviewCardProps {
 // 5초 타임아웃이 pending 상태를 직접 다뤄야 해 Suspense(useSuspenseQuery) 대신
 // 명시적 상태 머신(useQuery)을 쓴다 — 프로젝트 기본은 Suspense 지만 이 카드만 예외.
 export function LinkPreviewCard({ url, isBare = false }: LinkPreviewCardProps) {
+  // 서버 미리보기는 http(s) 만 지원한다 — 앱 전용 스킴 등은 요청 없이 기본 카드로 끝낸다.
+  const canPreview = isWebUrl(url);
   const { data, isPending, isError, fetchStatus } = useQuery({
     ...linkQueries.preview(url),
-    enabled: url.length > 0,
+    enabled: canPreview,
     refetchOnReconnect: "always", // 네트워크 복구 시 자동 재로딩(시안 정책)
     retry: false,
   });
@@ -47,6 +50,9 @@ export function LinkPreviewCard({ url, isBare = false }: LinkPreviewCardProps) {
   }
 
   const domain = getDomain(url);
+  if (!canPreview) {
+    return <PreviewFallback title={domain ?? FALLBACK_TITLE} isBare={isBare} />;
+  }
   // 오프라인이면 networkMode 기본값('online')에 의해 fetch 가 paused 된다 —
   // 시안 정책: 이 경우 스켈레톤 없이 즉시 폴백(복구 시 refetchOnReconnect 가 다시 채운다).
   const isPaused = fetchStatus === "paused";
