@@ -3,9 +3,11 @@ import { View, type ViewProps } from "react-native";
 
 import { tv } from "@/lib/tv";
 
-// gluestack-ui v5 Skeleton 을 차용해 우리 tv + 토큰으로 작성. pulse 는 animate-pulse.
+import { SkeletonBlock } from "./SkeletonBlock";
+
+// gluestack-ui v5 Skeleton 을 차용해 우리 tv + 토큰으로 작성. 펄스는 플랫폼별 SkeletonBlock 이 맡는다.
 export const skeletonStyles = tv({
-  base: "animate-pulse rounded-md",
+  base: "rounded-md",
   variants: {
     variant: {
       sharp: "rounded-none",
@@ -57,7 +59,7 @@ export function Skeleton({
   }
 
   return (
-    <View
+    <SkeletonBlock
       className={skeletonStyles({ variant, surface, class: className })}
       {...props}
     />
