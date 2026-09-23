@@ -43,7 +43,7 @@ index 3816339ae033c7b49c7d683d4c432888d5080788..27f41d12b95e29fa951d46c48abb0ebc
          PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
          PRODUCT_NAME: `"${targetName}"`,
 diff --git a/plugin/swift/ShareExtensionViewController.swift b/plugin/swift/ShareExtensionViewController.swift
-index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..94c4085db3a424010f862d3de1e3a32c04cbfc29 100644
+index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..4d0bcee4e69120f4b827cf43dfeacb1ed2030d13 100644
 --- a/plugin/swift/ShareExtensionViewController.swift
 +++ b/plugin/swift/ShareExtensionViewController.swift
 @@ -1,6 +1,7 @@
@@ -75,18 +75,59 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..94c4085db3a424010f862d3de1e3a32c
        if var components = URLComponents(url: bundleURL, resolvingAgainstBaseURL: false) {
          components.queryItems = (components.queryItems ?? []) + [URLQueryItem(name: "shareExtension", value: "true")]
          return components.url ?? bundleURL
-@@ -84,6 +86,10 @@ class ShareExtensionViewController: UIViewController {
+@@ -46,6 +48,22 @@ class ShareExtensionViewController: UIViewController {
+   var reactNativeFactoryDelegate: RCTReactNativeFactoryDelegate?
+   private var isCleanedUp = false
+ 
++  // iOS 는 끝난 익스텐션 프로세스를 다음 공유에 재사용하는데, cleanupAfterClose 뒤에도 RN 런타임이
++  // 해제되지 않아 공유할 때마다 메모리가 쌓여 결국 jetsam 으로 종료된다(실측 75→102MB).
++  // 요청을 끝내면 프로세스를 종료해 다음 공유는 항상 새 프로세스에서 시작하게 한다.
++  // 호스트 앱 열기는 요청한 프로세스가 살아 있어야 완료된다(첫 실행 확인창 응답 포함) —
++  // 열기 완료 콜백을 받은 뒤에 종료하고, 콜백이 없는 경로면 종료하지 않는다.
++  // 종료를 기다리는 사이 같은 프로세스로 새 공유가 오면(viewDidLoad) 예약을 취소한다.
++  private static var pendingExit: DispatchWorkItem?
++  private static var isOpeningHostApp = false
++
++  private static func scheduleProcessExit() {
++    pendingExit?.cancel()
++    let work = DispatchWorkItem { exit(0) }
++    pendingExit = work
++    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
++  }
++
+   deinit {
+     print("🧹 ShareExtensionViewController deinit")
+     cleanupAfterClose()
+@@ -61,6 +79,9 @@ class ShareExtensionViewController: UIViewController {
+   
+   override func viewDidLoad() {
+     super.viewDidLoad()
++    ShareExtensionViewController.pendingExit?.cancel()
++    ShareExtensionViewController.pendingExit = nil
++    ShareExtensionViewController.isOpeningHostApp = false
+     setupLoadingIndicator()
+     isCleanedUp = false
+     
+@@ -84,7 +105,17 @@ class ShareExtensionViewController: UIViewController {
    }
    
    func close() {
+-    self.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
 +    // 완료 요청과 동시에 RN 리소스를 해체하면 Fabric 서피스가 콘텐츠·변환을 잃고
 +    // 기본(흰) 배경으로 리셋된 채 시스템 dismiss 애니메이션에 노출된다(흰 시트 플래시).
 +    // 해체 전에 화면에서 먼저 숨겨 플래시를 막는다.
 +    view.subviews.forEach { $0.isHidden = true }
-     self.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
++    self.extensionContext?.completeRequest(returningItems: [], completionHandler: { _ in
++      DispatchQueue.main.async {
++        if !ShareExtensionViewController.isOpeningHostApp {
++          ShareExtensionViewController.scheduleProcessExit()
++        }
++      }
++    })
      // we need to clean up when the view is closed via the close() method in react native
      cleanupAfterClose()
-@@ -98,7 +104,7 @@ class ShareExtensionViewController: UIViewController {
+   }
+@@ -98,7 +129,7 @@ class ShareExtensionViewController: UIViewController {
        
        reactNativeFactoryDelegate = ReactNativeDelegate()
        reactNativeFactoryDelegate!.dependencyProvider = RCTAppDependencyProvider()
@@ -95,7 +136,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..94c4085db3a424010f862d3de1e3a32c
        
        var initialProps = sharedData ?? [:]
        
-@@ -130,6 +136,9 @@ class ShareExtensionViewController: UIViewController {
+@@ -130,6 +161,9 @@ class ShareExtensionViewController: UIViewController {
        
        configureRootView(reactNativeRootView, withBackgroundColorDict: backgroundFromInfoPlist, withHeight: heightFromInfoPlist)
        view.addSubview(reactNativeRootView)
@@ -105,7 +146,26 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..94c4085db3a424010f862d3de1e3a32c
  
        // Hide loading indicator once React content is ready
        self.loadingIndicator.stopAnimating()
-@@ -247,6 +256,7 @@ class ShareExtensionViewController: UIViewController {
+@@ -202,11 +236,17 @@ class ShareExtensionViewController: UIViewController {
+   }
+   
+   @objc @discardableResult private func openURL(_ url: URL) -> Bool {
++    ShareExtensionViewController.isOpeningHostApp = true
+     // Method 1: Try responder chain to find UIApplication
+     var responder: UIResponder? = self
+     while responder != nil {
+       if let application = responder as? UIApplication {
+-        application.open(url, options: [:], completionHandler: nil)
++        application.open(url, options: [:]) { _ in
++          DispatchQueue.main.async {
++            ShareExtensionViewController.isOpeningHostApp = false
++            ShareExtensionViewController.scheduleProcessExit()
++          }
++        }
+         return true
+       }
+       responder = responder?.next
+@@ -247,6 +287,7 @@ class ShareExtensionViewController: UIViewController {
    private func cleanupAfterClose() {
      if isCleanedUp { return }
      isCleanedUp = true
