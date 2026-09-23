@@ -294,6 +294,41 @@ describe("CreateLinkSheet", () => {
     ).toBe("abc");
   });
 
+  test("스킴 없이 입력한 주소는 https 를 붙여 저장한다", async () => {
+    await renderSheet();
+    await fillValidUrl("naver.me/xYz1");
+    await pressSave();
+
+    await waitFor(() =>
+      expect(mockPost).toHaveBeenCalledWith(
+        "/links",
+        expect.objectContaining({ url: "https://naver.me/xYz1" }),
+      ),
+    );
+  });
+
+  test("앱 전용 스킴 링크도 저장한다", async () => {
+    await renderSheet();
+    await fillValidUrl("nmap://place?id=123");
+    await pressSave();
+
+    await waitFor(() =>
+      expect(mockPost).toHaveBeenCalledWith(
+        "/links",
+        expect.objectContaining({ url: "nmap://place?id=123" }),
+      ),
+    );
+  });
+
+  test("위험한 스킴 링크는 서버 호출 없이 실패 스낵바", async () => {
+    await renderSheet();
+    await fillValidUrl("javascript:alert(1)");
+    await pressSave();
+
+    expect(await screen.findByText("저장하지 못했어요")).toBeTruthy();
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+
   test("저장 실패(500) → 실패 스낵바 + 입력 보존, '다시 시도'가 저장을 재실행한다", async () => {
     mockPost.mockRejectedValueOnce(new Error("500"));
     await renderSheet();
@@ -551,6 +586,19 @@ describe("CreateLinkSheet", () => {
     expect(mockGet).not.toHaveBeenCalledWith(
       "/links/preview",
       expect.anything(),
+    );
+  });
+
+  test("스킴 없이 입력한 주소로 blur 하면 https 주소로 프리뷰를 요청한다", async () => {
+    await renderSheet();
+    const input = screen.getByPlaceholderText("링크 주소를 입력해주세요");
+    await fireEvent.changeText(input, "naver.me/xYz1");
+    await fireEvent(input, "blur");
+    await waitFor(() =>
+      expect(mockGet).toHaveBeenCalledWith(
+        "/links/preview",
+        expect.objectContaining({ params: { url: "https://naver.me/xYz1" } }),
+      ),
     );
   });
 

@@ -1,3 +1,4 @@
+import { normalizeLinkUrl } from "@shared/link/link.utils";
 import type { LinkFolderRef } from "@shared/types/link.types";
 import { z } from "zod";
 
@@ -6,12 +7,15 @@ import type { ReminderValue } from "@/features/link/reminder.utils";
 /** 서버는 1000자까지 허용하지만 Figma 스펙상 300자로 더 좁게 제한한다(의도된 차이). */
 export const MEMO_MAX_LENGTH = 300;
 
-// 웹 링크만 저장 대상 — file:·javascript: 등 비웹 스킴은 거부한다.
-// 붙여넣기·프리뷰 커밋(blur)·저장 시점의 형식 검사에 쓴다 — createLinkSchema.url 과는 분리된
-// 스키마다(저장 버튼 활성화 조건은 형식 무관, 비어있지 않음뿐이라 시안 정책).
-export const linkUrlSchema = z.url({
-  protocol: /^https?$/,
-  error: "올바른 URL 을 입력해주세요",
+// 붙여넣기·프리뷰 커밋(blur)·저장 시점의 형식 검사에 쓰고, 통과하면 저장할 형태(스킴 보정)를 돌려준다.
+// createLinkSchema.url 과는 분리된 스키마다(저장 버튼 활성화 조건은 형식 무관, 비어있지 않음뿐이라 시안 정책).
+export const linkUrlSchema = z.string().transform((value, ctx) => {
+  const normalized = normalizeLinkUrl(value);
+  if (!normalized) {
+    ctx.addIssue({ code: "custom", message: "올바른 URL 을 입력해주세요" });
+    return z.NEVER;
+  }
+  return normalized;
 });
 
 export const createLinkSchema = z.object({

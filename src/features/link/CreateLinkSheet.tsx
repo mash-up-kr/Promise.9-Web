@@ -48,7 +48,7 @@ export function CreateLinkSheet() {
   // 공유 익스텐션에서 로그인 인계로 들어오면 URL 을 이미 알고 있다 — 필드·프리뷰를 채워 시작한다.
   const { share } = useLocalSearchParams<{ share?: string }>();
   const initialUrl = decodeSharedUrl(share) ?? "";
-  const hasValidInitialUrl = linkUrlSchema.safeParse(initialUrl).success;
+  const parsedInitialUrl = linkUrlSchema.safeParse(initialUrl);
   const { control, handleSubmit, setValue } = useForm<CreateLinkForm>({
     resolver: zodResolver(createLinkSchema),
     mode: "onChange",
@@ -57,7 +57,7 @@ export function CreateLinkSheet() {
       folderId: null,
       reminder: null,
       memo: "",
-      previewUrl: hasValidInitialUrl ? initialUrl : "",
+      previewUrl: parsedInitialUrl.success ? parsedInitialUrl.data : "",
     },
   });
   const createLinkMutation = useCreateLinkMutation();
@@ -93,7 +93,7 @@ export function CreateLinkSheet() {
       }
       createLinkMutation.mutate(
         {
-          url: values.url,
+          url: parsedUrl.data,
           folderId: values.folderId,
           memo: values.memo?.trim() || null,
           reminderAt: values.reminder ? toReminderAtIso(values.reminder) : null,
@@ -237,8 +237,8 @@ function UrlPreviewField({
   const hasPreview = previewUrl.length > 0;
 
   const commitPreview = (value: string) => {
-    const isValid = linkUrlSchema.safeParse(value).success;
-    setValue("previewUrl", isValid ? value : "");
+    const parsed = linkUrlSchema.safeParse(value);
+    setValue("previewUrl", parsed.success ? parsed.data : "");
   };
 
   useEffect(
