@@ -294,6 +294,24 @@ describe("findLinkInText", () => {
     }
   });
 
+  test("전각·CJK 괄호와 문장 부호도 걷어낸다", () => {
+    for (const text of [
+      "（https://toss.tech/a）",
+      "［https://toss.tech/a］",
+      "｛https://toss.tech/a｝",
+      "＜https://toss.tech/a＞",
+      "참고 https://toss.tech/a。",
+      "https://toss.tech/a、 https://toss.tech/b",
+      "https://toss.tech/a， 그리고",
+      "https://toss.tech/a！",
+      "https://toss.tech/a？",
+      "https://toss.tech/a：",
+      "https://toss.tech/a；",
+    ]) {
+      expect(findLinkInText(text)).toEqual(accepted("https://toss.tech/a"));
+    }
+  });
+
   test("주소 안의 짝 맞는 괄호는 남긴다", () => {
     expect(
       findLinkInText("위키: https://en.wikipedia.org/wiki/Foo_(bar)."),

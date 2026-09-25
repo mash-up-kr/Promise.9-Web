@@ -240,10 +240,14 @@ const CLOSING_TO_OPENING = new Map([
   ["】", "【"],
   ["》", "《"],
   ["〉", "〈"],
+  ["）", "（"],
+  ["］", "［"],
+  ["｝", "｛"],
+  ["＞", "＜"],
 ]);
 const OPENING_BRACKETS = new Set(CLOSING_TO_OPENING.values());
 const LEADING_PUNCTUATION = new Set([...OPENING_BRACKETS, '"', "'"]);
-const TRAILING_PUNCTUATION = new Set(['"', "'", ".", ",", "!", "?", ";", ":"]);
+const TRAILING_PUNCTUATION = new Set([..."\"'.,!?;:。、，！？：；"]);
 
 // 링크를 감싼 괄호·따옴표와 뒤따른 문장 부호를 걷어낸다. 짝이 맞는 괄호는 주소의 일부로 남기고
 // ("…/Foo_(bar)"), 짝 없는 닫는 괄호에서 주소가 끝난다("누리집(https://www.korea.kr)에서").
