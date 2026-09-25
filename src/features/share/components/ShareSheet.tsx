@@ -1,3 +1,4 @@
+import { useReduceMotion } from "@promise9/ui/hooks/useReduceMotion";
 import { SheetHandle, SheetSurface } from "@promise9/ui/sheet/SheetChrome";
 import {
   SHEET_BACKDROP_OPACITY,
@@ -61,6 +62,7 @@ export function shouldDismissByDrag(dy: number, vy: number) {
 export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
   const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const isReduceMotionEnabled = useReduceMotion();
   // 위치(아래로 내려간 거리)는 네이티브 드라이버로, 높이는 레이아웃 속성이라 JS 로 움직인다.
   const translateY = useRef(new Animated.Value(windowHeight)).current;
   const sheetHeight = useRef(new Animated.Value(0)).current;
@@ -70,17 +72,25 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
   const isClosingRef = useRef(false);
 
   const settle = useCallback(() => {
+    if (isReduceMotionEnabled) {
+      translateY.setValue(0);
+      return;
+    }
     Animated.spring(translateY, {
       toValue: 0,
       ...SHEET_SPRING,
       useNativeDriver: true,
     }).start();
-  }, [translateY]);
+  }, [translateY, isReduceMotionEnabled]);
 
   // 인앱 시트(gorhom)처럼 닫힐 때도 같은 스프링으로 내려간다.
   const dismiss = useCallback(() => {
     if (isClosingRef.current) return;
     isClosingRef.current = true;
+    if (isReduceMotionEnabled) {
+      onClose();
+      return;
+    }
     Animated.spring(translateY, {
       toValue: measuredHeightRef.current ?? windowHeight,
       ...SHEET_SPRING,
@@ -88,7 +98,7 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
     }).start(({ finished }) => {
       if (finished) onClose();
     });
-  }, [translateY, windowHeight, onClose]);
+  }, [translateY, windowHeight, onClose, isReduceMotionEnabled]);
 
   // 콘텐츠가 바뀌면(확인 → 저장 → 결과, 리마인드 펼침) 잰 높이로 시트 높이를 따라 움직인다.
   // 처음 잰 뒤에 올라와야 빈 시트가 비치지 않는다.
@@ -106,13 +116,17 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
         settle();
         return;
       }
+      if (isReduceMotionEnabled) {
+        sheetHeight.setValue(height);
+        return;
+      }
       Animated.spring(sheetHeight, {
         toValue: height,
         ...SHEET_SPRING,
         useNativeDriver: false,
       }).start();
     },
-    [backdropRange, sheetHeight, translateY, settle],
+    [backdropRange, sheetHeight, translateY, settle, isReduceMotionEnabled],
   );
 
   const panResponder = useMemo(

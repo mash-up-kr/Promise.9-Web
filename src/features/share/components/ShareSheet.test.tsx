@@ -1,5 +1,10 @@
 import { act, render, screen, userEvent } from "@testing-library/react-native";
-import { NativeModules, Pressable, Text } from "react-native";
+import {
+  AccessibilityInfo,
+  NativeModules,
+  Pressable,
+  Text,
+} from "react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import {
@@ -238,6 +243,37 @@ test("콘텐츠 높이가 바뀌면 시트 높이가 한 번에 튀지 않고 �
 
   await finishAnimations();
   expect(screen.getByTestId("share-sheet")).toHaveStyle({ height: 500 });
+});
+
+describe("동작 줄이기가 켜져 있으면", () => {
+  const isReduceMotionEnabled =
+    AccessibilityInfo.isReduceMotionEnabled as jest.Mock;
+
+  beforeEach(() => {
+    isReduceMotionEnabled.mockResolvedValue(true);
+  });
+
+  afterEach(() => {
+    isReduceMotionEnabled.mockImplementation(() => Promise.resolve(false));
+  });
+
+  test("미끄러지는 애니메이션 없이 바로 닫는다", async () => {
+    const { NativeAnimatedModule } = NativeModules;
+    const { onClose } = await renderSheet();
+    NativeAnimatedModule.startAnimatingNode.mockClear();
+
+    await setupUser().press(screen.getByLabelText("시트 닫기"));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(NativeAnimatedModule.startAnimatingNode).not.toHaveBeenCalled();
+  });
+
+  test("콘텐츠 높이가 바뀌면 곧바로 맞춘다", async () => {
+    await renderSheet();
+    await layoutContent(300);
+    await layoutContent(500);
+    expect(screen.getByTestId("share-sheet")).toHaveStyle({ height: 500 });
+  });
 });
 
 test.each([

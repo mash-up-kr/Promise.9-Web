@@ -1,4 +1,5 @@
 import { ActionButton } from "@promise9/ui/action-button/ActionButton";
+import { useReduceMotion } from "@promise9/ui/hooks/useReduceMotion";
 import { Text } from "@promise9/ui/text/Text";
 import type { PropsWithChildren, ReactNode } from "react";
 import { useEffect, useRef } from "react";
@@ -55,18 +56,33 @@ const DIALOG_SPRING = { stiffness: 520, damping: 34, mass: 0.7 };
 // className 을 그대로 받도록 NativeWind 가 감싼 View 로 애니메이티드 컴포넌트를 만든다.
 const AnimatedView = Animated.createAnimatedComponent(View);
 
+interface AlertDialogContentProps extends PropsWithChildren {
+  isReduceMotionEnabled: boolean;
+}
+
 // Figma Alert Dialog: 플랫 gray-800 카드 + white-05 헤어라인 보더.
-function AlertDialogContent({ children }: PropsWithChildren) {
-  const progress = useRef(new Animated.Value(0)).current;
+function AlertDialogContent({
+  isReduceMotionEnabled,
+  children,
+}: AlertDialogContentProps) {
+  const progress = useRef(
+    new Animated.Value(isReduceMotionEnabled ? 1 : 0),
+  ).current;
 
   useEffect(() => {
-    Animated.spring(progress, {
+    if (isReduceMotionEnabled) {
+      progress.setValue(1);
+      return;
+    }
+    const enter = Animated.spring(progress, {
       toValue: 1,
       ...DIALOG_SPRING,
       // react-native-web 은 native driver 가 없어 켜면 경고만 남긴다.
       useNativeDriver: !isWeb,
-    }).start();
-  }, [progress]);
+    });
+    enter.start();
+    return () => enter.stop();
+  }, [progress, isReduceMotionEnabled]);
 
   const scale = progress.interpolate({
     inputRange: [0, 1],
@@ -103,6 +119,9 @@ export function AlertDialog({
   description,
   actions,
 }: AlertDialogProps) {
+  // 닫혀 있을 때부터 읽어 두어야 열릴 때 등장 애니메이션을 건너뛸지 이미 안다.
+  const isReduceMotionEnabled = useReduceMotion();
+
   return (
     <Core
       isOpen={isOpen}
@@ -110,7 +129,7 @@ export function AlertDialog({
       closeOnOverlayClick={closeOnOverlayClick}
     >
       <Core.Backdrop />
-      <AlertDialogContent>
+      <AlertDialogContent isReduceMotionEnabled={isReduceMotionEnabled}>
         <View className="w-full items-center gap-1">
           <Text
             variant="heading-3"

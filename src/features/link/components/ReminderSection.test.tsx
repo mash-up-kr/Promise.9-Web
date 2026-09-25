@@ -1,12 +1,19 @@
 import { render, screen, userEvent } from "@testing-library/react-native";
+import { AccessibilityInfo, NativeModules } from "react-native";
 
 import { ReminderSection } from "./ReminderSection";
+
+const isReduceMotionEnabled =
+  AccessibilityInfo.isReduceMotionEnabled as jest.Mock;
 
 beforeEach(() => {
   jest.useFakeTimers({ doNotFake: ["queueMicrotask"] });
   jest.setSystemTime(new Date("2026-08-26T14:32:00"));
 });
-afterEach(() => jest.useRealTimers());
+afterEach(() => {
+  jest.useRealTimers();
+  isReduceMotionEnabled.mockImplementation(() => Promise.resolve(false));
+});
 
 // 커스텀 Toggle(Pressable) 은 press 로 토글된다 — fake timers 병용이라 advanceTimers 필수.
 async function toggleSwitch() {
@@ -86,4 +93,23 @@ it("주사위 탭 → 1~180일 범위 날짜로 변경", async () => {
   // "랜덤 날짜" 툴팁은 웹 hover 전용 — 네이티브 press 만으론(hover 없이) 노출되지 않는다.
   // (hover 자체는 jest 환경에서 검증 불가 — 수동 웹 스모크로 확인)
   expect(screen.queryByText("랜덤 날짜")).toBeNull();
+});
+
+it("동작 줄이기가 켜져 있으면 주사위를 흔들지 않고 날짜만 바꾼다", async () => {
+  isReduceMotionEnabled.mockResolvedValue(true);
+  const { NativeAnimatedModule } = NativeModules;
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+  const onChange = jest.fn();
+  await render(
+    <ReminderSection
+      value={{ date: "2026-08-27", hour: 9, minute: 0 }}
+      onChange={onChange}
+    />,
+  );
+  NativeAnimatedModule.startAnimatingNode.mockClear();
+
+  await user.press(screen.getByRole("button", { name: "랜덤 날짜" }));
+
+  expect(onChange).toHaveBeenCalled();
+  expect(NativeAnimatedModule.startAnimatingNode).not.toHaveBeenCalled();
 });

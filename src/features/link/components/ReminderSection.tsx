@@ -1,3 +1,4 @@
+import { useReduceMotion } from "@promise9/ui/hooks/useReduceMotion";
 import { DiceIcon } from "@promise9/ui/icon/DiceIcon";
 import {
   ReminderDiceButton,
@@ -131,6 +132,7 @@ interface DiceButtonProps {
 }
 
 function DiceButton({ onPress }: DiceButtonProps) {
+  const isReduceMotionEnabled = useReduceMotion();
   const rotate = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
   // 웹 전용 hover 툴팁 — 네이티브에선 onHoverIn/Out 이 발화하지 않지만, 정책상 명시적으로도 막는다.
@@ -149,14 +151,16 @@ function DiceButton({ onPress }: DiceButtonProps) {
   };
 
   const handlePress = () => {
-    Animated.parallel([
-      Animated.sequence(
-        WIGGLE_SEQUENCE.map((angle, index) =>
-          timing(rotate, angle, index === 0 ? 100 : undefined),
+    if (!isReduceMotionEnabled) {
+      Animated.parallel([
+        Animated.sequence(
+          WIGGLE_SEQUENCE.map((angle, index) =>
+            timing(rotate, angle, index === 0 ? 100 : undefined),
+          ),
         ),
-      ),
-      Animated.sequence([timing(scale, 1.1, 125), timing(scale, 1, 125)]),
-    ]).start();
+        Animated.sequence([timing(scale, 1.1, 125), timing(scale, 1, 125)]),
+      ]).start();
+    }
     onPress();
   };
 
