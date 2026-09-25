@@ -800,6 +800,14 @@ test("링크가 없는 공유는 로그인을 묻기 전에 저장할 수 없다
   expect(screen.queryByText("로그인이 필요해요")).toBeNull();
 });
 
+test("웹 주소가 아닌 한 토큰 공유는 '앱에서 직접 입력' 에 원문을 채우지 않는다", async () => {
+  await render(<ShareExtension text="WIFI:S:x;T:WPA;P:secret123;;" />);
+
+  await userEvent.setup().press(await screen.findByText("앱에서 직접 입력"));
+
+  expect(openHostApp).toHaveBeenCalledWith("create-link");
+});
+
 test("URL 이 없는 공유에서 '앱에서 직접 입력' 을 누르면 인앱 저장 시트를 연다", async () => {
   await render(<ShareExtension url="이건 링크가 아니에요" />);
 
