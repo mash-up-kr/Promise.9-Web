@@ -1,5 +1,3 @@
-import type { LinkUrlRejectReason } from "@shared/link/link.utils";
-
 // 정책(Figma · 외부 공유 저장): 같은 세션에서 3회 연속 실패하면 retry-limit 화면으로 전환.
 const RETRY_LIMIT = 3;
 
@@ -9,15 +7,13 @@ export type ShareSaveState =
   | { phase: "success"; linkId: number }
   | { phase: "duplicate"; linkId: number | null }
   | { phase: "failed"; failCount: number }
-  | { phase: "retry-limit" }
-  | { phase: "invalid-url"; reason: LinkUrlRejectReason };
+  | { phase: "retry-limit" };
 
 export type ShareSaveAction =
   | { type: "SAVE_REQUESTED" }
   | { type: "SAVE_SUCCEEDED"; linkId: number }
   | { type: "SAVE_DUPLICATED"; linkId: number | null }
-  | { type: "SAVE_FAILED" }
-  | { type: "SAVE_REJECTED_INVALID_URL"; reason: LinkUrlRejectReason };
+  | { type: "SAVE_FAILED" };
 
 export const INITIAL_SHARE_SAVE_STATE: ShareSaveState = {
   phase: "editing",
@@ -42,12 +38,6 @@ export function shareSaveReducer(
     case "SAVE_DUPLICATED":
       if (state.phase === "saving") {
         return { phase: "duplicate", linkId: action.linkId };
-      }
-      return state;
-    // 공유 텍스트에 저장할 링크가 없으면(Android EXTRA_TEXT 등) 서버 왕복 없이 사유를 안내하고 끝낸다.
-    case "SAVE_REJECTED_INVALID_URL":
-      if (state.phase === "editing" || state.phase === "failed") {
-        return { phase: "invalid-url", reason: action.reason };
       }
       return state;
     case "SAVE_FAILED":

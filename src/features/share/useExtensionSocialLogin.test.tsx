@@ -104,16 +104,6 @@ test("iOS 카카오는 익스텐션에서 끝낼 수 없어 앱 로그인으로 
   expect(mockGetIdToken).not.toHaveBeenCalled();
 });
 
-test("공유 내용에 링크가 없으면 iOS 카카오 인계에 share 를 싣지 않는다", async () => {
-  const { result } = await renderHook(() => useExtensionSocialLogin(null), {
-    wrapper,
-  });
-
-  await act(() => result.current.login("kakao"));
-
-  expect(openHostApp).toHaveBeenCalledWith("login?next=create-link");
-});
-
 test("Android 카카오는 그 자리에서 진행한다", async () => {
   mockIsIOS = false;
   mockGetIdToken.mockResolvedValue("kakao-id-token");

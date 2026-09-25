@@ -25,7 +25,7 @@ function shouldHandOffToApp(provider: SocialProvider): boolean {
 }
 
 export function useExtensionSocialLogin(
-  sharedUrl: string | null,
+  sharedUrl: string,
 ): ExtensionSocialLogin {
   const { getIdToken } = useSocialAuth();
   const { mutateAsync } = useSocialLoginMutation();

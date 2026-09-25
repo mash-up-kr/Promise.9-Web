@@ -65,10 +65,6 @@ describe("routes.constants", () => {
     expect(encodeSharedUrl(url)).toMatch(/^[0-9a-f]+$/);
   });
 
-  test("공유 내용에 링크가 없으면 인계 경로에 share 를 싣지 않는다", () => {
-    expect(shareLoginHandoffPath(null)).toBe("login?next=create-link");
-  });
-
   test("공유 URL 인코딩은 &·%·한글·해시를 그대로 되살린다", () => {
     for (const url of [
       "https://www.youtube.com/watch?v=abc&t=10s",

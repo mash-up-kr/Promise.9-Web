@@ -1,4 +1,5 @@
 import { Text } from "@promise9/ui/text/Text";
+import type { LinkUrlRejectReason } from "@shared/link/link.utils";
 import { Image, Pressable, View } from "react-native";
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { createLinkHandoffPath } from "@/constants/routes.constants";
@@ -55,11 +56,17 @@ export function CheckingSheet() {
   );
 }
 
+/** 저장 흐름의 결과(share.reducer)와, 저장할 링크가 없을 때의 안내. */
+type ShareResultState =
+  | Exclude<ShareSaveState, { phase: "editing" } | { phase: "saving" }>
+  | { phase: "invalid-url"; reason: LinkUrlRejectReason };
+
 export interface ResultSheetProps {
-  state: Exclude<ShareSaveState, { phase: "editing" } | { phase: "saving" }>;
-  /** 공유받은 원문 — URL 이 없을 때 인앱 저장 시트를 미리 채우는 데 쓴다. */
-  sharedText: string;
-  onRetry: () => void;
+  state: ShareResultState;
+  /** 공유받은 원문 — invalid-url 에서 "앱에서 직접 입력" 이 인앱 저장 시트를 미리 채우는 데 쓴다. */
+  sharedText?: string;
+  /** failed 에서 "다시 시도" 가 저장을 다시 한다. */
+  onRetry?: () => void;
 }
 
 export function ResultSheet({ state, sharedText, onRetry }: ResultSheetProps) {
@@ -81,10 +88,10 @@ export function ResultSheet({ state, sharedText, onRetry }: ResultSheetProps) {
         openHostApp(state.linkId != null ? `link/${state.linkId}` : "/");
         return;
       case "failed":
-        onRetry();
+        onRetry?.();
         return;
       case "invalid-url":
-        openHostApp(createLinkHandoffPath(sharedText));
+        openHostApp(createLinkHandoffPath(sharedText ?? ""));
         return;
       case "retry-limit":
         dismiss();

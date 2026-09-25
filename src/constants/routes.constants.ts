@@ -57,13 +57,9 @@ export const SHARE_LOGIN_NEXT_CREATE_LINK = "create-link";
 /**
  * 공유 익스텐션 → 앱 인계 경로(스킴 뒤, 선행 슬래시 없음). 로그인 화면이 `next` 를 보고
  * 인앱 저장 시트를 `share`(공유 URL) 로 채워 연다 — iOS 카카오처럼 익스텐션 안에서 끝낼 수 없는 로그인용.
- * 공유 내용에 링크가 없으면 `share` 를 싣지 않는다(공유 원문은 넘기지 않는다).
  */
-export function shareLoginHandoffPath(sharedUrl: string | null): string {
-  const path = `login?next=${SHARE_LOGIN_NEXT_CREATE_LINK}`;
-  return sharedUrl === null
-    ? path
-    : `${path}&share=${encodeSharedUrl(sharedUrl)}`;
+export function shareLoginHandoffPath(sharedUrl: string): string {
+  return `login?next=${SHARE_LOGIN_NEXT_CREATE_LINK}&share=${encodeSharedUrl(sharedUrl)}`;
 }
 
 /**

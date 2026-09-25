@@ -649,6 +649,7 @@ test("URL 형식이 아니면 저장을 누르기 전에 바로 저장 불가 �
   ).toBeOnTheScreen();
   expect(screen.queryByText("저장")).toBeNull();
   expect(mockPost).not.toHaveBeenCalled();
+  expect(mockRefreshAccessToken).not.toHaveBeenCalled();
 
   await user.press(screen.getByText("닫기"));
   await waitFor(() => expect(close).toHaveBeenCalled());
@@ -788,13 +789,15 @@ test("미로그인 iOS 카카오 인계는 공유 텍스트 전체가 아니라 
   );
 });
 
-test("링크가 없는 공유의 미로그인 iOS 카카오 인계는 share 없이 넘긴다", async () => {
+// 로그인해도 저장할 링크가 없다 — 로그인부터 시키지 않는다.
+test("링크가 없는 공유는 로그인을 묻기 전에 저장할 수 없다고 안내한다", async () => {
   storedRefreshToken = null;
   await render(<ShareExtension text="오늘 저녁 메뉴 추천 좀 해줘" />);
 
-  await userEvent.setup().press(await screen.findByText("카카오로 계속하기"));
-
-  expect(openHostApp).toHaveBeenCalledWith("login?next=create-link");
+  expect(
+    await screen.findByText("공유한 내용에서 링크 주소를 찾지 못했어요"),
+  ).toBeOnTheScreen();
+  expect(screen.queryByText("로그인이 필요해요")).toBeNull();
 });
 
 test("URL 이 없는 공유에서 '앱에서 직접 입력' 을 누르면 인앱 저장 시트를 연다", async () => {
