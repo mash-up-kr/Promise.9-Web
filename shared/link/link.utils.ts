@@ -70,10 +70,16 @@ const BLOCKED_SCHEMES = new Set([
   "search",
   "search-ms",
   "promise9web",
+  // Expo 가 번들 ID 로 자동 등록하는 우리 앱 스킴
+  "com.mashup.promise9",
   // 보안 보고서가 위험한 주소를 일부러 무력화한 표기 — 되살려 열지 않는다.
   "hxxp",
   "hxxps",
 ]);
+// 이름이 계속 늘어나는 스킴 — Windows 핸들러(ms-settings·ms-msdt…)·구글 로그인 콜백(역방향 클라이언트 ID).
+const BLOCKED_SCHEME_PREFIXES = ["ms-", "com.googleusercontent.apps."];
+// 카카오 로그인 콜백(kakao + 네이티브 앱 키)
+const KAKAO_CALLBACK_SCHEME_PATTERN = /^kakao[0-9a-f]{32}$/;
 
 // 보이지 않거나 글자 방향을 뒤집는 문자 — 화면에 보이는 주소와 실제로 여는 주소를 다르게 만들 수 있다.
 // 제어 문자(C0·DEL·C1)·소프트 하이픈·서식/결합 문자·제로폭 문자·방향 제어·한글 채움 문자·BOM·태그 문자.
@@ -104,8 +110,11 @@ function getScheme(value: string): string | null {
 }
 
 function isBlockedScheme(scheme: string): boolean {
-  // ms-settings·ms-msdt 등 Windows 핸들러는 계속 늘어나 접두어로 막는다.
-  return BLOCKED_SCHEMES.has(scheme) || scheme.startsWith("ms-");
+  return (
+    BLOCKED_SCHEMES.has(scheme) ||
+    BLOCKED_SCHEME_PREFIXES.some((prefix) => scheme.startsWith(prefix)) ||
+    KAKAO_CALLBACK_SCHEME_PATTERN.test(scheme)
+  );
 }
 
 function hasInvisibleChar(value: string): boolean {

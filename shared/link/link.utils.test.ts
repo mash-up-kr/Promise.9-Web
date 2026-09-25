@@ -103,6 +103,19 @@ describe("normalizeLinkUrl", () => {
     }
   });
 
+  // 저장한 링크로 우리 앱 내부 화면이나 로그인 흐름을 건드리지 못하게 한다.
+  test("우리 앱(번들 ID)·로그인 콜백 스킴은 막는다", () => {
+    for (const url of [
+      "com.mashup.promise9:///settings/withdraw",
+      "kakao0123456789abcdef0123456789abcdef://oauth?code=abc",
+      "com.googleusercontent.apps.123-abc:/oauth2redirect",
+    ]) {
+      expect(normalizeLinkUrl(url)).toEqual(rejected("blocked-scheme"));
+      expect(isOpenableLinkUrl(url)).toBe(false);
+    }
+    expect(normalizeLinkUrl("kakaotalk://inappbrowser?url=x").ok).toBe(true);
+  });
+
   test("주소 안에 공백이 있으면 거부한다", () => {
     for (const value of [
       "https://example.com/a b",
