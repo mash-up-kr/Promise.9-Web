@@ -10,12 +10,12 @@ export const MEMO_MAX_LENGTH = 300;
 // 붙여넣기·프리뷰 커밋(blur)·저장 시점의 형식 검사에 쓰고, 통과하면 저장할 형태(스킴 보정)를 돌려준다.
 // createLinkSchema.url 과는 분리된 스키마다(저장 버튼 활성화 조건은 형식 무관, 비어있지 않음뿐이라 시안 정책).
 export const linkUrlSchema = z.string().transform((value, ctx) => {
-  const normalized = normalizeLinkUrl(value);
-  if (!normalized) {
+  const result = normalizeLinkUrl(value);
+  if (!result.ok) {
     ctx.addIssue({ code: "custom", message: "올바른 URL 을 입력해주세요" });
     return z.NEVER;
   }
-  return normalized;
+  return result.url;
 });
 
 export const createLinkSchema = z.object({

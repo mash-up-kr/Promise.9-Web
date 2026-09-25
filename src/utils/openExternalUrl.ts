@@ -8,12 +8,12 @@ import { Linking } from "react-native";
  */
 export async function openExternalUrl(url: string): Promise<void> {
   const safeUrl = normalizeLinkUrl(url);
-  if (!safeUrl) {
+  if (!safeUrl.ok) {
     console.warn("열 수 없는 링크입니다", url);
     return;
   }
   try {
-    await Linking.openURL(safeUrl);
+    await Linking.openURL(safeUrl.url);
   } catch (error) {
     console.warn("링크를 열지 못했습니다", error);
   }
