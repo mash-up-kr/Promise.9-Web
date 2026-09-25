@@ -1,9 +1,4 @@
-import {
-  render,
-  screen,
-  userEvent,
-  waitFor,
-} from "@testing-library/react-native";
+import { act, render, screen, userEvent } from "@testing-library/react-native";
 import { Pressable, Text } from "react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -18,6 +13,26 @@ const metrics: Metrics = {
   frame: { x: 0, y: 0, width: 375, height: 812 },
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
 };
+
+// 시트 애니메이션은 네이티브 드라이버라 jest 의 NativeAnimatedModule 목이 16ms 뒤에 끝낸다 —
+// 실제로 기다리지 않고 가짜 타이머로 흘려보낸다.
+beforeEach(() => {
+  jest.useFakeTimers();
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
+
+function setupUser() {
+  return userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+}
+
+async function finishAnimations() {
+  await act(async () => {
+    jest.advanceTimersByTime(1000);
+  });
+}
 
 function CancelButton() {
   const dismiss = useShareSheetDismiss();
@@ -41,6 +56,60 @@ async function renderSheet({ isLocked = false } = {}) {
   return { onClose };
 }
 
+interface TouchPoint {
+  y: number;
+  timestamp: number;
+}
+
+// PanResponder 는 이벤트의 touchHistory 로 이동 거리·속도를 계산한다 — 손가락 하나의 기록을 흉내 낸다.
+function touchEvent(current: TouchPoint, previous: TouchPoint) {
+  return {
+    nativeEvent: { touches: [{}], changedTouches: [{}] },
+    touchHistory: {
+      numberActiveTouches: 1,
+      indexOfSingleActiveTouch: 0,
+      mostRecentTimeStamp: current.timestamp,
+      touchBank: [
+        {
+          touchActive: true,
+          startPageX: 0,
+          startPageY: 0,
+          startTimeStamp: 0,
+          currentPageX: 0,
+          currentPageY: current.y,
+          currentTimeStamp: current.timestamp,
+          previousPageX: 0,
+          previousPageY: previous.y,
+          previousTimeStamp: previous.timestamp,
+        },
+      ],
+    },
+  };
+}
+
+/**
+ * 핸들을 dy 만큼 durationMs 동안 끌어 내렸다 놓는다 — 응답자 시스템이 핸들에 보내는 순서대로
+ * 부른다. 핸들이 제스처를 가져가지 않으면(false) 거기서 멈춘다.
+ */
+async function dragHandle(dy: number, durationMs: number) {
+  const handle = screen.getByTestId("share-sheet-handle");
+  const down = { y: 100, timestamp: 1000 };
+  // 이동 임계(4px)를 넘겨 응답자를 요청하는 첫 이동.
+  const start = { y: 110, timestamp: 1016 };
+  const end = { y: 110 + dy, timestamp: 1016 + durationMs };
+  let isGranted = false;
+  await act(async () => {
+    handle.props.onStartShouldSetResponderCapture(touchEvent(down, down));
+    handle.props.onMoveShouldSetResponderCapture(touchEvent(start, down));
+    isGranted = handle.props.onMoveShouldSetResponder(touchEvent(start, down));
+    if (!isGranted) return;
+    handle.props.onResponderGrant(touchEvent(start, down));
+    handle.props.onResponderMove(touchEvent(end, start));
+    handle.props.onResponderRelease(touchEvent(end, start));
+  });
+  return isGranted;
+}
+
 test("children 을 렌더한다", async () => {
   await renderSheet();
   expect(screen.getByText("내용")).toBeOnTheScreen();
@@ -48,31 +117,60 @@ test("children 을 렌더한다", async () => {
 
 test("백드롭을 탭하면 퇴장 애니메이션 후 onClose 를 부른다", async () => {
   const { onClose } = await renderSheet();
-  await userEvent.setup().press(screen.getByLabelText("시트 닫기"));
-  await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  await setupUser().press(screen.getByLabelText("시트 닫기"));
+  await finishAnimations();
+  expect(onClose).toHaveBeenCalledTimes(1);
 });
 
 test("잠금 중에는 백드롭을 탭해도 닫히지 않는다", async () => {
   const { onClose } = await renderSheet({ isLocked: true });
-  await userEvent.setup().press(screen.getByLabelText("시트 닫기"));
-  await new Promise((resolve) => setTimeout(resolve, 400));
+  await setupUser().press(screen.getByLabelText("시트 닫기"));
+  await finishAnimations();
   expect(onClose).not.toHaveBeenCalled();
 });
 
 test("시트 안에서 useShareSheetDismiss 로 닫을 수 있다", async () => {
   const { onClose } = await renderSheet();
-  await userEvent.setup().press(screen.getByText("취소"));
-  await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  await setupUser().press(screen.getByText("취소"));
+  await finishAnimations();
+  expect(onClose).toHaveBeenCalledTimes(1);
 });
 
 test("여러 번 닫기를 요청해도 onClose 는 한 번만 부른다", async () => {
   const { onClose } = await renderSheet();
-  const user = userEvent.setup();
+  const user = setupUser();
   await user.press(screen.getByText("취소"));
   await user.press(screen.getByLabelText("시트 닫기"));
-  await waitFor(() => expect(onClose).toHaveBeenCalled());
-  await new Promise((resolve) => setTimeout(resolve, 400));
+  await finishAnimations();
   expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test("핸들을 충분히 끌어 내리면 닫는다", async () => {
+  const { onClose } = await renderSheet();
+  expect(await dragHandle(150, 300)).toBe(true);
+  await finishAnimations();
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test("핸들을 빠르게 튕기면 짧게 끌어도 닫는다", async () => {
+  const { onClose } = await renderSheet();
+  expect(await dragHandle(30, 16)).toBe(true);
+  await finishAnimations();
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test("핸들을 조금 끌었다 천천히 놓으면 닫히지 않는다", async () => {
+  const { onClose } = await renderSheet();
+  expect(await dragHandle(60, 200)).toBe(true);
+  await finishAnimations();
+  expect(onClose).not.toHaveBeenCalled();
+});
+
+test("잠금 중에는 핸들을 끌어도 제스처를 받지 않는다", async () => {
+  const { onClose } = await renderSheet({ isLocked: true });
+  expect(await dragHandle(150, 300)).toBe(false);
+  await finishAnimations();
+  expect(onClose).not.toHaveBeenCalled();
 });
 
 test.each([

@@ -123,7 +123,7 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
           }}
         >
           <SheetSurface>
-            <View {...panResponder.panHandlers}>
+            <View testID="share-sheet-handle" {...panResponder.panHandlers}>
               <SheetHandle />
             </View>
             {children}

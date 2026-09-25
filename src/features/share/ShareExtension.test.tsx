@@ -672,17 +672,17 @@ test("백드롭을 탭하면 익스텐션을 닫는다", async () => {
   await waitFor(() => expect(close).toHaveBeenCalled());
 });
 
-test("저장 중에는 백드롭을 탭해도 닫히지 않는다", async () => {
+// 잠긴 백드롭이 탭에 닫히지 않는 동작 자체는 ShareSheet.test 가 본다 — 여기선 저장 상태가 잠금으로 이어지는지만.
+test("저장 중에는 백드롭을 잠가 탭해도 닫히지 않는다", async () => {
   let resolvePost!: (value: unknown) => void;
   mockPost.mockReturnValue(new Promise((resolve) => (resolvePost = resolve)));
   await render(<ShareExtension url="https://toss.tech/a" />);
-  const user = userEvent.setup();
-  await user.press(await screen.findByText("저장"));
-  await user.press(screen.getByLabelText("시트 닫기"));
-  await new Promise((resolve) => setTimeout(resolve, 400));
-  expect(close).not.toHaveBeenCalled();
+  await userEvent.setup().press(await screen.findByText("저장"));
+  expect(screen.getByLabelText("시트 닫기")).toBeDisabled();
+
   resolvePost({ data: { success: true, data: { linkId: 1 } } });
   expect(await screen.findByText("링크 저장을 완료했어요")).toBeOnTheScreen();
+  expect(screen.getByLabelText("시트 닫기")).toBeEnabled();
 });
 
 test("URL 이 없는 공유에서 '앱에서 직접 입력' 을 누르면 인앱 저장 시트를 연다", async () => {
