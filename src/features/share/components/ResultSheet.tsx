@@ -1,9 +1,9 @@
 import { Text } from "@promise9/ui/text/Text";
+import { LINK_URL_ERROR_MESSAGES } from "@shared/link/link.constants";
 import type { LinkUrlRejectReason } from "@shared/link/link.utils";
 import { Image, Pressable, View } from "react-native";
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { createLinkHandoffPath } from "@/constants/routes.constants";
-import { LINK_URL_ERROR_MESSAGES } from "@/features/link/link.constants";
 import type { ShareSaveState } from "../share.reducer";
 
 import { openHostApp } from "../shareHost";

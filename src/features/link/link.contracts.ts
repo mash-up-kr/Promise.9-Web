@@ -1,8 +1,8 @@
+import { LINK_URL_ERROR_MESSAGES } from "@shared/link/link.constants";
 import { normalizeLinkUrl } from "@shared/link/link.utils";
 import type { LinkFolderRef } from "@shared/types/link.types";
 import { z } from "zod";
 
-import { LINK_URL_ERROR_MESSAGES } from "@/features/link/link.constants";
 import type { ReminderValue } from "@/features/link/reminder.utils";
 
 /** 서버는 1000자까지 허용하지만 Figma 스펙상 300자로 더 좁게 제한한다(의도된 차이). */
