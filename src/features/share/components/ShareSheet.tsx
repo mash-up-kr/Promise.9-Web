@@ -4,9 +4,10 @@ import {
   SHEET_SPRING,
 } from "@promise9/ui/sheet/sheet.constants";
 import type { PropsWithChildren } from "react";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
   Animated,
+  type LayoutChangeEvent,
   PanResponder,
   Pressable,
   ScrollView,
@@ -50,9 +51,14 @@ export function shouldDismissByDrag(dy: number, vy: number) {
 }
 
 export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
-  const { height } = useWindowDimensions();
+  const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const translateY = useRef(new Animated.Value(height)).current;
+  // 위치(아래로 내려간 거리)는 네이티브 드라이버로, 높이는 레이아웃 속성이라 JS 로 움직인다.
+  const translateY = useRef(new Animated.Value(windowHeight)).current;
+  const sheetHeight = useRef(new Animated.Value(0)).current;
+  // 백드롭 농도의 기준 — 시트가 자기 높이만큼 내려가면(화면 밖) 0 이 된다.
+  const backdropRange = useRef(new Animated.Value(windowHeight)).current;
+  const measuredHeightRef = useRef<number | null>(null);
   const isClosingRef = useRef(false);
 
   const settle = useCallback(() => {
@@ -63,20 +69,43 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
     }).start();
   }, [translateY]);
 
-  useEffect(settle, [settle]);
-
   // 인앱 시트(gorhom)처럼 닫힐 때도 같은 스프링으로 내려간다.
   const dismiss = useCallback(() => {
     if (isClosingRef.current) return;
     isClosingRef.current = true;
     Animated.spring(translateY, {
-      toValue: height,
+      toValue: measuredHeightRef.current ?? windowHeight,
       ...SHEET_SPRING,
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (finished) onClose();
     });
-  }, [translateY, height, onClose]);
+  }, [translateY, windowHeight, onClose]);
+
+  // 콘텐츠가 바뀌면(확인 → 저장 → 결과, 리마인드 펼침) 잰 높이로 시트 높이를 따라 움직인다.
+  // 처음 잰 뒤에 올라와야 빈 시트가 비치지 않는다.
+  const handleContentLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const { height } = event.nativeEvent.layout;
+      const previousHeight = measuredHeightRef.current;
+      if (height === previousHeight) return;
+      measuredHeightRef.current = height;
+      backdropRange.setValue(height);
+      if (previousHeight === null) {
+        sheetHeight.setValue(height);
+        if (isClosingRef.current) return;
+        translateY.setValue(height);
+        settle();
+        return;
+      }
+      Animated.spring(sheetHeight, {
+        toValue: height,
+        ...SHEET_SPRING,
+        useNativeDriver: false,
+      }).start();
+    },
+    [backdropRange, sheetHeight, translateY, settle],
+  );
 
   const panResponder = useMemo(
     () =>
@@ -108,18 +137,22 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
     [isLocked, translateY, dismiss, settle],
   );
 
-  // 위로 끌어 올려도 제자리 위로는 뜨지 않는다.
-  const sheetTranslateY = translateY.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-    extrapolateLeft: "clamp",
-  });
-
-  const backdropOpacity = translateY.interpolate({
-    inputRange: [0, height],
-    outputRange: [SHEET_BACKDROP_OPACITY, 0],
-    extrapolate: "clamp",
-  });
+  const { sheetTranslateY, backdropOpacity } = useMemo(
+    () => ({
+      // 위로 끌어 올려도 제자리 위로는 뜨지 않는다.
+      sheetTranslateY: translateY.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, 1],
+        extrapolateLeft: "clamp",
+      }),
+      backdropOpacity: Animated.divide(translateY, backdropRange).interpolate({
+        inputRange: [0, 1],
+        outputRange: [SHEET_BACKDROP_OPACITY, 0],
+        extrapolate: "clamp",
+      }),
+    }),
+    [translateY, backdropRange],
+  );
 
   return (
     <ShareSheetDismissContext.Provider value={dismiss}>
@@ -135,18 +168,22 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
             className="flex-1 bg-black"
           />
         </Animated.View>
-        <Animated.View
-          style={{
-            maxHeight: height - insets.top,
-            transform: [{ translateY: sheetTranslateY }],
-          }}
-        >
-          <SheetSurface>
-            <View testID="share-sheet-handle" {...panResponder.panHandlers}>
-              <SheetHandle />
-            </View>
-            {children}
-          </SheetSurface>
+        <Animated.View style={{ transform: [{ translateY: sheetTranslateY }] }}>
+          <Animated.View testID="share-sheet" style={{ height: sheetHeight }}>
+            <SheetSurface style={{ flex: 1 }}>
+              {/* 시트 높이에 눌리지 않은 제 높이를 재려고 띄워 둔다(넘치면 상단 Safe Area 까지). */}
+              <View
+                onLayout={handleContentLayout}
+                className="absolute inset-x-0 top-0"
+                style={{ maxHeight: windowHeight - insets.top }}
+              >
+                <View testID="share-sheet-handle" {...panResponder.panHandlers}>
+                  <SheetHandle />
+                </View>
+                {children}
+              </View>
+            </SheetSurface>
+          </Animated.View>
         </Animated.View>
       </View>
     </ShareSheetDismissContext.Provider>

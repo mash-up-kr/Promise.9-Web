@@ -110,6 +110,16 @@ async function dragHandle(dy: number, durationMs: number) {
   return isGranted;
 }
 
+// jest 에는 레이아웃 엔진이 없다 — 시트가 재는 콘텐츠(핸들 포함) 높이를 직접 알려준다.
+async function layoutContent(height: number) {
+  const content = screen.getByTestId("share-sheet-handle").parent;
+  await act(async () => {
+    content?.props.onLayout({
+      nativeEvent: { layout: { x: 0, y: 0, width: 375, height } },
+    });
+  });
+}
+
 test("children 을 렌더한다", async () => {
   await renderSheet();
   expect(screen.getByText("내용")).toBeOnTheScreen();
@@ -185,6 +195,8 @@ test("닫히는 중에는 핸들을 끌어도 제스처를 받지 않는다", as
 test("드래그를 잡으면 움직이던 시트를 그 자리에서 멈추고 이어서 끈다", async () => {
   const { NativeAnimatedModule } = NativeModules;
   await renderSheet();
+  // 콘텐츠를 재면 등장 애니메이션이 시작된다 — 끝나기 전에 잡는다.
+  await layoutContent(300);
   NativeAnimatedModule.stopAnimation.mockClear();
   NativeAnimatedModule.extractAnimatedNodeOffset.mockClear();
 
@@ -210,6 +222,22 @@ test("퇴장 애니메이션이 끝까지 가지 못하면 onClose 를 부르지
   await finishAnimations();
 
   expect(onClose).not.toHaveBeenCalled();
+});
+
+test("콘텐츠 높이를 재면 시트를 그 높이로 맞춘다", async () => {
+  await renderSheet();
+  await layoutContent(300);
+  expect(screen.getByTestId("share-sheet")).toHaveStyle({ height: 300 });
+});
+
+test("콘텐츠 높이가 바뀌면 시트 높이가 한 번에 튀지 않고 따라간다", async () => {
+  await renderSheet();
+  await layoutContent(300);
+  await layoutContent(500);
+  expect(screen.getByTestId("share-sheet")).toHaveStyle({ height: 300 });
+
+  await finishAnimations();
+  expect(screen.getByTestId("share-sheet")).toHaveStyle({ height: 500 });
 });
 
 test.each([
