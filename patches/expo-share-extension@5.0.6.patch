@@ -43,7 +43,7 @@ index 3816339ae033c7b49c7d683d4c432888d5080788..27f41d12b95e29fa951d46c48abb0ebc
          PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
          PRODUCT_NAME: `"${targetName}"`,
 diff --git a/plugin/swift/ShareExtensionViewController.swift b/plugin/swift/ShareExtensionViewController.swift
-index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..07c7eecf0b29bef34e34d22b9b1f759347d901b1 100644
+index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..c4f63c71e3e0b146eb6d4cbda1d84f9b964ccdc8 100644
 --- a/plugin/swift/ShareExtensionViewController.swift
 +++ b/plugin/swift/ShareExtensionViewController.swift
 @@ -1,6 +1,7 @@
@@ -133,7 +133,18 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..07c7eecf0b29bef34e34d22b9b1f7593
      setupLoadingIndicator()
      isCleanedUp = false
      
-@@ -84,7 +130,18 @@ class ShareExtensionViewController: UIViewController {
+@@ -81,10 +127,29 @@ class ShareExtensionViewController: UIViewController {
+     super.viewDidDisappear(animated)
+     // we need to clean up when the view is closed via a swipe
+     cleanupAfterClose()
++    // 카드를 쓸어 내려 닫으면 JS close(completeRequest)를 거치지 않는다 — 여기서도 종료를 예약한다.
++    // 이 VC 가 다른 VC(로그인 시트 등)를 띄워 가려진 것은 닫힘이 아니고,
++    // 호스트 앱 열기가 진행 중이면 그 완료 콜백이 예약한다.
++    let session = requestSession
++    guard presentedViewController == nil,
++          ShareExtensionViewController.hostAppOpeningSession != session else { return }
++    print("[ShareExtension] 화면이 닫혀 프로세스 종료를 예약한다(isBeingDismissed=\(isBeingDismissed))")
++    ShareExtensionViewController.scheduleProcessExit(for: session)
    }
    
    func close() {
@@ -153,7 +164,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..07c7eecf0b29bef34e34d22b9b1f7593
      // we need to clean up when the view is closed via the close() method in react native
      cleanupAfterClose()
    }
-@@ -98,7 +155,7 @@ class ShareExtensionViewController: UIViewController {
+@@ -98,7 +163,7 @@ class ShareExtensionViewController: UIViewController {
        
        reactNativeFactoryDelegate = ReactNativeDelegate()
        reactNativeFactoryDelegate!.dependencyProvider = RCTAppDependencyProvider()
@@ -162,7 +173,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..07c7eecf0b29bef34e34d22b9b1f7593
        
        var initialProps = sharedData ?? [:]
        
-@@ -130,6 +187,9 @@ class ShareExtensionViewController: UIViewController {
+@@ -130,6 +195,9 @@ class ShareExtensionViewController: UIViewController {
        
        configureRootView(reactNativeRootView, withBackgroundColorDict: backgroundFromInfoPlist, withHeight: heightFromInfoPlist)
        view.addSubview(reactNativeRootView)
@@ -172,7 +183,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..07c7eecf0b29bef34e34d22b9b1f7593
  
        // Hide loading indicator once React content is ready
        self.loadingIndicator.stopAnimating()
-@@ -202,11 +262,20 @@ class ShareExtensionViewController: UIViewController {
+@@ -202,11 +270,20 @@ class ShareExtensionViewController: UIViewController {
    }
    
    @objc @discardableResult private func openURL(_ url: URL) -> Bool {
@@ -194,7 +205,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..07c7eecf0b29bef34e34d22b9b1f7593
          return true
        }
        responder = responder?.next
-@@ -247,6 +316,7 @@ class ShareExtensionViewController: UIViewController {
+@@ -247,6 +324,7 @@ class ShareExtensionViewController: UIViewController {
    private func cleanupAfterClose() {
      if isCleanedUp { return }
      isCleanedUp = true
