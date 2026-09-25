@@ -9,6 +9,7 @@ import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import {
   ShareSheet,
+  ShareSheetScrollView,
   shouldDismissByDrag,
   useShareSheetDismiss,
 } from "./ShareSheet";
@@ -81,4 +82,12 @@ test.each([
   { dy: 10, vy: 2, expected: false },
 ])("끌어 내린 거리 $dy·속도 $vy → 닫힘 $expected", ({ dy, vy, expected }) => {
   expect(shouldDismissByDrag(dy, vy)).toBe(expected);
+});
+
+// gorhom 스크롤뷰(인앱·Android)의 기본값과 같다.
+test("시트 스크롤을 끌어 내리면 키보드도 따라 내려간다", async () => {
+  await render(<ShareSheetScrollView testID="scroll" />);
+  expect(screen.getByTestId("scroll").props.keyboardDismissMode).toBe(
+    "interactive",
+  );
 });

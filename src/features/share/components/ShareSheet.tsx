@@ -10,6 +10,7 @@ import {
   PanResponder,
   Pressable,
   ScrollView,
+  type ScrollViewProps,
   StyleSheet,
   useWindowDimensions,
   View,
@@ -26,8 +27,12 @@ import { ShareSheetDismissContext } from "./shareSheet.context";
 
 export { useShareSheetDismiss } from "./shareSheet.context";
 export const ShareSheetView = View;
-export const ShareSheetScrollView = ScrollView;
 export const ShareSheetMemoField = MemoFieldBase;
+
+// gorhom 스크롤뷰(Android)의 기본값처럼 스크롤을 끌어 내리면 키보드도 따라 내려간다.
+export function ShareSheetScrollView(props: ScrollViewProps) {
+  return <ScrollView keyboardDismissMode="interactive" {...props} />;
+}
 
 export interface ShareSheetProps extends PropsWithChildren {
   onClose: () => void;
