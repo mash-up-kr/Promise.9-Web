@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import { GlassView } from "@/components/ui/glass-view/GlassView";
 import { tv } from "@/lib/tv";
-import { openExternalUrl } from "@/utils/openExternalUrl";
 
 // 페이지 인디케이터 닷 — 현재 페이지만 불투명(100), 나머지는 30%.
 const indicatorDot = tv({
@@ -42,16 +41,17 @@ const PLACEHOLDER_SOURCE = require("@/assets/images/no-thumbnail.png");
 export interface LinkThumbnailProps {
   /** 대표 이미지들. 0장이면 플레이스홀더, 1장이면 단일, 2장 이상이면 캐러셀. */
   imageUrls: string[];
-  url: string;
+  /** 우하단 원문 이동(↗) 버튼 — 여는 방식(확인·실패 안내)은 호출부가 정한다. */
+  onOpenOriginal: () => void;
 }
 
 // 우하단 원문 이동(↗) 버튼 — 플레이스홀더·단일·캐러셀 공통.
-function OpenOriginalButton({ url }: { url: string }) {
+function OpenOriginalButton({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="링크 열기"
-      onPress={() => openExternalUrl(url)}
+      onPress={onPress}
       className="absolute right-4 bottom-4 size-9 overflow-hidden rounded-full"
     >
       {/* 아이콘은 GlassView 의 자식으로 — 웹에서 svg 가 유리 레이어에 가리지 않게. */}
@@ -70,7 +70,10 @@ function OpenOriginalButton({ url }: { url: string }) {
   );
 }
 
-export function LinkThumbnail({ imageUrls, url }: LinkThumbnailProps) {
+export function LinkThumbnail({
+  imageUrls,
+  onOpenOriginal,
+}: LinkThumbnailProps) {
   // 못 불러온 URL(만료된 CDN·404)은 뺀다 — 한 장이면 플레이스홀더로, 여러 장이면 나머지만 보여준다.
   const [failedUrls, setFailedUrls] = useState<string[]>([]);
   const markFailed = (uri: string) => {
@@ -79,24 +82,32 @@ export function LinkThumbnail({ imageUrls, url }: LinkThumbnailProps) {
   const urls = imageUrls.filter((uri) => !failedUrls.includes(uri));
 
   if (urls.length === 0) {
-    return <ThumbnailPlaceholder url={url} />;
+    return <ThumbnailPlaceholder onOpenOriginal={onOpenOriginal} />;
   }
   if (urls.length === 1) {
     return (
       <SingleThumbnail
         imageUrl={urls[0]}
-        url={url}
+        onOpenOriginal={onOpenOriginal}
         onError={() => markFailed(urls[0])}
       />
     );
   }
   return (
-    <ThumbnailCarousel imageUrls={urls} url={url} onImageError={markFailed} />
+    <ThumbnailCarousel
+      imageUrls={urls}
+      onOpenOriginal={onOpenOriginal}
+      onImageError={markFailed}
+    />
   );
 }
 
 // 썸네일 없음 — 어두운 박스 가운데 일러스트 + 원문 이동 버튼.
-function ThumbnailPlaceholder({ url }: { url: string }) {
+function ThumbnailPlaceholder({
+  onOpenOriginal,
+}: {
+  onOpenOriginal: () => void;
+}) {
   return (
     <View
       className="w-full items-center justify-center self-center overflow-hidden rounded-[20px] bg-background-thumbnail"
@@ -108,7 +119,7 @@ function ThumbnailPlaceholder({ url }: { url: string }) {
         contentFit="contain"
         style={{ width: PLACEHOLDER_ICON_SIZE, height: PLACEHOLDER_ICON_SIZE }}
       />
-      <OpenOriginalButton url={url} />
+      <OpenOriginalButton onPress={onOpenOriginal} />
     </View>
   );
 }
@@ -116,11 +127,11 @@ function ThumbnailPlaceholder({ url }: { url: string }) {
 // 단일 이미지 — 로드 후 실제 치수로 가로/세로형 판정(세로형은 흐린 배경으로 여백을 메운다).
 function SingleThumbnail({
   imageUrl,
-  url,
+  onOpenOriginal,
   onError,
 }: {
   imageUrl: string;
-  url: string;
+  onOpenOriginal: () => void;
   onError: () => void;
 }) {
   const [size, setSize] = useState<{ width: number; height: number } | null>(
@@ -162,7 +173,7 @@ function SingleThumbnail({
         onError={onError}
       />
 
-      <OpenOriginalButton url={url} />
+      <OpenOriginalButton onPress={onOpenOriginal} />
     </View>
   );
 }
@@ -170,11 +181,11 @@ function SingleThumbnail({
 // 여러 장 — 가로 페이징 캐러셀 + 하단 페이지 인디케이터.
 function ThumbnailCarousel({
   imageUrls,
-  url,
+  onOpenOriginal,
   onImageError,
 }: {
   imageUrls: string[];
-  url: string;
+  onOpenOriginal: () => void;
   onImageError: (uri: string) => void;
 }) {
   const [page, setPage] = useState(0);
@@ -217,7 +228,7 @@ function ThumbnailCarousel({
             />
           ))}
         </ScrollView>
-        <OpenOriginalButton url={url} />
+        <OpenOriginalButton onPress={onOpenOriginal} />
       </View>
 
       {/* 페이지 인디케이터 (Figma no-thumbnail Indicators, 5px 닷) */}

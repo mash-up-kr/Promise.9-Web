@@ -190,6 +190,17 @@ export function isWebUrl(url: string): boolean {
   return /^https?:\/\//i.test(url.trim());
 }
 
+/**
+ * 저장된 링크를 열어도 되는지. 규칙이 바뀌기 전에 저장된 링크(공백 포함 등)도 열려야 해서
+ * 저장 규칙 대신 위험한 스킴과 제어·보이지 않는 문자만 막는다.
+ */
+export function isOpenableLinkUrl(url: string): boolean {
+  const value = url.trim();
+  const scheme = getScheme(value);
+  if (scheme !== null && isBlockedScheme(scheme)) return false;
+  return !hasInvisibleChar(value);
+}
+
 // 공유 텍스트에서 스킴 없는 주소를 링크로 볼 도메인 끝 — "Next.js/React"·"보고서.pdf/hwp" 같은 파일명·기술 용어를 거른다.
 // 단축 주소(naver.me·kko.to·bit.ly·t.co·youtu.be·goo.gl·forms.gle 등)의 끝을 포함한다.
 const TEXT_LINK_TLDS = new Set(

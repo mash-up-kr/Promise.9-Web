@@ -1,5 +1,6 @@
 import {
   findLinkInText,
+  isOpenableLinkUrl,
   isWebUrl,
   type LinkUrlRejectReason,
   normalizeLinkUrl,
@@ -338,5 +339,44 @@ describe("isWebUrl", () => {
     expect(isWebUrl("HTTP://EXAMPLE.COM")).toBe(true);
     expect(isWebUrl("nmap://place?id=1")).toBe(false);
     expect(isWebUrl("naver.me/xYz1")).toBe(false);
+  });
+});
+
+describe("isOpenableLinkUrl", () => {
+  // 저장 규칙이 바뀌기 전에 저장된 링크도 열려야 한다.
+  test("예전에 저장된 공백 포함 주소도 연다", () => {
+    expect(
+      isOpenableLinkUrl("https://www.google.com/search?q=hello world"),
+    ).toBe(true);
+  });
+
+  test("앱 전용 링크도 연다", () => {
+    expect(isOpenableLinkUrl("nmap://place?id=1")).toBe(true);
+    expect(isOpenableLinkUrl("mailto:hello@example.com")).toBe(true);
+  });
+
+  test("위험한 스킴은 열지 않는다", () => {
+    for (const url of [
+      "javascript:alert(1)",
+      "  JAVASCRIPT:alert(1)",
+      "javascript:1/alert(1)",
+      "intent://scan/#Intent;scheme=zxing;end",
+      "promise9web://link/1",
+      "ms-settings:privacy",
+    ]) {
+      expect(isOpenableLinkUrl(url)).toBe(false);
+    }
+  });
+
+  // 브라우저는 주소 속 탭·줄바꿈을 지우고 읽어 "java\tscript:" 도 스크립트로 연다.
+  test("제어 문자·보이지 않는 문자가 섞이면 열지 않는다", () => {
+    for (const url of [
+      "java\tscript:alert(1)",
+      "java\nscript:alert(1)",
+      `https://exa${String.fromCodePoint(0x200b)}mple.com`,
+      `https://example.com/${String.fromCodePoint(0x202e)}abc`,
+    ]) {
+      expect(isOpenableLinkUrl(url)).toBe(false);
+    }
   });
 });

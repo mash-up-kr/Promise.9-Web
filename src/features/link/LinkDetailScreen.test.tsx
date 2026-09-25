@@ -238,6 +238,59 @@ describe("LinkDetailScreen", () => {
     await renderScreen();
     await user.press(screen.getByText(mockLinkDetail.source));
     expect(openExternalUrl).toHaveBeenCalledWith(mockLinkDetail.url);
+    expect(screen.queryByText("다른 앱에서 열까요?")).toBeNull();
+  });
+
+  // 앱 전용 링크는 다른 앱을 바로 실행하므로 어떤 주소인지 보여주고 한 번 묻는다.
+  test("앱 전용 링크는 열기 전에 확인하고, '열기'를 누르면 연다", async () => {
+    mockDetailData.current = { ...mockLinkDetail, url: "nmap://place?id=1" };
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("링크 열기"));
+    expect(screen.getByText("다른 앱에서 열까요?")).toBeOnTheScreen();
+    expect(openExternalUrl).not.toHaveBeenCalled();
+
+    await user.press(screen.getByRole("button", { name: "열기" }));
+    expect(openExternalUrl).toHaveBeenCalledWith("nmap://place?id=1");
+  });
+
+  test("앱 전용 링크 확인에서 '취소'하면 열지 않는다", async () => {
+    mockDetailData.current = { ...mockLinkDetail, url: "nmap://place?id=1" };
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("링크 열기"));
+    await user.press(screen.getByRole("button", { name: "취소" }));
+
+    expect(screen.queryByText("다른 앱에서 열까요?")).toBeNull();
+    expect(openExternalUrl).not.toHaveBeenCalled();
+  });
+
+  test("링크를 열 앱이 없으면 스낵바로 알린다", async () => {
+    (openExternalUrl as jest.Mock).mockResolvedValueOnce("failed");
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("링크 열기"));
+
+    expect(
+      await screen.findByText("이 링크를 열 수 있는 앱이 없어요"),
+    ).toBeOnTheScreen();
+  });
+
+  test("위험한 스킴 링크는 묻지 않고 막은 뒤 스낵바로 알린다", async () => {
+    mockDetailData.current = { ...mockLinkDetail, url: "javascript:alert(1)" };
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("링크 열기"));
+
+    expect(
+      await screen.findByText("보안상 열 수 없는 링크예요"),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText("다른 앱에서 열까요?")).toBeNull();
+    expect(openExternalUrl).not.toHaveBeenCalled();
   });
 
   test("AI 요약 섹션을 렌더한다", async () => {
