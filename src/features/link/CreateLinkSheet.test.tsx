@@ -281,12 +281,12 @@ describe("CreateLinkSheet", () => {
     invalidateSpy.mockRestore();
   });
 
-  test("형식이 잘못된 URL 저장 시도 → 서버 호출 없이 실패 스낵바, 시트 유지", async () => {
+  test("형식이 잘못된 URL 저장 시도 → 서버 호출 없이 이유를 알리는 실패 스낵바, 시트 유지", async () => {
     await renderSheet();
     await fillValidUrl("abc");
     await pressSave();
 
-    expect(await screen.findByText("저장하지 못했어요")).toBeTruthy();
+    expect(await screen.findByText("올바른 링크 주소가 아니에요")).toBeTruthy();
     expect(mockPost).not.toHaveBeenCalled();
     expect(mockBack).not.toHaveBeenCalled();
     expect(
@@ -320,13 +320,39 @@ describe("CreateLinkSheet", () => {
     );
   });
 
-  test("위험한 스킴 링크는 서버 호출 없이 실패 스낵바", async () => {
+  test("위험한 스킴 링크는 서버 호출 없이 보안상 저장할 수 없다고 알린다", async () => {
     await renderSheet();
     await fillValidUrl("javascript:alert(1)");
     await pressSave();
 
-    expect(await screen.findByText("저장하지 못했어요")).toBeTruthy();
+    expect(
+      await screen.findByText("보안상 저장할 수 없는 형식의 링크예요"),
+    ).toBeTruthy();
     expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  test("주소 중간에 공백이 있으면 서버 호출 없이 공백 때문이라고 알린다", async () => {
+    await renderSheet();
+    await fillValidUrl("https://example.com/a b");
+    await pressSave();
+
+    expect(
+      await screen.findByText("링크 주소에 공백이 들어 있어요"),
+    ).toBeTruthy();
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  test("흔한 스킴 오타는 고쳐서 저장한다", async () => {
+    await renderSheet();
+    await fillValidUrl("ttps://naver.me/xYz1");
+    await pressSave();
+
+    await waitFor(() =>
+      expect(mockPost).toHaveBeenCalledWith(
+        "/links",
+        expect.objectContaining({ url: "https://naver.me/xYz1" }),
+      ),
+    );
   });
 
   test("저장 실패(500) → 실패 스낵바 + 입력 보존, '다시 시도'가 저장을 재실행한다", async () => {

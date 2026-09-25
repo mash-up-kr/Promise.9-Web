@@ -23,13 +23,28 @@ describe("linkUrlSchema", () => {
     expect(linkUrlSchema.safeParse("nmap://place?id=123").success).toBe(true);
   });
 
-  test("위험한 스킴과 링크 형식이 아닌 값은 거부한다", () => {
-    for (const value of ["javascript:alert(1)", "not-a-url"]) {
+  test("거부하면 사유별 안내 문구를 오류 메시지로 준다", () => {
+    const cases: [string, string][] = [
+      ["not-a-url", "올바른 링크 주소가 아니에요"],
+      ["javascript:alert(1)", "보안상 저장할 수 없는 형식의 링크예요"],
+      ["https://example.com/a b", "링크 주소에 공백이 들어 있어요"],
+      [
+        `https://exa${String.fromCodePoint(0x200b)}mple.com`,
+        "링크 주소에 보이지 않는 문자가 섞여 있어요",
+      ],
+      [
+        "https://toss.tech@evil.com",
+        "보안상 계정 정보(@)가 담긴 링크는 저장할 수 없어요",
+      ],
+      [
+        `https://example.com/${"a".repeat(2048)}`,
+        "링크 주소는 최대 2,048자까지 저장할 수 있어요",
+      ],
+    ];
+    for (const [value, message] of cases) {
       const result = linkUrlSchema.safeParse(value);
       expect(result.success).toBe(false);
-      expect(result.error?.issues[0].message).toBe(
-        "올바른 URL 을 입력해주세요",
-      );
+      expect(result.error?.issues[0].message).toBe(message);
     }
   });
 });

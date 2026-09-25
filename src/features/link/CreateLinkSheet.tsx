@@ -81,8 +81,12 @@ export function CreateLinkSheet() {
     handleSubmit((values) => {
       const parsedUrl = linkUrlSchema.safeParse(values.url);
       if (!parsedUrl.success) {
-        // 시안 정책: 형식 오류도 저장 실패와 동일 UX — 서버 왕복 없이 실패 스낵바.
-        show(snackbarPresets.failed("저장하지 못했어요", () => save(dismiss)));
+        // 시안 정책: 형식 오류도 저장 실패와 동일 UX — 서버 왕복 없이 실패 스낵바. 문구만 거부 사유로 바꾼다.
+        show(
+          snackbarPresets.failed(parsedUrl.error.issues[0].message, () =>
+            save(dismiss),
+          ),
+        );
         return;
       }
       if (values.reminder && isPastReminder(values.reminder)) {
