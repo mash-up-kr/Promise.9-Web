@@ -596,6 +596,21 @@ test("저장 중 세션이 끊기면(refresh 실패로 토큰 삭제) 로그인 
   expect(screen.getByText("다시 로그인해주세요")).toBeOnTheScreen();
 });
 
+// 저장 중이던 편집 시트가 그대로 사라지므로 잠금을 풀 주체가 없다 — 풀리지 않으면 로그인 시트를 닫을 수 없다.
+test("저장 중 세션이 끊겨 로그인 시트로 돌아가면 시트 잠금이 풀린다", async () => {
+  mockPost.mockImplementation(async () => {
+    // client.ts 인터셉터가 refresh 실패 시 하는 일을 흉내 낸다.
+    await clearTokens();
+    throw unauthorizedError();
+  });
+  await render(<ShareExtension url="https://toss.tech/a" />);
+
+  await userEvent.setup().press(await screen.findByText("저장"));
+
+  expect(await screen.findByText("로그인이 필요해요")).toBeOnTheScreen();
+  expect(screen.getByLabelText("시트 닫기")).toBeEnabled();
+});
+
 test("세션 이탈 후 재로그인하면 편집 시트(저장 화면)로 돌아간다", async () => {
   mockPost.mockImplementation(async () => {
     // client.ts 인터셉터가 refresh 실패 시 하는 일을 흉내 낸다.

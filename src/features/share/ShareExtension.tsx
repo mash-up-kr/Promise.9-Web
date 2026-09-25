@@ -128,8 +128,10 @@ function ShareSaveFlow({ url, onSavingChange }: ShareSaveFlowProps) {
   const isEditing = state.phase === "editing" || state.phase === "saving";
   const isSaving = state.phase === "saving";
 
+  // 저장 중에 세션이 끊기면(401 → refresh 실패) 이 흐름째 사라진다 — 잠금이 남지 않게 풀고 떠난다.
   useLayoutEffect(() => {
     onSavingChange(isSaving);
+    return () => onSavingChange(false);
   }, [isSaving, onSavingChange]);
 
   return (
