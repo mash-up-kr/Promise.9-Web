@@ -43,7 +43,7 @@ index 3816339ae033c7b49c7d683d4c432888d5080788..27f41d12b95e29fa951d46c48abb0ebc
          PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
          PRODUCT_NAME: `"${targetName}"`,
 diff --git a/plugin/swift/ShareExtensionViewController.swift b/plugin/swift/ShareExtensionViewController.swift
-index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..c4f63c71e3e0b146eb6d4cbda1d84f9b964ccdc8 100644
+index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..f125c2b6feff24859c97884b41b1151934428498 100644
 --- a/plugin/swift/ShareExtensionViewController.swift
 +++ b/plugin/swift/ShareExtensionViewController.swift
 @@ -1,6 +1,7 @@
@@ -183,17 +183,17 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..c4f63c71e3e0b146eb6d4cbda1d84f9b
  
        // Hide loading indicator once React content is ready
        self.loadingIndicator.stopAnimating()
-@@ -202,11 +270,20 @@ class ShareExtensionViewController: UIViewController {
+@@ -202,21 +270,34 @@ class ShareExtensionViewController: UIViewController {
    }
    
    @objc @discardableResult private func openURL(_ url: URL) -> Bool {
 +    let session = requestSession
-+    ShareExtensionViewController.hostAppOpeningSession = session
      // Method 1: Try responder chain to find UIApplication
      var responder: UIResponder? = self
      while responder != nil {
        if let application = responder as? UIApplication {
 -        application.open(url, options: [:], completionHandler: nil)
++        ShareExtensionViewController.hostAppOpeningSession = session
 +        application.open(url, options: [:]) { _ in
 +          DispatchQueue.main.async {
 +            if ShareExtensionViewController.hostAppOpeningSession == session {
@@ -205,7 +205,22 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..c4f63c71e3e0b146eb6d4cbda1d84f9b
          return true
        }
        responder = responder?.next
-@@ -247,6 +324,7 @@ class ShareExtensionViewController: UIViewController {
+     }
+ 
+     // Method 2: Try selector-based approach as fallback
++    // 이 VC 의 openURL(_:) 도 @objc 라 openURL: 에 응답한다 — 자기부터 찾으면 자기를 다시 불러
++    // 끝없이 재귀하므로 다음 응답자부터 찾는다.
+     let selector = NSSelectorFromString("openURL:")
+-    var responder2: UIResponder? = self
++    var responder2: UIResponder? = self.next
+     while responder2 != nil {
+       if responder2!.responds(to: selector) {
++        // 완료 콜백이 없어 언제 열렸는지 알 수 없다 — 종료하지 않는다.
++        ShareExtensionViewController.hostAppOpeningSession = session
+         responder2!.perform(selector, with: url)
+         return true
+       }
+@@ -247,6 +328,7 @@ class ShareExtensionViewController: UIViewController {
    private func cleanupAfterClose() {
      if isCleanedUp { return }
      isCleanedUp = true
