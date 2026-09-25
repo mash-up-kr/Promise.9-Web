@@ -35,14 +35,6 @@ jest.mock("@/constants/platform.constants", () => ({
   isWeb: false,
   isServer: false,
 }));
-let mockKeyboardHeight = 0;
-jest.mock("react-native-keyboard-controller", () => ({
-  ...jest.requireActual("react-native-keyboard-controller"),
-  useReanimatedKeyboardAnimation: () => ({
-    height: { value: mockKeyboardHeight },
-    progress: { value: mockKeyboardHeight === 0 ? 0 : 1 },
-  }),
-}));
 
 import {
   apiClient,
@@ -157,7 +149,6 @@ const mockRefreshAccessToken = refreshAccessToken as jest.Mock;
 beforeEach(() => {
   jest.clearAllMocks();
   mockIsAndroid = false;
-  mockKeyboardHeight = 0;
   // 익스텐션 프로세스와 같은 조건 — index.share.js 가 세우는 플래그.
   globalThis.__promise9ShareExtension = true;
   mockRefreshAccessToken.mockResolvedValue("atk");
