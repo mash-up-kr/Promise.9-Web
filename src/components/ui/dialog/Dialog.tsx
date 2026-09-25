@@ -1,7 +1,10 @@
-import type { ReactNode } from "react";
-import { Pressable, StyleSheet } from "react-native";
+import type { PropsWithChildren, ReactNode } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { KeyboardAvoidingView } from "./dialogKeyboardAvoidingView";
+
+const EXTENSION_TOP_GAP = 16;
 
 export interface DialogProps {
   children: ReactNode;
@@ -30,11 +33,12 @@ export function Dialog({
   onDismiss,
   dismissAccessibilityLabel = "닫기",
 }: DialogProps) {
+  const Container = globalThis.__promise9ShareExtension
+    ? TopAnchoredContainer
+    : CenteredContainer;
+
   return (
-    <KeyboardAvoidingView
-      behavior="padding"
-      className="flex-1 items-center justify-center px-5"
-    >
+    <Container>
       {onDismiss ? (
         <Pressable
           accessibilityRole="button"
@@ -45,6 +49,31 @@ export function Dialog({
         />
       ) : null}
       {children}
+    </Container>
+  );
+}
+
+function CenteredContainer({ children }: PropsWithChildren) {
+  return (
+    <KeyboardAvoidingView
+      behavior="padding"
+      className="flex-1 items-center justify-center px-5"
+    >
+      {children}
     </KeyboardAvoidingView>
+  );
+}
+
+// iOS 공유 익스텐션 프로세스는 RN 키보드 이벤트 좌표가 0 으로 와서 키보드 회피가 카드를 화면 밖으로
+// 밀어낸다 — 회피하지 않고 카드를 상단에 붙여 키보드가 올라와도 가리지 않게 한다.
+function TopAnchoredContainer({ children }: PropsWithChildren) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View
+      className="flex-1 items-center px-5"
+      style={{ paddingTop: insets.top + EXTENSION_TOP_GAP }}
+    >
+      {children}
+    </View>
   );
 }
