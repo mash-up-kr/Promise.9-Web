@@ -248,6 +248,28 @@ describe("LinkDetailScreen", () => {
     expect(screen.getByText("2026.06.19")).toBeOnTheScreen();
   });
 
+  // 앱 링크 주소는 2,048자까지 길 수 있다 — 제목이 화면을 덮거나 확인 창 버튼이 밀려나지 않게 줄 수를 제한한다.
+  test("긴 앱 링크 주소는 제목과 확인 창에서 3줄까지만 보여준다", async () => {
+    const longUrl = `mailto:?body=${"a".repeat(2000)}`;
+    mockDetailData.current = {
+      ...mockLinkDetail,
+      url: longUrl,
+      title: "",
+      source: "",
+    };
+    const user = userEvent.setup();
+    await renderScreen();
+    expect(screen.getByText(longUrl).props.numberOfLines).toBe(3);
+
+    await user.press(screen.getByLabelText("링크 열기"));
+
+    const texts = screen.getAllByText(longUrl);
+    expect(texts).toHaveLength(2);
+    for (const text of texts) {
+      expect(text.props.numberOfLines).toBe(3);
+    }
+  });
+
   test("제목 없는 웹 링크(처리 중)는 주소로 대신하지 않는다", async () => {
     mockDetailData.current = { ...mockLinkDetail, title: "" };
     await renderScreen();

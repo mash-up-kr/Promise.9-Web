@@ -82,6 +82,8 @@ export interface AlertDialogProps {
   closeOnOverlayClick?: boolean;
   title: string;
   description?: string;
+  /** 설명 최대 줄 수 — 주소처럼 길이를 알 수 없는 값을 보여줄 때 버튼이 화면 밖으로 밀려나지 않게. */
+  descriptionNumberOfLines?: number;
   // 액션 버튼(들). 2개면 반반, 1개면 꽉 채운다.
   actions: ReactNode;
 }
@@ -92,6 +94,7 @@ export function AlertDialog({
   closeOnOverlayClick,
   title,
   description,
+  descriptionNumberOfLines,
   actions,
 }: AlertDialogProps) {
   return (
@@ -112,6 +115,7 @@ export function AlertDialog({
           {description ? (
             <Text
               variant="body-2-reading"
+              numberOfLines={descriptionNumberOfLines}
               className="w-full text-center text-opacity-white-60"
             >
               {description}

@@ -51,6 +51,9 @@ import {
   toReminderAtIso,
 } from "./reminder.utils";
 
+// 앱 링크 주소는 2,048자까지 길 수 있다 — 제목·확인 창에서 주소를 보여줄 땐 줄 수를 제한한다(스킴·앞부분은 보인다).
+const URL_MAX_LINES = 3;
+
 // 로딩·에러 상태에도 뒤로가기는 유지한다(즐겨찾기·더보기는 데이터가 있어야 해 콘텐츠 상태에서만).
 function LinkDetailBackHeader() {
   return (
@@ -115,10 +118,7 @@ function LinkDetailContent() {
   // 앱 전용 링크는 서버가 제목을 만들지 못하고 출처도 스킴 뒤 첫 조각("place")이라 오해를 부른다 —
   // 주소 자체를 제목으로 보여주고 출처는 숨긴다.
   const isWebLink = isWebUrl(linkDetail.url);
-  const displayTitle =
-    isWebLink || linkDetail.title.trim() !== ""
-      ? linkDetail.title
-      : linkDetail.url;
+  const isUrlTitle = !isWebLink && linkDetail.title.trim() === "";
   const displaySource = isWebLink ? linkDetail.source : "";
 
   const router = useRouter();
@@ -339,7 +339,12 @@ function LinkDetailContent() {
                 />
               )}
             />
-            <Text variant="heading-1">{displayTitle}</Text>
+            <Text
+              variant="heading-1"
+              numberOfLines={isUrlTitle ? URL_MAX_LINES : undefined}
+            >
+              {isUrlTitle ? linkDetail.url : linkDetail.title}
+            </Text>
             <Text variant="caption-1" className="text-opacity-white-70">
               {displaySource ? (
                 <>
@@ -454,6 +459,7 @@ function AppLinkConfirmDialog({
       onClose={onClose}
       title="다른 앱에서 열까요?"
       description={url}
+      descriptionNumberOfLines={URL_MAX_LINES}
       actions={
         <>
           <AlertDialogButton
