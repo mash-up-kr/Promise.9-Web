@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-const appConfig = require("../../../app.json");
+const appConfig = require("./app.json");
 
 function shareExtensionOptions() {
   const entry = appConfig.expo.plugins.find(
