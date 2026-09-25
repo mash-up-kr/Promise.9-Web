@@ -52,6 +52,8 @@ const Core = createAlertDialog({ Overlay, Backdrop });
 // (exit 스펙은 Modal 이 닫히며 즉시 언마운트되는 구조라 적용하지 않는다.)
 // iOS 공유 익스텐션에서도 쓰여 Reanimated 대신 RN Animated 로 그린다(shareExtension.bundle.test).
 const DIALOG_SPRING = { stiffness: 520, damping: 34, mass: 0.7 };
+// className 을 그대로 받도록 NativeWind 가 감싼 View 로 애니메이티드 컴포넌트를 만든다.
+const AnimatedView = Animated.createAnimatedComponent(View);
 
 // Figma Alert Dialog: 플랫 gray-800 카드 + white-05 헤어라인 보더.
 function AlertDialogContent({ children }: PropsWithChildren) {
@@ -72,15 +74,14 @@ function AlertDialogContent({ children }: PropsWithChildren) {
   });
 
   return (
-    <Animated.View
+    <AnimatedView
       accessibilityViewIsModal
       accessibilityRole="alert"
       style={{ opacity: progress, transform: [{ scale }] }}
+      className="w-[304px] gap-5 overflow-hidden rounded-[36px] border border-opacity-white-05 bg-gray-800 px-4 pt-5 pb-4"
     >
-      <View className="w-[304px] gap-5 overflow-hidden rounded-[36px] border border-opacity-white-05 bg-gray-800 px-4 pt-5 pb-4">
-        {children}
-      </View>
-    </Animated.View>
+      {children}
+    </AnimatedView>
   );
 }
 
