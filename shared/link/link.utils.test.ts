@@ -57,13 +57,13 @@ describe("normalizeLinkUrl", () => {
     }
   });
 
-  test("흔한 스킴 오타와 hxxp 표기는 http(s) 로 고친다", () => {
-    for (const typo of ["ttps", "htps", "htttps", "hhttps", "hxxps", "HXXPS"]) {
+  test("흔한 스킴 오타는 http(s) 로 고친다", () => {
+    for (const typo of ["ttps", "htps", "htttps", "hhttps", "TTPS"]) {
       expect(normalizeLinkUrl(`${typo}://toss.tech/a`)).toEqual(
         accepted("https://toss.tech/a"),
       );
     }
-    for (const typo of ["ttp", "htp", "hxxp"]) {
+    for (const typo of ["ttp", "htp"]) {
       expect(normalizeLinkUrl(`${typo}://example.com`)).toEqual(
         accepted("http://example.com"),
       );
@@ -95,6 +95,9 @@ describe("normalizeLinkUrl", () => {
       "ms-settings:privacy",
       "ms-msdt:/id PCWDiagnostic",
       "promise9web://link/1",
+      // 보안 보고서가 일부러 무력화해 둔 표기 — 되살려 열지 않는다.
+      "hxxps://evil.com/a",
+      "HXXP://evil.com",
     ]) {
       expect(normalizeLinkUrl(url)).toEqual(rejected("blocked-scheme"));
     }
@@ -199,7 +202,7 @@ describe("normalizeLinkUrl", () => {
   test("보정한 주소를 다시 넣어도 결과가 같다", () => {
     for (const value of [
       "naver.me/xYz1",
-      "  hxxps://toss.tech/a  ",
+      "  ttps://toss.tech/a  ",
       "example.com:8080/path",
       "nmap://place?id=123",
       `example.com/${"a".repeat(2048 - "https://example.com/".length)}`,
@@ -382,6 +385,7 @@ describe("isOpenableLinkUrl", () => {
       "intent://scan/#Intent;scheme=zxing;end",
       "promise9web://link/1",
       "ms-settings:privacy",
+      "hxxps://evil.com/a",
     ]) {
       expect(isOpenableLinkUrl(url)).toBe(false);
     }

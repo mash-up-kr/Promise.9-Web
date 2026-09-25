@@ -34,16 +34,14 @@ const PHONE_SCHEMES = new Set([
   "facetime-audio",
 ]);
 
-// 흔한 스킴 오타와 보안 보고서식 무력화 표기(hxxp)는 http(s) 로 고친다.
+// 흔한 스킴 오타는 http(s) 로 고친다.
 const WEB_SCHEME_TYPOS = new Map([
   ["ttps", "https"],
   ["htps", "https"],
   ["htttps", "https"],
   ["hhttps", "https"],
-  ["hxxps", "https"],
   ["ttp", "http"],
   ["htp", "http"],
-  ["hxxp", "http"],
 ]);
 
 // 저장·열기 모두에서 막는다 — 스크립트 실행, 기기·브라우저 내부 자원 접근, OS 핸들러 호출, 우리 앱 딥링크.
@@ -72,6 +70,9 @@ const BLOCKED_SCHEMES = new Set([
   "search",
   "search-ms",
   "promise9web",
+  // 보안 보고서가 위험한 주소를 일부러 무력화한 표기 — 되살려 열지 않는다.
+  "hxxp",
+  "hxxps",
 ]);
 
 // 보이지 않거나 글자 방향을 뒤집는 문자 — 화면에 보이는 주소와 실제로 여는 주소를 다르게 만들 수 있다.
