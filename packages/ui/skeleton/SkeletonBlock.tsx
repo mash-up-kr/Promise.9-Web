@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Animated, Easing, View, type ViewProps } from "react-native";
 
+import { useReduceMotion } from "../hooks/useReduceMotion";
+
 export interface SkeletonBlockProps extends ViewProps {
   className?: string;
 }
@@ -22,9 +24,14 @@ function pulseEasing(progress: number) {
 // 네이티브에선 CSS animation 이 Reanimated 를 끌어와 iOS 공유 익스텐션 메모리 상한을 넘기므로
 // RN Animated 로 돌린다(shareExtension.bundle.test). 웹은 SkeletonBlock.web.tsx.
 export function SkeletonBlock({ style, ...props }: SkeletonBlockProps) {
+  const isReduceMotionEnabled = useReduceMotion();
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (isReduceMotionEnabled) {
+      progress.setValue(0);
+      return;
+    }
     const loop = Animated.loop(
       Animated.timing(progress, {
         toValue: 1,
@@ -35,7 +42,7 @@ export function SkeletonBlock({ style, ...props }: SkeletonBlockProps) {
     );
     loop.start();
     return () => loop.stop();
-  }, [progress]);
+  }, [progress, isReduceMotionEnabled]);
 
   const opacity = useMemo(
     () =>
