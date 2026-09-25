@@ -7,15 +7,19 @@ export type LinkUrlRejectReason =
   | "invisible-char"
   | "blocked-scheme"
   | "userinfo"
-  | "too-long";
+  | "too-long"
+  // 공유 텍스트에서 링크를 하나도 찾지 못함(findLinkInText 전용)
+  | "not-found";
 
 export type LinkUrlResult =
   | { ok: true; url: string }
   | { ok: false; reason: LinkUrlRejectReason };
 
 const MAX_LINK_URL_LENGTH = 2048;
+// 공유 텍스트는 앞부분만 본다 — 아주 긴 글을 통째로 훑지 않게.
+const MAX_SCANNED_TEXT_LENGTH = 10_000;
 
-const FIRST_WEB_URL_PATTERN = /https?:\/\/\S+/i;
+const WEB_URL_START_PATTERN = /https?:\/\//i;
 const SCHEME_PATTERN = /^([a-z][a-z0-9+.-]*):/i;
 // 스킴 없이 입력한 주소(naver.me/abc · www.a.co.kr:8080/x) — 라벨은 영문·숫자·한글·하이픈, 마지막 라벨은 영문 2자 이상.
 const BARE_URL_PATTERN =
@@ -186,26 +190,94 @@ export function isWebUrl(url: string): boolean {
   return /^https?:\/\//i.test(url.trim());
 }
 
-// 공유 텍스트는 문장이 섞여 오므로 입력 검증보다 좁게 본다 — "참고:이거"·"사진.jpg" 를 링크로 착각하지 않게,
-// 스킴 링크는 "://" 가 있어야 하고 스킴 없는 주소는 경로가 있거나 www. 로 시작해야 한다.
-function isLinkInText(token: string): boolean {
-  if (!normalizeLinkUrl(token).ok) return false;
-  const scheme = getScheme(token);
-  if (
-    scheme !== null &&
-    !isHostWithPort(scheme, token.slice(scheme.length + 1))
-  ) {
-    return token.includes("://");
+// 공유 텍스트에서 스킴 없는 주소를 링크로 볼 도메인 끝 — "Next.js/React"·"보고서.pdf/hwp" 같은 파일명·기술 용어를 거른다.
+// 단축 주소(naver.me·kko.to·bit.ly·t.co·youtu.be·goo.gl·forms.gle 등)의 끝을 포함한다.
+const TEXT_LINK_TLDS = new Set(
+  `com net org info biz edu gov kr jp cn us uk de fr eu me io co ly
+  gl gle gg to be tv so ai im fm in it am fi do la gd app dev page
+  site xyz link blog shop store news live kakao naver`.split(/\s+/),
+);
+
+// 닫는 괄호 → 짝이 되는 여는 괄호
+const CLOSING_TO_OPENING = new Map([
+  [")", "("],
+  ["]", "["],
+  ["}", "{"],
+  [">", "<"],
+  ["”", "“"],
+  ["’", "‘"],
+  ["」", "「"],
+  ["』", "『"],
+  ["】", "【"],
+  ["》", "《"],
+  ["〉", "〈"],
+]);
+const OPENING_BRACKETS = new Set(CLOSING_TO_OPENING.values());
+const LEADING_PUNCTUATION = new Set([...OPENING_BRACKETS, '"', "'"]);
+const TRAILING_PUNCTUATION = new Set(['"', "'", ".", ",", "!", "?", ";", ":"]);
+
+// 링크를 감싼 괄호·따옴표와 뒤따른 문장 부호를 걷어낸다. 짝이 맞는 괄호는 주소의 일부로 남기고
+// ("…/Foo_(bar)"), 짝 없는 닫는 괄호에서 주소가 끝난다("누리집(https://www.korea.kr)에서").
+function trimLinkPunctuation(token: string): string {
+  let start = 0;
+  while (LEADING_PUNCTUATION.has(token.charAt(start))) start += 1;
+  const openBrackets: string[] = [];
+  let end = start;
+  for (; end < token.length; end += 1) {
+    const char = token.charAt(end);
+    const opening = CLOSING_TO_OPENING.get(char);
+    if (opening === undefined) {
+      if (OPENING_BRACKETS.has(char)) openBrackets.push(char);
+    } else if (openBrackets.pop() !== opening) {
+      break;
+    }
   }
-  return token.includes("/") || /^www\./i.test(token);
+  while (end > start && TRAILING_PUNCTUATION.has(token.charAt(end - 1))) {
+    end -= 1;
+  }
+  return token.slice(start, end);
+}
+
+function findWebLinkCandidate(token: string): string | null {
+  const start = token.search(WEB_URL_START_PATTERN);
+  return start === -1 ? null : trimLinkPunctuation(token.slice(start));
+}
+
+// 공유 텍스트는 문장이 섞여 오므로 입력 검증보다 좁게 본다 — "참고:이거"·"todo:장보기"·"사진.jpg" 를
+// 링크로 착각하지 않게, 앱 전용 링크는 "://" 로 쓴 것만, 스킴 없는 주소는 www. 로 시작하거나
+// 흔한 도메인 끝에 경로가 붙은 것만 본다.
+function findOtherLinkCandidate(token: string): string | null {
+  if (WEB_URL_START_PATTERN.test(token)) return null;
+  const candidate = trimLinkPunctuation(token);
+  const scheme = getScheme(candidate);
+  if (scheme !== null && candidate.startsWith("//", scheme.length + 1)) {
+    return candidate;
+  }
+  const matched = BARE_URL_PATTERN.exec(candidate);
+  if (!matched) return null;
+  if (/^www\./i.test(candidate)) return candidate;
+  const tld = matched[2] ?? "";
+  const hasPath = matched[3] !== undefined;
+  return hasPath && TEXT_LINK_TLDS.has(tld.toLowerCase()) ? candidate : null;
 }
 
 /**
- * 공유 텍스트에서 첫 링크를 뽑는다. Android 는 "제목\nURL" 처럼 섞어 보내고,
+ * 공유 텍스트에서 첫 링크를 찾아 저장할 형태로 돌려준다. Android 는 "제목\nURL" 처럼 섞어 보내고,
  * 지도·SNS 앱은 스킴 없는 주소나 앱 전용 링크를 텍스트로 보낸다 — http(s) 를 먼저 찾는다.
+ * 찾은 링크가 모두 규칙에 어긋나면 첫 링크의 거부 사유를, 링크가 없으면 not-found 를 돌려준다.
  */
-export function extractFirstUrl(text: string): string | null {
-  const webUrl = FIRST_WEB_URL_PATTERN.exec(text)?.[0];
-  if (webUrl) return webUrl;
-  return text.split(/\s+/).find(isLinkInText) ?? null;
+export function findLinkInText(text: string): LinkUrlResult {
+  const tokens = text.slice(0, MAX_SCANNED_TEXT_LENGTH).split(/\s+/);
+  // 잘린 끝 토큰은 링크의 일부일 수 있어 버린다.
+  if (text.length > MAX_SCANNED_TEXT_LENGTH) tokens.pop();
+  const results = [
+    ...tokens.map(findWebLinkCandidate),
+    ...tokens.map(findOtherLinkCandidate),
+  ]
+    .filter((candidate) => candidate !== null)
+    .map((candidate) => normalizeLinkUrl(candidate));
+  return (
+    results.find((result) => result.ok) ??
+    results[0] ?? { ok: false, reason: "not-found" }
+  );
 }

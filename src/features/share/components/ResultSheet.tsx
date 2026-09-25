@@ -2,6 +2,7 @@ import { Text } from "@promise9/ui/text/Text";
 import { Image, Pressable, View } from "react-native";
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { createLinkHandoffPath } from "@/constants/routes.constants";
+import { LINK_URL_ERROR_MESSAGES } from "@/features/link/link.constants";
 import type { ShareSaveState } from "../share.reducer";
 
 import { openHostApp } from "../shareHost";
@@ -38,9 +39,9 @@ const RESULT_CONTENT = {
     subtitle: "잠시 후 다시 시도해주세요",
     cta: "닫기",
   },
+  // 부제는 거부 사유(LINK_URL_ERROR_MESSAGES)를 보여준다.
   "invalid-url": {
     title: "저장할 수 있는 링크가 없어요",
-    subtitle: "공유한 내용에서 링크 주소를 찾지 못했어요",
     cta: "앱에서 직접 입력",
   },
 } as const;
@@ -63,6 +64,10 @@ export interface ResultSheetProps {
 
 export function ResultSheet({ state, sharedText, onRetry }: ResultSheetProps) {
   const content = RESULT_CONTENT[state.phase];
+  const subtitle =
+    state.phase === "invalid-url"
+      ? LINK_URL_ERROR_MESSAGES[state.reason]
+      : RESULT_CONTENT[state.phase].subtitle;
   const dismiss = useSheetDismiss();
 
   const handleCta = () => {
@@ -100,7 +105,7 @@ export function ResultSheet({ state, sharedText, onRetry }: ResultSheetProps) {
             {content.title}
           </Text>
           <Text variant="body-2-reading" className="text-text-alternative">
-            {content.subtitle}
+            {subtitle}
           </Text>
         </View>
         {/* 시안 CTA — 높이 52·라벨 16/600 이라 ActionButton(medium=48/500) 과 값이 다르다. */}

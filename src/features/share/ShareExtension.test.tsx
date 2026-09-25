@@ -733,6 +733,46 @@ test("위험한 스킴 공유는 저장하지 않고 링크를 찾지 못했다�
   expect(mockPost).not.toHaveBeenCalled();
 });
 
+// 링크를 못 찾았다고 원문 전체를 링크로 받으면 파일명·메모·Wi-Fi QR 까지 저장된다.
+test("링크가 없는 한 토큰 공유는 원문을 링크로 저장하지 않는다", async () => {
+  await render(<ShareExtension text="todo:장보기" />);
+
+  expect(
+    await screen.findByText("공유한 내용에서 링크 주소를 찾지 못했어요"),
+  ).toBeOnTheScreen();
+  expect(screen.queryByText("저장")).toBeNull();
+  expect(mockPost).not.toHaveBeenCalled();
+});
+
+test("공유한 링크가 규칙에 어긋나면 저장하지 않고 이유를 안내한다", async () => {
+  await render(<ShareExtension url="https://toss.tech@evil.com/a" />);
+
+  expect(
+    await screen.findByText(
+      "보안상 계정 정보(@)가 담긴 링크는 저장할 수 없어요",
+    ),
+  ).toBeOnTheScreen();
+  expect(screen.getByText("저장할 수 있는 링크가 없어요")).toBeOnTheScreen();
+  expect(mockPost).not.toHaveBeenCalled();
+});
+
+test("공유 텍스트 속 링크를 감싼 괄호·문장 부호는 걷어내고 저장한다", async () => {
+  mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 9 } } });
+  await render(
+    <ShareExtension text="자세한 내용은 누리집(https://www.korea.kr)에서 확인하세요." />,
+  );
+
+  expect(await screen.findByText("https://www.korea.kr")).toBeOnTheScreen();
+  await userEvent.setup().press(screen.getByText("저장"));
+
+  await waitFor(() =>
+    expect(mockPost).toHaveBeenCalledWith(
+      "/links",
+      expect.objectContaining({ url: "https://www.korea.kr" }),
+    ),
+  );
+});
+
 test("URL 이 없는 공유에서 '앱에서 직접 입력' 을 누르면 인앱 저장 시트를 연다", async () => {
   await render(<ShareExtension url="이건 링크가 아니에요" />);
 

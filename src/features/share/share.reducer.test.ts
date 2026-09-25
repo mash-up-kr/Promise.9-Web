@@ -56,9 +56,10 @@ test("결과 상태(success 등)에서 무관한 액션은 무시한다", () => 
   expect(shareSaveReducer(success, { type: "SAVE_FAILED" })).toBe(success);
 });
 
-test("URL 형식이 아니면 저장 요청 없이 invalid-url 로 전환한다", () => {
+test("저장할 링크가 없으면 저장 요청 없이 거부 사유와 함께 invalid-url 로 전환한다", () => {
   const state = shareSaveReducer(INITIAL_SHARE_SAVE_STATE, {
     type: "SAVE_REJECTED_INVALID_URL",
+    reason: "not-found",
   });
-  expect(state).toEqual({ phase: "invalid-url" });
+  expect(state).toEqual({ phase: "invalid-url", reason: "not-found" });
 });

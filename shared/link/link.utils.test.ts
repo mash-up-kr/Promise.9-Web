@@ -1,5 +1,5 @@
 import {
-  extractFirstUrl,
+  findLinkInText,
   isWebUrl,
   type LinkUrlRejectReason,
   normalizeLinkUrl,
@@ -7,44 +7,6 @@ import {
 
 const accepted = (url: string) => ({ ok: true, url });
 const rejected = (reason: LinkUrlRejectReason) => ({ ok: false, reason });
-
-describe("extractFirstUrl", () => {
-  test("순수 URL 은 그대로 돌려준다", () => {
-    expect(extractFirstUrl("https://toss.tech/a")).toBe("https://toss.tech/a");
-  });
-  test("앞뒤 공백·개행은 무시한다", () => {
-    expect(extractFirstUrl("  https://toss.tech/a\n")).toBe(
-      "https://toss.tech/a",
-    );
-  });
-  test("제목 뒤 개행으로 붙은 URL 을 뽑는다(유튜브 공유 형태)", () => {
-    expect(extractFirstUrl("영상 제목\nhttps://youtu.be/x1")).toBe(
-      "https://youtu.be/x1",
-    );
-  });
-  test("문장 가운데 URL 은 첫 번째 것만 뽑는다", () => {
-    expect(extractFirstUrl("이거 봐 http://a.com/1 그리고 https://b.com")).toBe(
-      "http://a.com/1",
-    );
-  });
-  test("http(s) URL 이 없으면 스킴 없는 주소를 뽑는다(지도 앱 텍스트 공유 형태)", () => {
-    expect(
-      extractFirstUrl("[네이버 지도]\n스타벅스 강남점\nnaver.me/xYz1"),
-    ).toBe("naver.me/xYz1");
-  });
-  test("http(s) URL 이 없으면 앱 전용 스킴 링크를 뽑는다", () => {
-    expect(extractFirstUrl("장소 보기 nmap://place?id=123")).toBe(
-      "nmap://place?id=123",
-    );
-  });
-  test("콜론이 들어간 문장을 링크로 착각하지 않는다", () => {
-    expect(extractFirstUrl("참고:이거 꼭 보기")).toBeNull();
-  });
-  test("URL 이 없으면 null", () => {
-    expect(extractFirstUrl("그냥 텍스트")).toBeNull();
-    expect(extractFirstUrl("")).toBeNull();
-  });
-});
 
 describe("normalizeLinkUrl", () => {
   test("http·https 주소는 앞뒤 공백만 걷어 그대로 돌려준다", () => {
@@ -226,6 +188,147 @@ describe("normalizeLinkUrl", () => {
       if (!once.ok) throw new Error(`보정 실패: ${value}`);
       expect(normalizeLinkUrl(once.url)).toEqual(once);
     }
+  });
+});
+
+describe("findLinkInText", () => {
+  test("순수 URL 은 그대로 돌려준다", () => {
+    expect(findLinkInText("https://toss.tech/a")).toEqual(
+      accepted("https://toss.tech/a"),
+    );
+  });
+
+  test("앞뒤 공백·개행은 무시한다", () => {
+    expect(findLinkInText("  https://toss.tech/a\n")).toEqual(
+      accepted("https://toss.tech/a"),
+    );
+  });
+
+  test("제목 뒤 개행으로 붙은 URL 을 뽑는다(유튜브 공유 형태)", () => {
+    expect(findLinkInText("영상 제목\nhttps://youtu.be/x1")).toEqual(
+      accepted("https://youtu.be/x1"),
+    );
+  });
+
+  test("문장 가운데 URL 은 첫 번째 것만 뽑는다", () => {
+    expect(
+      findLinkInText("이거 봐 http://a.com/1 그리고 https://b.com"),
+    ).toEqual(accepted("http://a.com/1"));
+  });
+
+  test("http(s) 링크를 앱 전용 링크·스킴 없는 주소보다 먼저 찾는다", () => {
+    expect(
+      findLinkInText("nmap://place?id=1 naver.me/abc https://toss.tech/a"),
+    ).toEqual(accepted("https://toss.tech/a"));
+  });
+
+  test("http(s) URL 이 없으면 스킴 없는 주소를 https 로 보정해 뽑는다(지도 앱 텍스트 공유 형태)", () => {
+    expect(
+      findLinkInText("[네이버 지도]\n스타벅스 강남점\nnaver.me/xYz1"),
+    ).toEqual(accepted("https://naver.me/xYz1"));
+  });
+
+  test("http(s) URL 이 없으면 앱 전용 스킴 링크를 뽑는다", () => {
+    expect(findLinkInText("장소 보기 nmap://place?id=123")).toEqual(
+      accepted("nmap://place?id=123"),
+    );
+  });
+
+  test("링크를 감싼 괄호·따옴표·문장 부호는 걷어낸다", () => {
+    const cases: [string, string][] = [
+      ["(https://toss.tech/a)", "https://toss.tech/a"],
+      ["“https://toss.tech/a”", "https://toss.tech/a"],
+      ["<https://toss.tech/a>", "https://toss.tech/a"],
+      ["「https://toss.tech/a」", "https://toss.tech/a"],
+      ["여기 https://toss.tech/a. 참고", "https://toss.tech/a"],
+      ["https://toss.tech/a?b=1, 이거", "https://toss.tech/a?b=1"],
+      ["누리집(https://www.korea.kr)에서 확인", "https://www.korea.kr"],
+      ["(naver.me/x)", "https://naver.me/x"],
+      ["“naver.me/abc”", "https://naver.me/abc"],
+      ["<naver.me/x>", "https://naver.me/x"],
+      ["[nmap://place?id=1]", "nmap://place?id=1"],
+    ];
+    for (const [text, url] of cases) {
+      expect(findLinkInText(text)).toEqual(accepted(url));
+    }
+  });
+
+  test("주소 안의 짝 맞는 괄호는 남긴다", () => {
+    expect(
+      findLinkInText("위키: https://en.wikipedia.org/wiki/Foo_(bar)."),
+    ).toEqual(accepted("https://en.wikipedia.org/wiki/Foo_(bar)"));
+    expect(findLinkInText("(https://en.wikipedia.org/wiki/Foo_(bar))")).toEqual(
+      accepted("https://en.wikipedia.org/wiki/Foo_(bar)"),
+    );
+  });
+
+  test("스킴 없는 주소는 www. 로 시작하거나 흔한 도메인 끝에 경로가 있을 때만 링크로 본다", () => {
+    for (const [text, url] of [
+      ["naver.me/abc", "https://naver.me/abc"],
+      ["kko.to/abc", "https://kko.to/abc"],
+      ["bit.ly/abc", "https://bit.ly/abc"],
+      ["t.co/abc", "https://t.co/abc"],
+      ["youtu.be/abc", "https://youtu.be/abc"],
+      ["goo.gl/abc", "https://goo.gl/abc"],
+      ["forms.gle/abc", "https://forms.gle/abc"],
+      ["blog.naver.com/mashup/1", "https://blog.naver.com/mashup/1"],
+      ["www.example.museum", "https://www.example.museum"],
+    ]) {
+      expect(findLinkInText(`보기: ${text}`)).toEqual(accepted(url));
+    }
+  });
+
+  test("파일명·기술 용어·콜론이 든 문장을 링크로 착각하지 않는다", () => {
+    for (const text of [
+      "참고:이거 꼭 보기",
+      "사진.jpg",
+      "todo:장보기",
+      "WIFI:S:MyNetwork;T:WPA;P:secret123;;",
+      "Next.js/React 공부",
+      "index.html/css 수정",
+      "보고서.pdf/hwp 첨부",
+      "naver.com",
+      "localhost:3000/admin",
+      "abc@naver.com",
+    ]) {
+      expect(findLinkInText(text)).toEqual(rejected("not-found"));
+    }
+  });
+
+  test("링크가 없으면 찾지 못했다고 돌려준다", () => {
+    expect(findLinkInText("그냥 텍스트")).toEqual(rejected("not-found"));
+    expect(findLinkInText("")).toEqual(rejected("not-found"));
+  });
+
+  test("찾은 링크가 규칙에 어긋나면 그 이유를 돌려준다", () => {
+    expect(findLinkInText("이거 봐 https://toss.tech@evil.com/")).toEqual(
+      rejected("userinfo"),
+    );
+    expect(findLinkInText("file:///Users/boky/secret.pdf")).toEqual(
+      rejected("blocked-scheme"),
+    );
+    expect(findLinkInText("https://exa|mple.com 오타")).toEqual(
+      rejected("not-link"),
+    );
+    expect(
+      findLinkInText(`긴 주소 https://example.com/${"a".repeat(2048)}`),
+    ).toEqual(rejected("too-long"));
+  });
+
+  test("규칙에 어긋난 링크 뒤에 올바른 링크가 있으면 그것을 돌려준다", () => {
+    expect(
+      findLinkInText("https://toss.tech@evil.com/ 말고 https://toss.tech/a"),
+    ).toEqual(accepted("https://toss.tech/a"));
+  });
+
+  test("아주 긴 텍스트는 앞부분만 보고, 경계에서 잘린 링크는 버린다", () => {
+    const filler = "가".repeat(9_990);
+    expect(findLinkInText(`${filler} https://toss.tech/abcdef`)).toEqual(
+      rejected("not-found"),
+    );
+    expect(
+      findLinkInText(`https://toss.tech/a ${"가".repeat(100_000)}`),
+    ).toEqual(accepted("https://toss.tech/a"));
   });
 });
 

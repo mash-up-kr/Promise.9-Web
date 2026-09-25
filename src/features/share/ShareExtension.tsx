@@ -4,7 +4,7 @@ import {
   isAlreadySavedLinkError,
 } from "@shared/entities/link/link.errors";
 import { useCreateLinkMutation } from "@shared/entities/link/link.queries";
-import { extractFirstUrl } from "@shared/link/link.utils";
+import { findLinkInText, type LinkUrlResult } from "@shared/link/link.utils";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useLayoutEffect, useReducer, useRef, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -13,7 +13,6 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { BottomSheet } from "@/components/ui/bottom-sheet/BottomSheet";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
-import { linkUrlSchema } from "@/features/link/link.contracts";
 import {
   type ReminderValue,
   toReminderAtIso,
@@ -36,11 +35,9 @@ import { useAccessTokenWarmup } from "./useAccessTokenWarmup";
  */
 export function ShareExtension({ url, text }: { url?: string; text?: string }) {
   // iOS 는 URL 로 오지만 지도·SNS 앱은 텍스트로 공유하고, Android 는 "제목\nURL" 처럼 섞어 보낸다 —
-  // 첫 링크를 뽑아 저장할 형태로 보정한다. 링크가 없으면 원문을 넘겨 '저장할 수 없는 링크' 경로로 흐르게 한다.
+  // 첫 링크를 찾아 저장할 형태로 보정한다. 링크가 없으면 원문을 링크로 대신하지 않고 사유를 안내한다.
   const sharedText = url ?? text ?? "";
-  const extractedUrl = extractFirstUrl(sharedText) ?? sharedText;
-  const parsedUrl = linkUrlSchema.safeParse(extractedUrl);
-  const sharedUrl = parsedUrl.success ? parsedUrl.data : extractedUrl;
+  const sharedLink = findLinkInText(sharedText);
   const status = useAuthGate();
   const isTokenReady = useAccessTokenWarmup(status);
   // 한 번 인증됐다가 풀린 경우(저장 중 401 → refresh 실패)는 "다시 로그인" 안내로 구분한다.
@@ -75,12 +72,16 @@ export function ShareExtension({ url, text }: { url?: string; text?: string }) {
               )}
               {status === "unauthenticated" && (
                 <ExtensionLoginSheet
-                  sharedUrl={sharedUrl}
+                  sharedUrl={sharedLink.ok ? sharedLink.url : sharedText}
                   isSessionExpired={isSessionExpired}
                 />
               )}
               {status === "authenticated" && isTokenReady && (
-                <ShareSaveFlow url={sharedUrl} onSavingChange={setIsSaving} />
+                <ShareSaveFlow
+                  sharedLink={sharedLink}
+                  sharedText={sharedText}
+                  onSavingChange={setIsSaving}
+                />
               )}
             </BottomSheet>
           </KeyboardProvider>
@@ -91,20 +92,30 @@ export function ShareExtension({ url, text }: { url?: string; text?: string }) {
 }
 
 interface ShareSaveFlowProps {
-  url: string;
+  sharedLink: LinkUrlResult;
+  sharedText: string;
   onSavingChange: (isSaving: boolean) => void;
 }
 
-function ShareSaveFlow({ url, onSavingChange }: ShareSaveFlowProps) {
-  // URL 이 아닌 텍스트(Android EXTRA_TEXT 등)는 편집 시트를 거치지 않고 바로 안내로 끝낸다.
+function ShareSaveFlow({
+  sharedLink,
+  sharedText,
+  onSavingChange,
+}: ShareSaveFlowProps) {
+  // 저장할 링크가 없는 공유(Android EXTRA_TEXT 등)는 편집 시트를 거치지 않고 바로 사유 안내로 끝낸다 —
+  // 그래서 url 은 링크를 찾았을 때만 쓰인다.
   const [state, dispatch] = useReducer(
     shareSaveReducer,
     INITIAL_SHARE_SAVE_STATE,
     (initial) =>
-      linkUrlSchema.safeParse(url).success
+      sharedLink.ok
         ? initial
-        : shareSaveReducer(initial, { type: "SAVE_REJECTED_INVALID_URL" }),
+        : shareSaveReducer(initial, {
+            type: "SAVE_REJECTED_INVALID_URL",
+            reason: sharedLink.reason,
+          }),
   );
+  const url = sharedLink.ok ? sharedLink.url : "";
   // 폴더 미선택(null) = 미분류 — 인앱 저장 시트와 동일한 의미.
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
   const [memo, setMemo] = useState("");
@@ -112,10 +123,6 @@ function ShareSaveFlow({ url, onSavingChange }: ShareSaveFlowProps) {
   const createLinkMutation = useCreateLinkMutation();
 
   const save = async () => {
-    if (!linkUrlSchema.safeParse(url).success) {
-      dispatch({ type: "SAVE_REJECTED_INVALID_URL" });
-      return;
-    }
     dispatch({ type: "SAVE_REQUESTED" });
     try {
       const created = await createLinkMutation.mutateAsync({
@@ -163,7 +170,7 @@ function ShareSaveFlow({ url, onSavingChange }: ShareSaveFlowProps) {
           onSave={save}
         />
       ) : (
-        <ResultSheet state={state} sharedText={url} onRetry={save} />
+        <ResultSheet state={state} sharedText={sharedText} onRetry={save} />
       )}
     </>
   );
