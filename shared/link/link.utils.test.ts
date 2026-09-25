@@ -86,6 +86,8 @@ describe("normalizeLinkUrl", () => {
       "content://com.android.contacts/contacts",
       "chrome://settings",
       "chrome-extension://abcdefg/popup.html",
+      "chrome-devtools://devtools/bundled/inspector.html",
+      "chrome-search://local-ntp/local-ntp.html",
       "edge://settings",
       "brave://settings",
       "opera://settings",
@@ -127,9 +129,12 @@ describe("normalizeLinkUrl", () => {
     }
   });
 
-  // 제로폭 공백·글자 방향 뒤집기(RLO·LRI)·소프트 하이픈·한글 채움 문자·NUL·NEL(C1)
+  // 제로폭 공백·글자 방향 뒤집기(RLO·LRI)·소프트 하이픈·한글 채움 문자·NUL·NEL(C1)·이체 선택자·속기/악보 서식 문자
   test("보이지 않는 문자·글자 방향 제어 문자·제어 문자가 섞이면 거부한다", () => {
-    for (const codePoint of [0x200b, 0x202e, 0x2066, 0xad, 0x3164, 0x0, 0x85]) {
+    for (const codePoint of [
+      0x200b, 0x202e, 0x2066, 0xad, 0x3164, 0x0, 0x85, 0xfe0f, 0xe0100, 0x1bca0,
+      0x1d173,
+    ]) {
       const value = `https://exa${String.fromCodePoint(codePoint)}mple.com`;
       expect(normalizeLinkUrl(value)).toEqual(rejected("invisible-char"));
     }

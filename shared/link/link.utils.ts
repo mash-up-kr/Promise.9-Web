@@ -56,9 +56,6 @@ const BLOCKED_SCHEMES = new Set([
   "view-source",
   "intent",
   "content",
-  "chrome",
-  "chrome-extension",
-  "chrome-untrusted",
   "devtools",
   "edge",
   "brave",
@@ -76,13 +73,19 @@ const BLOCKED_SCHEMES = new Set([
   "hxxp",
   "hxxps",
 ]);
-// 이름이 계속 늘어나는 스킴 — Windows 핸들러(ms-settings·ms-msdt…)·구글 로그인 콜백(역방향 클라이언트 ID).
-const BLOCKED_SCHEME_PREFIXES = ["ms-", "com.googleusercontent.apps."];
+// 이름이 계속 늘어나는 스킴 — 크롬 내부(chrome-extension·chrome-devtools…)·Windows 핸들러(ms-settings·ms-msdt…)·
+// 구글 로그인 콜백(역방향 클라이언트 ID).
+const BLOCKED_SCHEME_PREFIXES = [
+  "chrome",
+  "ms-",
+  "com.googleusercontent.apps.",
+];
 // 카카오 로그인 콜백(kakao + 네이티브 앱 키)
 const KAKAO_CALLBACK_SCHEME_PATTERN = /^kakao[0-9a-f]{32}$/;
 
 // 보이지 않거나 글자 방향을 뒤집는 문자 — 화면에 보이는 주소와 실제로 여는 주소를 다르게 만들 수 있다.
-// 제어 문자(C0·DEL·C1)·소프트 하이픈·서식/결합 문자·제로폭 문자·방향 제어·한글 채움 문자·BOM·태그 문자.
+// 제어 문자(C0·DEL·C1)·소프트 하이픈·서식/결합 문자·제로폭 문자·방향 제어·한글 채움 문자·이체 선택자·BOM·
+// 속기/악보 서식 문자·태그 문자.
 const INVISIBLE_CHAR_RANGES: ReadonlyArray<readonly [number, number]> = [
   [0x0, 0x1f],
   [0x7f, 0x9f],
@@ -96,10 +99,14 @@ const INVISIBLE_CHAR_RANGES: ReadonlyArray<readonly [number, number]> = [
   [0x202a, 0x202e],
   [0x2060, 0x206f],
   [0x3164, 0x3164],
+  [0xfe00, 0xfe0f],
   [0xfeff, 0xfeff],
   [0xffa0, 0xffa0],
   [0xfff9, 0xfffb],
+  [0x1bca0, 0x1bca3],
+  [0x1d173, 0x1d17a],
   [0xe0000, 0xe007f],
+  [0xe0100, 0xe01ef],
 ];
 
 // 서버(POST /links)와 같은 파서(WHATWG URL)로 본다 — 포트 범위·호스트 금지 문자 등.
