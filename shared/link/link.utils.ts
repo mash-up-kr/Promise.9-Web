@@ -139,15 +139,18 @@ function toLinkUrl(value: string, scheme: string | null): string | null {
     return BARE_URL_PATTERN.test(value) ? `https://${value}` : null;
   }
   if (scheme === "http" || scheme === "https") {
-    return rest.startsWith("//") ? value : null;
+    // 브라우저는 "//" 뒤의 "/"·"\" 를 건너뛰고 "\" 를 "/" 로 읽는다 — 보이는 것과 다른 호스트를 열 수 있다.
+    return /^\/\/[^/\\]/.test(rest) && !value.includes("\\") ? value : null;
   }
   return rest.replace(/^\/\//, "") === "" ? null : value;
 }
 
-// "https://toss.tech@evil.com" 처럼 @ 앞을 도메인으로 착각하게 만드는 계정 정보.
-// 브라우저는 "\" 도 경로 구분자로 읽으므로 "/?#" 까지를 통째로 본다.
-function hasUserinfo(webUrl: string): boolean {
-  const rest = webUrl.slice(webUrl.indexOf("//") + 2);
+// "https://toss.tech@evil.com"·"googlechromes://toss.im@evil.com" 처럼 @ 앞을 도메인으로 착각하게 만드는 계정 정보.
+// 스킴 안에 주소를 품은 링크("microsoft-edge:https://…")도 있어 처음 나오는 "//" 뒤를 본다.
+function hasUserinfo(url: string): boolean {
+  const start = url.indexOf("//");
+  if (start === -1) return false;
+  const rest = url.slice(start + 2).replace(/^[/\\]+/, "");
   const end = rest.search(/[/?#]/);
   return (end === -1 ? rest : rest.slice(0, end)).includes("@");
 }
@@ -172,9 +175,7 @@ export function normalizeLinkUrl(input: string): LinkUrlResult {
 
   const url = toLinkUrl(value, scheme);
   if (url === null) return { ok: false, reason: "not-link" };
-  if (isWebUrl(url) && hasUserinfo(url)) {
-    return { ok: false, reason: "userinfo" };
-  }
+  if (hasUserinfo(url)) return { ok: false, reason: "userinfo" };
   if (!urlSchema.safeParse(url).success) {
     return { ok: false, reason: "not-link" };
   }

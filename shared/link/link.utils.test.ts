@@ -119,19 +119,38 @@ describe("normalizeLinkUrl", () => {
     }
   });
 
-  test("도메인 앞에 계정 정보(@)를 붙인 http(s) 주소는 거부한다", () => {
+  test("도메인 앞에 계정 정보(@)를 붙인 주소는 스킴과 무관하게 거부한다", () => {
     for (const value of [
       "https://toss.tech@evil.com/",
       "https://user:pass@example.com",
       "https://@example.com",
-      "https://toss.tech\\@evil.com",
+      "googlechromes://toss.im@evil.com/login",
+      "x-safari-https://toss.im@evil.com",
+      "ftp://a@evil.com",
+      "microsoft-edge:https://toss.im@evil.com",
     ]) {
       expect(normalizeLinkUrl(value)).toEqual(rejected("userinfo"));
     }
-    // 경로의 @ 는 계정 정보가 아니다.
-    expect(normalizeLinkUrl("https://medium.com/@mashup/post")).toEqual(
-      accepted("https://medium.com/@mashup/post"),
-    );
+    // 경로·쿼리의 @ 와 mailto: 주소는 계정 정보가 아니다.
+    for (const url of [
+      "https://medium.com/@mashup/post",
+      "mailto:a@b.com",
+      "nmap://place?name=a@b",
+    ]) {
+      expect(normalizeLinkUrl(url)).toEqual(accepted(url));
+    }
+  });
+
+  // 브라우저는 "//" 뒤의 "/"·"\" 를 건너뛰고 "\" 를 "/" 로 읽어 보이는 것과 다른 호스트를 연다.
+  test("// 뒤에 슬래시가 더 붙거나 역슬래시가 든 http(s) 주소는 거부한다", () => {
+    for (const value of [
+      "https:///toss.tech@evil.com",
+      "https://\\/toss.tech@evil.com",
+      "https://evil.com\\.toss.im/login",
+      "https://toss.tech\\@evil.com",
+    ]) {
+      expect(normalizeLinkUrl(value)).toEqual(rejected("not-link"));
+    }
   });
 
   test("2,048자를 넘는 주소는 거부한다", () => {
