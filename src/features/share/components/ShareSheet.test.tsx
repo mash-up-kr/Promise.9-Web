@@ -1,5 +1,5 @@
 import { act, render, screen, userEvent } from "@testing-library/react-native";
-import { Pressable, Text } from "react-native";
+import { NativeModules, Pressable, Text } from "react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import {
@@ -170,6 +170,45 @@ test("잠금 중에는 핸들을 끌어도 제스처를 받지 않는다", async
   const { onClose } = await renderSheet({ isLocked: true });
   expect(await dragHandle(150, 300)).toBe(false);
   await finishAnimations();
+  expect(onClose).not.toHaveBeenCalled();
+});
+
+test("닫히는 중에는 핸들을 끌어도 제스처를 받지 않는다", async () => {
+  const { onClose } = await renderSheet();
+  await setupUser().press(screen.getByLabelText("시트 닫기"));
+  expect(await dragHandle(60, 200)).toBe(false);
+  await finishAnimations();
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+// 시트 위치는 네이티브 드라이버가 들고 있다 — 멈춘 자리를 오프셋으로 넘겨받아야 0 으로 튀지 않는다.
+test("드래그를 잡으면 움직이던 시트를 그 자리에서 멈추고 이어서 끈다", async () => {
+  const { NativeAnimatedModule } = NativeModules;
+  await renderSheet();
+  NativeAnimatedModule.stopAnimation.mockClear();
+  NativeAnimatedModule.extractAnimatedNodeOffset.mockClear();
+
+  await dragHandle(60, 200);
+
+  expect(NativeAnimatedModule.stopAnimation).toHaveBeenCalled();
+  expect(NativeAnimatedModule.extractAnimatedNodeOffset).toHaveBeenCalled();
+});
+
+test("퇴장 애니메이션이 끝까지 가지 못하면 onClose 를 부르지 않는다", async () => {
+  const { NativeAnimatedModule } = NativeModules;
+  const { onClose } = await renderSheet();
+  NativeAnimatedModule.startAnimatingNode.mockImplementationOnce(
+    (
+      _id: number,
+      _tag: number,
+      _config: object,
+      endCallback: (result: { finished: boolean }) => void,
+    ) => endCallback({ finished: false }),
+  );
+
+  await setupUser().press(screen.getByLabelText("시트 닫기"));
+  await finishAnimations();
+
   expect(onClose).not.toHaveBeenCalled();
 });
 

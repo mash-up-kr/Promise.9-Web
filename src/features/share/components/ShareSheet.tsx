@@ -73,28 +73,47 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
       toValue: height,
       ...SHEET_SPRING,
       useNativeDriver: true,
-    }).start(() => onClose());
+    }).start(({ finished }) => {
+      if (finished) onClose();
+    });
   }, [translateY, height, onClose]);
 
   const panResponder = useMemo(
     () =>
       PanResponder.create({
         onMoveShouldSetPanResponder: (_, gesture) =>
-          !isLocked && gesture.dy > 4,
+          !isLocked && !isClosingRef.current && gesture.dy > 4,
+        // 등장·복귀 애니메이션 도중에 잡아도 그 자리에서 이어 끈다 — 위치는 네이티브가 들고 있어
+        // 오프셋으로 넘겨받는다.
+        onPanResponderGrant: () => {
+          translateY.stopAnimation();
+          translateY.extractOffset();
+        },
         onPanResponderMove: (_, gesture) => {
-          translateY.setValue(Math.max(0, gesture.dy));
+          translateY.setValue(gesture.dy);
         },
         onPanResponderRelease: (_, gesture) => {
+          translateY.flattenOffset();
           if (shouldDismissByDrag(gesture.dy, gesture.vy)) {
             dismiss();
           } else {
             settle();
           }
         },
-        onPanResponderTerminate: settle,
+        onPanResponderTerminate: () => {
+          translateY.flattenOffset();
+          settle();
+        },
       }),
     [isLocked, translateY, dismiss, settle],
   );
+
+  // 위로 끌어 올려도 제자리 위로는 뜨지 않는다.
+  const sheetTranslateY = translateY.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+    extrapolateLeft: "clamp",
+  });
 
   const backdropOpacity = translateY.interpolate({
     inputRange: [0, height],
@@ -119,7 +138,7 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
         <Animated.View
           style={{
             maxHeight: height - insets.top,
-            transform: [{ translateY }],
+            transform: [{ translateY: sheetTranslateY }],
           }}
         >
           <SheetSurface>
