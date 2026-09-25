@@ -72,7 +72,7 @@ export function ShareExtension({ url, text }: { url?: string; text?: string }) {
               )}
               {status === "unauthenticated" && (
                 <ExtensionLoginSheet
-                  sharedUrl={sharedLink.ok ? sharedLink.url : sharedText}
+                  sharedUrl={sharedLink.ok ? sharedLink.url : null}
                   isSessionExpired={isSessionExpired}
                 />
               )}

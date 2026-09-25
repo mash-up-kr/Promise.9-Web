@@ -61,6 +61,8 @@ import {
 } from "@testing-library/react-native";
 import { close, openHostApp } from "expo-share-extension";
 
+import { encodeSharedUrl } from "@/constants/routes.constants";
+
 import { ShareExtension } from "./ShareExtension";
 
 const mockPost = apiClient.post as jest.Mock;
@@ -771,6 +773,28 @@ test("공유 텍스트 속 링크를 감싼 괄호·문장 부호는 걷어내�
       expect.objectContaining({ url: "https://www.korea.kr" }),
     ),
   );
+});
+
+test("미로그인 iOS 카카오 인계는 공유 텍스트 전체가 아니라 찾은 링크만 넘긴다", async () => {
+  storedRefreshToken = null;
+  await render(
+    <ShareExtension text={"[네이버 지도]\n스타벅스 강남점\nnaver.me/xYz1"} />,
+  );
+
+  await userEvent.setup().press(await screen.findByText("카카오로 계속하기"));
+
+  expect(openHostApp).toHaveBeenCalledWith(
+    `login?next=create-link&share=${encodeSharedUrl("https://naver.me/xYz1")}`,
+  );
+});
+
+test("링크가 없는 공유의 미로그인 iOS 카카오 인계는 share 없이 넘긴다", async () => {
+  storedRefreshToken = null;
+  await render(<ShareExtension text="오늘 저녁 메뉴 추천 좀 해줘" />);
+
+  await userEvent.setup().press(await screen.findByText("카카오로 계속하기"));
+
+  expect(openHostApp).toHaveBeenCalledWith("login?next=create-link");
 });
 
 test("URL 이 없는 공유에서 '앱에서 직접 입력' 을 누르면 인앱 저장 시트를 연다", async () => {
