@@ -26,6 +26,20 @@ export function refreshAccessToken(): Promise<string> {
   return inFlight;
 }
 
+/**
+ * 진행 중인 재발급이 끝날 때(성공·실패 무관) 풀리는 Promise — 없으면 null.
+ * 곧 종료되는 실행 컨텍스트(iOS 공유 익스텐션)가 재발급을 끊지 않도록 기다리는 데 쓴다.
+ * 결과는 재발급을 부른 쪽이 이미 처리하므로 여기선 끝나기만 기다린다.
+ */
+export function getPendingRefresh(): Promise<void> | null {
+  return (
+    inFlight?.then(
+      () => undefined,
+      () => undefined,
+    ) ?? null
+  );
+}
+
 // 리프레시 토큰은 반드시 배타 구간 **안에서** 읽는다 — 기다리는 동안 다른 문서가 회전시켰다면
 // 그 새 토큰을 읽어야 한다.
 async function doRefresh(): Promise<string> {
