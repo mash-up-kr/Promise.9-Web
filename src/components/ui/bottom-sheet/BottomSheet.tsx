@@ -4,11 +4,10 @@ import GorhomBottomSheet, {
   type BottomSheetBackgroundProps,
   useBottomSheetSpringConfigs,
 } from "@gorhom/bottom-sheet";
+import { SheetHandle, SheetSurface } from "@promise9/ui/sheet/SheetChrome";
 import type { ReactNode } from "react";
 import { useCallback, useRef } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { SheetHandle, SheetSurface } from "./SheetChrome";
 
 export interface BottomSheetProps {
   onClose: () => void;
