@@ -85,6 +85,22 @@ describe("LinkCard", () => {
     expect(screen.getByRole("button", { name: "toss.tech" })).toBeOnTheScreen();
   });
 
+  // mailto:·tel: 처럼 호스트가 없는 링크는 서버가 제목도 출처도 만들지 못한다.
+  test("제목과 출처가 모두 비어 있으면 '제목 없는 링크'를 보여준다", async () => {
+    await renderCard({ title: "", source: "" });
+    expect(screen.getByText("제목 없는 링크")).toBeOnTheScreen();
+    expect(
+      screen.getByRole("button", { name: "제목 없는 링크" }),
+    ).toBeOnTheScreen();
+  });
+
+  test("제목과 출처가 공백뿐이어도 '제목 없는 링크'를 보여준다", async () => {
+    await renderCard({ title: " ", source: " " });
+    expect(
+      screen.getByRole("button", { name: "제목 없는 링크" }),
+    ).toBeOnTheScreen();
+  });
+
   test("썸네일 URL 이 있으면 이미지를 렌더한다", async () => {
     await renderCard({ thumbnailUrl: "https://static.example.com/t.png" });
     expect(screen.getByTestId("link-card-thumbnail-image")).toBeOnTheScreen();
