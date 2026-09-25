@@ -49,8 +49,8 @@ export function EntrySheet({
     <ShareSheetScrollView
       testID="share-entry-scroll"
       keyboardShouldPersistTaps="handled"
-      // iOS 익스텐션 프로세스는 RN 키보드 이벤트 높이가 0 으로 와서 gorhom 이 시트를 못 올린다 —
-      // 네이티브 스크롤 인셋으로 포커스한 입력을 키보드 위로 드러낸다.
+      // iOS 익스텐션 프로세스는 RN 키보드 이벤트 높이가 0 으로 와서 JS 로는 키보드를 피할 수 없다 —
+      // 네이티브 스크롤 인셋으로 포커스한 입력을 키보드 위로 드러낸다(Android 는 gorhom 이 시트를 올린다).
       automaticallyAdjustKeyboardInsets
       stickyHeaderIndices={[0]}
       contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}

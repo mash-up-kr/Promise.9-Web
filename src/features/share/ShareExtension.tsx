@@ -36,7 +36,8 @@ import { useAccessTokenWarmup } from "./useAccessTokenWarmup";
 
 /**
  * 공유 익스텐션 루트 — 공유받은 URL 을 익스텐션 안에서 바로 저장한다.
- * 시트 크롬(백드롭·핸들·드래그·키보드)은 ShareSheet 가 맡고(iOS 경량 · Android gorhom), 컨테이너는 전체 화면이다.
+ * 시트 크롬(백드롭·핸들·드래그)은 ShareSheet 가 맡고(iOS 경량 · Android gorhom), 컨테이너는 전체 화면이다.
+ * 키보드는 Android 는 gorhom 이, iOS 는 저장 시트 스크롤의 네이티브 인셋이 맡는다(EntrySheet).
  * 결과 시트(성공/실패/중복/반복실패) 전이는 share.reducer 가 정한다.
  */
 export function ShareExtension({ url }: { url?: string }) {
