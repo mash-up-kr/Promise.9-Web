@@ -1,4 +1,8 @@
 import { SheetHandle, SheetSurface } from "@promise9/ui/sheet/SheetChrome";
+import {
+  SHEET_BACKDROP_OPACITY,
+  SHEET_SPRING,
+} from "@promise9/ui/sheet/sheet.constants";
 import type { PropsWithChildren } from "react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
@@ -31,10 +35,6 @@ export interface ShareSheetProps extends PropsWithChildren {
   isLocked: boolean;
 }
 
-// 인앱 BottomSheet 와 같은 enter spring.
-const ENTER_SPRING = { stiffness: 420, damping: 40, overshootClamping: true };
-const EXIT_DURATION = 220;
-const BACKDROP_OPACITY = 0.6;
 const DRAG_CLOSE_DISTANCE = 120;
 const DRAG_CLOSE_VELOCITY = 1;
 const DRAG_MIN_DISTANCE = 20;
@@ -53,19 +53,20 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
   const settle = useCallback(() => {
     Animated.spring(translateY, {
       toValue: 0,
-      ...ENTER_SPRING,
+      ...SHEET_SPRING,
       useNativeDriver: true,
     }).start();
   }, [translateY]);
 
   useEffect(settle, [settle]);
 
+  // 인앱 시트(gorhom)처럼 닫힐 때도 같은 스프링으로 내려간다.
   const dismiss = useCallback(() => {
     if (isClosingRef.current) return;
     isClosingRef.current = true;
-    Animated.timing(translateY, {
+    Animated.spring(translateY, {
       toValue: height,
-      duration: EXIT_DURATION,
+      ...SHEET_SPRING,
       useNativeDriver: true,
     }).start(() => onClose());
   }, [translateY, height, onClose]);
@@ -92,7 +93,7 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
 
   const backdropOpacity = translateY.interpolate({
     inputRange: [0, height],
-    outputRange: [BACKDROP_OPACITY, 0],
+    outputRange: [SHEET_BACKDROP_OPACITY, 0],
     extrapolate: "clamp",
   });
 
