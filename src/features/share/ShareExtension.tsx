@@ -6,7 +6,13 @@ import {
 import { useCreateLinkMutation } from "@shared/entities/link/link.queries";
 import { extractFirstUrl } from "@shared/link/link.utils";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { useLayoutEffect, useReducer, useRef, useState } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
@@ -21,6 +27,7 @@ import { EntrySheet } from "./components/EntrySheet";
 import { CheckingSheet, ResultSheet } from "./components/ResultSheet";
 import { ShareSheet } from "./components/ShareSheet";
 import { ExtensionLoginSheet } from "./ExtensionLoginSheet";
+import { runAfterPendingWork } from "./runAfterPendingWork";
 import { INITIAL_SHARE_SAVE_STATE, shareSaveReducer } from "./share.reducer";
 import { close } from "./shareHost";
 import { useAccessTokenWarmup } from "./useAccessTokenWarmup";
@@ -52,11 +59,16 @@ export function ShareExtension({ url }: { url?: string }) {
   // 익스텐션 프로세스 전용 클라이언트 — 기본값(재시도 1회 등)은 앱과 같은 팩토리에서 온다.
   // 모듈 싱글턴이 아니라 마운트마다 새로 만들어 테스트 간 캐시가 새지 않게 한다.
   const [queryClient] = useState(createQueryClient);
+  // 로그인·저장 요청이 끝나기 전에 닫으면 그 결과(새 토큰·저장)가 프로세스와 함께 버려진다.
+  const closeAfterPendingWork = useCallback(
+    () => runAfterPendingWork(close, queryClient),
+    [queryClient],
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
-        <ShareSheet onClose={close} isLocked={isSaving}>
+        <ShareSheet onClose={closeAfterPendingWork} isLocked={isSaving}>
           {(status === "checking" ||
             (status === "authenticated" && !isTokenReady)) && <CheckingSheet />}
           {status === "unauthenticated" && (

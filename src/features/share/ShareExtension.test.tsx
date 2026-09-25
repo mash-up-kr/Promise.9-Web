@@ -14,6 +14,7 @@ jest.mock("@shared/api", () => {
   return {
     apiClient: { get: jest.fn(), post: jest.fn() },
     refreshAccessToken: jest.fn(),
+    getPendingRefresh: () => null,
     ...errors,
     ...token,
     ...contracts,
@@ -60,6 +61,7 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 import { close, openHostApp } from "expo-share-extension";
+import { AccessibilityInfo } from "react-native";
 
 import { ShareExtension } from "./ShareExtension";
 
@@ -178,6 +180,9 @@ beforeEach(() => {
 
 afterEach(() => {
   globalThis.__promise9ShareExtension = undefined;
+  (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockImplementation(
+    () => Promise.resolve(false),
+  );
 });
 
 test("공유받은 URL 을 표시한다", async () => {
@@ -580,6 +585,32 @@ test("로그인에 성공하면 같은 시트에서 저장 화면으로 넘어�
   expect(await screen.findByText("저장")).toBeOnTheScreen();
   expect(await screen.findByText("디자인")).toBeOnTheScreen();
   expect(mockGet).toHaveBeenCalledWith("/folders", expect.anything());
+});
+
+// 닫자마자 네이티브가 프로세스를 끝내므로 로그인 결과(새 토큰)를 저장하기 전에 끊기면 안 된다.
+// 동작 줄이기면 시트가 퇴장 애니메이션 없이 바로 닫기를 요청한다 — 닫기의 대기만 관찰한다.
+test("로그인 요청이 진행 중이면 끝난 뒤에 익스텐션을 닫는다", async () => {
+  (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValue(
+    true,
+  );
+  storedRefreshToken = null;
+  mockGetIdToken.mockResolvedValue("google-id-token");
+  let resolveLogin!: (value: unknown) => void;
+  mockPost.mockReturnValue(new Promise((resolve) => (resolveLogin = resolve)));
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  const user = userEvent.setup();
+
+  await user.press(await screen.findByText("Google로 계속하기"));
+  await user.press(screen.getByLabelText("시트 닫기"));
+  expect(close).not.toHaveBeenCalled();
+
+  resolveLogin({
+    data: {
+      success: true,
+      data: { accessToken: "atk", refreshToken: "rtk", isNewUser: false },
+    },
+  });
+  await waitFor(() => expect(close).toHaveBeenCalled());
 });
 
 test("저장 중 세션이 끊기면(refresh 실패로 토큰 삭제) 로그인 시트로 돌아간다", async () => {

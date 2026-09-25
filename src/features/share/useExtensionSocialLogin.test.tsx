@@ -8,6 +8,7 @@ jest.mock("@shared/api", () => {
   const errors = jest.requireActual("@shared/api/errors");
   return {
     apiClient: { get: jest.fn(), post: jest.fn() },
+    getPendingRefresh: () => null,
     ...token,
     ...contracts,
     ...errors,
