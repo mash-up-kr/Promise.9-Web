@@ -248,8 +248,26 @@ const CLOSING_TO_OPENING = new Map([
 const OPENING_BRACKETS = new Set(CLOSING_TO_OPENING.values());
 const LEADING_PUNCTUATION = new Set([...OPENING_BRACKETS, '"', "'"]);
 const TRAILING_PUNCTUATION = new Set([..."\"'.,!?;:。、，！？：；"]);
+// 링크 바로 뒤에 붙여 쓴 조사("…/abc에서") — 두 글자 조사를 먼저 본다.
+const TRAILING_PARTICLES = `에서 에게 으로 까지 부터 이나 이랑 처럼
+  로 을 를 이 가 은 는 의 에 와 과 도 만 나 랑`.split(/\s+/);
 
-// 링크를 감싼 괄호·따옴표와 뒤따른 문장 부호를 걷어낸다. 짝이 맞는 괄호는 주소의 일부로 남기고
+function trimTrailingPunctuation(value: string): string {
+  let end = value.length;
+  while (end > 0 && TRAILING_PUNCTUATION.has(value.charAt(end - 1))) end -= 1;
+  return value.slice(0, end);
+}
+
+// 한글 경로의 끝 글자와 조사는 구분할 수 없어 ASCII 바로 뒤에 붙은 조사만 뗀다 —
+// "…/대한민국에서" 처럼 한글 경로 뒤에 붙은 조사는 그대로 남는다.
+function trimTrailingParticle(value: string): string {
+  const particle = TRAILING_PARTICLES.find((item) => value.endsWith(item));
+  if (particle === undefined) return value;
+  const rest = value.slice(0, -particle.length);
+  return rest.charCodeAt(rest.length - 1) < 0x80 ? rest : value;
+}
+
+// 링크를 감싼 괄호·따옴표와 뒤따른 문장 부호·조사를 걷어낸다. 짝이 맞는 괄호는 주소의 일부로 남기고
 // ("…/Foo_(bar)"), 짝 없는 닫는 괄호에서 주소가 끝난다("누리집(https://www.korea.kr)에서").
 function trimLinkPunctuation(token: string): string {
   let start = 0;
@@ -265,10 +283,8 @@ function trimLinkPunctuation(token: string): string {
       break;
     }
   }
-  while (end > start && TRAILING_PUNCTUATION.has(token.charAt(end - 1))) {
-    end -= 1;
-  }
-  return token.slice(start, end);
+  const wrapped = trimTrailingPunctuation(token.slice(start, end));
+  return trimTrailingPunctuation(trimTrailingParticle(wrapped));
 }
 
 function findWebLinkCandidate(token: string): string | null {

@@ -312,6 +312,29 @@ describe("findLinkInText", () => {
     }
   });
 
+  test("링크 바로 뒤에 붙여 쓴 조사는 떼어낸다", () => {
+    for (const [text, url] of [
+      ["https://naver.me/abc에서 확인", "https://naver.me/abc"],
+      ["naver.me/xYz1에서 봐", "https://naver.me/xYz1"],
+      ["https://toss.tech/a로 들어가", "https://toss.tech/a"],
+      ["https://toss.tech/a이랑 같이", "https://toss.tech/a"],
+      ["https://naver.me/abc에서.", "https://naver.me/abc"],
+    ]) {
+      expect(findLinkInText(text)).toEqual(accepted(url));
+    }
+  });
+
+  // 한글 경로 끝 글자와 조사는 구분할 수 없어 한글 뒤에 붙은 조사는 남긴다.
+  test("한글로 끝나는 경로는 그대로 둔다", () => {
+    for (const url of [
+      "https://namu.wiki/w/대한민국",
+      "https://namu.wiki/w/독도",
+      "https://namu.wiki/w/대한민국에서",
+    ]) {
+      expect(findLinkInText(url)).toEqual(accepted(url));
+    }
+  });
+
   test("주소 안의 짝 맞는 괄호는 남긴다", () => {
     expect(
       findLinkInText("위키: https://en.wikipedia.org/wiki/Foo_(bar)."),
