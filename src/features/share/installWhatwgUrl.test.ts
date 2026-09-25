@@ -5,10 +5,8 @@ const { URL: ReactNativeURL } = jest.requireActual(
   "react-native/Libraries/Blob/URL",
 );
 
-const originalURL = Object.getOwnPropertyDescriptor(globalThis, "URL");
-const originalURLSearchParams = Object.getOwnPropertyDescriptor(
-  globalThis,
-  "URLSearchParams",
+const originalGlobals = ["URL", "URLSearchParams", "TextDecoder"].map(
+  (name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)] as const,
 );
 
 beforeEach(() => {
@@ -20,13 +18,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  if (originalURL) Object.defineProperty(globalThis, "URL", originalURL);
-  if (originalURLSearchParams) {
-    Object.defineProperty(
-      globalThis,
-      "URLSearchParams",
-      originalURLSearchParams,
-    );
+  for (const [name, descriptor] of originalGlobals) {
+    if (descriptor) Object.defineProperty(globalThis, name, descriptor);
   }
 });
 
@@ -46,4 +39,16 @@ test("설치하면 앱과 같은 WHATWG URL 로 검증한다", () => {
   });
   expect(normalizeLinkUrl("tel:123#")).toEqual({ ok: true, url: "tel:123#" });
   expect(new URLSearchParams("a=1&b=2").get("b")).toBe("2");
+});
+
+// 익스텐션의 Hermes 엔 TextEncoder 만 있고 TextDecoder 가 없다 — whatwg-url-minimum 은 불러올 때 둘 다 만든다.
+test("TextDecoder 가 없는 런타임에서도 URL 을 쓸 수 있다", () => {
+  Reflect.deleteProperty(globalThis, "TextDecoder");
+
+  jest.isolateModules(() => {
+    require("./installWhatwgUrl");
+
+    expect(new URL("https://toss.tech/a").href).toBe("https://toss.tech/a");
+    expect(() => new URL("http://example.com:99999")).toThrow(TypeError);
+  });
 });
