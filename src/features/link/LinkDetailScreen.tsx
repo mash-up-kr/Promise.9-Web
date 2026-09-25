@@ -112,6 +112,14 @@ function LinkDetailContent() {
     ...linkQueries.detail(id),
     refetchInterval: (query) => getDetailRefetchInterval(query.state.data),
   });
+  // 앱 전용 링크는 서버가 제목을 만들지 못하고 출처도 스킴 뒤 첫 조각("place")이라 오해를 부른다 —
+  // 주소 자체를 제목으로 보여주고 출처는 숨긴다.
+  const isWebLink = isWebUrl(linkDetail.url);
+  const displayTitle =
+    isWebLink || linkDetail.title.trim() !== ""
+      ? linkDetail.title
+      : linkDetail.url;
+  const displaySource = isWebLink ? linkDetail.source : "";
 
   const router = useRouter();
   const { show } = useSnackbar();
@@ -228,7 +236,7 @@ function LinkDetailContent() {
       show({ message: "보안상 열 수 없는 링크예요" });
       return;
     }
-    if (!isWebUrl(linkDetail.url)) {
+    if (!isWebLink) {
       setIsAppLinkConfirmOpen(true);
       return;
     }
@@ -331,21 +339,23 @@ function LinkDetailContent() {
                 />
               )}
             />
-            <Text variant="heading-1">{linkDetail.title}</Text>
+            <Text variant="heading-1">{displayTitle}</Text>
             <Text variant="caption-1" className="text-opacity-white-70">
-              {linkDetail.source ? (
-                <Text
-                  accessibilityRole="link"
-                  onPress={handleOpenOriginal}
-                  variant="caption-1"
-                  className="text-opacity-white-70 underline"
-                >
-                  {linkDetail.source}
-                </Text>
+              {displaySource ? (
+                <>
+                  <Text
+                    accessibilityRole="link"
+                    onPress={handleOpenOriginal}
+                    variant="caption-1"
+                    className="text-opacity-white-70 underline"
+                  >
+                    {displaySource}
+                  </Text>
+                  <Text variant="caption-1" className="text-opacity-white-40">
+                    {" · "}
+                  </Text>
+                </>
               ) : null}
-              <Text variant="caption-1" className="text-opacity-white-40">
-                {" · "}
-              </Text>
               {formatCalendarDate(linkDetail.savedAt)}
             </Text>
           </View>

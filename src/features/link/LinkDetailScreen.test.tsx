@@ -233,6 +233,29 @@ describe("LinkDetailScreen", () => {
     expect(screen.getByText("toss.tech · 2026.06.19")).toBeOnTheScreen();
   });
 
+  // 앱 전용 링크는 서버가 제목을 만들지 못하고, 출처도 스킴 뒤 첫 조각("place")이라 오해를 부른다.
+  test("제목 없는 앱 전용 링크는 주소를 제목으로 보여주고 출처는 숨긴다", async () => {
+    mockDetailData.current = {
+      ...mockLinkDetail,
+      url: "nmap://place?id=1",
+      title: "",
+      source: "place",
+    };
+    await renderScreen();
+
+    expect(screen.getByText("nmap://place?id=1")).toBeOnTheScreen();
+    expect(screen.queryByText("place")).toBeNull();
+    expect(screen.getByText("2026.06.19")).toBeOnTheScreen();
+  });
+
+  test("제목 없는 웹 링크(처리 중)는 주소로 대신하지 않는다", async () => {
+    mockDetailData.current = { ...mockLinkDetail, title: "" };
+    await renderScreen();
+
+    expect(screen.queryByText(mockLinkDetail.url)).toBeNull();
+    expect(screen.getByText("toss.tech · 2026.06.19")).toBeOnTheScreen();
+  });
+
   test("도메인 주소를 누르면 원문 링크를 연다", async () => {
     const user = userEvent.setup();
     await renderScreen();
