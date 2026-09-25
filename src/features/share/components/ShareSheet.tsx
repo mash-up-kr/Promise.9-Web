@@ -165,7 +165,7 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
             accessibilityLabel="시트 닫기"
             disabled={isLocked}
             onPress={dismiss}
-            className="flex-1 bg-black"
+            className="flex-1 bg-opacity-black-100"
           />
         </Animated.View>
         <Animated.View style={{ transform: [{ translateY: sheetTranslateY }] }}>
