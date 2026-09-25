@@ -101,6 +101,15 @@ describe("LinkCard", () => {
     ).toBeOnTheScreen();
   });
 
+  // 앱 전용 링크(nmap://place?id=1)의 출처는 스킴 뒤 첫 조각이라 도메인처럼 보이지 않는다.
+  test("출처에 점이 없으면 '제목 없는 링크'를 보여준다", async () => {
+    await renderCard({ title: "", source: "place" });
+    expect(
+      screen.getByRole("button", { name: "제목 없는 링크" }),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText("place")).toBeNull();
+  });
+
   test("썸네일 URL 이 있으면 이미지를 렌더한다", async () => {
     await renderCard({ thumbnailUrl: "https://static.example.com/t.png" });
     expect(screen.getByTestId("link-card-thumbnail-image")).toBeOnTheScreen();
