@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet } from "react-native";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+
+import { KeyboardAvoidingView } from "./dialogKeyboardAvoidingView";
 
 export interface DialogProps {
   children: ReactNode;
