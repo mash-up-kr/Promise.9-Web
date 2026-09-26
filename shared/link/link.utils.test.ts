@@ -335,6 +335,27 @@ describe("findLinkInText", () => {
     }
   });
 
+  // 이모지는 이체 선택자(U+FE0F)·ZWJ 로 이어 쓰기도 해 보이지 않는 문자로 거부되면 헷갈린다 — 거기서 링크를 끊는다.
+  test("링크 바로 뒤에 붙인 이모지에서 링크가 끝난다", () => {
+    const heart = String.fromCodePoint(0x2764, 0xfe0f);
+    const thumbsUp = String.fromCodePoint(0x1f44d, 0x1f3fd);
+    const family = String.fromCodePoint(0x1f468, 0x200d, 0x1f469);
+    const star = String.fromCodePoint(0x2b50);
+    for (const [text, url] of [
+      [`https://naver.me/abc${heart}`, "https://naver.me/abc"],
+      [`naver.me/xYz1${heart} 가보자`, "https://naver.me/xYz1"],
+      [`https://toss.tech/a${thumbsUp}`, "https://toss.tech/a"],
+      [`https://toss.tech/a${family}`, "https://toss.tech/a"],
+      [`https://toss.tech/a${star}에서`, "https://toss.tech/a"],
+    ]) {
+      expect(findLinkInText(text)).toEqual(accepted(url));
+    }
+    // 직접 입력한 주소는 그대로 거부한다.
+    expect(normalizeLinkUrl(`https://naver.me/abc${heart}`)).toEqual(
+      rejected("invisible-char"),
+    );
+  });
+
   test("주소 안의 짝 맞는 괄호는 남긴다", () => {
     expect(
       findLinkInText("위키: https://en.wikipedia.org/wiki/Foo_(bar)."),

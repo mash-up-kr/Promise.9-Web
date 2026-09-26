@@ -124,12 +124,16 @@ function isBlockedScheme(scheme: string): boolean {
   );
 }
 
+function isInRanges(
+  code: number,
+  ranges: ReadonlyArray<readonly [number, number]>,
+): boolean {
+  return ranges.some(([from, to]) => code >= from && code <= to);
+}
+
 function hasInvisibleChar(value: string): boolean {
   for (const char of value) {
-    const code = char.codePointAt(0) ?? 0;
-    if (
-      INVISIBLE_CHAR_RANGES.some(([from, to]) => code >= from && code <= to)
-    ) {
+    if (isInRanges(char.codePointAt(0) ?? 0, INVISIBLE_CHAR_RANGES)) {
       return true;
     }
   }
@@ -246,6 +250,23 @@ const CLOSING_TO_OPENING = new Map([
   ["＞", "＜"],
 ]);
 const OPENING_BRACKETS = new Set(CLOSING_TO_OPENING.values());
+// 이모지·그림 문자와 이를 잇는 문자(ZWJ·이체 선택자·키캡) — 링크 바로 뒤에 붙여 쓰면 거기서 링크가 끝난다.
+const PICTOGRAPHIC_RANGES: ReadonlyArray<readonly [number, number]> = [
+  [0x200d, 0x200d],
+  [0x20e3, 0x20e3],
+  [0x2190, 0x21ff],
+  [0x2300, 0x23ff],
+  [0x2460, 0x24ff],
+  [0x25a0, 0x27bf],
+  [0x2900, 0x297f],
+  [0x2b00, 0x2bff],
+  [0x3030, 0x3030],
+  [0x303d, 0x303d],
+  [0x3297, 0x3297],
+  [0x3299, 0x3299],
+  [0xfe0e, 0xfe0f],
+  [0x1f000, 0x1faff],
+];
 const LEADING_PUNCTUATION = new Set([...OPENING_BRACKETS, '"', "'"]);
 const TRAILING_PUNCTUATION = new Set([..."\"'.,!?;:。、，！？：；"]);
 // 링크 바로 뒤에 붙여 쓴 조사("…/abc에서") — 두 글자 조사를 먼저 본다.
@@ -268,13 +289,14 @@ function trimTrailingParticle(value: string): string {
 }
 
 // 링크를 감싼 괄호·따옴표와 뒤따른 문장 부호·조사를 걷어낸다. 짝이 맞는 괄호는 주소의 일부로 남기고
-// ("…/Foo_(bar)"), 짝 없는 닫는 괄호에서 주소가 끝난다("누리집(https://www.korea.kr)에서").
+// ("…/Foo_(bar)"), 짝 없는 닫는 괄호나 이모지에서 주소가 끝난다("누리집(https://www.korea.kr)에서").
 function trimLinkPunctuation(token: string): string {
   let start = 0;
   while (LEADING_PUNCTUATION.has(token.charAt(start))) start += 1;
   const openBrackets: string[] = [];
   let end = start;
   for (; end < token.length; end += 1) {
+    if (isInRanges(token.codePointAt(end) ?? 0, PICTOGRAPHIC_RANGES)) break;
     const char = token.charAt(end);
     const opening = CLOSING_TO_OPENING.get(char);
     if (opening === undefined) {
