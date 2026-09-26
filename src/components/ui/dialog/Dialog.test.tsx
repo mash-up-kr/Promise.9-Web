@@ -8,16 +8,11 @@ jest.mock("./dialogKeyboardAvoidingView", () => {
   };
 });
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
-import { Text, View } from "react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { Dialog } from "./Dialog";
-
-const metrics: Metrics = {
-  frame: { x: 0, y: 0, width: 375, height: 812 },
-  insets: { top: 47, left: 0, right: 0, bottom: 34 },
-};
 
 describe("Dialog", () => {
   test("카드 내용을 그대로 렌더한다", async () => {
@@ -83,6 +78,12 @@ describe("Dialog", () => {
 });
 
 describe("Dialog — iOS 공유 익스텐션", () => {
+  // 익스텐션 root 는 상태바 아래에서 시작해 그 Safe Area 는 top 0 이다. 모달은 화면 맨 위부터 덮는다.
+  const extensionRootMetrics: Metrics = {
+    frame: { x: 0, y: 0, width: 375, height: 750 },
+    insets: { top: 0, left: 0, right: 0, bottom: 34 },
+  };
+
   beforeEach(() => {
     globalThis.__promise9ShareExtension = true;
   });
@@ -91,16 +92,37 @@ describe("Dialog — iOS 공유 익스텐션", () => {
     globalThis.__promise9ShareExtension = undefined;
   });
 
-  async function renderInExtension() {
+  async function renderInExtension({ hasTextInput = false } = {}) {
     await render(
-      <SafeAreaProvider initialMetrics={metrics}>
-        <Dialog onDismiss={() => {}}>
+      <SafeAreaProvider initialMetrics={extensionRootMetrics}>
+        <Dialog onDismiss={() => {}} hasTextInput={hasTextInput}>
           <View testID="card">
             <Text>내용</Text>
           </View>
         </Dialog>
       </SafeAreaProvider>,
     );
+  }
+
+  // jest 엔 네이티브 측정이 없다 — 익스텐션 root 안쪽의 Safe Area 공급자(모달 자체)가 잰 값을 알려준다.
+  async function reportModalSafeArea(top: number) {
+    const [, modalProvider] = screen.container.queryAll(
+      (node) => typeof node.props.onInsetsChange === "function",
+    );
+    expect(modalProvider).toBeDefined();
+    await act(async () => {
+      modalProvider?.props.onInsetsChange({
+        nativeEvent: {
+          insets: { top, left: 0, right: 0, bottom: 34 },
+          frame: { x: 0, y: 0, width: 375, height: 812 },
+        },
+      });
+    });
+  }
+
+  function scrollViewOf(card: ReturnType<typeof screen.getByTestId>) {
+    // RN ScrollView 목은 <RCTScrollView><View>{children}</View></RCTScrollView> 로 그린다.
+    return card.parent?.parent;
   }
 
   test("앱에서는 키보드 회피 컨테이너로 띄운다", async () => {
@@ -115,17 +137,44 @@ describe("Dialog — iOS 공유 익스텐션", () => {
   });
 
   // 익스텐션 프로세스는 RN 키보드 이벤트 좌표가 0 으로 와서 키보드 회피가 카드를 화면 밖으로 민다.
-  test("키보드 회피 없이 카드를 상단 Safe Area 바로 아래에 붙인다", async () => {
+  test("입력이 없는 카드(피커·알림)는 키보드 회피 없이 가운데 둔다", async () => {
     await renderInExtension();
 
     expect(screen.queryByTestId("keyboard-avoiding-view")).toBeNull();
-    expect(screen.getByTestId("card").parent).toHaveStyle({
-      paddingTop: 47 + 16,
-    });
+    const card = screen.getByTestId("card");
+    expect(scrollViewOf(card)?.props).not.toHaveProperty(
+      "automaticallyAdjustKeyboardInsets",
+    );
+    expect(
+      StyleSheet.flatten(card.parent?.props.style)?.paddingTop,
+    ).toBeUndefined();
   });
 
-  test("배경과 카드를 같은 컨테이너의 형제로 놓는다", async () => {
-    await renderInExtension();
+  test("입력 카드는 키보드 회피 없이, 모달 안에서 잰 상단 Safe Area 아래에 붙인다", async () => {
+    await renderInExtension({ hasTextInput: true });
+    await reportModalSafeArea(62);
+
+    expect(screen.queryByTestId("keyboard-avoiding-view")).toBeNull();
+    const scrollView = scrollViewOf(screen.getByTestId("card"));
+    expect(
+      StyleSheet.flatten(scrollView?.props.contentContainerStyle),
+    ).toMatchObject({ paddingTop: 62 + 16 });
+  });
+
+  // 작은 화면(SE)에선 키보드가 카드 아래 버튼을 가린다 — 네이티브 키보드 인셋으로 스크롤해 꺼낸다.
+  test("입력 카드는 키보드에 가려도 스크롤해 버튼까지 닿는다", async () => {
+    await renderInExtension({ hasTextInput: true });
+
+    const scrollView = scrollViewOf(screen.getByTestId("card"));
+    expect(scrollView?.props.automaticallyAdjustKeyboardInsets).toBe(true);
+    expect(scrollView?.props.keyboardShouldPersistTaps).toBe("handled");
+  });
+
+  test.each([
+    false,
+    true,
+  ])("배경과 카드를 같은 컨테이너의 형제로 놓는다(입력 카드 %s)", async (hasTextInput) => {
+    await renderInExtension({ hasTextInput });
 
     expect(screen.getByTestId("card").parent).toBe(
       screen.getByLabelText("닫기").parent,

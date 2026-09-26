@@ -1,10 +1,13 @@
 import type { PropsWithChildren, ReactNode } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import { KeyboardAvoidingView } from "./dialogKeyboardAvoidingView";
 
-const EXTENSION_TOP_GAP = 16;
+const EXTENSION_EDGE_GAP = 16;
 
 export interface DialogProps {
   children: ReactNode;
@@ -14,6 +17,11 @@ export interface DialogProps {
    */
   onDismiss?: () => void;
   dismissAccessibilityLabel?: string;
+  /**
+   * 카드에 텍스트 입력이 있는지 — iOS 공유 익스텐션에서만 쓴다. 입력 카드는 키보드에 가리지 않게
+   * 위에 붙여 띄우고, 나머지(피커·알림)는 가운데 둔다.
+   */
+  hasTextInput?: boolean;
 }
 
 /**
@@ -32,10 +40,13 @@ export function Dialog({
   children,
   onDismiss,
   dismissAccessibilityLabel = "닫기",
+  hasTextInput = false,
 }: DialogProps) {
-  const Container = globalThis.__promise9ShareExtension
-    ? TopAnchoredContainer
-    : CenteredContainer;
+  const Container = !globalThis.__promise9ShareExtension
+    ? KeyboardAvoidingContainer
+    : hasTextInput
+      ? ExtensionInputContainer
+      : CenteredContainer;
 
   return (
     <Container>
@@ -53,7 +64,7 @@ export function Dialog({
   );
 }
 
-function CenteredContainer({ children }: PropsWithChildren) {
+function KeyboardAvoidingContainer({ children }: PropsWithChildren) {
   return (
     <KeyboardAvoidingView
       behavior="padding"
@@ -65,15 +76,40 @@ function CenteredContainer({ children }: PropsWithChildren) {
 }
 
 // iOS 공유 익스텐션 프로세스는 RN 키보드 이벤트 좌표가 0 으로 와서 키보드 회피가 카드를 화면 밖으로
-// 밀어낸다 — 회피하지 않고 카드를 상단에 붙여 키보드가 올라와도 가리지 않게 한다.
-function TopAnchoredContainer({ children }: PropsWithChildren) {
+// 밀어낸다 — 익스텐션에선 회피하지 않는다. 키보드가 뜨지 않는 카드는 그대로 가운데 둔다.
+function CenteredContainer({ children }: PropsWithChildren) {
+  return (
+    <View className="flex-1 items-center justify-center px-5">{children}</View>
+  );
+}
+
+// 입력 카드는 위에 붙여 키보드가 올라와도 입력이 보이게 하고, 작은 화면에서 가려진 버튼은
+// 네이티브 키보드 인셋으로 스크롤해 꺼낸다(EntrySheet 와 같은 방식).
+// 익스텐션 root 는 상태바 아래에서 시작해 그 Safe Area 는 top 0 이다 — 화면 맨 위부터 덮는 모달 안에서 다시 잰다.
+function ExtensionInputContainer({ children }: PropsWithChildren) {
+  return (
+    <SafeAreaProvider>
+      <TopAnchoredScrollView>{children}</TopAnchoredScrollView>
+    </SafeAreaProvider>
+  );
+}
+
+function TopAnchoredScrollView({ children }: PropsWithChildren) {
   const insets = useSafeAreaInsets();
   return (
-    <View
-      className="flex-1 items-center px-5"
-      style={{ paddingTop: insets.top + EXTENSION_TOP_GAP }}
+    <ScrollView
+      automaticallyAdjustKeyboardInsets
+      keyboardShouldPersistTaps="handled"
+      // 배경(dim)도 스크롤 안에 있어 튕기면 dim 바깥이 드러난다.
+      bounces={false}
+      className="flex-1"
+      contentContainerClassName="grow items-center px-5"
+      contentContainerStyle={{
+        paddingTop: insets.top + EXTENSION_EDGE_GAP,
+        paddingBottom: insets.bottom + EXTENSION_EDGE_GAP,
+      }}
     >
       {children}
-    </View>
+    </ScrollView>
   );
 }
