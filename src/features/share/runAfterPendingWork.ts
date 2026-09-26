@@ -26,10 +26,12 @@ export function runAfterPendingWork(
   const timeout = new Promise<void>((resolve) => {
     timer = setTimeout(resolve, PENDING_WORK_TIMEOUT_MS);
   });
-  void Promise.race([Promise.all(pendingWork), timeout]).then(() => {
+  // 기다리던 작업이 실패해도 run 은 부른다 — 결과는 작업을 시작한 쪽이 처리한다.
+  const finish = () => {
     clearTimeout(timer);
     run();
-  });
+  };
+  void Promise.race([Promise.all(pendingWork), timeout]).then(finish, finish);
 }
 
 function getPendingMutations(queryClient: QueryClient): Promise<void> | null {

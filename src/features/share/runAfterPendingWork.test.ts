@@ -71,6 +71,16 @@ test("진행 중인 요청(mutation)이 끝난 뒤에 부른다", async () => {
   expect(run).toHaveBeenCalledTimes(1);
 });
 
+// 기다리던 작업이 실패해도 닫기가 멈춰 있으면 안 된다.
+test("기다리던 작업이 실패해도 부른다", async () => {
+  mockGetPendingRefresh.mockReturnValue(Promise.reject(new Error("refresh")));
+  const run = jest.fn();
+
+  runAfterPendingWork(run);
+  await flush();
+  expect(run).toHaveBeenCalledTimes(1);
+});
+
 test("끝나지 않는 작업은 제한 시간까지만 기다린다", async () => {
   mockGetPendingRefresh.mockReturnValue(new Promise(() => {}));
   const run = jest.fn();
