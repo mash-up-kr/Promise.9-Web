@@ -287,6 +287,8 @@ describe("CreateLinkSheet", () => {
     await pressSave();
 
     expect(await screen.findByText("올바른 링크 주소가 아니에요")).toBeTruthy();
+    // 같은 입력으로 다시 저장해도 결과가 같아 다시 시도는 두지 않는다.
+    expect(screen.queryByText("다시 시도")).toBeNull();
     expect(mockPost).not.toHaveBeenCalled();
     expect(mockBack).not.toHaveBeenCalled();
     expect(
