@@ -43,7 +43,7 @@ index 3816339ae033c7b49c7d683d4c432888d5080788..27f41d12b95e29fa951d46c48abb0ebc
          PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
          PRODUCT_NAME: `"${targetName}"`,
 diff --git a/plugin/swift/ShareExtensionViewController.swift b/plugin/swift/ShareExtensionViewController.swift
-index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..da6405064e59ac253af389e14bf36962a91a06c6 100644
+index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d641a47087 100644
 --- a/plugin/swift/ShareExtensionViewController.swift
 +++ b/plugin/swift/ShareExtensionViewController.swift
 @@ -1,6 +1,7 @@
@@ -308,7 +308,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..da6405064e59ac253af389e14bf36962
                }
                group.leave()
              }
-@@ -604,7 +713,48 @@ class ShareExtensionViewController: UIViewController {
+@@ -604,7 +713,38 @@ class ShareExtensionViewController: UIViewController {
      }
      
      group.notify(queue: .main) {
@@ -331,29 +331,19 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..da6405064e59ac253af389e14bf36962
 +    return textTypes.first { $0.conforms(to: .plainText) } ?? textTypes.first ?? .text
 +  }
 +
-+  // 텍스트는 String 말고도 NSAttributedString, 서식 문서(RTF·HTML) Data, UTF-8 Data 로 온다.
++  // 텍스트는 String 말고도 NSAttributedString, RTF Data, 인코딩된 텍스트 Data 로 온다.
++  // HTML 은 변환하지 않고 마크업째 읽는다 — WebKit 변환은 메인 스레드를 오래 잡고 메모리를 쓰며 링크 주소를 잃는다.
 +  private static func sharedText(from item: NSSecureCoding?, type: UTType) -> String? {
 +    if let text = item as? String { return text }
 +    if let attributed = item as? NSAttributedString { return attributed.string }
 +    guard let data = item as? Data else { return nil }
-+    let documentType: NSAttributedString.DocumentType?
-+    if type.conforms(to: .html) {
-+      documentType = .html
-+    } else if type.conforms(to: .rtfd) || type.conforms(to: .flatRTFD) {
-+      documentType = .rtfd
-+    } else if type.conforms(to: .rtf) {
-+      documentType = .rtf
-+    } else {
-+      documentType = nil
++    if type.conforms(to: .rtf) {
++      return try? NSAttributedString(
++        data: data,
++        options: [.documentType: NSAttributedString.DocumentType.rtf],
++        documentAttributes: nil
++      ).string
 +    }
-+    if let documentType,
-+       let attributed = try? NSAttributedString(
-+         data: data,
-+         options: [.documentType: documentType, .characterEncoding: String.Encoding.utf8.rawValue],
-+         documentAttributes: nil
-+       ) {
-+      return attributed.string
-+    }
-+    return String(data: data, encoding: .utf8)
++    return String(data: data, encoding: .utf8) ?? String(data: data, encoding: .utf16)
 +  }
  }
