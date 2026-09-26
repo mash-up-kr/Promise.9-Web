@@ -43,7 +43,7 @@ index 3816339ae033c7b49c7d683d4c432888d5080788..27f41d12b95e29fa951d46c48abb0ebc
          PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
          PRODUCT_NAME: `"${targetName}"`,
 diff --git a/plugin/swift/ShareExtensionViewController.swift b/plugin/swift/ShareExtensionViewController.swift
-index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d641a47087 100644
+index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..f3587f4b7b71f7331e107ef5bfe38257c6a122a5 100644
 --- a/plugin/swift/ShareExtensionViewController.swift
 +++ b/plugin/swift/ShareExtensionViewController.swift
 @@ -1,6 +1,7 @@
@@ -75,7 +75,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d6
        if var components = URLComponents(url: bundleURL, resolvingAgainstBaseURL: false) {
          components.queryItems = (components.queryItems ?? []) + [URLQueryItem(name: "shareExtension", value: "true")]
          return components.url ?? bundleURL
-@@ -45,6 +47,63 @@ class ShareExtensionViewController: UIViewController {
+@@ -45,6 +47,66 @@ class ShareExtensionViewController: UIViewController {
    var reactNativeFactory: RCTReactNativeFactory?
    var reactNativeFactoryDelegate: RCTReactNativeFactoryDelegate?
    private var isCleanedUp = false
@@ -94,6 +94,9 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d6
 +  // 호스트가 익스텐션 연결을 정리하기 전에 끝내면("Connection to plugin interrupted while in use")
 +  // 호스트의 공유 시트가 닫히지 않고 남는다 — 정리할 시간을 넉넉히 둔다.
 +  private static let exitDelay: TimeInterval = 2.0
++  // 시스템 닫기(쓸어 내리기)는 JS 의 닫기 전 대기(진행 중인 토큰 재발급·요청, 최대 5초)를 거치지 않는다 —
++  // 그만큼 기다렸다가 끝낸다.
++  private static let systemDismissExitDelay: TimeInterval = 5.0
 +  // 대기 중에 일시정지됐다가 한참 뒤 재개되면 새 공유가 이 프로세스를 쓰고 있을 수 있다 — 늦으면 끝내지 않는다.
 +  private static let exitLateTolerance: TimeInterval = 1.5
 +  private static var currentSession = 0
@@ -112,7 +115,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d6
 +  // 기다리는 사이 일시정지되면 종료가 밀려 누수가 남는다(호스트가 백그라운드로 가는 "링크 보러가기" 등) —
 +  // 기다리는 동안 백그라운드 활동으로 프로세스를 깨워 둔다. 그 전에 시스템이 거둬 가면(expired) 끝내지 않는다:
 +  // 호스트 정리를 끊거나 새 공유를 죽이느니 남겨 두는 편이 낫다.
-+  private static func scheduleProcessExit(for session: Int) {
++  private static func scheduleProcessExit(for session: Int, after delay: TimeInterval = exitDelay) {
 +    guard session == currentSession, requestEndedAt == nil else { return }
 +    let endedAt = Date()
 +    requestEndedAt = endedAt
@@ -122,9 +125,9 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d6
 +        expiration.signal()
 +        return
 +      }
-+      guard expiration.wait(timeout: .now() + exitDelay) == .timedOut else { return }
++      guard expiration.wait(timeout: .now() + delay) == .timedOut else { return }
 +      DispatchQueue.main.sync {
-+        let lateness = Date().timeIntervalSince(endedAt) - exitDelay
++        let lateness = Date().timeIntervalSince(endedAt) - delay
 +        guard session == currentSession, lateness < exitLateTolerance else { return }
 +        // exit() 는 C++ 정적 소멸자를 돌려 아직 살아 있는 JS 스레드와 경합한다 — 정리 없이 바로 끝낸다.
 +        _exit(0)
@@ -139,28 +142,30 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d6
  
    deinit {
      print("🧹 ShareExtensionViewController deinit")
-@@ -61,6 +120,9 @@ class ShareExtensionViewController: UIViewController {
+@@ -61,6 +123,7 @@ class ShareExtensionViewController: UIViewController {
    
    override func viewDidLoad() {
      super.viewDidLoad()
 +    requestSession = ShareExtensionViewController.startSession()
-+    // 시스템 쓸어 닫기는 JS 의 대기(진행 중인 토큰 재발급·요청)를 건너뛴다 — 닫기는 모두 JS 시트로 한다.
-+    isModalInPresentation = true
      setupLoadingIndicator()
      isCleanedUp = false
      
-@@ -81,10 +143,31 @@ class ShareExtensionViewController: UIViewController {
+@@ -81,10 +144,35 @@ class ShareExtensionViewController: UIViewController {
      super.viewDidDisappear(animated)
      // we need to clean up when the view is closed via a swipe
      cleanupAfterClose()
-+    // JS close(completeRequest)를 거치지 않고 닫힌 경우(isModalInPresentation 을 넘는 시스템 닫기)에도 종료를 예약한다.
++    // JS close(completeRequest)를 거치지 않고 닫힌 경우(시스템 쓸어 닫기)에도 종료를 예약한다.
 +    // 이 VC 가 다른 VC(로그인 시트 등)를 띄워 가려진 것은 닫힘이 아니고,
 +    // 호스트 앱 열기가 진행 중이면 그 완료 콜백이 예약한다.
 +    let session = requestSession
 +    guard presentedViewController == nil,
 +          ShareExtensionViewController.hostAppOpeningSession != session else { return }
 +    print("[ShareExtension] 화면이 닫혀 프로세스 종료를 예약한다(isBeingDismissed=\(isBeingDismissed))")
-+    ShareExtensionViewController.scheduleProcessExit(for: session)
++    // JS 닫기 중에 그 완료 콜백보다 먼저 불렸으면 JS 닫기의 시한을 따른다.
++    let delay = hasEndedRequest
++      ? ShareExtensionViewController.exitDelay
++      : ShareExtensionViewController.systemDismissExitDelay
++    ShareExtensionViewController.scheduleProcessExit(for: session, after: delay)
    }
    
    func close() {
@@ -182,7 +187,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d6
      // we need to clean up when the view is closed via the close() method in react native
      cleanupAfterClose()
    }
-@@ -98,7 +181,7 @@ class ShareExtensionViewController: UIViewController {
+@@ -98,7 +186,7 @@ class ShareExtensionViewController: UIViewController {
        
        reactNativeFactoryDelegate = ReactNativeDelegate()
        reactNativeFactoryDelegate!.dependencyProvider = RCTAppDependencyProvider()
@@ -191,7 +196,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d6
        
        var initialProps = sharedData ?? [:]
        
-@@ -130,6 +213,9 @@ class ShareExtensionViewController: UIViewController {
+@@ -130,6 +218,9 @@ class ShareExtensionViewController: UIViewController {
        
        configureRootView(reactNativeRootView, withBackgroundColorDict: backgroundFromInfoPlist, withHeight: heightFromInfoPlist)
        view.addSubview(reactNativeRootView)
@@ -201,7 +206,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d6
  
        // Hide loading indicator once React content is ready
        self.loadingIndicator.stopAnimating()
-@@ -171,6 +257,7 @@ class ShareExtensionViewController: UIViewController {
+@@ -171,6 +262,7 @@ class ShareExtensionViewController: UIViewController {
    }
    
    private func openHostApp(path: String?) {
@@ -209,7 +214,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d6
      guard let scheme = Bundle.main.object(forInfoDictionaryKey: "HostAppScheme") as? String else { return }
      var urlComponents = URLComponents()
      urlComponents.scheme = scheme
-@@ -202,21 +289,34 @@ class ShareExtensionViewController: UIViewController {
+@@ -202,21 +294,34 @@ class ShareExtensionViewController: UIViewController {
    }
    
    @objc @discardableResult private func openURL(_ url: URL) -> Bool {
@@ -246,7 +251,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d6
          responder2!.perform(selector, with: url)
          return true
        }
-@@ -227,13 +327,13 @@ class ShareExtensionViewController: UIViewController {
+@@ -227,13 +332,13 @@ class ShareExtensionViewController: UIViewController {
    }
    
    private func setupNotificationCenterObserver() {
@@ -262,7 +267,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d6
        DispatchQueue.main.async {
          if let userInfo = notification.userInfo {
            if let path = userInfo["path"] as? String {
-@@ -242,13 +342,16 @@ class ShareExtensionViewController: UIViewController {
+@@ -242,13 +347,16 @@ class ShareExtensionViewController: UIViewController {
          }
        }
      }
@@ -280,7 +285,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d6
      
      // Remove React Native view and deallocate resources
      view.subviews.forEach { subview in
-@@ -279,6 +382,9 @@ class ShareExtensionViewController: UIViewController {
+@@ -279,6 +387,9 @@ class ShareExtensionViewController: UIViewController {
      }
      
      var sharedItems: [String: Any] = [:]
@@ -290,7 +295,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d6
      
      let group = DispatchGroup()
      
-@@ -368,11 +474,14 @@ class ShareExtensionViewController: UIViewController {
+@@ -368,11 +479,14 @@ class ShareExtensionViewController: UIViewController {
  
          // Only check for plain text if no URL was found
          if !provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) && provider.hasItemConformingToTypeIdentifier(UTType.text.identifier) {
@@ -308,7 +313,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..a921e6344eb12bf470b70ba51ade82d6
                }
                group.leave()
              }
-@@ -604,7 +713,38 @@ class ShareExtensionViewController: UIViewController {
+@@ -604,7 +718,38 @@ class ShareExtensionViewController: UIViewController {
      }
      
      group.notify(queue: .main) {
