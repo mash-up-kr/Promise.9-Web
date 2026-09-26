@@ -125,10 +125,13 @@ describe("Dialog — iOS 공유 익스텐션", () => {
     return card.parent?.parent;
   }
 
-  test("앱에서는 키보드 회피 컨테이너로 띄운다", async () => {
+  test.each([
+    false,
+    true,
+  ])("앱에서는 키보드 회피 컨테이너로 띄운다(입력 카드 %s)", async (hasTextInput) => {
     globalThis.__promise9ShareExtension = undefined;
     await render(
-      <Dialog>
+      <Dialog hasTextInput={hasTextInput}>
         <Text>내용</Text>
       </Dialog>,
     );
