@@ -52,7 +52,7 @@ const renderScreen = () =>
     </QueryClientProvider>,
   );
 
-test("애플 미지원 플랫폼(웹·안드로이드)에선 애플 버튼을 렌더하지 않는다", async () => {
+test("애플 미지원 플랫폼(안드로이드)에선 애플 버튼을 렌더하지 않는다", async () => {
   await renderScreen();
 
   expect(screen.queryByRole("button", { name: "Apple로 계속하기" })).toBeNull();

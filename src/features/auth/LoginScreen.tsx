@@ -139,7 +139,7 @@ export function LoginScreen() {
 
       <View className="gap-3 px-5">
         {Object.entries(SOCIAL_PROVIDERS)
-          // 미지원 플랫폼의 provider(웹·안드로이드의 애플)는 노출하지 않는다.
+          // 미지원 플랫폼의 provider(안드로이드의 애플)는 노출하지 않는다.
           .filter(([, config]) => config.enabled)
           .map(([key, config]) => {
             const provider = key as SocialProvider;
