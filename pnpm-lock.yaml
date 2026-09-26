@@ -9,7 +9,7 @@ overrides:
   '@types/react': 19.2.17
 
 patchedDependencies:
-  expo-share-extension@5.0.6: 09cf1959b561eeef60272f37dd07572b394b6d71636b8b8eaa3274f8f2449a84
+  expo-share-extension@5.0.6: 389818b975a0666324de5e55d2084f13a8a7820de9612f082852c312d43fda25
   react-native-css: 142d25a8c82ea6cf8c6ea2b3312a880d5316ca6669aaf73371e1f782bc79cb81
 
 importers:
@@ -105,7 +105,7 @@ importers:
         version: 56.0.4(expo@56.0.12)
       expo-share-extension:
         specifier: 5.0.6
-        version: 5.0.6(patch_hash=09cf1959b561eeef60272f37dd07572b394b6d71636b8b8eaa3274f8f2449a84)(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
+        version: 5.0.6(patch_hash=389818b975a0666324de5e55d2084f13a8a7820de9612f082852c312d43fda25)(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
       expo-splash-screen:
         specifier: ~56.0.10
         version: 56.0.10(expo@56.0.12)(typescript@6.0.3)
@@ -8787,7 +8787,7 @@ snapshots:
 
   expo-server@56.0.5: {}
 
-  expo-share-extension@5.0.6(patch_hash=09cf1959b561eeef60272f37dd07572b394b6d71636b8b8eaa3274f8f2449a84)(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3):
+  expo-share-extension@5.0.6(patch_hash=389818b975a0666324de5e55d2084f13a8a7820de9612f082852c312d43fda25)(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3):
     dependencies:
       expo: 56.0.12(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(@expo/metro-runtime@56.0.15)(expo-router@56.2.11)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-worklets@0.8.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
       react: 19.2.3

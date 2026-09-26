@@ -43,7 +43,7 @@ index 3816339ae033c7b49c7d683d4c432888d5080788..27f41d12b95e29fa951d46c48abb0ebc
          PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
          PRODUCT_NAME: `"${targetName}"`,
 diff --git a/plugin/swift/ShareExtensionViewController.swift b/plugin/swift/ShareExtensionViewController.swift
-index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..75992f88d9e3762b05bca39516a4ecfa04994d72 100644
+index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..56015b9bb7e4a0d7a765396c281f0417eb440671 100644
 --- a/plugin/swift/ShareExtensionViewController.swift
 +++ b/plugin/swift/ShareExtensionViewController.swift
 @@ -1,6 +1,7 @@
@@ -135,19 +135,21 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..75992f88d9e3762b05bca39516a4ecfa
    deinit {
      print("🧹 ShareExtensionViewController deinit")
      cleanupAfterClose()
-@@ -61,6 +116,7 @@ class ShareExtensionViewController: UIViewController {
+@@ -61,6 +116,9 @@ class ShareExtensionViewController: UIViewController {
    
    override func viewDidLoad() {
      super.viewDidLoad()
 +    requestSession = ShareExtensionViewController.startSession()
++    // 시스템 쓸어 닫기는 JS 의 대기(진행 중인 토큰 재발급·요청)를 건너뛴다 — 닫기는 모두 JS 시트로 한다.
++    isModalInPresentation = true
      setupLoadingIndicator()
      isCleanedUp = false
      
-@@ -81,10 +137,29 @@ class ShareExtensionViewController: UIViewController {
+@@ -81,10 +139,29 @@ class ShareExtensionViewController: UIViewController {
      super.viewDidDisappear(animated)
      // we need to clean up when the view is closed via a swipe
      cleanupAfterClose()
-+    // 카드를 쓸어 내려 닫으면 JS close(completeRequest)를 거치지 않는다 — 여기서도 종료를 예약한다.
++    // JS close(completeRequest)를 거치지 않고 닫힌 경우(isModalInPresentation 을 넘는 시스템 닫기)에도 종료를 예약한다.
 +    // 이 VC 가 다른 VC(로그인 시트 등)를 띄워 가려진 것은 닫힘이 아니고,
 +    // 호스트 앱 열기가 진행 중이면 그 완료 콜백이 예약한다.
 +    let session = requestSession
@@ -174,7 +176,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..75992f88d9e3762b05bca39516a4ecfa
      // we need to clean up when the view is closed via the close() method in react native
      cleanupAfterClose()
    }
-@@ -98,7 +173,7 @@ class ShareExtensionViewController: UIViewController {
+@@ -98,7 +175,7 @@ class ShareExtensionViewController: UIViewController {
        
        reactNativeFactoryDelegate = ReactNativeDelegate()
        reactNativeFactoryDelegate!.dependencyProvider = RCTAppDependencyProvider()
@@ -183,7 +185,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..75992f88d9e3762b05bca39516a4ecfa
        
        var initialProps = sharedData ?? [:]
        
-@@ -130,6 +205,9 @@ class ShareExtensionViewController: UIViewController {
+@@ -130,6 +207,9 @@ class ShareExtensionViewController: UIViewController {
        
        configureRootView(reactNativeRootView, withBackgroundColorDict: backgroundFromInfoPlist, withHeight: heightFromInfoPlist)
        view.addSubview(reactNativeRootView)
@@ -193,7 +195,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..75992f88d9e3762b05bca39516a4ecfa
  
        // Hide loading indicator once React content is ready
        self.loadingIndicator.stopAnimating()
-@@ -202,21 +280,34 @@ class ShareExtensionViewController: UIViewController {
+@@ -202,21 +282,34 @@ class ShareExtensionViewController: UIViewController {
    }
    
    @objc @discardableResult private func openURL(_ url: URL) -> Bool {
@@ -230,7 +232,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..75992f88d9e3762b05bca39516a4ecfa
          responder2!.perform(selector, with: url)
          return true
        }
-@@ -247,6 +338,7 @@ class ShareExtensionViewController: UIViewController {
+@@ -247,6 +340,7 @@ class ShareExtensionViewController: UIViewController {
    private func cleanupAfterClose() {
      if isCleanedUp { return }
      isCleanedUp = true
@@ -238,7 +240,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..75992f88d9e3762b05bca39516a4ecfa
      
      NotificationCenter.default.removeObserver(self)
      
-@@ -279,6 +371,9 @@ class ShareExtensionViewController: UIViewController {
+@@ -279,6 +373,9 @@ class ShareExtensionViewController: UIViewController {
      }
      
      var sharedItems: [String: Any] = [:]
@@ -248,7 +250,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..75992f88d9e3762b05bca39516a4ecfa
      
      let group = DispatchGroup()
      
-@@ -368,11 +463,14 @@ class ShareExtensionViewController: UIViewController {
+@@ -368,11 +465,14 @@ class ShareExtensionViewController: UIViewController {
  
          // Only check for plain text if no URL was found
          if !provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) && provider.hasItemConformingToTypeIdentifier(UTType.text.identifier) {
@@ -266,7 +268,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..75992f88d9e3762b05bca39516a4ecfa
                }
                group.leave()
              }
-@@ -604,7 +702,48 @@ class ShareExtensionViewController: UIViewController {
+@@ -604,7 +704,48 @@ class ShareExtensionViewController: UIViewController {
      }
      
      group.notify(queue: .main) {
