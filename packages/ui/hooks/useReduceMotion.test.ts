@@ -19,6 +19,22 @@ test("설정을 읽기 전에는 모름(null)이다", async () => {
 });
 
 // 모름으로 남으면 설정을 기다리는 애니메이션이 영영 시작되지 않는다.
+test("설정을 한동안 읽지 못하면 꺼진 것으로 본다", async () => {
+  jest.useFakeTimers();
+  try {
+    isReduceMotionEnabled.mockReturnValue(new Promise(() => {}));
+    const { result } = await renderHook(() => useReduceMotion());
+    expect(result.current).toBeNull();
+
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(result.current).toBe(false);
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
 test("설정을 읽지 못하면 꺼진 것으로 본다", async () => {
   const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
   isReduceMotionEnabled.mockRejectedValue(new Error("unavailable"));
