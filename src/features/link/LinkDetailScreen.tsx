@@ -7,7 +7,11 @@ import {
   useDeleteLinkMutation,
   useUpdateLinkMutation,
 } from "@shared/entities/link/link.queries";
-import { isOpenableLinkUrl, isWebUrl } from "@shared/link/link.utils";
+import {
+  isOpenableLinkUrl,
+  isWebUrl,
+  normalizeLinkUrl,
+} from "@shared/link/link.utils";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Star } from "lucide-react-native";
@@ -128,7 +132,7 @@ function LinkDetailContent() {
   // 폴더 이동(MoveLinksSheet)의 "동작 시점 저장"과도 일관된다. 상세: plan/task/task-server-integration.md.
   const { mutate: updateLink } = useUpdateLinkMutation();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [isAppLinkConfirmOpen, setIsAppLinkConfirmOpen] = useState(false);
+  const [isLinkConfirmOpen, setIsLinkConfirmOpen] = useState(false);
 
   // 별은 낙관적으로 먼저 뒤집고, PATCH 가 실패하면 원복 + 스낵바로 알린다
   // (성공 시에만 refetch 되므로, 실패를 삼키면 서버와 어긋난 별이 그대로 남는다).
@@ -223,21 +227,22 @@ function LinkDetailContent() {
   };
 
   const openOriginal = async () => {
-    setIsAppLinkConfirmOpen(false);
+    setIsLinkConfirmOpen(false);
     if ((await openExternalUrl(linkDetail.url)) === "failed") {
       show({ message: "이 링크를 열 수 있는 앱이 없어요" });
     }
   };
 
   // 우하단 ↗ 버튼이 잘 안 보인다는 피드백 — 출처 도메인 탭도 원문 이동 경로로 연다.
-  // 앱 전용 링크는 다른 앱을 바로 실행하므로 한 번 묻고, 위험한 링크는 묻지 않고 막는다.
+  // 앱 전용 링크는 다른 앱을 바로 실행하고, 지금 저장 규칙에 어긋나는 웹 주소(예전에 저장된 것)는 보이는 것과
+  // 다른 곳이 열릴 수 있어 한 번 묻는다. 위험한 링크는 묻지 않고 막는다.
   const handleOpenOriginal = async () => {
     if (!isOpenableLinkUrl(linkDetail.url)) {
       show({ message: "보안상 열 수 없는 링크예요" });
       return;
     }
-    if (!isWebLink) {
-      setIsAppLinkConfirmOpen(true);
+    if (!isWebLink || !normalizeLinkUrl(linkDetail.url).ok) {
+      setIsLinkConfirmOpen(true);
       return;
     }
     await openOriginal();
@@ -429,35 +434,38 @@ function LinkDetailContent() {
           </>
         }
       />
-      <AppLinkConfirmDialog
+      <OpenLinkConfirmDialog
+        title={isWebLink ? "주소를 확인하고 열어주세요" : "다른 앱에서 열까요?"}
         url={linkDetail.url}
-        isOpen={isAppLinkConfirmOpen}
-        onClose={() => setIsAppLinkConfirmOpen(false)}
+        isOpen={isLinkConfirmOpen}
+        onClose={() => setIsLinkConfirmOpen(false)}
         onConfirm={openOriginal}
       />
     </>
   );
 }
 
-interface AppLinkConfirmDialogProps {
+interface OpenLinkConfirmDialogProps {
+  title: string;
   url: string;
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
 }
 
-// 어떤 앱이 열릴지 주소로만 알 수 있어 설명 자리에 주소를 그대로 보여준다.
-function AppLinkConfirmDialog({
+// 무엇이 열릴지는 주소로만 알 수 있어 설명 자리에 주소를 그대로 보여준다.
+function OpenLinkConfirmDialog({
+  title,
   url,
   isOpen,
   onClose,
   onConfirm,
-}: AppLinkConfirmDialogProps) {
+}: OpenLinkConfirmDialogProps) {
   return (
     <AlertDialog
       isOpen={isOpen}
       onClose={onClose}
-      title="다른 앱에서 열까요?"
+      title={title}
       description={url}
       descriptionNumberOfLines={URL_MAX_LINES}
       actions={

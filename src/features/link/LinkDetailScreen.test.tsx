@@ -300,6 +300,23 @@ describe("LinkDetailScreen", () => {
     expect(openExternalUrl).toHaveBeenCalledWith("nmap://place?id=1");
   });
 
+  // 규칙이 바뀌기 전에 저장된 주소는 보이는 것과 다른 곳이 열릴 수 있다("https:///toss.tech@evil.com" → evil.com).
+  test("지금 저장 규칙에 어긋나는 웹 링크는 주소를 확인받고 연다", async () => {
+    mockDetailData.current = {
+      ...mockLinkDetail,
+      url: "https:///toss.tech@evil.com",
+    };
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("링크 열기"));
+    expect(screen.getByText("주소를 확인하고 열어주세요")).toBeOnTheScreen();
+    expect(openExternalUrl).not.toHaveBeenCalled();
+
+    await user.press(screen.getByRole("button", { name: "열기" }));
+    expect(openExternalUrl).toHaveBeenCalledWith("https:///toss.tech@evil.com");
+  });
+
   test("앱 전용 링크 확인에서 '취소'하면 열지 않는다", async () => {
     mockDetailData.current = { ...mockLinkDetail, url: "nmap://place?id=1" };
     const user = userEvent.setup();
