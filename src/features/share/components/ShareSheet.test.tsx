@@ -286,6 +286,23 @@ test.each([
   expect(config.initialVelocity).toBeCloseTo(expected);
 });
 
+// 본문을 감싼 뷰가 제스처를 가져가면 본문 스크롤·버튼 터치를 시트 끌기가 빼앗는다.
+test("끌기 제스처는 핸들에만 두고 본문 스크롤을 감싼 뷰에는 두지 않는다", async () => {
+  await render(
+    <SafeAreaProvider initialMetrics={metrics}>
+      <ShareSheet onClose={jest.fn()} isLocked={false}>
+        <ShareSheetScrollView testID="body-scroll" />
+      </ShareSheet>
+    </SafeAreaProvider>,
+  );
+
+  let ancestor = screen.getByTestId("body-scroll").parent;
+  while (ancestor) {
+    expect(ancestor.props.onMoveShouldSetResponder).toBeUndefined();
+    ancestor = ancestor.parent;
+  }
+});
+
 test("잠금 중에는 핸들을 끌어도 제스처를 받지 않는다", async () => {
   const { onClose } = await renderSheet({ isLocked: true });
   expect(await dragHandle(150, 300)).toBe(false);
