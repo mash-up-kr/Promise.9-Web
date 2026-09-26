@@ -5,15 +5,7 @@ import {
   SHEET_SPRING,
 } from "@promise9/ui/sheet/sheet.constants";
 import type { PropsWithChildren } from "react";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   type LayoutChangeEvent,
@@ -26,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { buildContext } from "react-simplikit";
 
 import { MemoFieldBase } from "@/features/link/components/MemoFieldBase";
 
@@ -33,15 +26,13 @@ import { MemoFieldBase } from "@/features/link/components/MemoFieldBase";
 // gorhom·keyboard-controller 가 끌어오는 Reanimated 만으로 +77MB 라 RN Animated 로 그린다.
 // Android 는 메인 번들을 공유해 이점이 없어 gorhom 을 유지한다(ShareSheet.android.tsx).
 
-const ShareSheetDismissContext = createContext<(() => void) | null>(null);
+const [ShareSheetDismissProvider, useShareSheetDismissContext] = buildContext<{
+  dismiss: () => void;
+}>("ShareSheetDismiss");
 
 /** 퇴장 애니메이션 후 익스텐션을 닫는다. ShareSheet 자손에서만 호출 가능. */
 export function useShareSheetDismiss() {
-  const dismiss = useContext(ShareSheetDismissContext);
-  if (!dismiss) {
-    throw new Error("useShareSheetDismiss 는 ShareSheet 안에서만 쓸 수 있다.");
-  }
-  return dismiss;
+  return useShareSheetDismissContext().dismiss;
 }
 
 export const ShareSheetView = View;
@@ -320,7 +311,7 @@ export function ShareSheet({
   );
 
   return (
-    <ShareSheetDismissContext.Provider value={dismiss}>
+    <ShareSheetDismissProvider dismiss={dismiss}>
       <View
         pointerEvents={isClosing ? "none" : "auto"}
         className="flex-1 justify-end"
@@ -354,6 +345,6 @@ export function ShareSheet({
           </Animated.View>
         </Animated.View>
       </View>
-    </ShareSheetDismissContext.Provider>
+    </ShareSheetDismissProvider>
   );
 }
