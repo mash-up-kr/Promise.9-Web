@@ -4,7 +4,7 @@ import {
   kakaoExchangeResponseSchema,
   type SuccessResponse,
 } from "@shared/api";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 import type { SocialProvider } from "../auth.constants";
 import { SocialLoginCancelledError } from "../auth.errors";
@@ -250,7 +250,135 @@ async function getKakaoIdToken(): Promise<string> {
   return kakaoExchangeResponseSchema.parse(data.data).idToken;
 }
 
+/**
+ * 웹 애플 로그인 — Apple JS SDK 팝업.
+ *
+ * `expo-apple-authentication` 은 웹을 지원하지 않는다. 구글처럼 authorize URL 을 직접 열어
+ * 정적 콜백으로 받는 방식도 못 쓴다 — name/email scope 를 요청하면 Apple 이
+ * `response_mode=form_post` 를 강제하는데 웹은 정적 호스팅이라 POST 를 받을 수 없고, 서버가
+ * email 클레임을 요구해 scope 를 뺄 수도 없다. SDK 의 `usePopup` 은 리다이렉트 없이 결과를
+ * 프로미스로 돌려주므로 이 경로만 남는다. 토큰 검증은 서버가 한다(audience = Services ID).
+ */
+const APPLE_SDK_URL =
+  "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js";
+/**
+ * usePopup 이라 실제 리다이렉트는 없지만 Apple 이 등록된 Return URL 과 대조한다 —
+ * Apple Developer 콘솔의 Services ID 에 `https://<웹 도메인>/login` 으로 등록돼 있어야 한다.
+ */
+const APPLE_REDIRECT_PATH = "/login";
+
+interface AppleSignInResponse {
+  authorization: { code: string; id_token: string; state?: string };
+}
+
+interface AppleIdSdk {
+  auth: {
+    init(config: {
+      clientId: string;
+      redirectURI: string;
+      scope: string;
+      state: string;
+      usePopup: boolean;
+    }): void;
+    signIn(): Promise<AppleSignInResponse>;
+  };
+}
+
+declare global {
+  interface Window {
+    AppleID?: AppleIdSdk;
+  }
+}
+
+/** 진행 중인 SDK 로드 — 클릭이 겹쳐도 script 태그를 한 번만 꽂는다. 끝나면 비운다(로드 여부는 window.AppleID 가 진실). */
+let appleSdkLoading: Promise<void> | null = null;
+
+function loadAppleSdk(): Promise<void> {
+  if (window.AppleID) return Promise.resolve();
+  if (!appleSdkLoading) {
+    appleSdkLoading = new Promise<void>((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = APPLE_SDK_URL;
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () =>
+        reject(new Error("애플 로그인 SDK 를 불러오지 못했습니다."));
+      document.head.appendChild(script);
+    }).finally(() => {
+      appleSdkLoading = null;
+    });
+  }
+  return appleSdkLoading;
+}
+
+/** SDK 는 `{ error: "popup_closed_by_user" }` 처럼 코드 하나를 담은 객체로 reject 한다. */
+function isAppleSdkError(error: unknown): error is { error: string } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    typeof (error as { error?: unknown }).error === "string"
+  );
+}
+
+async function getAppleIdToken(): Promise<string> {
+  const clientId = process.env.EXPO_PUBLIC_APPLE_SERVICES_ID;
+  if (!clientId) {
+    throw new Error("EXPO_PUBLIC_APPLE_SERVICES_ID 가 설정되지 않았습니다.");
+  }
+
+  // 팝업은 사용자 클릭 태스크 안에서 열려야 차단을 피한다 — SDK 가 이미 있으면 await 없이 바로
+  // signIn 까지 간다(훅 마운트 시 미리 받아 두는 이유).
+  if (!window.AppleID) await loadAppleSdk();
+  const sdk = window.AppleID;
+  if (!sdk) throw new Error("애플 로그인 SDK 를 불러오지 못했습니다.");
+
+  const state = randomToken();
+  sdk.auth.init({
+    clientId,
+    redirectURI: `${window.location.origin}${APPLE_REDIRECT_PATH}`,
+    scope: "name email",
+    state,
+    usePopup: true,
+  });
+
+  let response: AppleSignInResponse;
+  try {
+    response = await sdk.auth.signIn();
+  } catch (error) {
+    if (!isAppleSdkError(error)) throw error;
+    // 팝업을 닫거나 Apple 화면에서 취소한 경우 — 실패가 아니므로 화면이 조용히 원복하게 한다.
+    if (
+      error.error === "popup_closed_by_user" ||
+      error.error === "user_cancelled_authorize"
+    ) {
+      throw new SocialLoginCancelledError();
+    }
+    if (error.error === "popup_blocked_by_browser") {
+      throw new Error("팝업이 차단되었습니다. 브라우저 설정을 확인해주세요.");
+    }
+    throw new Error(`애플 로그인에 실패했습니다: ${error.error}`);
+  }
+
+  const { id_token: idToken, state: returnedState } = response.authorization;
+  // state 불일치는 CSRF 의심 — 받은 토큰을 쓰지 않는다.
+  if (returnedState !== state) {
+    throw new Error("애플 로그인 응답의 state 가 일치하지 않습니다.");
+  }
+  if (!idToken) {
+    throw new Error("애플 로그인 응답에 id_token 이 없습니다.");
+  }
+  return idToken;
+}
+
 export function useSocialAuth() {
+  // 애플 SDK 를 미리 받아 둔다 — 클릭 시점에 스크립트를 기다리면 팝업이 사용자 제스처 밖에서 열려
+  // 차단될 수 있다.
+  useEffect(() => {
+    loadAppleSdk().catch(() => {
+      // 미리 받기 실패는 여기서 알리지 않는다 — 클릭 시 다시 시도해 그때 에러로 드러난다.
+    });
+  }, []);
+
   const getIdToken = useCallback(
     async (provider: SocialProvider): Promise<string> => {
       switch (provider) {
@@ -259,8 +387,7 @@ export function useSocialAuth() {
         case "kakao":
           return getKakaoIdToken();
         case "apple":
-          // 애플 로그인은 UI 만 준비(SOCIAL_PROVIDERS 비활성) — 서버 계약·SDK 연동 전까지 호출되지 않는다.
-          throw new Error("애플 로그인은 아직 지원하지 않습니다.");
+          return getAppleIdToken();
       }
     },
     [],

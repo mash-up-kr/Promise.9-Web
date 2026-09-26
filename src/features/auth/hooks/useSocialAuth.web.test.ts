@@ -29,6 +29,7 @@ interface FakeWindow {
   addEventListener: jest.Mock;
   removeEventListener: jest.Mock;
   location: { origin: string };
+  AppleID?: FakeAppleSdk;
 }
 
 let fakeWindow: FakeWindow;
@@ -327,5 +328,152 @@ describe("useSocialAuth 카카오 (웹)", () => {
 
     await expect(promise).rejects.toBeInstanceOf(SocialLoginCancelledError);
     jest.useRealTimers();
+  });
+});
+
+const APPLE_SDK_URL =
+  "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js";
+
+interface FakeAppleSdk {
+  auth: { init: jest.Mock; signIn: jest.Mock };
+}
+
+/** 이미 로드된 Apple JS SDK 를 흉내낸다. signIn 은 init 에 넘긴 state 를 그대로 돌려준다(정상 응답). */
+function installFakeAppleSdk(): FakeAppleSdk {
+  const init = jest.fn();
+  const signIn = jest.fn(async () => ({
+    authorization: {
+      code: "apple-code",
+      id_token: "apple-web-id-token",
+      state: init.mock.calls[0]?.[0]?.state,
+    },
+  }));
+  const sdk = { auth: { init, signIn } };
+  fakeWindow.AppleID = sdk;
+  return sdk;
+}
+
+interface FakeScript {
+  src?: string;
+  onload?: () => void;
+  onerror?: () => void;
+}
+
+/** SDK 스크립트 로드를 흉내낸다 — appendChild 시점에 onAppend 가 성공(onload)/실패(onerror)를 정한다. */
+function installFakeDocument(onAppend: (script: FakeScript) => void) {
+  const fakeDocument = {
+    createElement: jest.fn((): FakeScript => ({})),
+    head: { appendChild: jest.fn(onAppend) },
+  };
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: fakeDocument,
+  });
+  return fakeDocument;
+}
+
+describe("useSocialAuth 애플 (웹)", () => {
+  beforeEach(() => {
+    installFakeWindow();
+    process.env.EXPO_PUBLIC_APPLE_SERVICES_ID = "apple-services-id";
+  });
+
+  it("SDK 가 돌려준 id_token 을 반환한다", async () => {
+    installFakeAppleSdk();
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).resolves.toBe(
+      "apple-web-id-token",
+    );
+  });
+
+  // 서버가 email 클레임을 요구하므로 scope 를 빼면 안 되고, 정적 호스팅이라 form_post 리다이렉트를
+  // 받을 수 없어 usePopup 이어야 한다. redirectURI 는 Apple 콘솔에 등록한 Return URL 과 같아야 한다.
+  it("Services ID·redirectURI·scope·usePopup 으로 init 한다", async () => {
+    const sdk = installFakeAppleSdk();
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await result.current.getIdToken("apple");
+
+    expect(sdk.auth.init).toHaveBeenCalledWith(
+      expect.objectContaining({
+        clientId: "apple-services-id",
+        redirectURI: `${ORIGIN}/login`,
+        scope: "name email",
+        usePopup: true,
+        state: expect.any(String),
+      }),
+    );
+  });
+
+  it("Services ID 가 없으면 명시적 에러를 던진다", async () => {
+    installFakeAppleSdk();
+    process.env.EXPO_PUBLIC_APPLE_SERVICES_ID = "";
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).rejects.toThrow(
+      "EXPO_PUBLIC_APPLE_SERVICES_ID",
+    );
+  });
+
+  // state 불일치는 CSRF 의심 — 받은 토큰을 쓰지 않는다(구글·카카오 웹과 동일).
+  it("state 가 다르면 토큰을 쓰지 않고 실패시킨다", async () => {
+    const sdk = installFakeAppleSdk();
+    sdk.auth.signIn.mockResolvedValueOnce({
+      authorization: {
+        code: "apple-code",
+        id_token: "apple-web-id-token",
+        state: "tampered-state",
+      },
+    });
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).rejects.toThrow();
+  });
+
+  it.each([
+    "popup_closed_by_user",
+    "user_cancelled_authorize",
+  ])("사용자가 취소하면(%s) SocialLoginCancelledError 로 끝난다", async (error) => {
+    const sdk = installFakeAppleSdk();
+    sdk.auth.signIn.mockRejectedValueOnce({ error });
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).rejects.toBeInstanceOf(
+      SocialLoginCancelledError,
+    );
+  });
+
+  it("팝업이 차단되면 에러를 던진다", async () => {
+    const sdk = installFakeAppleSdk();
+    sdk.auth.signIn.mockRejectedValueOnce({
+      error: "popup_blocked_by_browser",
+    });
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).rejects.toThrow("팝업");
+  });
+
+  it("SDK 가 아직 없으면 스크립트를 로드한 뒤 로그인한다", async () => {
+    const fakeDocument = installFakeDocument((script) => {
+      installFakeAppleSdk();
+      script.onload?.();
+    });
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).resolves.toBe(
+      "apple-web-id-token",
+    );
+    expect(fakeDocument.createElement).toHaveBeenCalledWith("script");
+    expect(fakeDocument.head.appendChild).toHaveBeenCalledWith(
+      expect.objectContaining({ src: APPLE_SDK_URL }),
+    );
+  });
+
+  it("스크립트 로드에 실패하면 에러를 던진다", async () => {
+    installFakeDocument((script) => script.onerror?.());
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).rejects.toThrow("SDK");
   });
 });

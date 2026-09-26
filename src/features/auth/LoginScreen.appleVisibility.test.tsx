@@ -1,4 +1,4 @@
-// 애플은 iOS 네이티브만 지원한다 — 미지원 플랫폼(웹·안드로이드)에선 버튼 자체를 숨긴다.
+// 애플은 iOS 네이티브·웹만 지원한다 — 미지원 플랫폼(안드로이드)에선 버튼 자체를 숨긴다.
 // SOCIAL_PROVIDERS.apple.enabled 는 모듈 로드 시점의 isIOS 로 결정되므로, 렌더 전에
 // platform.constants 를 비-iOS 로 갈아끼운 뒤 LoginScreen 을 불러온다.
 jest.mock("@/constants/platform.constants", () => ({
