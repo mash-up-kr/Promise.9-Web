@@ -28,6 +28,8 @@ const CALLBACK_MESSAGE_SOURCE = "promise9-google-auth";
 const CALLBACK_PATH = "/auth/google-callback.html";
 
 const POPUP_FEATURES = "popup,width=480,height=640";
+const POPUP_BLOCKED_MESSAGE =
+  "팝업이 차단되었습니다. 브라우저 설정을 확인해주세요.";
 /**
  * 응답이 올 때까지 기다리는 최대 시간(ms). 초과하면 취소로 보고 조용히 종료한다.
  *
@@ -131,7 +133,7 @@ async function getGoogleIdToken(): Promise<string> {
   // 사용자 클릭 핸들러가 아직 살아 있는 동안 동기적으로 열어야 팝업 차단을 피할 수 있다.
   const popup = window.open(url, "promise9-google-login", POPUP_FEATURES);
   if (!popup) {
-    throw new Error("팝업이 차단되었습니다. 브라우저 설정을 확인해주세요.");
+    throw new Error(POPUP_BLOCKED_MESSAGE);
   }
 
   return new Promise<string>((resolve, reject) => {
@@ -199,7 +201,7 @@ async function getKakaoIdToken(): Promise<string> {
   // 사용자 클릭 핸들러가 살아 있는 동안 동기적으로 열어야 팝업 차단을 피할 수 있다.
   const popup = window.open(url, "promise9-kakao-login", POPUP_FEATURES);
   if (!popup) {
-    throw new Error("팝업이 차단되었습니다. 브라우저 설정을 확인해주세요.");
+    throw new Error(POPUP_BLOCKED_MESSAGE);
   }
 
   const code = await new Promise<string>((resolve, reject) => {
@@ -328,7 +330,8 @@ async function getAppleIdToken(): Promise<string> {
 
   // 팝업은 사용자 클릭 태스크 안에서 열려야 차단을 피한다 — SDK 가 이미 있으면 await 없이 바로
   // signIn 까지 간다(훅 마운트 시 미리 받아 두는 이유).
-  if (!window.AppleID) await loadAppleSdk();
+  const hasAwaitedLoad = !window.AppleID;
+  if (hasAwaitedLoad) await loadAppleSdk();
   const sdk = window.AppleID;
   if (!sdk) throw new Error("애플 로그인 SDK 를 불러오지 못했습니다.");
 
@@ -354,7 +357,12 @@ async function getAppleIdToken(): Promise<string> {
       throw new SocialLoginCancelledError();
     }
     if (error.error === "popup_blocked_by_browser") {
-      throw new Error("팝업이 차단되었습니다. 브라우저 설정을 확인해주세요.");
+      // 스크립트를 기다리느라 클릭 제스처가 만료된 경우 — 브라우저 설정 탓이 아니라 재시도로 풀린다.
+      throw new Error(
+        hasAwaitedLoad
+          ? "로그인 준비가 늦어 창을 열지 못했어요. 다시 시도해주세요."
+          : POPUP_BLOCKED_MESSAGE,
+      );
     }
     throw new Error(`애플 로그인에 실패했습니다: ${error.error}`);
   }

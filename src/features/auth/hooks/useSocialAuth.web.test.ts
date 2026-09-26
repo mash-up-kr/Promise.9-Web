@@ -57,7 +57,23 @@ function installFakeWindow() {
     configurable: true,
     value: fakeWindow,
   });
+  // 훅이 마운트 시 애플 SDK 를 미리 받으려 document 를 만진다 — 환경의 document 유무에 테스트가
+  // 좌우되지 않게, 기본은 즉시 실패(onerror)하는 문서를 심는다. 로드가 필요한 테스트만 덮어쓴다.
+  installFakeDocument((script) => script.onerror?.());
 }
+
+const ORIGINAL_DOCUMENT = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "document",
+);
+
+afterEach(() => {
+  if (ORIGINAL_DOCUMENT) {
+    Object.defineProperty(globalThis, "document", ORIGINAL_DOCUMENT);
+  } else {
+    delete (globalThis as { document?: unknown }).document;
+  }
+});
 
 function emitMessage(data: unknown, origin = ORIGIN) {
   messageListener?.({ data, origin } as MessageEvent);
@@ -428,7 +444,7 @@ describe("useSocialAuth 애플 (웹)", () => {
     });
     const { result } = await renderHook(() => useSocialAuth());
 
-    await expect(result.current.getIdToken("apple")).rejects.toThrow();
+    await expect(result.current.getIdToken("apple")).rejects.toThrow("state");
   });
 
   it.each([
@@ -454,20 +470,44 @@ describe("useSocialAuth 애플 (웹)", () => {
     await expect(result.current.getIdToken("apple")).rejects.toThrow("팝업");
   });
 
-  it("SDK 가 아직 없으면 스크립트를 로드한 뒤 로그인한다", async () => {
-    const fakeDocument = installFakeDocument((script) => {
-      installFakeAppleSdk();
-      script.onload?.();
+  /** 마운트 시 미리 받기가 시작돼 아직 진행 중인 상태(스크립트는 꽂혔고 onload 전)를 만든다. */
+  async function renderWhileSdkLoading() {
+    let script: FakeScript | undefined;
+    const fakeDocument = installFakeDocument((appended) => {
+      script = appended;
     });
     const { result } = await renderHook(() => useSocialAuth());
+    return { result, fakeDocument, finishLoad: () => script?.onload?.() };
+  }
 
-    await expect(result.current.getIdToken("apple")).resolves.toBe(
-      "apple-web-id-token",
-    );
+  // 미리 받기가 끝나기 전에 클릭하면 진행 중인 로드를 기다렸다가 이어간다 — 태그를 또 꽂지 않는다.
+  it("SDK 로드 중에 클릭하면 로드를 기다린 뒤 로그인한다", async () => {
+    const { result, fakeDocument, finishLoad } = await renderWhileSdkLoading();
+
+    const promise = result.current.getIdToken("apple");
+    installFakeAppleSdk();
+    finishLoad();
+
+    await expect(promise).resolves.toBe("apple-web-id-token");
     expect(fakeDocument.createElement).toHaveBeenCalledWith("script");
+    expect(fakeDocument.head.appendChild).toHaveBeenCalledTimes(1);
     expect(fakeDocument.head.appendChild).toHaveBeenCalledWith(
       expect.objectContaining({ src: APPLE_SDK_URL }),
     );
+  });
+
+  // 로드를 기다리는 사이 클릭 제스처가 만료돼 팝업이 막힌 것 — 브라우저 설정 안내가 아니라 재시도 안내여야 한다.
+  it("SDK 로드를 기다린 뒤 팝업이 막히면 재시도를 안내한다", async () => {
+    const { result, finishLoad } = await renderWhileSdkLoading();
+
+    const promise = result.current.getIdToken("apple");
+    const sdk = installFakeAppleSdk();
+    sdk.auth.signIn.mockRejectedValueOnce({
+      error: "popup_blocked_by_browser",
+    });
+    finishLoad();
+
+    await expect(promise).rejects.toThrow("다시 시도");
   });
 
   it("스크립트 로드에 실패하면 에러를 던진다", async () => {
