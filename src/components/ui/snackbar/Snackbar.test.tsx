@@ -1,3 +1,20 @@
+// iOS 만 투명 모달 라우트를 네이티브 모달로 띄운다 — 테스트별로 플랫폼을 바꿔 본다.
+const mockPlatform = { isIOS: true };
+jest.mock("@/constants/platform.constants", () => ({
+  get isIOS() {
+    return mockPlatform.isIOS;
+  },
+  get isAndroid() {
+    return !mockPlatform.isIOS;
+  },
+  isWeb: false,
+  isServer: false,
+}));
+
+afterEach(() => {
+  mockPlatform.isIOS = true;
+});
+
 import {
   act,
   render,
@@ -164,6 +181,22 @@ describe("Snackbar", () => {
     });
 
     // 저장 성공처럼 스낵바를 띄우고 바로 시트를 닫아도 아래 화면에서 이어서 보인다.
+    // Android·웹은 루트 스낵바가 시트 위에 그대로 보인다.
+    test("iOS 가 아니면 시트 라우트가 열려 있어도 루트에 그린다", async () => {
+      mockPlatform.isIOS = false;
+      const user = userEvent.setup();
+      await render(<App isSheetOpen />);
+
+      await user.press(screen.getByLabelText("show"));
+
+      expect(
+        within(screen.getByTestId("sheet-route")).queryByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeNull();
+      expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
+    });
+
     test("시트 라우트가 닫히면 떠 있던 스낵바를 아래 화면에 이어서 그린다", async () => {
       const user = userEvent.setup();
       await render(<App isSheetOpen />);

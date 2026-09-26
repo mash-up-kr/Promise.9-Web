@@ -14,6 +14,8 @@ import Animated, { FadeInDown, FadeOutDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTimeout } from "react-simplikit";
 
+import { isIOS } from "@/constants/platform.constants";
+
 import { Snackbar, type SnackbarAction } from "./Snackbar";
 
 export interface SnackbarOptions {
@@ -117,10 +119,14 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * 루트 위에 따로 뜨는 화면(투명 모달 라우트 — iOS 는 네이티브 모달)이 열린 동안의 스낵바 자리.
- * 루트에 그린 스낵바는 그 화면 아래에 깔리므로, 그 화면 안에 두면 스낵바가 시트 위에 보인다.
+ * 투명 모달 라우트가 열린 동안의 스낵바 자리. iOS 는 그 라우트를 네이티브 모달로 띄워 루트에 그린 스낵바가
+ * 그 아래에 깔린다 — 라우트 안에 두면 시트 위에 보인다. Android·웹은 루트 스낵바가 그대로 위에 보여 쓰지 않는다.
  */
 export function SnackbarOutlet() {
+  return isIOS ? <ModalSnackbarOutlet /> : null;
+}
+
+function ModalSnackbarOutlet() {
   const outletId = useId();
   const { registerOutlet } = useSnackbarOutletContext();
 

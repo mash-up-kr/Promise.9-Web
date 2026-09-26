@@ -26,7 +26,7 @@ import {
   useSnackbar,
 } from "@/components/ui/snackbar/SnackbarProvider";
 import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
-import { isWeb } from "@/constants/platform.constants";
+import { isIOS, isWeb } from "@/constants/platform.constants";
 import { decodeSharedUrl, linkDetailHref } from "@/constants/routes.constants";
 import { FolderChipList } from "@/features/link/components/FolderChipList";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
@@ -48,9 +48,9 @@ const SAVE_SNACKBAR_DURATION = 4000;
 export function CreateLinkSheet() {
   const router = useRouter();
   const { show } = useSnackbar();
-  // 시트를 연 채로 알린다 — 입력하다 바로 저장하면 키보드가 올라온 채라 시트 아래쪽 스낵바가 가리지 않게 먼저 내린다.
+  // 시트를 연 채로 알린다 — iOS 는 입력하다 바로 저장하면 키보드가 올라온 채라 시트 아래쪽 스낵바가 가려 먼저 내린다.
   const showInSheet = (options: SnackbarOptions) => {
-    Keyboard.dismiss();
+    if (isIOS) Keyboard.dismiss();
     show(options);
   };
   // 공유 익스텐션에서 로그인 인계로 들어오면 URL 을 이미 알고 있다 — 필드·프리뷰를 채워 시작한다.

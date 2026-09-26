@@ -47,8 +47,8 @@ const sheetScreenOptions = {
   contentStyle: { backgroundColor: "transparent" },
 };
 
-// 투명 모달 라우트는 루트 위에 따로 뜨는 화면이라(iOS 는 네이티브 모달) 루트에 그린 스낵바가 그 아래에 깔린다 —
-// 열려 있는 동안의 스낵바는 그 화면 안의 자리에 그린다.
+// iOS 는 투명 모달 라우트를 네이티브 모달로 띄워 루트에 그린 스낵바가 그 아래에 깔린다 —
+// 열려 있는 동안의 스낵바는 그 화면 안의 자리에 그린다(Android·웹은 SnackbarOutlet 이 아무것도 그리지 않는다).
 function renderScreenLayout({
   children,
   options,
