@@ -20,6 +20,8 @@ jest.mock("@/features/auth/hooks/useSocialAuth", () => ({
 }));
 let mockIsIOS = true;
 jest.mock("@/constants/platform.constants", () => ({
+  isShareExtension: jest.requireActual("@/constants/platform.constants")
+    .isShareExtension,
   get isIOS() {
     return mockIsIOS;
   },

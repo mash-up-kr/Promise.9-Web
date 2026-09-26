@@ -61,3 +61,23 @@ describe("platform 상수", () => {
     expect(isServer).toBe(true);
   });
 });
+
+describe("isShareExtension", () => {
+  afterEach(() => {
+    globalThis.__promise9ShareExtension = undefined;
+  });
+
+  test("익스텐션 플래그가 없으면 false", () => {
+    const { isShareExtension } = require("./platform.constants");
+
+    expect(isShareExtension()).toBe(false);
+  });
+
+  // index.share.js 는 모듈들을 불러온 뒤에 플래그를 세운다 — 로드 시점이 아니라 부를 때 읽어야 한다.
+  test("모듈을 불러온 뒤에 세운 플래그도 읽는다", () => {
+    const { isShareExtension } = require("./platform.constants");
+    globalThis.__promise9ShareExtension = true;
+
+    expect(isShareExtension()).toBe(true);
+  });
+});

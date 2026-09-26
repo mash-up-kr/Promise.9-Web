@@ -30,6 +30,8 @@ jest.mock("./useExtensionSocialLogin", () => ({
   useExtensionSocialLogin: () => ({ login: mockLogin, ...mockLoginState }),
 }));
 jest.mock("@/constants/platform.constants", () => ({
+  isShareExtension: jest.requireActual("@/constants/platform.constants")
+    .isShareExtension,
   isIOS: true,
   isAndroid: false,
   isWeb: false,

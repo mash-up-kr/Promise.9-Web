@@ -6,6 +6,8 @@ import {
   SafeAreaListener,
 } from "react-native-safe-area-context";
 
+import { isShareExtension } from "@/constants/platform.constants";
+
 import { KeyboardAvoidingView } from "./dialogKeyboardAvoidingView";
 
 const EXTENSION_EDGE_GAP = 16;
@@ -44,7 +46,7 @@ export function Dialog({
   dismissAccessibilityLabel = "닫기",
   hasTextInput = false,
 }: DialogProps) {
-  const Container = !globalThis.__promise9ShareExtension
+  const Container = !isShareExtension()
     ? KeyboardAvoidingContainer
     : hasTextInput
       ? ExtensionInputContainer

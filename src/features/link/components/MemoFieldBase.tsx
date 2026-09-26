@@ -1,7 +1,7 @@
 import { Text } from "@promise9/ui/text/Text";
 import { useLayoutEffect, useRef } from "react";
 import { TextInput, View } from "react-native";
-import { isWeb } from "@/constants/platform.constants";
+import { isShareExtension, isWeb } from "@/constants/platform.constants";
 
 import { MEMO_MAX_LENGTH } from "../link.contracts";
 
@@ -53,9 +53,7 @@ export function MemoFieldBase({
             // placeholderTextColor 는 className 으로 못 받아 리터럴로 지정 — #ffffff4d = --color-opacity-white-30
             placeholderTextColor="#ffffff4d"
             // iOS 공유 익스텐션 폰트 배율 버그 우회 — ui/Text 와 동일
-            allowFontScaling={
-              globalThis.__promise9ShareExtension ? false : undefined
-            }
+            allowFontScaling={isShareExtension() ? false : undefined}
             // TODO: 저장 트리거(디바운스/blur) 정책은 백엔드 연동 확정 후 결정 —
             // 지금은 상위 계획 스코프(mock + 로컬 state)에 따라 키 입력마다 즉시 반영한다.
             className="min-h-5 w-full font-pretendard text-body-2-reading text-text-normal web:outline-none"
