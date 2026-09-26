@@ -4,10 +4,8 @@ import { Text } from "react-native";
 import { Skeleton, SkeletonText, skeletonStyles } from "./Skeleton";
 
 describe("skeletonStyles", () => {
-  test("base 에 animate-pulse 와 토큰 배경이 있다", () => {
-    const cls = skeletonStyles();
-    expect(cls).toContain("animate-pulse");
-    expect(cls).toContain("bg-background-thumbnail");
+  test("base 에 토큰 배경이 있다", () => {
+    expect(skeletonStyles()).toContain("bg-background-thumbnail");
   });
 
   test("variant=circular 는 rounded-full 을 준다", () => {

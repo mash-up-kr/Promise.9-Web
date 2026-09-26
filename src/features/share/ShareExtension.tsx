@@ -6,12 +6,16 @@ import {
 import { useCreateLinkMutation } from "@shared/entities/link/link.queries";
 import { extractFirstUrl } from "@shared/link/link.utils";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { useLayoutEffect, useReducer, useRef, useState } from "react";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
+import {
+  useCallback,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SwitchCase } from "react-simplikit";
 
-import { BottomSheet } from "@/components/ui/bottom-sheet/BottomSheet";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
 import { linkUrlSchema } from "@/features/link/link.contracts";
 import {
@@ -22,7 +26,9 @@ import { createQueryClient } from "@/lib/queryClient";
 
 import { EntrySheet } from "./components/EntrySheet";
 import { CheckingSheet, ResultSheet } from "./components/ResultSheet";
+import { ShareSheet } from "./components/ShareSheet";
 import { ExtensionLoginSheet } from "./ExtensionLoginSheet";
+import { runAfterPendingWork } from "./runAfterPendingWork";
 import { INITIAL_SHARE_SAVE_STATE, shareSaveReducer } from "./share.reducer";
 import { close } from "./shareHost";
 import { useAccessTokenWarmup } from "./useAccessTokenWarmup";
@@ -31,7 +37,8 @@ import { useAccessTokenWarmup } from "./useAccessTokenWarmup";
 
 /**
  * 공유 익스텐션 루트 — 공유받은 URL 을 익스텐션 안에서 바로 저장한다.
- * 시트 크롬(백드롭·핸들·드래그·키보드)은 인앱과 같은 BottomSheet 가 맡고, 컨테이너는 전체 화면이다.
+ * 시트 크롬(백드롭·핸들·드래그)은 ShareSheet 가 맡고(iOS 경량 · Android gorhom), 컨테이너는 전체 화면이다.
+ * 키보드는 Android 는 gorhom 이, iOS 는 저장 시트 스크롤의 네이티브 인셋이 맡는다(EntrySheet).
  * 결과 시트(성공/실패/중복/반복실패) 전이는 share.reducer 가 정한다.
  */
 export function ShareExtension({ url }: { url?: string }) {
@@ -48,41 +55,46 @@ export function ShareExtension({ url }: { url?: string }) {
   }
   const isSessionExpired =
     status === "unauthenticated" && wasAuthenticated.current;
+  // 로그인됐어도 액세스 토큰을 준비하는 동안은 확인 중 시트를 그대로 둔다.
+  const authSheet =
+    status === "authenticated" && !isTokenReady ? "checking" : status;
   // 저장 중엔 인앱 저장 시트처럼 백드롭 탭·끌어 내리기로 닫히지 않는다.
   const [isSaving, setIsSaving] = useState(false);
 
   // 익스텐션 프로세스 전용 클라이언트 — 기본값(재시도 1회 등)은 앱과 같은 팩토리에서 온다.
   // 모듈 싱글턴이 아니라 마운트마다 새로 만들어 테스트 간 캐시가 새지 않게 한다.
   const [queryClient] = useState(createQueryClient);
+  // 로그인·저장 요청이 끝나기 전에 닫으면 그 결과(새 토큰·저장)가 프로세스와 함께 버려진다.
+  const waitForPendingWork = useCallback(
+    (proceed: () => void) => runAfterPendingWork(proceed, queryClient),
+    [queryClient],
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* 앱 _layout 과 같은 루트 프로바이더 — 시트 제스처(gesture-handler)·인셋·Dialog 키보드 회피. */}
-      <GestureHandlerRootView className="flex-1">
-        <SafeAreaProvider>
-          <KeyboardProvider>
-            <BottomSheet
-              onClose={close}
-              backdropPressBehavior={isSaving ? "none" : "close"}
-              isLocked={isSaving}
-            >
-              {(status === "checking" ||
-                (status === "authenticated" && !isTokenReady)) && (
-                <CheckingSheet />
-              )}
-              {status === "unauthenticated" && (
+      <SafeAreaProvider>
+        <ShareSheet
+          onClose={close}
+          isLocked={isSaving}
+          waitBeforeClose={waitForPendingWork}
+        >
+          <SwitchCase
+            value={authSheet}
+            caseBy={{
+              checking: () => <CheckingSheet />,
+              unauthenticated: () => (
                 <ExtensionLoginSheet
                   sharedUrl={sharedUrl}
                   isSessionExpired={isSessionExpired}
                 />
-              )}
-              {status === "authenticated" && isTokenReady && (
+              ),
+              authenticated: () => (
                 <ShareSaveFlow url={sharedUrl} onSavingChange={setIsSaving} />
-              )}
-            </BottomSheet>
-          </KeyboardProvider>
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
+              ),
+            }}
+          />
+        </ShareSheet>
+      </SafeAreaProvider>
     </QueryClientProvider>
   );
 }
@@ -141,8 +153,10 @@ function ShareSaveFlow({ url, onSavingChange }: ShareSaveFlowProps) {
   const isEditing = state.phase === "editing" || state.phase === "saving";
   const isSaving = state.phase === "saving";
 
+  // 저장 중에 세션이 끊기면(401 → refresh 실패) 이 흐름째 사라진다 — 잠금이 남지 않게 풀고 떠난다.
   useLayoutEffect(() => {
     onSavingChange(isSaving);
+    return () => onSavingChange(false);
   }, [isSaving, onSavingChange]);
 
   return (

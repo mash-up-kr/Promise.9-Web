@@ -3,6 +3,7 @@ import { createContext, useContext } from "react";
 import type { PressableProps, TextInputProps, ViewProps } from "react-native";
 import { Platform, Pressable, TextInput, View } from "react-native";
 
+import { isShareExtension } from "../constants/platform.constants";
 import { Icon } from "../icon/Icon";
 import { tv } from "../lib/tv";
 
@@ -103,9 +104,7 @@ export function InputField({
         cursorColor={CURSOR_COLOR}
         selectionColor={SELECTION_COLOR}
         // iOS 공유 익스텐션 폰트 배율 버그 우회 — ui/Text 와 동일
-        allowFontScaling={
-          globalThis.__promise9ShareExtension ? false : undefined
-        }
+        allowFontScaling={isShareExtension() ? false : undefined}
         className={inputFieldStyles({ variant, class: className })}
         {...props}
       />

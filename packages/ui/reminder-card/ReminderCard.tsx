@@ -48,7 +48,7 @@ export interface ReminderOnCardProps {
   presets: readonly ReminderPreset[];
   selectedPresetDays: number | null;
   onPreset: (days: number) => void;
-  /** 프리셋 칩 뒤에 놓는 랜덤 날짜 버튼. 앱은 reanimated 로 흔들어서 표면이 직접 만든다. */
+  /** 프리셋 칩 뒤에 놓는 랜덤 날짜 버튼. 앱은 RN Animated 로 흔들어서 표면이 직접 만든다. */
   diceButton: ReactNode;
   dateLabel: string;
   remainingLabel: string;

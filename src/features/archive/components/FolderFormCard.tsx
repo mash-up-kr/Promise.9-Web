@@ -71,7 +71,7 @@ export function FolderFormCard({
 
   return (
     <>
-      <Dialog onDismiss={onClose}>
+      <Dialog onDismiss={onClose} hasTextInput>
         {/* Figma Card: gray-800 + white-05 테두리, radius 36, padding 20, 최대 폭 335. */}
         <View className="w-full max-w-[335px] gap-10 rounded-[36px] border border-opacity-white-05 bg-gray-800 p-5">
           <View className="gap-4">

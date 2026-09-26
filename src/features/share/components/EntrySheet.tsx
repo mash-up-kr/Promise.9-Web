@@ -1,18 +1,20 @@
-import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { AsyncBoundary } from "@promise9/ui/async-boundary/AsyncBoundary";
 import { Text } from "@promise9/ui/text/Text";
 import { useState } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
-import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { FolderChipList } from "@/features/link/components/FolderChipList";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
-import { MemoField } from "@/features/link/components/MemoField";
 import { ReminderSection } from "@/features/link/components/ReminderSection";
 import type { ReminderValue } from "@/features/link/reminder.utils";
 
 import { FolderCreateModal } from "./FolderCreateModal";
+import {
+  ShareSheetMemoField,
+  ShareSheetScrollView,
+  useShareSheetDismiss,
+} from "./ShareSheet";
 
 export interface EntrySheetProps {
   url: string;
@@ -27,7 +29,7 @@ export interface EntrySheetProps {
 }
 
 // 인앱 저장 시트(SheetScreen)와 같은 스캐폴드 — 헤더는 스크롤뷰의 sticky 첫 요소, 본문은 px-5.
-// 시트 높이는 gorhom 동적 사이징이 콘텐츠만큼 키우고, 넘치면 안에서 스크롤한다.
+// 시트 높이는 콘텐츠만큼 자라고(상단 Safe Area 까지), 넘치면 안에서 스크롤한다.
 export function EntrySheet({
   url,
   isSaving,
@@ -41,14 +43,14 @@ export function EntrySheet({
 }: EntrySheetProps) {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const insets = useSafeAreaInsets();
-  const dismiss = useSheetDismiss();
+  const dismiss = useShareSheetDismiss();
 
   return (
-    <BottomSheetScrollView
+    <ShareSheetScrollView
       testID="share-entry-scroll"
       keyboardShouldPersistTaps="handled"
-      // iOS 익스텐션 프로세스는 RN 키보드 이벤트 높이가 0 으로 와서 gorhom 이 시트를 못 올린다 —
-      // 네이티브 스크롤 인셋으로 포커스한 입력을 키보드 위로 드러낸다(앱에선 gorhom 이 맡는다).
+      // iOS 익스텐션 프로세스는 RN 키보드 이벤트 높이가 0 으로 와서 JS 로는 키보드를 피할 수 없다 —
+      // 네이티브 스크롤 인셋으로 포커스한 입력을 키보드 위로 드러낸다(Android 는 gorhom 이 시트를 올린다).
       automaticallyAdjustKeyboardInsets
       stickyHeaderIndices={[0]}
       contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
@@ -96,11 +98,11 @@ export function EntrySheet({
 
         <ReminderSection value={reminder} onChange={onChangeReminder} />
 
-        <MemoField memo={memo} onChangeMemo={onChangeMemo} />
+        <ShareSheetMemoField memo={memo} onChangeMemo={onChangeMemo} />
       </View>
       {isCreatingFolder && (
         <FolderCreateModal onClose={() => setIsCreatingFolder(false)} />
       )}
-    </BottomSheetScrollView>
+    </ShareSheetScrollView>
   );
 }

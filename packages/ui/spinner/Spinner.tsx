@@ -3,6 +3,8 @@ import { View } from "react-native";
 
 import { Icon } from "../icon/Icon";
 
+import { SpinView } from "./SpinView";
+
 const SIZES = { small: 16, medium: 20, large: 24 } as const;
 // SpinnerArc(순수 react-native-svg 래퍼)에는 className→color 매핑이 안 먹혀 raw hex 를 썼지만,
 // lucide 아이콘은 Icon 컴포넌트의 styled() 매핑을 그대로 타므로 토큰 className 을 쓸 수 있다
@@ -17,18 +19,17 @@ export interface SpinnerProps {
   tone?: keyof typeof TONES;
 }
 
-// 회전은 Figma 정지 프레임에 없는 동작이라 코드에서 구현한다.
-// Tailwind 기본 `animate-spin`(1s linear infinite, 스펙 0.8~1s 범위 내)을 그대로 쓴다.
-// reanimated(withRepeat)는 웹에서 첫 프레임 이후 애니메이션 루프가 멈추는 현상이 있어
-// (과거 SpinnerArc 구현에서 실측 확인) CSS 기반 유틸(animate-pulse 선례와 동일 경로)로 돌린다.
+// 회전은 Figma 정지 프레임에 없는 동작이라 코드에서 구현한다 — 1s linear infinite(스펙 0.8~1s 범위 내).
 export function Spinner({ size = "small", tone = "on-light" }: SpinnerProps) {
   return (
-    <View accessible accessibilityRole="progressbar" className="animate-spin">
-      <Icon
-        iconNode={LoaderCircle}
-        size={SIZES[size]}
-        className={TONES[tone]}
-      />
+    <View accessible accessibilityRole="progressbar">
+      <SpinView>
+        <Icon
+          iconNode={LoaderCircle}
+          size={SIZES[size]}
+          className={TONES[tone]}
+        />
+      </SpinView>
     </View>
   );
 }
