@@ -14,6 +14,7 @@ import {
   useState,
 } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SwitchCase } from "react-simplikit";
 
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
 import { linkUrlSchema } from "@/features/link/link.contracts";
@@ -54,6 +55,9 @@ export function ShareExtension({ url }: { url?: string }) {
   }
   const isSessionExpired =
     status === "unauthenticated" && wasAuthenticated.current;
+  // 로그인됐어도 액세스 토큰을 준비하는 동안은 확인 중 시트를 그대로 둔다.
+  const authSheet =
+    status === "authenticated" && !isTokenReady ? "checking" : status;
   // 저장 중엔 인앱 저장 시트처럼 백드롭 탭·끌어 내리기로 닫히지 않는다.
   const [isSaving, setIsSaving] = useState(false);
 
@@ -74,17 +78,21 @@ export function ShareExtension({ url }: { url?: string }) {
           isLocked={isSaving}
           waitBeforeClose={waitForPendingWork}
         >
-          {(status === "checking" ||
-            (status === "authenticated" && !isTokenReady)) && <CheckingSheet />}
-          {status === "unauthenticated" && (
-            <ExtensionLoginSheet
-              sharedUrl={sharedUrl}
-              isSessionExpired={isSessionExpired}
-            />
-          )}
-          {status === "authenticated" && isTokenReady && (
-            <ShareSaveFlow url={sharedUrl} onSavingChange={setIsSaving} />
-          )}
+          <SwitchCase
+            value={authSheet}
+            caseBy={{
+              checking: () => <CheckingSheet />,
+              unauthenticated: () => (
+                <ExtensionLoginSheet
+                  sharedUrl={sharedUrl}
+                  isSessionExpired={isSessionExpired}
+                />
+              ),
+              authenticated: () => (
+                <ShareSaveFlow url={sharedUrl} onSavingChange={setIsSaving} />
+              ),
+            }}
+          />
         </ShareSheet>
       </SafeAreaProvider>
     </QueryClientProvider>
