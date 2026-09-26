@@ -1,6 +1,6 @@
 import { Text } from "@promise9/ui/text/Text";
-import { useRef } from "react";
 import { Image, Pressable, View } from "react-native";
+import { useCallbackOncePerRender } from "react-simplikit";
 import { createLinkHandoffPath } from "@/constants/routes.constants";
 import type { ShareSaveState } from "../share.reducer";
 
@@ -66,13 +66,7 @@ export function ResultSheet({ state, sharedText, onRetry }: ResultSheetProps) {
   const content = RESULT_CONTENT[state.phase];
   const dismiss = useShareSheetDismiss();
   // 앱을 여는 동안 CTA 를 한 번 더 누르면 앱 열기·익스텐션 닫기가 겹친다.
-  const hasOpenedHostAppRef = useRef(false);
-
-  const openHostAppOnce = (path: string) => {
-    if (hasOpenedHostAppRef.current) return;
-    hasOpenedHostAppRef.current = true;
-    openHostApp(path);
-  };
+  const openHostAppOnce = useCallbackOncePerRender(openHostApp, []);
 
   const handleCta = () => {
     switch (state.phase) {
