@@ -2,11 +2,12 @@ import { Text } from "@promise9/ui/text/Text";
 import { LINK_URL_ERROR_MESSAGES } from "@shared/link/link.constants";
 import type { LinkUrlRejectReason } from "@shared/link/link.utils";
 import { Image, Pressable, View } from "react-native";
-import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
+import { useCallbackOncePerRender } from "react-simplikit";
 import { createLinkHandoffPath } from "@/constants/routes.constants";
 import type { ShareSaveState } from "../share.reducer";
 
 import { openHostApp } from "../shareHost";
+import { useShareSheetDismiss } from "./ShareSheet";
 import { SheetBody } from "./SheetBody";
 
 // 시안(외부 공유 저장): 결과 4종은 같은 시트 구조에 그래픽·문구·CTA 만 다르다.
@@ -75,23 +76,25 @@ export function ResultSheet({ state, sharedText, onRetry }: ResultSheetProps) {
     state.phase === "invalid-url"
       ? LINK_URL_ERROR_MESSAGES[state.reason]
       : RESULT_CONTENT[state.phase].subtitle;
-  const dismiss = useSheetDismiss();
+  const dismiss = useShareSheetDismiss();
+  // 앱을 여는 동안 CTA 를 한 번 더 누르면 앱 열기·익스텐션 닫기가 겹친다.
+  const openHostAppOnce = useCallbackOncePerRender(openHostApp, []);
 
   const handleCta = () => {
     switch (state.phase) {
       case "success":
-        openHostApp(`link/${state.linkId}`);
+        openHostAppOnce(`link/${state.linkId}`);
         return;
       case "duplicate":
         // 409 가 담아준 기존 링크 상세로 이동(서버 PR #109). 없으면(구버전) 홈 —
         // 빈 경로는 iOS 네이티브가 첫 세그먼트를 읽다 크래시하므로 "/" 로 보낸다.
-        openHostApp(state.linkId != null ? `link/${state.linkId}` : "/");
+        openHostAppOnce(state.linkId != null ? `link/${state.linkId}` : "/");
         return;
       case "failed":
         onRetry?.();
         return;
       case "invalid-url":
-        openHostApp(createLinkHandoffPath(sharedText ?? ""));
+        openHostAppOnce(createLinkHandoffPath(sharedText ?? ""));
         return;
       case "retry-limit":
         dismiss();

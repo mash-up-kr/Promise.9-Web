@@ -1,6 +1,15 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { AccessibilityInfo, NativeModules } from "react-native";
 
 import { AlertDialog, AlertDialogButton } from "./AlertDialog";
+
+const isReduceMotionEnabled = jest.mocked(
+  AccessibilityInfo.isReduceMotionEnabled,
+);
+
+afterEach(() => {
+  isReduceMotionEnabled.mockImplementation(() => Promise.resolve(false));
+});
 
 async function renderDialog(
   overrides: Partial<{
@@ -101,5 +110,43 @@ describe("AlertDialog", () => {
     );
     fireEvent.press(screen.getByText("로그아웃"));
     expect(onPress).not.toHaveBeenCalled();
+  });
+
+  test("동작 줄이기 설정을 읽기 전에는 등장 애니메이션을 시작하지 않는다", async () => {
+    const { NativeAnimatedModule } = NativeModules;
+    let resolveSetting!: (isEnabled: boolean) => void;
+    isReduceMotionEnabled.mockReturnValue(
+      new Promise((resolve) => {
+        resolveSetting = resolve;
+      }),
+    );
+    NativeAnimatedModule.startAnimatingNode.mockClear();
+    await renderDialog();
+    expect(NativeAnimatedModule.startAnimatingNode).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveSetting(false);
+    });
+    expect(NativeAnimatedModule.startAnimatingNode).toHaveBeenCalled();
+  });
+
+  test("동작 줄이기가 켜져 있으면 등장 애니메이션 없이 바로 그린다", async () => {
+    isReduceMotionEnabled.mockResolvedValue(true);
+    const { NativeAnimatedModule } = NativeModules;
+    const dialog = (isOpen: boolean) => (
+      <AlertDialog
+        isOpen={isOpen}
+        onClose={jest.fn()}
+        title="폴더를 삭제하시겠어요?"
+        actions={null}
+      />
+    );
+    // 화면에 놓일 때 읽어 둔 설정을 열릴 때 쓴다.
+    const { rerender } = await render(dialog(false));
+    NativeAnimatedModule.startAnimatingNode.mockClear();
+    await rerender(dialog(true));
+
+    expect(screen.getByText("폴더를 삭제하시겠어요?")).toBeOnTheScreen();
+    expect(NativeAnimatedModule.startAnimatingNode).not.toHaveBeenCalled();
   });
 });

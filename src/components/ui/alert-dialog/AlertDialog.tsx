@@ -1,9 +1,11 @@
 import { ActionButton } from "@promise9/ui/action-button/ActionButton";
+import { useReduceMotion } from "@promise9/ui/hooks/useReduceMotion";
 import { Text } from "@promise9/ui/text/Text";
 import type { PropsWithChildren, ReactNode } from "react";
-import { Modal, Pressable, StyleSheet, View } from "react-native";
-import Animated, { withSpring } from "react-native-reanimated";
+import { useEffect, useRef } from "react";
+import { Animated, Modal, Pressable, StyleSheet, View } from "react-native";
 import { Dialog } from "@/components/ui/dialog/Dialog";
+import { isWeb } from "@/constants/platform.constants";
 
 import { createAlertDialog } from "./createAlertDialog";
 
@@ -49,30 +51,55 @@ const Core = createAlertDialog({ Overlay, Backdrop });
 
 // 시안 DeleteDialog 주석: enter opacity 0 + scale 0.86→1, spring 520/34 mass 0.7.
 // (exit 스펙은 Modal 이 닫히며 즉시 언마운트되는 구조라 적용하지 않는다.)
+// iOS 공유 익스텐션에서도 쓰여 Reanimated 대신 RN Animated 로 그린다(shareExtension.bundle.test).
 const DIALOG_SPRING = { stiffness: 520, damping: 34, mass: 0.7 };
+// className 을 그대로 받도록 NativeWind 가 감싼 View 로 애니메이티드 컴포넌트를 만든다.
+const AnimatedView = Animated.createAnimatedComponent(View);
 
-function enterDialog() {
-  "worklet";
-  return {
-    initialValues: { opacity: 0, transform: [{ scale: 0.86 }] },
-    animations: {
-      opacity: withSpring(1, DIALOG_SPRING),
-      transform: [{ scale: withSpring(1, DIALOG_SPRING) }],
-    },
-  };
+interface AlertDialogContentProps extends PropsWithChildren {
+  /** null 이면 아직 설정을 읽지 못했다 — 읽을 때까지 등장을 미룬다. */
+  isReduceMotionEnabled: boolean | null;
 }
 
 // Figma Alert Dialog: 플랫 gray-800 카드 + white-05 헤어라인 보더.
-function AlertDialogContent({ children }: PropsWithChildren) {
+function AlertDialogContent({
+  isReduceMotionEnabled,
+  children,
+}: AlertDialogContentProps) {
+  const progress = useRef(
+    new Animated.Value(isReduceMotionEnabled ? 1 : 0),
+  ).current;
+
+  useEffect(() => {
+    if (isReduceMotionEnabled === null) return;
+    if (isReduceMotionEnabled) {
+      progress.setValue(1);
+      return;
+    }
+    const enter = Animated.spring(progress, {
+      toValue: 1,
+      ...DIALOG_SPRING,
+      // react-native-web 은 native driver 가 없어 켜면 경고만 남긴다.
+      useNativeDriver: !isWeb,
+    });
+    enter.start();
+    return () => enter.stop();
+  }, [progress, isReduceMotionEnabled]);
+
+  const scale = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.86, 1],
+  });
+
   return (
-    <Animated.View
-      entering={enterDialog}
+    <AnimatedView
       accessibilityViewIsModal
       accessibilityRole="alert"
+      style={{ opacity: progress, transform: [{ scale }] }}
       className="w-[304px] gap-5 overflow-hidden rounded-[36px] border border-opacity-white-05 bg-gray-800 px-4 pt-5 pb-4"
     >
       {children}
-    </Animated.View>
+    </AnimatedView>
   );
 }
 
@@ -97,6 +124,9 @@ export function AlertDialog({
   descriptionNumberOfLines,
   actions,
 }: AlertDialogProps) {
+  // 닫혀 있을 때부터 읽어 두어야 열릴 때 등장 애니메이션을 건너뛸지 이미 안다.
+  const isReduceMotionEnabled = useReduceMotion();
+
   return (
     <Core
       isOpen={isOpen}
@@ -104,7 +134,7 @@ export function AlertDialog({
       closeOnOverlayClick={closeOnOverlayClick}
     >
       <Core.Backdrop />
-      <AlertDialogContent>
+      <AlertDialogContent isReduceMotionEnabled={isReduceMotionEnabled}>
         <View className="w-full items-center gap-1">
           <Text
             variant="heading-3"

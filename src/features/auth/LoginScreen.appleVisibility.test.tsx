@@ -2,6 +2,8 @@
 // SOCIAL_PROVIDERS.apple.enabled 는 모듈 로드 시점의 isIOS 로 결정되므로, 렌더 전에
 // platform.constants 를 비-iOS 로 갈아끼운 뒤 LoginScreen 을 불러온다.
 jest.mock("@/constants/platform.constants", () => ({
+  isShareExtension: jest.requireActual("@/constants/platform.constants")
+    .isShareExtension,
   isIOS: false,
   isAndroid: true,
   isWeb: false,

@@ -1,6 +1,8 @@
 // iOS 만 투명 모달 라우트를 네이티브 모달로 띄운다 — 테스트별로 플랫폼을 바꿔 본다.
 const mockPlatform = { isIOS: true };
 jest.mock("@/constants/platform.constants", () => ({
+  isShareExtension: jest.requireActual("@/constants/platform.constants")
+    .isShareExtension,
   get isIOS() {
     return mockPlatform.isIOS;
   },

@@ -1,6 +1,7 @@
 import { Text as RNText } from "react-native";
 import type { VariantProps } from "tailwind-variants";
 
+import { isShareExtension } from "../constants/platform.constants";
 import { tv } from "../lib/tv";
 
 // 네이티브는 폰트의 weight 축을 지원하지 않아 각 프리셋의 font-weight 만으로는
@@ -72,11 +73,6 @@ export interface TextProps
   className?: string;
 }
 
-// iOS 공유 익스텐션 플래그 — index.share.js 가 세운다(Fabric Dynamic Type 배율 우회용).
-declare global {
-  var __promise9ShareExtension: boolean | undefined;
-}
-
 export function Text({
   className,
   variant,
@@ -95,7 +91,7 @@ export function Text({
     <RNText
       // iOS 공유 익스텐션에서는 Fabric Dynamic Type 배율이 깨져 fontSize 가 무효화된다 —
       // 익스텐션 플래그에서만 폰트 스케일링을 꺼서 우회한다(index.share.js 주석 참고).
-      allowFontScaling={globalThis.__promise9ShareExtension ? false : undefined}
+      allowFontScaling={isShareExtension() ? false : undefined}
       className={textStyles({
         variant,
         isTruncated,

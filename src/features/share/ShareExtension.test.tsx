@@ -14,6 +14,7 @@ jest.mock("@shared/api", () => {
   return {
     apiClient: { get: jest.fn(), post: jest.fn() },
     refreshAccessToken: jest.fn(),
+    getPendingRefresh: () => null,
     ...errors,
     ...token,
     ...contracts,
@@ -25,6 +26,8 @@ jest.mock("@/features/auth/hooks/useSocialAuth", () => ({
 }));
 let mockIsAndroid = false;
 jest.mock("@/constants/platform.constants", () => ({
+  isShareExtension: jest.requireActual("@/constants/platform.constants")
+    .isShareExtension,
   get isIOS() {
     return !mockIsAndroid;
   },
@@ -33,14 +36,6 @@ jest.mock("@/constants/platform.constants", () => ({
   },
   isWeb: false,
   isServer: false,
-}));
-let mockKeyboardHeight = 0;
-jest.mock("react-native-keyboard-controller", () => ({
-  ...jest.requireActual("react-native-keyboard-controller"),
-  useReanimatedKeyboardAnimation: () => ({
-    height: { value: mockKeyboardHeight },
-    progress: { value: mockKeyboardHeight === 0 ? 0 : 1 },
-  }),
 }));
 
 import {
@@ -60,6 +55,7 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 import { close, openHostApp } from "expo-share-extension";
+import { AccessibilityInfo } from "react-native";
 
 import { encodeSharedUrl } from "@/constants/routes.constants";
 
@@ -150,6 +146,16 @@ function unauthorizedError() {
   } as never);
 }
 
+// jest 에는 레이아웃이 없어 시트가 올라오지 않는다(올라오기 전엔 백드롭이 잠겨 있다) — 콘텐츠 높이를 알려 띄운다.
+async function showSheet() {
+  const content = screen.getByTestId("share-sheet-handle").parent;
+  await act(async () => {
+    content?.props.onLayout({
+      nativeEvent: { layout: { x: 0, y: 0, width: 375, height: 600 } },
+    });
+  });
+}
+
 let storedRefreshToken: string | null = "rtk";
 
 const mockRefreshAccessToken = refreshAccessToken as jest.Mock;
@@ -157,7 +163,6 @@ const mockRefreshAccessToken = refreshAccessToken as jest.Mock;
 beforeEach(() => {
   jest.clearAllMocks();
   mockIsAndroid = false;
-  mockKeyboardHeight = 0;
   // 익스텐션 프로세스와 같은 조건 — index.share.js 가 세우는 플래그.
   globalThis.__promise9ShareExtension = true;
   mockRefreshAccessToken.mockResolvedValue("atk");
@@ -180,6 +185,9 @@ beforeEach(() => {
 
 afterEach(() => {
   globalThis.__promise9ShareExtension = undefined;
+  jest
+    .mocked(AccessibilityInfo.isReduceMotionEnabled)
+    .mockImplementation(() => Promise.resolve(false));
 });
 
 test("공유받은 URL 을 표시한다", async () => {
@@ -215,6 +223,18 @@ test("저장 성공 → 성공 시트, '링크 보러가기'는 저장한 링크
 
   await user.press(screen.getByText("링크 보러가기"));
   expect(openHostApp).toHaveBeenCalledWith("link/42");
+});
+
+test("'링크 보러가기'를 여러 번 눌러도 앱은 한 번만 연다", async () => {
+  mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 42 } } });
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  const user = userEvent.setup();
+
+  await user.press(await screen.findByText("저장"));
+  await user.press(await screen.findByText("링크 보러가기"));
+  await user.press(screen.getByText("링크 보러가기"));
+
+  expect(openHostApp).toHaveBeenCalledTimes(1);
 });
 
 test("중복 저장 → 중복 시트, '링크 보러가기'는 기존 링크 상세를 연다", async () => {
@@ -584,6 +604,31 @@ test("로그인에 성공하면 같은 시트에서 저장 화면으로 넘어�
   expect(mockGet).toHaveBeenCalledWith("/folders", expect.anything());
 });
 
+// 닫자마자 네이티브가 프로세스를 끝내므로 로그인 결과(새 토큰)를 저장하기 전에 끊기면 안 된다.
+// 동작 줄이기면 시트가 퇴장 애니메이션 없이 바로 닫기를 요청한다 — 닫기의 대기만 관찰한다.
+test("로그인 요청이 진행 중이면 끝난 뒤에 익스텐션을 닫는다", async () => {
+  jest.mocked(AccessibilityInfo.isReduceMotionEnabled).mockResolvedValue(true);
+  storedRefreshToken = null;
+  mockGetIdToken.mockResolvedValue("google-id-token");
+  let resolveLogin!: (value: unknown) => void;
+  mockPost.mockReturnValue(new Promise((resolve) => (resolveLogin = resolve)));
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  const user = userEvent.setup();
+
+  await user.press(await screen.findByText("Google로 계속하기"));
+  await showSheet();
+  await user.press(screen.getByLabelText("시트 닫기"));
+  expect(close).not.toHaveBeenCalled();
+
+  resolveLogin({
+    data: {
+      success: true,
+      data: { accessToken: "atk", refreshToken: "rtk", isNewUser: false },
+    },
+  });
+  await waitFor(() => expect(close).toHaveBeenCalled());
+});
+
 test("저장 중 세션이 끊기면(refresh 실패로 토큰 삭제) 로그인 시트로 돌아간다", async () => {
   mockPost.mockImplementation(async () => {
     // client.ts 인터셉터가 refresh 실패 시 하는 일을 흉내 낸다.
@@ -596,6 +641,22 @@ test("저장 중 세션이 끊기면(refresh 실패로 토큰 삭제) 로그인 
 
   expect(await screen.findByText("로그인이 필요해요")).toBeOnTheScreen();
   expect(screen.getByText("다시 로그인해주세요")).toBeOnTheScreen();
+});
+
+// 저장 중이던 편집 시트가 그대로 사라지므로 잠금을 풀 주체가 없다 — 풀리지 않으면 로그인 시트를 닫을 수 없다.
+test("저장 중 세션이 끊겨 로그인 시트로 돌아가면 시트 잠금이 풀린다", async () => {
+  mockPost.mockImplementation(async () => {
+    // client.ts 인터셉터가 refresh 실패 시 하는 일을 흉내 낸다.
+    await clearTokens();
+    throw unauthorizedError();
+  });
+  await render(<ShareExtension url="https://toss.tech/a" />);
+
+  await userEvent.setup().press(await screen.findByText("저장"));
+
+  expect(await screen.findByText("로그인이 필요해요")).toBeOnTheScreen();
+  await showSheet();
+  expect(screen.getByLabelText("시트 닫기")).toBeEnabled();
 });
 
 test("세션 이탈 후 재로그인하면 편집 시트(저장 화면)로 돌아간다", async () => {
@@ -671,28 +732,24 @@ test("저장 시트 스크롤은 키보드 높이만큼 인셋을 넣어 메모 
 test("백드롭을 탭하면 익스텐션을 닫는다", async () => {
   await render(<ShareExtension url="https://toss.tech/a" />);
   await screen.findByTestId("share-entry-scroll");
-  await userEvent.setup().press(screen.getByLabelText("sheet-backdrop"));
-  expect(close).toHaveBeenCalled();
+  await showSheet();
+  await userEvent.setup().press(screen.getByLabelText("시트 닫기"));
+  await waitFor(() => expect(close).toHaveBeenCalled());
 });
 
-test("시트를 끌어 내리면 익스텐션을 닫는다", async () => {
-  await render(<ShareExtension url="https://toss.tech/a" />);
-  await screen.findByTestId("share-entry-scroll");
-  await userEvent.setup().press(screen.getByLabelText("sheet-dismiss"));
-  expect(close).toHaveBeenCalled();
-});
-
-test("저장 중에는 백드롭 탭·끌어 내리기로 닫히지 않는다", async () => {
+// 잠긴 백드롭이 탭에 닫히지 않는 동작 자체는 ShareSheet.test 가 본다 — 여기선 저장 상태가 잠금으로 이어지는지만.
+test("저장 중에는 백드롭을 잠가 탭해도 닫히지 않는다", async () => {
   let resolvePost!: (value: unknown) => void;
   mockPost.mockReturnValue(new Promise((resolve) => (resolvePost = resolve)));
   await render(<ShareExtension url="https://toss.tech/a" />);
-  const user = userEvent.setup();
-  await user.press(await screen.findByText("저장"));
-  await user.press(screen.getByLabelText("sheet-backdrop"));
-  await user.press(screen.getByLabelText("sheet-dismiss"));
-  expect(close).not.toHaveBeenCalled();
+  await screen.findByText("저장");
+  await showSheet();
+  await userEvent.setup().press(screen.getByText("저장"));
+  expect(screen.getByLabelText("시트 닫기")).toBeDisabled();
+
   resolvePost({ data: { success: true, data: { linkId: 1 } } });
   expect(await screen.findByText("링크 저장을 완료했어요")).toBeOnTheScreen();
+  expect(screen.getByLabelText("시트 닫기")).toBeEnabled();
 });
 
 // iOS 는 지도·SNS 앱이 링크를 텍스트로 공유한다 — 익스텐션이 text 로 받는다.
