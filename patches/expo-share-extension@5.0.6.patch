@@ -43,7 +43,7 @@ index 3816339ae033c7b49c7d683d4c432888d5080788..27f41d12b95e29fa951d46c48abb0ebc
          PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
          PRODUCT_NAME: `"${targetName}"`,
 diff --git a/plugin/swift/ShareExtensionViewController.swift b/plugin/swift/ShareExtensionViewController.swift
-index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..56015b9bb7e4a0d7a765396c281f0417eb440671 100644
+index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..da6405064e59ac253af389e14bf36962a91a06c6 100644
 --- a/plugin/swift/ShareExtensionViewController.swift
 +++ b/plugin/swift/ShareExtensionViewController.swift
 @@ -1,6 +1,7 @@
@@ -75,10 +75,15 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..56015b9bb7e4a0d7a765396c281f0417
        if var components = URLComponents(url: bundleURL, resolvingAgainstBaseURL: false) {
          components.queryItems = (components.queryItems ?? []) + [URLQueryItem(name: "shareExtension", value: "true")]
          return components.url ?? bundleURL
-@@ -46,6 +48,59 @@ class ShareExtensionViewController: UIViewController {
+@@ -45,6 +47,63 @@ class ShareExtensionViewController: UIViewController {
+   var reactNativeFactory: RCTReactNativeFactory?
    var reactNativeFactoryDelegate: RCTReactNativeFactoryDelegate?
    private var isCleanedUp = false
- 
++  // 결과 CTA 를 연달아 누르면 close·openHostApp 이 겹쳐 온다 — 요청은 한 번만 끝낸다.
++  private var hasEndedRequest = false
++  // 블록 옵저버는 removeObserver(self) 로 지워지지 않는다 — 받은 토큰으로 지운다.
++  private var notificationObservers: [NSObjectProtocol] = []
++
 +  // iOS 는 끝난 익스텐션 프로세스를 다음 공유에 재사용하는데, cleanupAfterClose 뒤에도 RN 런타임이
 +  // 해제되지 않아 공유할 때마다 메모리가 쌓여 결국 jetsam 으로 종료된다(실측 75→102MB).
 +  // 요청을 끝내면 프로세스를 종료해 다음 공유는 항상 새 프로세스에서 시작하게 한다.
@@ -131,11 +136,10 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..56015b9bb7e4a0d7a765396c281f0417
 +    super.beginRequest(with: context)
 +    requestSession = ShareExtensionViewController.startSession()
 +  }
-+
+ 
    deinit {
      print("🧹 ShareExtensionViewController deinit")
-     cleanupAfterClose()
-@@ -61,6 +116,9 @@ class ShareExtensionViewController: UIViewController {
+@@ -61,6 +120,9 @@ class ShareExtensionViewController: UIViewController {
    
    override func viewDidLoad() {
      super.viewDidLoad()
@@ -145,7 +149,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..56015b9bb7e4a0d7a765396c281f0417
      setupLoadingIndicator()
      isCleanedUp = false
      
-@@ -81,10 +139,29 @@ class ShareExtensionViewController: UIViewController {
+@@ -81,10 +143,31 @@ class ShareExtensionViewController: UIViewController {
      super.viewDidDisappear(animated)
      // we need to clean up when the view is closed via a swipe
      cleanupAfterClose()
@@ -161,6 +165,8 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..56015b9bb7e4a0d7a765396c281f0417
    
    func close() {
 -    self.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
++    guard !hasEndedRequest else { return }
++    hasEndedRequest = true
 +    // 완료 요청과 동시에 RN 리소스를 해체하면 Fabric 서피스가 콘텐츠·변환을 잃고
 +    // 기본(흰) 배경으로 리셋된 채 시스템 dismiss 애니메이션에 노출된다(흰 시트 플래시).
 +    // 해체 전에 화면에서 먼저 숨겨 플래시를 막는다.
@@ -176,7 +182,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..56015b9bb7e4a0d7a765396c281f0417
      // we need to clean up when the view is closed via the close() method in react native
      cleanupAfterClose()
    }
-@@ -98,7 +175,7 @@ class ShareExtensionViewController: UIViewController {
+@@ -98,7 +181,7 @@ class ShareExtensionViewController: UIViewController {
        
        reactNativeFactoryDelegate = ReactNativeDelegate()
        reactNativeFactoryDelegate!.dependencyProvider = RCTAppDependencyProvider()
@@ -185,7 +191,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..56015b9bb7e4a0d7a765396c281f0417
        
        var initialProps = sharedData ?? [:]
        
-@@ -130,6 +207,9 @@ class ShareExtensionViewController: UIViewController {
+@@ -130,6 +213,9 @@ class ShareExtensionViewController: UIViewController {
        
        configureRootView(reactNativeRootView, withBackgroundColorDict: backgroundFromInfoPlist, withHeight: heightFromInfoPlist)
        view.addSubview(reactNativeRootView)
@@ -195,7 +201,15 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..56015b9bb7e4a0d7a765396c281f0417
  
        // Hide loading indicator once React content is ready
        self.loadingIndicator.stopAnimating()
-@@ -202,21 +282,34 @@ class ShareExtensionViewController: UIViewController {
+@@ -171,6 +257,7 @@ class ShareExtensionViewController: UIViewController {
+   }
+   
+   private func openHostApp(path: String?) {
++    guard !hasEndedRequest else { return }
+     guard let scheme = Bundle.main.object(forInfoDictionaryKey: "HostAppScheme") as? String else { return }
+     var urlComponents = URLComponents()
+     urlComponents.scheme = scheme
+@@ -202,21 +289,34 @@ class ShareExtensionViewController: UIViewController {
    }
    
    @objc @discardableResult private func openURL(_ url: URL) -> Bool {
@@ -232,15 +246,41 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..56015b9bb7e4a0d7a765396c281f0417
          responder2!.perform(selector, with: url)
          return true
        }
-@@ -247,6 +340,7 @@ class ShareExtensionViewController: UIViewController {
+@@ -227,13 +327,13 @@ class ShareExtensionViewController: UIViewController {
+   }
+   
+   private func setupNotificationCenterObserver() {
+-    NotificationCenter.default.addObserver(forName: NSNotification.Name("close"), object: nil, queue: nil) { [weak self] _ in
++    let closeObserver = NotificationCenter.default.addObserver(forName: NSNotification.Name("close"), object: nil, queue: nil) { [weak self] _ in
+       DispatchQueue.main.async {
+         self?.close()
+       }
+     }
+     
+-    NotificationCenter.default.addObserver(forName: NSNotification.Name("openHostApp"), object: nil, queue: nil) { [weak self] notification in
++    let openHostAppObserver = NotificationCenter.default.addObserver(forName: NSNotification.Name("openHostApp"), object: nil, queue: nil) { [weak self] notification in
+       DispatchQueue.main.async {
+         if let userInfo = notification.userInfo {
+           if let path = userInfo["path"] as? String {
+@@ -242,13 +342,16 @@ class ShareExtensionViewController: UIViewController {
+         }
+       }
+     }
++    notificationObservers = [closeObserver, openHostAppObserver]
+   }
+   
    private func cleanupAfterClose() {
      if isCleanedUp { return }
      isCleanedUp = true
 +    RCTUtilsUIOverride.setPresentedViewController(nil)
      
-     NotificationCenter.default.removeObserver(self)
+-    NotificationCenter.default.removeObserver(self)
++    notificationObservers.forEach { NotificationCenter.default.removeObserver($0) }
++    notificationObservers = []
      
-@@ -279,6 +373,9 @@ class ShareExtensionViewController: UIViewController {
+     // Remove React Native view and deallocate resources
+     view.subviews.forEach { subview in
+@@ -279,6 +382,9 @@ class ShareExtensionViewController: UIViewController {
      }
      
      var sharedItems: [String: Any] = [:]
@@ -250,7 +290,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..56015b9bb7e4a0d7a765396c281f0417
      
      let group = DispatchGroup()
      
-@@ -368,11 +465,14 @@ class ShareExtensionViewController: UIViewController {
+@@ -368,11 +474,14 @@ class ShareExtensionViewController: UIViewController {
  
          // Only check for plain text if no URL was found
          if !provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) && provider.hasItemConformingToTypeIdentifier(UTType.text.identifier) {
@@ -268,7 +308,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..56015b9bb7e4a0d7a765396c281f0417
                }
                group.leave()
              }
-@@ -604,7 +704,48 @@ class ShareExtensionViewController: UIViewController {
+@@ -604,7 +713,48 @@ class ShareExtensionViewController: UIViewController {
      }
      
      group.notify(queue: .main) {
