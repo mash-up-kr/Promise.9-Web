@@ -250,10 +250,9 @@ const CLOSING_TO_OPENING = new Map([
   ["＞", "＜"],
 ]);
 const OPENING_BRACKETS = new Set(CLOSING_TO_OPENING.values());
-// 이모지·그림 문자와 이를 잇는 문자(ZWJ·이체 선택자·키캡) — 링크 바로 뒤에 붙여 쓰면 거기서 링크가 끝난다.
+// 이모지·그림 문자 — 링크 바로 뒤에 붙여 쓰면 거기서 링크가 끝난다. 이를 잇는 문자(ZWJ·이체 선택자·키캡)는
+// 이모지 없이 홀로 쓰이면 보이지 않는 문자라 여기서 자르지 않는다(자르면 다른 주소가 된다).
 const PICTOGRAPHIC_RANGES: ReadonlyArray<readonly [number, number]> = [
-  [0x200d, 0x200d],
-  [0x20e3, 0x20e3],
   [0x2190, 0x21ff],
   [0x2300, 0x23ff],
   [0x2460, 0x24ff],
@@ -264,7 +263,6 @@ const PICTOGRAPHIC_RANGES: ReadonlyArray<readonly [number, number]> = [
   [0x303d, 0x303d],
   [0x3297, 0x3297],
   [0x3299, 0x3299],
-  [0xfe0e, 0xfe0f],
   [0x1f000, 0x1faff],
 ];
 const LEADING_PUNCTUATION = new Set([...OPENING_BRACKETS, '"', "'"]);

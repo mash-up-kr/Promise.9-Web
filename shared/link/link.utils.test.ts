@@ -356,6 +356,16 @@ describe("findLinkInText", () => {
     );
   });
 
+  // 이체 선택자·ZWJ 는 이모지 없이 홀로 쓰이면 보이지 않는 문자다 — 거기서 자르면 다른 주소가 된다.
+  test("링크 중간의 이체 선택자·ZWJ 에서 자르지 않고 보이지 않는 문자로 거부한다", () => {
+    for (const text of [
+      `https://naver.me/a${String.fromCodePoint(0xfe0f)}b`,
+      `https://toss.tech${String.fromCodePoint(0x200d)}.evil.com`,
+    ]) {
+      expect(findLinkInText(text)).toEqual(rejected("invisible-char"));
+    }
+  });
+
   test("주소 안의 짝 맞는 괄호는 남긴다", () => {
     expect(
       findLinkInText("위키: https://en.wikipedia.org/wiki/Foo_(bar)."),
