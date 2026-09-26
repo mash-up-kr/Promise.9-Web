@@ -11,7 +11,6 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Keyboard, View } from "react-native";
 import { Dialog } from "@/components/ui/dialog/Dialog";
-import { isIOS } from "@/constants/platform.constants";
 import { DuplicateFolderNameAlert } from "./DuplicateFolderNameAlert";
 import { FolderColorPicker } from "./FolderColorPicker";
 
@@ -66,8 +65,8 @@ export function FolderFormCard({
         setIsDuplicateOpen(true);
         return;
       }
-      // 호출부가 스낵바로 알린다 — iOS 는 키보드가 올라와 있으면 화면 아래 스낵바가 가려 먼저 내린다.
-      if (isIOS) Keyboard.dismiss();
+      // 호출부가 스낵바로 알린다 — 키보드가 올라와 있으면 화면 아래 스낵바가 가려 먼저 내린다.
+      Keyboard.dismiss();
       onError(error);
     }
   });

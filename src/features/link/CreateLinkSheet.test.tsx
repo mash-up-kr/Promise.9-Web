@@ -393,7 +393,8 @@ describe("CreateLinkSheet", () => {
     dismissKeyboard.mockRestore();
   });
 
-  test("iOS 가 아니면 저장하지 못해도 키보드를 그대로 둔다", async () => {
+  // Android 도 키보드가 시트 아래쪽 스낵바를 가린다(뒤로 가기로 키보드를 내려야 보인다).
+  test("Android 에서도 저장하지 못하면 키보드를 내린다", async () => {
     mockPlatform.isIOS = false;
     const dismissKeyboard = jest.spyOn(Keyboard, "dismiss");
     await renderSheet();
@@ -402,7 +403,7 @@ describe("CreateLinkSheet", () => {
     await pressSave();
 
     expect(await screen.findByText("올바른 링크 주소가 아니에요")).toBeTruthy();
-    expect(dismissKeyboard).not.toHaveBeenCalled();
+    expect(dismissKeyboard).toHaveBeenCalledTimes(1);
     dismissKeyboard.mockRestore();
   });
 

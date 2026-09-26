@@ -131,7 +131,7 @@ test("iOS 에서 일반 에러면 키보드를 내린다", async () => {
   dismissKeyboard.mockRestore();
 });
 
-test("iOS 가 아니면 일반 에러여도 키보드를 그대로 둔다", async () => {
+test("Android 에서도 일반 에러면 키보드를 내린다", async () => {
   mockPlatform.isIOS = false;
   const dismissKeyboard = jest.spyOn(Keyboard, "dismiss");
   const onSubmit = jest.fn().mockRejectedValue(new Error("network"));
@@ -140,7 +140,7 @@ test("iOS 가 아니면 일반 에러여도 키보드를 그대로 둔다", asyn
   await user.press(screen.getByLabelText("저장"));
 
   await waitFor(() => expect(onError).toHaveBeenCalled());
-  expect(dismissKeyboard).not.toHaveBeenCalled();
+  expect(dismissKeyboard).toHaveBeenCalled();
   dismissKeyboard.mockRestore();
 });
 
