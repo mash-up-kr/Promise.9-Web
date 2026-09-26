@@ -56,11 +56,14 @@ function CancelButton() {
 interface RenderSheetOptions {
   isLocked?: boolean;
   waitBeforeClose?: (proceed: () => void) => void;
+  /** 렌더 뒤 알려 줄 콘텐츠 높이 — null 이면 재지 않아 시트가 올라오지 않은 채로 둔다. */
+  contentHeight?: number | null;
 }
 
 async function renderSheet({
   isLocked = false,
   waitBeforeClose,
+  contentHeight = 300,
 }: RenderSheetOptions = {}) {
   const onClose = jest.fn();
   const onOtherPress = jest.fn();
@@ -79,6 +82,9 @@ async function renderSheet({
       </ShareSheet>
     </SafeAreaProvider>,
   );
+  if (contentHeight !== null) {
+    await layoutContent(contentHeight);
+  }
   return { onClose, onOtherPress };
 }
 
@@ -311,9 +317,8 @@ test("닫히는 중에는 핸들을 끌어도 제스처를 받지 않는다", as
 // 시트 위치는 네이티브 드라이버가 들고 있다 — 멈춘 자리를 오프셋으로 넘겨받아야 0 으로 튀지 않는다.
 test("드래그를 잡으면 움직이던 시트를 그 자리에서 멈추고 이어서 끈다", async () => {
   const { NativeAnimatedModule } = NativeModules;
-  await renderSheet();
   // 콘텐츠를 재면 등장 애니메이션이 시작된다 — 끝나기 전에 잡는다.
-  await layoutContent(300);
+  await renderSheet();
   NativeAnimatedModule.stopAnimation.mockClear();
   NativeAnimatedModule.extractAnimatedNodeOffset.mockClear();
 
@@ -346,14 +351,107 @@ test("퇴장 애니메이션이 끝까지 가지 못하면 onClose 를 부르지
   expect(onClose).toHaveBeenCalledTimes(1);
 });
 
-test("콘텐츠 높이를 재면 시트를 그 높이로 맞춘다", async () => {
+// 호스트 공유 시트 위로 뜨는 동안 들어온 탭이 보이지도 않는 시트를 닫지 않게 한다.
+test("올라오기 시작하기 전에는 백드롭을 눌러도 닫히지 않는다", async () => {
+  const { onClose } = await renderSheet({ contentHeight: null });
+  await setupUser().press(screen.getByLabelText("시트 닫기"));
+  await finishAnimations();
+  expect(onClose).not.toHaveBeenCalled();
+
+  await layoutContent(300);
+  await setupUser().press(screen.getByLabelText("시트 닫기"));
+  await finishAnimations();
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+// 올라오기 전에 콘텐츠가 커지면(확인 → 저장 시트) 예전 높이만큼만 내려가 있어 윗부분이 비친다.
+test("올라오기 전에 콘텐츠 높이가 바뀌면 시트를 새 높이만큼 내려 둔다", async () => {
+  isReduceMotionEnabled.mockReturnValue(new Promise(() => {}));
+  await renderSheet({ contentHeight: null });
+
+  await layoutContent(300);
+  await layoutContent(500);
+
+  const sheet = screen.getByTestId("share-sheet");
+  expect(sheet).toHaveStyle({ height: 500 });
+  expect(sheet.parent).toHaveStyle({ transform: [{ translateY: 500 }] });
+});
+
+test("동작 줄이기 설정을 끝내 읽지 못해도 잠시 뒤 올라온다", async () => {
+  const { NativeAnimatedModule } = NativeModules;
+  isReduceMotionEnabled.mockReturnValue(new Promise(() => {}));
+  NativeAnimatedModule.startAnimatingNode.mockClear();
   await renderSheet();
+  expect(NativeAnimatedModule.startAnimatingNode).not.toHaveBeenCalledWith(
+    expect.anything(),
+    expect.anything(),
+    expect.objectContaining({ toValue: 0 }),
+    expect.anything(),
+  );
+
+  // 설정을 기다리는 시한(0.5초)이 지나면 꺼진 것으로 보고 평소처럼 미끄러져 올라온다.
+  await act(async () => {
+    jest.advanceTimersByTime(600);
+  });
+  expect(NativeAnimatedModule.startAnimatingNode).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.anything(),
+    expect.objectContaining({ toValue: 0 }),
+    expect.anything(),
+  );
+});
+
+test("등장 애니메이션이 끝났다는 신호가 없으면 잠시 뒤 제자리에 올려 둔다", async () => {
+  const { NativeAnimatedModule } = NativeModules;
+  NativeAnimatedModule.startAnimatingNode.mockImplementationOnce(() => {});
+  await renderSheet();
+  NativeAnimatedModule.setAnimatedNodeValue.mockClear();
+
+  await act(async () => {
+    jest.advanceTimersByTime(2000);
+  });
+  expect(NativeAnimatedModule.setAnimatedNodeValue).toHaveBeenCalledWith(
+    expect.any(Number),
+    0,
+  );
+});
+
+test.each([
+  {
+    name: "닫기 전 기다림이 끝나지 않아도",
+    waitBeforeClose: () => {},
+    mockExit: () => {},
+  },
+  {
+    name: "퇴장 애니메이션이 끝났다는 신호가 없어도",
+    waitBeforeClose: undefined,
+    mockExit: () =>
+      NativeModules.NativeAnimatedModule.startAnimatingNode.mockImplementationOnce(
+        () => {},
+      ),
+  },
+])("$name 조작이 막힌 채 남지 않고 잠시 뒤 닫힌다", async ({
+  waitBeforeClose,
+  mockExit,
+}) => {
+  const { onClose } = await renderSheet({ waitBeforeClose });
+  mockExit();
+
+  await setupUser().press(screen.getByLabelText("시트 닫기"));
+  await act(async () => {
+    jest.advanceTimersByTime(10_000);
+  });
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test("콘텐츠 높이를 재면 시트를 그 높이로 맞춘다", async () => {
+  await renderSheet({ contentHeight: null });
   await layoutContent(300);
   expect(screen.getByTestId("share-sheet")).toHaveStyle({ height: 300 });
 });
 
 test("콘텐츠 높이가 바뀌면 시트 높이가 한 번에 튀지 않고 따라간다", async () => {
-  await renderSheet();
+  await renderSheet({ contentHeight: null });
   await layoutContent(300);
   await layoutContent(500);
   expect(screen.getByTestId("share-sheet")).toHaveStyle({ height: 300 });
@@ -371,7 +469,7 @@ test("동작 줄이기 설정을 읽기 전에는 콘텐츠를 재도 올라오�
       resolveSetting = resolve;
     }),
   );
-  await renderSheet();
+  await renderSheet({ contentHeight: null });
   NativeAnimatedModule.startAnimatingNode.mockClear();
 
   await layoutContent(300);
@@ -400,7 +498,7 @@ describe("동작 줄이기가 켜져 있으면", () => {
   });
 
   test("콘텐츠 높이가 바뀌면 곧바로 맞춘다", async () => {
-    await renderSheet();
+    await renderSheet({ contentHeight: null });
     await layoutContent(300);
     await layoutContent(500);
     expect(screen.getByTestId("share-sheet")).toHaveStyle({ height: 500 });

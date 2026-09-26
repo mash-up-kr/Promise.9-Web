@@ -142,6 +142,16 @@ function unauthorizedError() {
   } as never);
 }
 
+// jest 에는 레이아웃이 없어 시트가 올라오지 않는다(올라오기 전엔 백드롭이 잠겨 있다) — 콘텐츠 높이를 알려 띄운다.
+async function showSheet() {
+  const content = screen.getByTestId("share-sheet-handle").parent;
+  await act(async () => {
+    content?.props.onLayout({
+      nativeEvent: { layout: { x: 0, y: 0, width: 375, height: 600 } },
+    });
+  });
+}
+
 let storedRefreshToken: string | null = "rtk";
 
 const mockRefreshAccessToken = refreshAccessToken as jest.Mock;
@@ -604,6 +614,7 @@ test("로그인 요청이 진행 중이면 끝난 뒤에 익스텐션을 닫는�
   const user = userEvent.setup();
 
   await user.press(await screen.findByText("Google로 계속하기"));
+  await showSheet();
   await user.press(screen.getByLabelText("시트 닫기"));
   expect(close).not.toHaveBeenCalled();
 
@@ -642,6 +653,7 @@ test("저장 중 세션이 끊겨 로그인 시트로 돌아가면 시트 잠금
   await userEvent.setup().press(await screen.findByText("저장"));
 
   expect(await screen.findByText("로그인이 필요해요")).toBeOnTheScreen();
+  await showSheet();
   expect(screen.getByLabelText("시트 닫기")).toBeEnabled();
 });
 
@@ -717,6 +729,7 @@ test("저장 시트 스크롤은 키보드 높이만큼 인셋을 넣어 메모 
 test("백드롭을 탭하면 익스텐션을 닫는다", async () => {
   await render(<ShareExtension url="https://toss.tech/a" />);
   await screen.findByTestId("share-entry-scroll");
+  await showSheet();
   await userEvent.setup().press(screen.getByLabelText("시트 닫기"));
   await waitFor(() => expect(close).toHaveBeenCalled());
 });
@@ -726,7 +739,9 @@ test("저장 중에는 백드롭을 잠가 탭해도 닫히지 않는다", async
   let resolvePost!: (value: unknown) => void;
   mockPost.mockReturnValue(new Promise((resolve) => (resolvePost = resolve)));
   await render(<ShareExtension url="https://toss.tech/a" />);
-  await userEvent.setup().press(await screen.findByText("저장"));
+  await screen.findByText("저장");
+  await showSheet();
+  await userEvent.setup().press(screen.getByText("저장"));
   expect(screen.getByLabelText("시트 닫기")).toBeDisabled();
 
   resolvePost({ data: { success: true, data: { linkId: 1 } } });
