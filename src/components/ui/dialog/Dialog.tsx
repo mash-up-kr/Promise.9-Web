@@ -46,11 +46,7 @@ export function Dialog({
   dismissAccessibilityLabel = "닫기",
   hasTextInput = false,
 }: DialogProps) {
-  const Container = !isShareExtension()
-    ? KeyboardAvoidingContainer
-    : hasTextInput
-      ? ExtensionInputContainer
-      : CenteredContainer;
+  const Container = selectContainer(hasTextInput);
 
   return (
     <Container>
@@ -66,6 +62,11 @@ export function Dialog({
       {children}
     </Container>
   );
+}
+
+function selectContainer(hasTextInput: boolean) {
+  if (!isShareExtension()) return KeyboardAvoidingContainer;
+  return hasTextInput ? ExtensionInputContainer : CenteredContainer;
 }
 
 function KeyboardAvoidingContainer({ children }: PropsWithChildren) {
