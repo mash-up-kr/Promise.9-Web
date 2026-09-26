@@ -1,4 +1,5 @@
 import { Text } from "@promise9/ui/text/Text";
+import { useRef } from "react";
 import { Image, Pressable, View } from "react-native";
 import { createLinkHandoffPath } from "@/constants/routes.constants";
 import type { ShareSaveState } from "../share.reducer";
@@ -64,22 +65,30 @@ export interface ResultSheetProps {
 export function ResultSheet({ state, sharedText, onRetry }: ResultSheetProps) {
   const content = RESULT_CONTENT[state.phase];
   const dismiss = useShareSheetDismiss();
+  // 앱을 여는 동안 CTA 를 한 번 더 누르면 앱 열기·익스텐션 닫기가 겹친다.
+  const hasOpenedHostAppRef = useRef(false);
+
+  const openHostAppOnce = (path: string) => {
+    if (hasOpenedHostAppRef.current) return;
+    hasOpenedHostAppRef.current = true;
+    openHostApp(path);
+  };
 
   const handleCta = () => {
     switch (state.phase) {
       case "success":
-        openHostApp(`link/${state.linkId}`);
+        openHostAppOnce(`link/${state.linkId}`);
         return;
       case "duplicate":
         // 409 가 담아준 기존 링크 상세로 이동(서버 PR #109). 없으면(구버전) 홈 —
         // 빈 경로는 iOS 네이티브가 첫 세그먼트를 읽다 크래시하므로 "/" 로 보낸다.
-        openHostApp(state.linkId != null ? `link/${state.linkId}` : "/");
+        openHostAppOnce(state.linkId != null ? `link/${state.linkId}` : "/");
         return;
       case "failed":
         onRetry();
         return;
       case "invalid-url":
-        openHostApp(createLinkHandoffPath(sharedText));
+        openHostAppOnce(createLinkHandoffPath(sharedText));
         return;
       case "retry-limit":
         dismiss();

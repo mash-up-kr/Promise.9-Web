@@ -211,6 +211,18 @@ test("저장 성공 → 성공 시트, '링크 보러가기'는 저장한 링크
   expect(openHostApp).toHaveBeenCalledWith("link/42");
 });
 
+test("'링크 보러가기'를 여러 번 눌러도 앱은 한 번만 연다", async () => {
+  mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 42 } } });
+  await render(<ShareExtension url="https://toss.tech/a" />);
+  const user = userEvent.setup();
+
+  await user.press(await screen.findByText("저장"));
+  await user.press(await screen.findByText("링크 보러가기"));
+  await user.press(screen.getByText("링크 보러가기"));
+
+  expect(openHostApp).toHaveBeenCalledTimes(1);
+});
+
 test("중복 저장 → 중복 시트, '링크 보러가기'는 기존 링크 상세를 연다", async () => {
   mockPost.mockRejectedValue(duplicateError(77));
   await render(<ShareExtension url="https://toss.tech/a" />);
