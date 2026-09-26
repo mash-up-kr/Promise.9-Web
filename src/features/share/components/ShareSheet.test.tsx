@@ -249,6 +249,43 @@ test.each([
   expect(config.initialVelocity).toBeCloseTo(((dy / durationMs) * 1000) / 2);
 });
 
+test.each([
+  {
+    name: "바로 끝나면 손을 뗀 속도를 이어받는다",
+    isAsync: false,
+    expected: ((150 / 300) * 1000) / 2,
+  },
+  {
+    name: "기다렸다 끝나면 멈춘 자리에서 새로 내려간다",
+    isAsync: true,
+    expected: 0,
+  },
+])("끌어 내려 닫을 때 닫기 전 기다림이 $name", async ({
+  isAsync,
+  expected,
+}) => {
+  const { NativeAnimatedModule } = NativeModules;
+  let proceed!: () => void;
+  await renderSheet({
+    waitBeforeClose: (next) => {
+      proceed = next;
+      if (!isAsync) next();
+    },
+  });
+  NativeAnimatedModule.startAnimatingNode.mockClear();
+
+  await dragHandle(150, 300);
+  if (isAsync) {
+    await act(async () => {
+      proceed();
+    });
+  }
+
+  const [, , config] =
+    NativeAnimatedModule.startAnimatingNode.mock.calls.at(-1);
+  expect(config.initialVelocity).toBeCloseTo(expected);
+});
+
 test("잠금 중에는 핸들을 끌어도 제스처를 받지 않는다", async () => {
   const { onClose } = await renderSheet({ isLocked: true });
   expect(await dragHandle(150, 300)).toBe(false);

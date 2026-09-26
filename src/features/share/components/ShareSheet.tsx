@@ -206,7 +206,10 @@ export function ShareSheet({
       // 기다림이나 퇴장 애니메이션이 끝나지 않아도 조작이 막힌 채 남지 않게 시한 뒤엔 닫는다.
       closeTimerRef.current = setTimeout(finishClose, CLOSE_DEADLINE_MS);
       if (waitBeforeClose) {
-        waitBeforeClose(() => slideOut(velocity));
+        // 기다리는 동안 시트는 끌던 자리에 멈춰 있어 그 뒤엔 손을 뗀 속도가 지난 값이다.
+        let hasWaited = false;
+        waitBeforeClose(() => slideOut(hasWaited ? 0 : velocity));
+        hasWaited = true;
       } else {
         slideOut(velocity);
       }
