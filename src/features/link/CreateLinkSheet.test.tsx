@@ -6,6 +6,7 @@ import {
   userEvent,
   waitFor,
 } from "@testing-library/react-native";
+import { Keyboard } from "react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 const mockBack = jest.fn();
@@ -355,6 +356,24 @@ describe("CreateLinkSheet", () => {
         expect.objectContaining({ url: "https://naver.me/xYz1" }),
       ),
     );
+  });
+
+  // 입력하다 바로 저장하면 키보드가 올라온 채라 시트 아래쪽 스낵바가 키보드에 가린다.
+  test("저장하지 못하면 키보드를 내려 실패 스낵바가 보이게 한다", async () => {
+    const dismissKeyboard = jest.spyOn(Keyboard, "dismiss");
+    mockPost.mockRejectedValueOnce(new Error("500"));
+    await renderSheet();
+
+    await fillValidUrl("abc");
+    await pressSave();
+    expect(await screen.findByText("올바른 링크 주소가 아니에요")).toBeTruthy();
+    expect(dismissKeyboard).toHaveBeenCalledTimes(1);
+
+    await fillValidUrl();
+    await pressSave();
+    expect(await screen.findByText("저장하지 못했어요")).toBeTruthy();
+    expect(dismissKeyboard).toHaveBeenCalledTimes(2);
+    dismissKeyboard.mockRestore();
   });
 
   test("저장 실패(500) → 실패 스낵바 + 입력 보존, '다시 시도'가 저장을 재실행한다", async () => {

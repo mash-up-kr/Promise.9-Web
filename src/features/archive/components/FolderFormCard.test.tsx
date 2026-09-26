@@ -8,6 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 import type { AxiosResponse } from "axios";
+import { Keyboard } from "react-native";
 import { FolderFormCard } from "./FolderFormCard";
 
 const conflictError = (errorCode: number) =>
@@ -98,6 +99,19 @@ test("일반 에러면 onError 를 호출하고 onClose 는 호출하지 않는�
 
   await waitFor(() => expect(onError).toHaveBeenCalledWith(error));
   expect(onClose).not.toHaveBeenCalled();
+});
+
+// 호출부는 실패를 스낵바로 알린다 — 키보드가 올라와 있으면 화면 아래 스낵바가 가린다.
+test("일반 에러면 키보드를 내린다", async () => {
+  const dismissKeyboard = jest.spyOn(Keyboard, "dismiss");
+  const onSubmit = jest.fn().mockRejectedValue(new Error("network"));
+  const { onError } = await renderCard({ onSubmit });
+  const user = await typeName("디자인");
+  await user.press(screen.getByLabelText("저장"));
+
+  await waitFor(() => expect(onError).toHaveBeenCalled());
+  expect(dismissKeyboard).toHaveBeenCalled();
+  dismissKeyboard.mockRestore();
 });
 
 test("errorMessage 를 넘기면 색상 선택 아래에 문구를 렌더한다", async () => {

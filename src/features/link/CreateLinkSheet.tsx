@@ -17,11 +17,14 @@ import {
   useForm,
   useWatch,
 } from "react-hook-form";
-import { View } from "react-native";
+import { Keyboard, View } from "react-native";
 import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
-import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
+import {
+  type SnackbarOptions,
+  useSnackbar,
+} from "@/components/ui/snackbar/SnackbarProvider";
 import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { isWeb } from "@/constants/platform.constants";
 import { decodeSharedUrl, linkDetailHref } from "@/constants/routes.constants";
@@ -45,6 +48,11 @@ const SAVE_SNACKBAR_DURATION = 4000;
 export function CreateLinkSheet() {
   const router = useRouter();
   const { show } = useSnackbar();
+  // 시트를 연 채로 알린다 — 입력하다 바로 저장하면 키보드가 올라온 채라 시트 아래쪽 스낵바가 가리지 않게 먼저 내린다.
+  const showInSheet = (options: SnackbarOptions) => {
+    Keyboard.dismiss();
+    show(options);
+  };
   // 공유 익스텐션에서 로그인 인계로 들어오면 URL 을 이미 알고 있다 — 필드·프리뷰를 채워 시작한다.
   const { share } = useLocalSearchParams<{ share?: string }>();
   const initialUrl = decodeSharedUrl(share) ?? "";
@@ -82,11 +90,11 @@ export function CreateLinkSheet() {
       const parsedUrl = linkUrlSchema.safeParse(values.url);
       if (!parsedUrl.success) {
         // 시안 정책: 형식 오류도 실패 스낵바 — 문구는 거부 사유로, 같은 입력으로 다시 해도 소용없어 다시 시도는 뺀다.
-        show(snackbarPresets.failed(parsedUrl.error.issues[0].message));
+        showInSheet(snackbarPresets.failed(parsedUrl.error.issues[0].message));
         return;
       }
       if (values.reminder && isPastReminder(values.reminder)) {
-        show({
+        showInSheet({
           message: "선택한 시간이 이미 지났어요. 날짜나 시간을 변경해 주세요",
         });
         return;
@@ -112,7 +120,7 @@ export function CreateLinkSheet() {
             if (isAlreadySavedLinkError(error)) {
               // 409 가 담아준 기존 linkId 로 '보기'를 연결한다(서버 PR #109). 없으면(구버전) 문구만.
               const duplicateLinkId = getDuplicateLinkId(error);
-              show({
+              showInSheet({
                 ...snackbarPresets.duplicate(
                   "이미 저장된 링크예요",
                   duplicateLinkId != null
@@ -123,7 +131,7 @@ export function CreateLinkSheet() {
               });
               return;
             }
-            show(
+            showInSheet(
               snackbarPresets.failed("저장하지 못했어요", () => save(dismiss)),
             );
           },

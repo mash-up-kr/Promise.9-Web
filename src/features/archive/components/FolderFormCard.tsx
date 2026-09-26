@@ -9,7 +9,7 @@ import {
 } from "@shared/folder/folder.contracts";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { View } from "react-native";
+import { Keyboard, View } from "react-native";
 import { Dialog } from "@/components/ui/dialog/Dialog";
 import { DuplicateFolderNameAlert } from "./DuplicateFolderNameAlert";
 import { FolderColorPicker } from "./FolderColorPicker";
@@ -65,6 +65,8 @@ export function FolderFormCard({
         setIsDuplicateOpen(true);
         return;
       }
+      // 호출부가 스낵바로 알린다 — 키보드가 올라와 있으면 화면 아래 스낵바가 가려 먼저 내린다.
+      Keyboard.dismiss();
       onError(error);
     }
   });
