@@ -294,6 +294,7 @@ describe("LinkDetailScreen", () => {
 
     await user.press(screen.getByLabelText("링크 열기"));
     expect(screen.getByText("다른 앱에서 열까요?")).toBeOnTheScreen();
+    expect(screen.queryByText("열리는 곳", { exact: false })).toBeNull();
     expect(openExternalUrl).not.toHaveBeenCalled();
 
     await user.press(screen.getByRole("button", { name: "열기" }));
@@ -315,6 +316,21 @@ describe("LinkDetailScreen", () => {
 
     await user.press(screen.getByRole("button", { name: "열기" }));
     expect(openExternalUrl).toHaveBeenCalledWith("https:///toss.tech@evil.com");
+  });
+
+  test("웹 링크를 확인받을 때는 실제로 열리는 호스트를 함께 보여준다", async () => {
+    mockDetailData.current = {
+      ...mockLinkDetail,
+      url: "https:///toss.tech@evil.com",
+    };
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("링크 열기"));
+
+    expect(
+      screen.getByText("열리는 곳: evil.com", { exact: false }),
+    ).toBeOnTheScreen();
   });
 
   test("앱 전용 링크 확인에서 '취소'하면 열지 않는다", async () => {

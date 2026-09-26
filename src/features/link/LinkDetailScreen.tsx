@@ -437,6 +437,7 @@ function LinkDetailContent() {
       <OpenLinkConfirmDialog
         title={isWebLink ? "주소를 확인하고 열어주세요" : "다른 앱에서 열까요?"}
         url={linkDetail.url}
+        host={isWebLink ? parseUrlHost(linkDetail.url) : undefined}
         isOpen={isLinkConfirmOpen}
         onClose={() => setIsLinkConfirmOpen(false)}
         onConfirm={openOriginal}
@@ -448,15 +449,19 @@ function LinkDetailContent() {
 interface OpenLinkConfirmDialogProps {
   title: string;
   url: string;
+  /** 웹 링크가 실제로 여는 호스트 — 주소 앞에 따로 보여준다. */
+  host?: string;
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
 }
 
-// 무엇이 열릴지는 주소로만 알 수 있어 설명 자리에 주소를 그대로 보여준다.
+// 무엇이 열릴지는 주소로만 알 수 있어 설명 자리에 주소를 그대로 보여준다. 웹 주소는 보이는 것과
+// 실제로 열리는 곳이 다를 수 있어("https:///toss.tech@evil.com" → evil.com) 호스트를 앞에 둔다.
 function OpenLinkConfirmDialog({
   title,
   url,
+  host,
   isOpen,
   onClose,
   onConfirm,
@@ -466,8 +471,8 @@ function OpenLinkConfirmDialog({
       isOpen={isOpen}
       onClose={onClose}
       title={title}
-      description={url}
-      descriptionNumberOfLines={URL_MAX_LINES}
+      description={host ? `열리는 곳: ${host}\n${url}` : url}
+      descriptionNumberOfLines={host ? URL_MAX_LINES + 1 : URL_MAX_LINES}
       actions={
         <>
           <AlertDialogButton
@@ -484,4 +489,13 @@ function OpenLinkConfirmDialog({
       }
     />
   );
+}
+
+function parseUrlHost(url: string): string | undefined {
+  try {
+    return new URL(url).host || undefined;
+  } catch {
+    // 파싱할 수 없는 주소는 호스트 없이 주소만 보여준다.
+    return undefined;
+  }
 }
