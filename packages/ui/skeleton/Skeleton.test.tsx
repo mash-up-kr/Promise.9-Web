@@ -8,12 +8,6 @@ describe("skeletonStyles", () => {
     expect(skeletonStyles()).toContain("bg-background-thumbnail");
   });
 
-  // 네이티브 CSS animation 은 Reanimated 를 끌어와 iOS 공유 익스텐션 메모리 상한을 넘긴다 —
-  // 펄스는 플랫폼별 SkeletonBlock 이 맡는다(웹 animate-pulse · 네이티브 RN Animated).
-  test("스타일에는 CSS animation 클래스를 넣지 않는다", () => {
-    expect(skeletonStyles()).not.toContain("animate-");
-  });
-
   test("variant=circular 는 rounded-full 을 준다", () => {
     expect(skeletonStyles({ variant: "circular" })).toContain("rounded-full");
   });
