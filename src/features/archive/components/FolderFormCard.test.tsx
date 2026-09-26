@@ -1,20 +1,3 @@
-// iOS 만 투명 모달 라우트를 네이티브 모달로 띄운다 — 테스트별로 플랫폼을 바꿔 본다.
-const mockPlatform = { isIOS: true };
-jest.mock("@/constants/platform.constants", () => ({
-  get isIOS() {
-    return mockPlatform.isIOS;
-  },
-  get isAndroid() {
-    return !mockPlatform.isIOS;
-  },
-  isWeb: false,
-  isServer: false,
-}));
-
-afterEach(() => {
-  mockPlatform.isIOS = true;
-});
-
 import { ApiError } from "@shared/api/errors";
 import { FOLDER_ERROR_CODE } from "@shared/entities/folder/folder.errors";
 import type { CreateFolderInput } from "@shared/folder/folder.contracts";
@@ -118,21 +101,8 @@ test("일반 에러면 onError 를 호출하고 onClose 는 호출하지 않는�
   expect(onClose).not.toHaveBeenCalled();
 });
 
-// 호출부는 실패를 스낵바로 알린다 — iOS 는 키보드가 올라와 있으면 화면 아래 스낵바가 가린다.
-test("iOS 에서 일반 에러면 키보드를 내린다", async () => {
-  const dismissKeyboard = jest.spyOn(Keyboard, "dismiss");
-  const onSubmit = jest.fn().mockRejectedValue(new Error("network"));
-  const { onError } = await renderCard({ onSubmit });
-  const user = await typeName("디자인");
-  await user.press(screen.getByLabelText("저장"));
-
-  await waitFor(() => expect(onError).toHaveBeenCalled());
-  expect(dismissKeyboard).toHaveBeenCalled();
-  dismissKeyboard.mockRestore();
-});
-
-test("Android 에서도 일반 에러면 키보드를 내린다", async () => {
-  mockPlatform.isIOS = false;
+// 앱은 실패를 화면 아래 스낵바로 알린다 — 키보드가 올라와 있으면 가린다.
+test("일반 에러면 키보드를 내린다", async () => {
   const dismissKeyboard = jest.spyOn(Keyboard, "dismiss");
   const onSubmit = jest.fn().mockRejectedValue(new Error("network"));
   const { onError } = await renderCard({ onSubmit });

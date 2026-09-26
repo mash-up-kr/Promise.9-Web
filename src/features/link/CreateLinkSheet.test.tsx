@@ -25,23 +25,6 @@ jest.mock("expo-router", () => ({
   useRoute: () => ({ key: "create-link" }),
   useLocalSearchParams: () => mockSearchParams.current,
 }));
-// iOS 만 투명 모달 라우트를 네이티브 모달로 띄운다 — 테스트별로 플랫폼을 바꿔 본다.
-const mockPlatform = { isIOS: true };
-jest.mock("@/constants/platform.constants", () => ({
-  get isIOS() {
-    return mockPlatform.isIOS;
-  },
-  get isAndroid() {
-    return !mockPlatform.isIOS;
-  },
-  isWeb: false,
-  isServer: false,
-}));
-
-afterEach(() => {
-  mockPlatform.isIOS = true;
-});
-
 jest.mock("expo-clipboard", () => ({
   hasStringAsync: jest.fn().mockResolvedValue(false),
   getStringAsync: jest.fn().mockResolvedValue(""),
@@ -374,8 +357,8 @@ describe("CreateLinkSheet", () => {
     );
   });
 
-  // iOS 는 입력하다 바로 저장하면 키보드가 올라온 채라 시트 아래쪽 스낵바가 키보드에 가린다.
-  test("iOS 에서 저장하지 못하면 키보드를 내려 실패 스낵바가 보이게 한다", async () => {
+  // 입력하다 바로 저장하면 키보드가 올라온 채라 시트 아래쪽 스낵바가 키보드에 가린다.
+  test("저장하지 못하면 키보드를 내려 실패 스낵바가 보이게 한다", async () => {
     const dismissKeyboard = jest.spyOn(Keyboard, "dismiss");
     mockPost.mockRejectedValueOnce(new Error("500"));
     await renderSheet();
@@ -389,20 +372,6 @@ describe("CreateLinkSheet", () => {
     await pressSave();
     expect(await screen.findByText("저장하지 못했어요")).toBeTruthy();
     expect(dismissKeyboard).toHaveBeenCalledTimes(2);
-    dismissKeyboard.mockRestore();
-  });
-
-  // Android 도 키보드가 시트 아래쪽 스낵바를 가린다(뒤로 가기로 키보드를 내려야 보인다).
-  test("Android 에서도 저장하지 못하면 키보드를 내린다", async () => {
-    mockPlatform.isIOS = false;
-    const dismissKeyboard = jest.spyOn(Keyboard, "dismiss");
-    await renderSheet();
-
-    await fillValidUrl("abc");
-    await pressSave();
-
-    expect(await screen.findByText("올바른 링크 주소가 아니에요")).toBeTruthy();
-    expect(dismissKeyboard).toHaveBeenCalledTimes(1);
     dismissKeyboard.mockRestore();
   });
 
