@@ -250,8 +250,7 @@ const CLOSING_TO_OPENING = new Map([
   ["＞", "＜"],
 ]);
 const OPENING_BRACKETS = new Set(CLOSING_TO_OPENING.values());
-// 이모지·그림 문자 — 링크 바로 뒤에 붙여 쓰면 거기서 링크가 끝난다. 이를 잇는 문자(ZWJ·이체 선택자·키캡)는
-// 이모지 없이 홀로 쓰이면 보이지 않는 문자라 여기서 자르지 않는다(자르면 다른 주소가 된다).
+// 이모지·그림 문자 — 링크 끝에 붙여 쓴 것만 뗀다. 주소 중간의 것은 주소의 일부일 수 있다(i❤.ws·/w/★/…).
 const PICTOGRAPHIC_RANGES: ReadonlyArray<readonly [number, number]> = [
   [0x2190, 0x21ff],
   [0x2300, 0x23ff],
@@ -265,6 +264,14 @@ const PICTOGRAPHIC_RANGES: ReadonlyArray<readonly [number, number]> = [
   [0x3299, 0x3299],
   [0x1f000, 0x1faff],
 ];
+// 이모지를 잇거나 꾸미는 문자(ZWJ·키캡·이체 선택자·태그) — 이모지에 붙은 것만 함께 뗀다. 홀로 쓰인 것은
+// 보이지 않는 문자라 남겨서 거부되게 한다(거기서 자르면 다른 주소가 된다).
+const EMOJI_JOINER_RANGES: ReadonlyArray<readonly [number, number]> = [
+  [0x200d, 0x200d],
+  [0x20e3, 0x20e3],
+  [0xfe0e, 0xfe0f],
+  [0xe0020, 0xe007f],
+];
 const LEADING_PUNCTUATION = new Set([...OPENING_BRACKETS, '"', "'"]);
 const TRAILING_PUNCTUATION = new Set([..."\"'.,!?;:。、，！？：；"]);
 // 링크 바로 뒤에 붙여 쓴 조사("…/abc에서") — 두 글자 조사를 먼저 본다.
@@ -277,6 +284,18 @@ function trimTrailingPunctuation(value: string): string {
   return value.slice(0, end);
 }
 
+// 링크 끝에 붙여 쓴 이모지 묶음(이체 선택자·피부색·ZWJ 로 이은 것 포함)을 뗀다.
+function trimTrailingEmoji(value: string): string {
+  const chars = Array.from(value);
+  let end = chars.length;
+  for (let index = chars.length - 1; index >= 0; index -= 1) {
+    const code = chars[index]?.codePointAt(0) ?? 0;
+    if (isInRanges(code, PICTOGRAPHIC_RANGES)) end = index;
+    else if (!isInRanges(code, EMOJI_JOINER_RANGES)) break;
+  }
+  return chars.slice(0, end).join("");
+}
+
 // 한글 경로의 끝 글자와 조사는 구분할 수 없어 ASCII 바로 뒤에 붙은 조사만 뗀다 —
 // "…/대한민국에서" 처럼 한글 경로 뒤에 붙은 조사는 그대로 남는다.
 function trimTrailingParticle(value: string): string {
@@ -286,15 +305,14 @@ function trimTrailingParticle(value: string): string {
   return rest.charCodeAt(rest.length - 1) < 0x80 ? rest : value;
 }
 
-// 링크를 감싼 괄호·따옴표와 뒤따른 문장 부호·조사를 걷어낸다. 짝이 맞는 괄호는 주소의 일부로 남기고
-// ("…/Foo_(bar)"), 짝 없는 닫는 괄호나 이모지에서 주소가 끝난다("누리집(https://www.korea.kr)에서").
+// 링크를 감싼 괄호·따옴표와 뒤따른 문장 부호·이모지·조사를 걷어낸다. 짝이 맞는 괄호는 주소의 일부로 남기고
+// ("…/Foo_(bar)"), 짝 없는 닫는 괄호에서 주소가 끝난다("누리집(https://www.korea.kr)에서").
 function trimLinkPunctuation(token: string): string {
   let start = 0;
   while (LEADING_PUNCTUATION.has(token.charAt(start))) start += 1;
   const openBrackets: string[] = [];
   let end = start;
   for (; end < token.length; end += 1) {
-    if (isInRanges(token.codePointAt(end) ?? 0, PICTOGRAPHIC_RANGES)) break;
     const char = token.charAt(end);
     const opening = CLOSING_TO_OPENING.get(char);
     if (opening === undefined) {
@@ -303,8 +321,11 @@ function trimLinkPunctuation(token: string): string {
       break;
     }
   }
-  const wrapped = trimTrailingPunctuation(token.slice(start, end));
-  return trimTrailingPunctuation(trimTrailingParticle(wrapped));
+  // 이모지·조사 뒤에도 문장 부호가 붙는다("…/abc👍!"·"…/abc에서.").
+  const withoutEmoji = trimTrailingPunctuation(
+    trimTrailingEmoji(trimTrailingPunctuation(token.slice(start, end))),
+  );
+  return trimTrailingPunctuation(trimTrailingParticle(withoutEmoji));
 }
 
 function findWebLinkCandidate(token: string): string | null {

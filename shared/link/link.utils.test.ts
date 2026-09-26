@@ -340,18 +340,42 @@ describe("findLinkInText", () => {
     const heart = String.fromCodePoint(0x2764, 0xfe0f);
     const thumbsUp = String.fromCodePoint(0x1f44d, 0x1f3fd);
     const family = String.fromCodePoint(0x1f468, 0x200d, 0x1f469);
-    const star = String.fromCodePoint(0x2b50);
     for (const [text, url] of [
       [`https://naver.me/abc${heart}`, "https://naver.me/abc"],
       [`naver.me/xYz1${heart} 가보자`, "https://naver.me/xYz1"],
       [`https://toss.tech/a${thumbsUp}`, "https://toss.tech/a"],
       [`https://toss.tech/a${family}`, "https://toss.tech/a"],
-      [`https://toss.tech/a${star}에서`, "https://toss.tech/a"],
+      [`https://toss.tech/a${thumbsUp}!`, "https://toss.tech/a"],
+      [`https://naver.me/abc에서${heart}`, "https://naver.me/abc"],
     ]) {
       expect(findLinkInText(text)).toEqual(accepted(url));
     }
     // 직접 입력한 주소는 그대로 거부한다.
     expect(normalizeLinkUrl(`https://naver.me/abc${heart}`)).toEqual(
+      rejected("invisible-char"),
+    );
+  });
+
+  // 주소 중간의 이모지는 주소의 일부일 수 있다 — 이모지 도메인(i❤.ws)·경로·검색어.
+  test("링크 중간의 이모지에서는 자르지 않는다", () => {
+    const heart = String.fromCodePoint(0x2764);
+    const star = String.fromCodePoint(0x2b50);
+    for (const url of [
+      `https://toss.tech/w/${star}/a`,
+      `https://naver.me/abc?q=${star}&page=2`,
+    ]) {
+      expect(findLinkInText(url)).toEqual(accepted(url));
+    }
+    const emojiDomain = `https://i${heart}.ws`;
+    expect(findLinkInText(`${emojiDomain} 참고`)).toEqual(
+      normalizeLinkUrl(emojiDomain),
+    );
+  });
+
+  // 키캡 이모지(숫자 + U+FE0F + U+20E3)의 숫자는 이모지 범위 밖이라 떼지 못한다 — 숫자만 남기면 다른 주소가 되어 거부한다.
+  test("링크 끝의 키캡 이모지는 숫자만 남기지 않고 거부한다", () => {
+    const keycapOne = String.fromCodePoint(0x31, 0xfe0f, 0x20e3);
+    expect(findLinkInText(`https://naver.me/abc${keycapOne}`)).toEqual(
       rejected("invisible-char"),
     );
   });
