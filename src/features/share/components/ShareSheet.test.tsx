@@ -227,6 +227,22 @@ test("핸들을 조금 끌었다 천천히 놓으면 닫히지 않는다", async
   expect(onClose).not.toHaveBeenCalled();
 });
 
+// gorhom 처럼 손을 뗀 속도의 절반을 이어받는다(PanResponder 는 px/ms, 스프링은 px/s).
+test.each([
+  { name: "닫힐 때", dy: 150, durationMs: 300 },
+  { name: "제자리로 돌아갈 때", dy: 60, durationMs: 200 },
+])("$name 손을 뗀 속도를 이어받아 움직인다", async ({ dy, durationMs }) => {
+  const { NativeAnimatedModule } = NativeModules;
+  await renderSheet();
+  NativeAnimatedModule.startAnimatingNode.mockClear();
+
+  await dragHandle(dy, durationMs);
+
+  const [, , config] =
+    NativeAnimatedModule.startAnimatingNode.mock.calls.at(-1);
+  expect(config.initialVelocity).toBeCloseTo(((dy / durationMs) * 1000) / 2);
+});
+
 test("잠금 중에는 핸들을 끌어도 제스처를 받지 않는다", async () => {
   const { onClose } = await renderSheet({ isLocked: true });
   expect(await dragHandle(150, 300)).toBe(false);

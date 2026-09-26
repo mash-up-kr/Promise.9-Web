@@ -60,6 +60,8 @@ export interface ShareSheetProps extends PropsWithChildren {
   waitBeforeClose?: (proceed: () => void) => void;
 }
 
+// PanResponder 속도(px/ms)를 스프링 속도(px/s)로 바꾸고, gorhom 처럼 절반만 이어받는다.
+const RELEASE_VELOCITY_SCALE = 1000 / 2;
 const DRAG_CLOSE_DISTANCE = 120;
 const DRAG_CLOSE_VELOCITY = 1;
 const DRAG_MIN_DISTANCE = 20;
@@ -90,17 +92,21 @@ export function ShareSheet({
   const isClosingRef = useRef(false);
   const [isClosing, setIsClosing] = useState(false);
 
-  const settle = useCallback(() => {
-    if (isReduceMotionEnabled) {
-      translateY.setValue(0);
-      return;
-    }
-    Animated.spring(translateY, {
-      toValue: 0,
-      ...SHEET_SPRING,
-      useNativeDriver: true,
-    }).start();
-  }, [translateY, isReduceMotionEnabled]);
+  const settle = useCallback(
+    (velocity = 0) => {
+      if (isReduceMotionEnabled) {
+        translateY.setValue(0);
+        return;
+      }
+      Animated.spring(translateY, {
+        toValue: 0,
+        velocity,
+        ...SHEET_SPRING,
+        useNativeDriver: true,
+      }).start();
+    },
+    [translateY, isReduceMotionEnabled],
+  );
 
   // 콘텐츠 높이와 동작 줄이기 설정을 둘 다 안 뒤에 한 번만 올라온다.
   const enter = useCallback(() => {
@@ -119,36 +125,46 @@ export function ShareSheet({
   useEffect(enter, [enter]);
 
   // 인앱 시트(gorhom)처럼 닫힐 때도 같은 스프링으로 내려간다.
-  const slideOut = useCallback(() => {
-    if (isReduceMotionEnabled) {
-      onClose();
-      return;
-    }
-    Animated.spring(translateY, {
-      toValue: measuredHeightRef.current ?? windowHeight,
-      ...SHEET_SPRING,
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished) {
+  const slideOut = useCallback(
+    (velocity: number) => {
+      if (isReduceMotionEnabled) {
         onClose();
         return;
       }
-      // 끊긴 채 닫는 중으로 남으면 시트를 다시 닫을 수 없다.
-      isClosingRef.current = false;
-      setIsClosing(false);
-    });
-  }, [translateY, windowHeight, onClose, isReduceMotionEnabled]);
+      Animated.spring(translateY, {
+        toValue: measuredHeightRef.current ?? windowHeight,
+        velocity,
+        ...SHEET_SPRING,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) {
+          onClose();
+          return;
+        }
+        // 끊긴 채 닫는 중으로 남으면 시트를 다시 닫을 수 없다.
+        isClosingRef.current = false;
+        setIsClosing(false);
+      });
+    },
+    [translateY, windowHeight, onClose, isReduceMotionEnabled],
+  );
 
-  const dismiss = useCallback(() => {
-    if (isClosingRef.current) return;
-    isClosingRef.current = true;
-    setIsClosing(true);
-    if (waitBeforeClose) {
-      waitBeforeClose(slideOut);
-    } else {
-      slideOut();
-    }
-  }, [waitBeforeClose, slideOut]);
+  const closeSheet = useCallback(
+    (velocity: number) => {
+      if (isClosingRef.current) return;
+      isClosingRef.current = true;
+      setIsClosing(true);
+      if (waitBeforeClose) {
+        waitBeforeClose(() => slideOut(velocity));
+      } else {
+        slideOut(velocity);
+      }
+    },
+    [waitBeforeClose, slideOut],
+  );
+
+  // onPress 가 넘기는 이벤트가 속도로 새지 않게 감싼다.
+  const dismiss = useCallback(() => closeSheet(0), [closeSheet]);
 
   // 콘텐츠가 바뀌면(확인 → 저장 → 결과, 리마인드 펼침) 잰 높이로 시트 높이를 따라 움직인다.
   // 처음 잰 뒤에 올라와야 빈 시트가 비치지 않는다.
@@ -195,10 +211,11 @@ export function ShareSheet({
         },
         onPanResponderRelease: (_, gesture) => {
           translateY.flattenOffset();
+          const velocity = gesture.vy * RELEASE_VELOCITY_SCALE;
           if (shouldDismissByDrag(gesture.dy, gesture.vy)) {
-            dismiss();
+            closeSheet(velocity);
           } else {
-            settle();
+            settle(velocity);
           }
         },
         onPanResponderTerminate: () => {
@@ -206,7 +223,7 @@ export function ShareSheet({
           settle();
         },
       }),
-    [isLocked, translateY, dismiss, settle],
+    [isLocked, translateY, closeSheet, settle],
   );
 
   const { sheetTranslateY, backdropOpacity } = useMemo(
