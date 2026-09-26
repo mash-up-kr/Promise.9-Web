@@ -260,6 +260,7 @@ export function ShareSheet({
     ],
   );
 
+  // iOS 익스텐션에선 호스트의 시트 제스처가 드래그를 먼저 가져가 끌어 내리기는 시스템 닫기(B3)로 끝난다.
   const panResponder = useMemo(
     () =>
       PanResponder.create({
