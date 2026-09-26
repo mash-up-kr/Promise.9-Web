@@ -57,7 +57,8 @@ const DIALOG_SPRING = { stiffness: 520, damping: 34, mass: 0.7 };
 const AnimatedView = Animated.createAnimatedComponent(View);
 
 interface AlertDialogContentProps extends PropsWithChildren {
-  isReduceMotionEnabled: boolean;
+  /** null 이면 아직 설정을 읽지 못했다 — 읽을 때까지 등장을 미룬다. */
+  isReduceMotionEnabled: boolean | null;
 }
 
 // Figma Alert Dialog: 플랫 gray-800 카드 + white-05 헤어라인 보더.
@@ -70,6 +71,7 @@ function AlertDialogContent({
   ).current;
 
   useEffect(() => {
+    if (isReduceMotionEnabled === null) return;
     if (isReduceMotionEnabled) {
       progress.setValue(1);
       return;

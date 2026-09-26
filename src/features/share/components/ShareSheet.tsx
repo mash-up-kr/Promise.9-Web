@@ -5,7 +5,14 @@ import {
   SHEET_SPRING,
 } from "@promise9/ui/sheet/sheet.constants";
 import type { PropsWithChildren } from "react";
-import { createContext, useCallback, useContext, useMemo, useRef } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import {
   Animated,
   type LayoutChangeEvent,
@@ -62,13 +69,16 @@ export function shouldDismissByDrag(dy: number, vy: number) {
 export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
   const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const isReduceMotionEnabled = useReduceMotion();
+  // null 이면 아직 모른다 — 첫 등장은 설정을 읽은 뒤로 미룬다.
+  const reduceMotion = useReduceMotion();
+  const isReduceMotionEnabled = reduceMotion === true;
   // 위치(아래로 내려간 거리)는 네이티브 드라이버로, 높이는 레이아웃 속성이라 JS 로 움직인다.
   const translateY = useRef(new Animated.Value(windowHeight)).current;
   const sheetHeight = useRef(new Animated.Value(0)).current;
   // 백드롭 농도의 기준 — 시트가 자기 높이만큼 내려가면(화면 밖) 0 이 된다.
   const backdropRange = useRef(new Animated.Value(windowHeight)).current;
   const measuredHeightRef = useRef<number | null>(null);
+  const hasEnteredRef = useRef(false);
   const isClosingRef = useRef(false);
 
   const settle = useCallback(() => {
@@ -82,6 +92,22 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
       useNativeDriver: true,
     }).start();
   }, [translateY, isReduceMotionEnabled]);
+
+  // 콘텐츠 높이와 동작 줄이기 설정을 둘 다 안 뒤에 한 번만 올라온다.
+  const enter = useCallback(() => {
+    if (
+      hasEnteredRef.current ||
+      isClosingRef.current ||
+      measuredHeightRef.current === null ||
+      reduceMotion === null
+    ) {
+      return;
+    }
+    hasEnteredRef.current = true;
+    settle();
+  }, [reduceMotion, settle]);
+
+  useEffect(enter, [enter]);
 
   // 인앱 시트(gorhom)처럼 닫힐 때도 같은 스프링으로 내려간다.
   const dismiss = useCallback(() => {
@@ -113,7 +139,7 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
         sheetHeight.setValue(height);
         if (isClosingRef.current) return;
         translateY.setValue(height);
-        settle();
+        enter();
         return;
       }
       if (isReduceMotionEnabled) {
@@ -126,7 +152,7 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
         useNativeDriver: false,
       }).start();
     },
-    [backdropRange, sheetHeight, translateY, settle, isReduceMotionEnabled],
+    [backdropRange, sheetHeight, translateY, enter, isReduceMotionEnabled],
   );
 
   const panResponder = useMemo(

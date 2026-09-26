@@ -28,7 +28,8 @@ export function SkeletonBlock({ style, ...props }: SkeletonBlockProps) {
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (isReduceMotionEnabled) {
+    // 설정을 읽기 전(null)에도 멈춰 둔다 — 동작 줄이기 사용자에게 잠깐이라도 펄스가 보이지 않게.
+    if (isReduceMotionEnabled !== false) {
       progress.setValue(0);
       return;
     }

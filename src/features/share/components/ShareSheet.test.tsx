@@ -21,12 +21,16 @@ const metrics: Metrics = {
 
 // 시트 애니메이션은 네이티브 드라이버라 jest 의 NativeAnimatedModule 목이 16ms 뒤에 끝낸다 —
 // 실제로 기다리지 않고 가짜 타이머로 흘려보낸다.
+const isReduceMotionEnabled =
+  AccessibilityInfo.isReduceMotionEnabled as jest.Mock;
+
 beforeEach(() => {
   jest.useFakeTimers();
 });
 
 afterEach(() => {
   jest.useRealTimers();
+  isReduceMotionEnabled.mockImplementation(() => Promise.resolve(false));
 });
 
 function setupUser() {
@@ -245,16 +249,30 @@ test("콘텐츠 높이가 바뀌면 시트 높이가 한 번에 튀지 않고 �
   expect(screen.getByTestId("share-sheet")).toHaveStyle({ height: 500 });
 });
 
-describe("동작 줄이기가 켜져 있으면", () => {
-  const isReduceMotionEnabled =
-    AccessibilityInfo.isReduceMotionEnabled as jest.Mock;
+// 동작 줄이기 사용자에게 첫 등장부터 미끄러지지 않도록, 설정을 읽은 뒤에 올라온다.
+test("동작 줄이기 설정을 읽기 전에는 콘텐츠를 재도 올라오지 않는다", async () => {
+  const { NativeAnimatedModule } = NativeModules;
+  let resolveSetting!: (isEnabled: boolean) => void;
+  isReduceMotionEnabled.mockReturnValue(
+    new Promise((resolve) => {
+      resolveSetting = resolve;
+    }),
+  );
+  await renderSheet();
+  NativeAnimatedModule.startAnimatingNode.mockClear();
 
+  await layoutContent(300);
+  expect(NativeAnimatedModule.startAnimatingNode).not.toHaveBeenCalled();
+
+  await act(async () => {
+    resolveSetting(false);
+  });
+  expect(NativeAnimatedModule.startAnimatingNode).toHaveBeenCalled();
+});
+
+describe("동작 줄이기가 켜져 있으면", () => {
   beforeEach(() => {
     isReduceMotionEnabled.mockResolvedValue(true);
-  });
-
-  afterEach(() => {
-    isReduceMotionEnabled.mockImplementation(() => Promise.resolve(false));
   });
 
   test("미끄러지는 애니메이션 없이 바로 닫는다", async () => {

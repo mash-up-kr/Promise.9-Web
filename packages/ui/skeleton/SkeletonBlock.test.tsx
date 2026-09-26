@@ -31,10 +31,12 @@ test("펄스를 네이티브가 무한 반복하는 애니메이션 하나로 �
   expect(calls[0][2]).toEqual(expect.objectContaining({ iterations: -1 }));
 });
 
-// 설정 조회가 첫 렌더보다 늦어 루프가 잠깐 돌 수 있다 — 조회가 끝나면 멈춰야 한다.
-test("동작 줄이기가 켜져 있으면 펄스를 멈춘다", async () => {
+// 설정을 읽기 전에 돌리기 시작하면 동작 줄이기 사용자에게도 잠깐 펄스가 보인다.
+test("동작 줄이기가 켜져 있으면 펄스를 시작하지 않는다", async () => {
   isReduceMotionEnabled.mockResolvedValue(true);
-  NativeAnimatedModule.stopAnimation.mockClear();
   await render(<SkeletonBlock />);
-  expect(NativeAnimatedModule.stopAnimation).toHaveBeenCalled();
+  await act(async () => {
+    jest.advanceTimersByTime(5000);
+  });
+  expect(NativeAnimatedModule.startAnimatingNode).not.toHaveBeenCalled();
 });
