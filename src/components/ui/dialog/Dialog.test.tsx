@@ -161,6 +161,21 @@ describe("Dialog — iOS 공유 익스텐션", () => {
     ).toMatchObject({ paddingTop: 62 + 16 });
   });
 
+  // react-native-css 는 contentContainerClassName 과 contentContainerStyle 을 합치지 않는다 —
+  // 클래스로 준 가운데 정렬·좌우 여백이 인라인 스타일에 덮여 카드가 왼쪽에 붙었다.
+  test("입력 카드는 좌우 여백을 두고 가운데 놓는다", async () => {
+    await renderInExtension({ hasTextInput: true });
+
+    const scrollView = scrollViewOf(screen.getByTestId("card"));
+    expect(
+      StyleSheet.flatten(scrollView?.props.contentContainerStyle),
+    ).toMatchObject({
+      flexGrow: 1,
+      alignItems: "center",
+      paddingHorizontal: 20,
+    });
+  });
+
   // 작은 화면(SE)에선 키보드가 카드 아래 버튼을 가린다 — 네이티브 키보드 인셋으로 스크롤해 꺼낸다.
   test("입력 카드는 키보드에 가려도 스크롤해 버튼까지 닿는다", async () => {
     await renderInExtension({ hasTextInput: true });

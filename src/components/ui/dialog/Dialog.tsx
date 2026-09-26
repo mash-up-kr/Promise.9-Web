@@ -8,6 +8,7 @@ import {
 import { KeyboardAvoidingView } from "./dialogKeyboardAvoidingView";
 
 const EXTENSION_EDGE_GAP = 16;
+const EXTENSION_SIDE_PADDING = 20;
 
 export interface DialogProps {
   children: ReactNode;
@@ -103,8 +104,11 @@ function TopAnchoredScrollView({ children }: PropsWithChildren) {
       // 배경(dim)도 스크롤 안에 있어 튕기면 dim 바깥이 드러난다.
       bounces={false}
       className="flex-1"
-      contentContainerClassName="grow items-center px-5"
+      // react-native-css 는 contentContainerClassName 을 contentContainerStyle 과 합치지 않는다 — 한곳에 둔다.
       contentContainerStyle={{
+        flexGrow: 1,
+        alignItems: "center",
+        paddingHorizontal: EXTENSION_SIDE_PADDING,
         paddingTop: insets.top + EXTENSION_EDGE_GAP,
         paddingBottom: insets.bottom + EXTENSION_EDGE_GAP,
       }}
