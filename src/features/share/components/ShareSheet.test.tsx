@@ -10,6 +10,7 @@ import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 import {
   ShareSheet,
   ShareSheetScrollView,
+  ShareSheetView,
   shouldDismissByDrag,
   useShareSheetDismiss,
 } from "./ShareSheet";
@@ -117,7 +118,15 @@ function touchEvent(current: TouchPoint, previous: TouchPoint) {
  * 부른다. 핸들이 제스처를 가져가지 않으면(false) 거기서 멈춘다.
  */
 async function dragHandle(dy: number, durationMs: number) {
-  const handle = screen.getByTestId("share-sheet-handle");
+  return drag(screen.getByTestId("share-sheet-handle"), dy, durationMs);
+}
+
+async function drag(
+  target: ReturnType<typeof screen.getByTestId>,
+  dy: number,
+  durationMs: number,
+) {
+  const handle = target;
   const down = { y: 100, timestamp: 1000 };
   // 이동 임계(4px)를 넘겨 응답자를 요청하는 첫 이동.
   const start = { y: 110, timestamp: 1016 };
@@ -241,6 +250,47 @@ test.each([
   const [, , config] =
     NativeAnimatedModule.startAnimatingNode.mock.calls.at(-1);
   expect(config.initialVelocity).toBeCloseTo(((dy / durationMs) * 1000) / 2);
+});
+
+// 핸들(16pt)만 잡히면 gorhom 보다 끌기 어렵다 — 스크롤이 없는 곳은 어디를 끌어도 닫힌다.
+test("스크롤 시트는 헤더를 끌어 내려도 닫히고, 스크롤 영역은 시트 드래그를 가져가지 않는다", async () => {
+  const onClose = jest.fn();
+  await render(
+    <SafeAreaProvider initialMetrics={metrics}>
+      <ShareSheet onClose={onClose} isLocked={false}>
+        <ShareSheetScrollView testID="scroll" header={<Text>헤더</Text>}>
+          <Text>본문</Text>
+        </ShareSheetScrollView>
+      </ShareSheet>
+    </SafeAreaProvider>,
+  );
+  expect(screen.getByTestId("scroll").props.onMoveShouldSetResponder).toBe(
+    undefined,
+  );
+
+  const header = screen.getByText("헤더").parent;
+  expect(header).toBeTruthy();
+  if (!header) return;
+  expect(await drag(header, 150, 300)).toBe(true);
+  await finishAnimations();
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test("스크롤이 없는 본문 시트는 본문을 끌어 내려도 닫힌다", async () => {
+  const onClose = jest.fn();
+  await render(
+    <SafeAreaProvider initialMetrics={metrics}>
+      <ShareSheet onClose={onClose} isLocked={false}>
+        <ShareSheetView testID="body">
+          <Text>본문</Text>
+        </ShareSheetView>
+      </ShareSheet>
+    </SafeAreaProvider>,
+  );
+
+  expect(await drag(screen.getByTestId("body"), 150, 300)).toBe(true);
+  await finishAnimations();
+  expect(onClose).toHaveBeenCalledTimes(1);
 });
 
 test("잠금 중에는 핸들을 끌어도 제스처를 받지 않는다", async () => {

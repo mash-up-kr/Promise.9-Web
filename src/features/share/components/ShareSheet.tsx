@@ -4,7 +4,7 @@ import {
   SHEET_BACKDROP_OPACITY,
   SHEET_SPRING,
 } from "@promise9/ui/sheet/sheet.constants";
-import type { PropsWithChildren } from "react";
+import type { PropsWithChildren, ReactNode } from "react";
 import {
   createContext,
   useCallback,
@@ -16,6 +16,7 @@ import {
 } from "react";
 import {
   Animated,
+  type GestureResponderHandlers,
   type LayoutChangeEvent,
   PanResponder,
   Pressable,
@@ -24,6 +25,7 @@ import {
   StyleSheet,
   useWindowDimensions,
   View,
+  type ViewProps,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -44,12 +46,36 @@ export function useShareSheetDismiss() {
   return dismiss;
 }
 
-export const ShareSheetView = View;
+// 핸들 말고도 스크롤이 없는 곳(본문 시트·스크롤 시트의 헤더)을 끌면 시트가 움직인다 — gorhom 과 같다.
+// 스크롤 영역은 네이티브 스크롤이 제스처를 가져가므로 붙이지 않는다.
+const ShareSheetPanContext = createContext<
+  GestureResponderHandlers | undefined
+>(undefined);
+
+export function ShareSheetView(props: ViewProps) {
+  const panHandlers = useContext(ShareSheetPanContext);
+  return <View {...panHandlers} {...props} />;
+}
+
 export const ShareSheetMemoField = MemoFieldBase;
 
+export interface ShareSheetScrollViewProps extends ScrollViewProps {
+  /** 스크롤 위에 고정되는 헤더 — 끌어서 시트를 내릴 수 있다. */
+  header?: ReactNode;
+}
+
 // gorhom 스크롤뷰(Android)의 기본값처럼 스크롤을 끌어 내리면 키보드도 따라 내려간다.
-export function ShareSheetScrollView(props: ScrollViewProps) {
-  return <ScrollView keyboardDismissMode="interactive" {...props} />;
+export function ShareSheetScrollView({
+  header,
+  ...props
+}: ShareSheetScrollViewProps) {
+  const panHandlers = useContext(ShareSheetPanContext);
+  return (
+    <>
+      {header ? <View {...panHandlers}>{header}</View> : null}
+      <ScrollView keyboardDismissMode="interactive" {...props} />
+    </>
+  );
 }
 
 export interface ShareSheetProps extends PropsWithChildren {
@@ -245,39 +271,46 @@ export function ShareSheet({
 
   return (
     <ShareSheetDismissContext.Provider value={dismiss}>
-      <View
-        pointerEvents={isClosing ? "none" : "auto"}
-        className="flex-1 justify-end"
-      >
-        <Animated.View
-          style={[StyleSheet.absoluteFill, { opacity: backdropOpacity }]}
+      <ShareSheetPanContext.Provider value={panResponder.panHandlers}>
+        <View
+          pointerEvents={isClosing ? "none" : "auto"}
+          className="flex-1 justify-end"
         >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="시트 닫기"
-            disabled={isLocked}
-            onPress={dismiss}
-            className="flex-1 bg-opacity-black-100"
-          />
-        </Animated.View>
-        <Animated.View style={{ transform: [{ translateY: sheetTranslateY }] }}>
-          <Animated.View testID="share-sheet" style={{ height: sheetHeight }}>
-            <SheetSurface style={{ flex: 1 }}>
-              {/* 시트 높이에 눌리지 않은 제 높이를 재려고 띄워 둔다(넘치면 상단 Safe Area 까지). */}
-              <View
-                onLayout={handleContentLayout}
-                className="absolute inset-x-0 top-0"
-                style={{ maxHeight: windowHeight - insets.top }}
-              >
-                <View testID="share-sheet-handle" {...panResponder.panHandlers}>
-                  <SheetHandle />
-                </View>
-                {children}
-              </View>
-            </SheetSurface>
+          <Animated.View
+            style={[StyleSheet.absoluteFill, { opacity: backdropOpacity }]}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="시트 닫기"
+              disabled={isLocked}
+              onPress={dismiss}
+              className="flex-1 bg-opacity-black-100"
+            />
           </Animated.View>
-        </Animated.View>
-      </View>
+          <Animated.View
+            style={{ transform: [{ translateY: sheetTranslateY }] }}
+          >
+            <Animated.View testID="share-sheet" style={{ height: sheetHeight }}>
+              <SheetSurface style={{ flex: 1 }}>
+                {/* 시트 높이에 눌리지 않은 제 높이를 재려고 띄워 둔다(넘치면 상단 Safe Area 까지). */}
+                <View
+                  onLayout={handleContentLayout}
+                  className="absolute inset-x-0 top-0"
+                  style={{ maxHeight: windowHeight - insets.top }}
+                >
+                  <View
+                    testID="share-sheet-handle"
+                    {...panResponder.panHandlers}
+                  >
+                    <SheetHandle />
+                  </View>
+                  {children}
+                </View>
+              </SheetSurface>
+            </Animated.View>
+          </Animated.View>
+        </View>
+      </ShareSheetPanContext.Provider>
     </ShareSheetDismissContext.Provider>
   );
 }

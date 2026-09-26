@@ -2,7 +2,11 @@ import { render, screen, userEvent } from "@testing-library/react-native";
 import { Pressable, Text } from "react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
-import { ShareSheet, useShareSheetDismiss } from "./ShareSheet.android";
+import {
+  ShareSheet,
+  ShareSheetScrollView,
+  useShareSheetDismiss,
+} from "./ShareSheet.android";
 
 const metrics: Metrics = {
   frame: { x: 0, y: 0, width: 375, height: 812 },
@@ -77,4 +81,14 @@ test("닫기 전에 기다릴 일이 있으면 끝난 뒤에 onClose 를 부른�
 
   proceed();
   expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test("스크롤 시트의 헤더는 스크롤의 sticky 첫 요소로 둔다", async () => {
+  await render(
+    <ShareSheetScrollView testID="scroll" header={<Text>헤더</Text>}>
+      <Text>본문</Text>
+    </ShareSheetScrollView>,
+  );
+  expect(screen.getByTestId("scroll").props.stickyHeaderIndices).toEqual([0]);
+  expect(screen.getByText("헤더")).toBeOnTheScreen();
 });
