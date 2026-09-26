@@ -14,6 +14,7 @@ import { useExtensionSocialLogin } from "./useExtensionSocialLogin";
 const LOGIN_GRAPHIC = require("@/assets/images/share/result-retry-limit.png");
 
 export interface ExtensionLoginSheetProps {
+  /** 공유 내용에서 찾은 링크(저장할 형태) — 앱 로그인 인계에 원문 대신 이 링크만 싣는다. */
   sharedUrl: string;
   isSessionExpired: boolean;
 }

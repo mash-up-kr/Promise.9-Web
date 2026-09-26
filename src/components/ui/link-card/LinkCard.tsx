@@ -14,8 +14,12 @@ const LinkCardContext = createContext<Link | null>(null);
 
 // 서버가 제목을 아직 만들지 못한 링크(processingStatus PENDING·실패)는 title 이 빈 문자열로 온다 —
 // 빈 카드 대신 출처 도메인을 보여준다(저장 시트 프리뷰의 title ?? domain 과 같은 정책).
+// 앱 전용 링크는 출처가 비거나(mailto:·tel:) 스킴 뒤 첫 조각("place")이라 점 없는 출처는 고정 문구로 채운다.
+const UNTITLED_LINK_TITLE = "제목 없는 링크";
+
 function getDisplayTitle({ title, source }: Link): string {
-  return title.trim().length > 0 ? title : source;
+  if (title.trim().length > 0) return title;
+  return source.includes(".") ? source : UNTITLED_LINK_TITLE;
 }
 
 function useLinkCard(): Link {

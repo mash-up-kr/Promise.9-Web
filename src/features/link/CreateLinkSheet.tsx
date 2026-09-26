@@ -17,11 +17,15 @@ import {
   useForm,
   useWatch,
 } from "react-hook-form";
-import { View } from "react-native";
+import { Keyboard, View } from "react-native";
 import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
-import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
+import { useSheetRouteNavigation } from "@/components/ui/sheet-screen/useSheetRouteNavigation";
+import {
+  type SnackbarOptions,
+  useSnackbar,
+} from "@/components/ui/snackbar/SnackbarProvider";
 import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { isWeb } from "@/constants/platform.constants";
 import { decodeSharedUrl, linkDetailHref } from "@/constants/routes.constants";
@@ -44,11 +48,17 @@ const SAVE_SNACKBAR_DURATION = 4000;
 
 export function CreateLinkSheet() {
   const router = useRouter();
+  const { closeSheet, navigateFromSheet } = useSheetRouteNavigation();
   const { show } = useSnackbar();
+  // 시트를 연 채로 알린다 — 입력하다 바로 저장하면 키보드가 올라온 채라 시트 아래쪽 스낵바가 가려 먼저 내린다.
+  const showInSheet = (options: SnackbarOptions) => {
+    Keyboard.dismiss();
+    show(options);
+  };
   // 공유 익스텐션에서 로그인 인계로 들어오면 URL 을 이미 알고 있다 — 필드·프리뷰를 채워 시작한다.
   const { share } = useLocalSearchParams<{ share?: string }>();
   const initialUrl = decodeSharedUrl(share) ?? "";
-  const hasValidInitialUrl = linkUrlSchema.safeParse(initialUrl).success;
+  const parsedInitialUrl = linkUrlSchema.safeParse(initialUrl);
   const { control, handleSubmit, setValue } = useForm<CreateLinkForm>({
     resolver: zodResolver(createLinkSchema),
     mode: "onChange",
@@ -57,7 +67,7 @@ export function CreateLinkSheet() {
       folderId: null,
       reminder: null,
       memo: "",
-      previewUrl: hasValidInitialUrl ? initialUrl : "",
+      previewUrl: parsedInitialUrl.success ? parsedInitialUrl.data : "",
     },
   });
   const createLinkMutation = useCreateLinkMutation();
@@ -66,34 +76,24 @@ export function CreateLinkSheet() {
   const url = useWatch({ control, name: "url" });
   const isSaving = createLinkMutation.isPending;
 
-  const closeSheet = () => {
-    // 웹에서 히스토리가 없으면(직접 진입 등) back 이 실패하므로 홈으로 대체한다.
-    if (router.canGoBack()) {
-      router.back();
-
-      return;
-    }
-    router.replace("/");
-  };
-
   // dismiss 는 gorhom 컨텍스트 안(헤더)에서만 얻을 수 있어 헤더가 이 핸들러에 주입한다.
   const save = (dismiss: () => void) =>
     handleSubmit((values) => {
       const parsedUrl = linkUrlSchema.safeParse(values.url);
       if (!parsedUrl.success) {
-        // 시안 정책: 형식 오류도 저장 실패와 동일 UX — 서버 왕복 없이 실패 스낵바.
-        show(snackbarPresets.failed("저장하지 못했어요", () => save(dismiss)));
+        // 시안 정책: 형식 오류도 실패 스낵바 — 문구는 거부 사유로, 같은 입력으로 다시 해도 소용없어 다시 시도는 뺀다.
+        showInSheet(snackbarPresets.failed(parsedUrl.error.issues[0].message));
         return;
       }
       if (values.reminder && isPastReminder(values.reminder)) {
-        show({
+        showInSheet({
           message: "선택한 시간이 이미 지났어요. 날짜나 시간을 변경해 주세요",
         });
         return;
       }
       createLinkMutation.mutate(
         {
-          url: values.url,
+          url: parsedUrl.data,
           folderId: values.folderId,
           memo: values.memo?.trim() || null,
           reminderAt: values.reminder ? toReminderAtIso(values.reminder) : null,
@@ -102,7 +102,7 @@ export function CreateLinkSheet() {
           onSuccess: (created) => {
             show({
               ...snackbarPresets.success("링크를 저장했어요", () =>
-                router.push(linkDetailHref(String(created.linkId))),
+                navigateFromSheet(linkDetailHref(String(created.linkId))),
               ),
               duration: SAVE_SNACKBAR_DURATION,
             });
@@ -112,18 +112,21 @@ export function CreateLinkSheet() {
             if (isAlreadySavedLinkError(error)) {
               // 409 가 담아준 기존 linkId 로 '보기'를 연결한다(서버 PR #109). 없으면(구버전) 문구만.
               const duplicateLinkId = getDuplicateLinkId(error);
-              show({
+              showInSheet({
                 ...snackbarPresets.duplicate(
                   "이미 저장된 링크예요",
                   duplicateLinkId != null
-                    ? () => router.push(linkDetailHref(String(duplicateLinkId)))
+                    ? () =>
+                        navigateFromSheet(
+                          linkDetailHref(String(duplicateLinkId)),
+                        )
                     : undefined,
                 ),
                 duration: SAVE_SNACKBAR_DURATION,
               });
               return;
             }
-            show(
+            showInSheet(
               snackbarPresets.failed("저장하지 못했어요", () => save(dismiss)),
             );
           },
@@ -237,8 +240,8 @@ function UrlPreviewField({
   const hasPreview = previewUrl.length > 0;
 
   const commitPreview = (value: string) => {
-    const isValid = linkUrlSchema.safeParse(value).success;
-    setValue("previewUrl", isValid ? value : "");
+    const parsed = linkUrlSchema.safeParse(value);
+    setValue("previewUrl", parsed.success ? parsed.data : "");
   };
 
   useEffect(

@@ -57,6 +57,8 @@ import {
 import { close, openHostApp } from "expo-share-extension";
 import { AccessibilityInfo } from "react-native";
 
+import { encodeSharedUrl } from "@/constants/routes.constants";
+
 import { ShareExtension } from "./ShareExtension";
 
 const mockPost = apiClient.post as jest.Mock;
@@ -708,6 +710,7 @@ test("URL 형식이 아니면 저장을 누르기 전에 바로 저장 불가 �
   ).toBeOnTheScreen();
   expect(screen.queryByText("저장")).toBeNull();
   expect(mockPost).not.toHaveBeenCalled();
+  expect(mockRefreshAccessToken).not.toHaveBeenCalled();
 
   await user.press(screen.getByText("닫기"));
   await waitFor(() => expect(close).toHaveBeenCalled());
@@ -747,6 +750,119 @@ test("저장 중에는 백드롭을 잠가 탭해도 닫히지 않는다", async
   resolvePost({ data: { success: true, data: { linkId: 1 } } });
   expect(await screen.findByText("링크 저장을 완료했어요")).toBeOnTheScreen();
   expect(screen.getByLabelText("시트 닫기")).toBeEnabled();
+});
+
+// iOS 는 지도·SNS 앱이 링크를 텍스트로 공유한다 — 익스텐션이 text 로 받는다.
+test("텍스트로 공유된 스킴 없는 지도 링크를 https 로 보정해 저장한다", async () => {
+  mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 7 } } });
+  await render(
+    <ShareExtension text={"[네이버 지도]\n스타벅스 강남점\nnaver.me/xYz1"} />,
+  );
+
+  expect(await screen.findByText("https://naver.me/xYz1")).toBeOnTheScreen();
+  await userEvent.setup().press(screen.getByText("저장"));
+
+  await waitFor(() =>
+    expect(mockPost).toHaveBeenCalledWith(
+      "/links",
+      expect.objectContaining({ url: "https://naver.me/xYz1" }),
+    ),
+  );
+});
+
+test("앱 전용 스킴 링크 공유를 저장한다", async () => {
+  mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 8 } } });
+  await render(<ShareExtension url="nmap://place?id=123" />);
+
+  await userEvent.setup().press(await screen.findByText("저장"));
+
+  await waitFor(() =>
+    expect(mockPost).toHaveBeenCalledWith(
+      "/links",
+      expect.objectContaining({ url: "nmap://place?id=123" }),
+    ),
+  );
+});
+
+test("위험한 스킴 공유는 저장하지 않고 링크를 찾지 못했다고 안내한다", async () => {
+  await render(<ShareExtension text="javascript:alert(1)" />);
+
+  expect(
+    await screen.findByText("공유한 내용에서 링크 주소를 찾지 못했어요"),
+  ).toBeOnTheScreen();
+  expect(mockPost).not.toHaveBeenCalled();
+});
+
+// 링크를 못 찾았다고 원문 전체를 링크로 받으면 파일명·메모·Wi-Fi QR 까지 저장된다.
+test("링크가 없는 한 토큰 공유는 원문을 링크로 저장하지 않는다", async () => {
+  await render(<ShareExtension text="todo:장보기" />);
+
+  expect(
+    await screen.findByText("공유한 내용에서 링크 주소를 찾지 못했어요"),
+  ).toBeOnTheScreen();
+  expect(screen.queryByText("저장")).toBeNull();
+  expect(mockPost).not.toHaveBeenCalled();
+});
+
+test("공유한 링크가 규칙에 어긋나면 저장하지 않고 이유를 안내한다", async () => {
+  await render(<ShareExtension url="https://toss.tech@evil.com/a" />);
+
+  expect(
+    await screen.findByText(
+      "보안상 계정 정보(@)가 담긴 링크는 저장할 수 없어요",
+    ),
+  ).toBeOnTheScreen();
+  expect(screen.getByText("저장할 수 있는 링크가 없어요")).toBeOnTheScreen();
+  expect(mockPost).not.toHaveBeenCalled();
+});
+
+test("공유 텍스트 속 링크를 감싼 괄호·문장 부호는 걷어내고 저장한다", async () => {
+  mockPost.mockResolvedValue({ data: { success: true, data: { linkId: 9 } } });
+  await render(
+    <ShareExtension text="자세한 내용은 누리집(https://www.korea.kr)에서 확인하세요." />,
+  );
+
+  expect(await screen.findByText("https://www.korea.kr")).toBeOnTheScreen();
+  await userEvent.setup().press(screen.getByText("저장"));
+
+  await waitFor(() =>
+    expect(mockPost).toHaveBeenCalledWith(
+      "/links",
+      expect.objectContaining({ url: "https://www.korea.kr" }),
+    ),
+  );
+});
+
+test("미로그인 iOS 카카오 인계는 공유 텍스트 전체가 아니라 찾은 링크만 넘긴다", async () => {
+  storedRefreshToken = null;
+  await render(
+    <ShareExtension text={"[네이버 지도]\n스타벅스 강남점\nnaver.me/xYz1"} />,
+  );
+
+  await userEvent.setup().press(await screen.findByText("카카오로 계속하기"));
+
+  expect(openHostApp).toHaveBeenCalledWith(
+    `login?next=create-link&share=${encodeSharedUrl("https://naver.me/xYz1")}`,
+  );
+});
+
+// 로그인해도 저장할 링크가 없다 — 로그인부터 시키지 않는다.
+test("링크가 없는 공유는 로그인을 묻기 전에 저장할 수 없다고 안내한다", async () => {
+  storedRefreshToken = null;
+  await render(<ShareExtension text="오늘 저녁 메뉴 추천 좀 해줘" />);
+
+  expect(
+    await screen.findByText("공유한 내용에서 링크 주소를 찾지 못했어요"),
+  ).toBeOnTheScreen();
+  expect(screen.queryByText("로그인이 필요해요")).toBeNull();
+});
+
+test("웹 주소가 아닌 한 토큰 공유는 '앱에서 직접 입력' 에 원문을 채우지 않는다", async () => {
+  await render(<ShareExtension text="WIFI:S:x;T:WPA;P:secret123;;" />);
+
+  await userEvent.setup().press(await screen.findByText("앱에서 직접 입력"));
+
+  expect(openHostApp).toHaveBeenCalledWith("create-link");
 });
 
 test("URL 이 없는 공유에서 '앱에서 직접 입력' 을 누르면 인앱 저장 시트를 연다", async () => {

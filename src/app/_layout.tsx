@@ -3,12 +3,16 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import type { ReactNode } from "react";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { HeaderScrollProvider } from "@/components/ui/header/HeaderScrollProvider";
-import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
+import {
+  SnackbarOutlet,
+  SnackbarProvider,
+} from "@/components/ui/snackbar/SnackbarProvider";
 import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
 import { isWeb } from "@/constants/platform.constants";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
@@ -42,6 +46,23 @@ const sheetScreenOptions = {
   animation: "none" as const,
   contentStyle: { backgroundColor: "transparent" },
 };
+
+// iOS 는 투명 모달 라우트를 네이티브 모달로 띄워 루트에 그린 스낵바가 그 아래에 깔린다 —
+// 열려 있는 동안의 스낵바는 그 화면 안의 자리에 그린다(Android·웹은 SnackbarOutlet 이 아무것도 그리지 않는다).
+function renderScreenLayout({
+  children,
+  options,
+}: {
+  children: ReactNode;
+  options: { presentation?: string };
+}) {
+  return (
+    <>
+      {children}
+      {options.presentation === "transparentModal" && <SnackbarOutlet />}
+    </>
+  );
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -85,6 +106,7 @@ export default function RootLayout() {
                       screenOptions={{
                         contentStyle: { backgroundColor: "transparent" },
                       }}
+                      screenLayout={renderScreenLayout}
                     >
                       <Stack.Screen
                         name="(tabs)"

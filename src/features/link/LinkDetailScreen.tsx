@@ -7,6 +7,11 @@ import {
   useDeleteLinkMutation,
   useUpdateLinkMutation,
 } from "@shared/entities/link/link.queries";
+import {
+  isOpenableLinkUrl,
+  isWebUrl,
+  normalizeLinkUrl,
+} from "@shared/link/link.utils";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Star } from "lucide-react-native";
@@ -49,6 +54,9 @@ import {
   type ReminderValue,
   toReminderAtIso,
 } from "./reminder.utils";
+
+// 앱 링크 주소는 2,048자까지 길 수 있다 — 제목·확인 창에서 주소를 보여줄 땐 줄 수를 제한한다(스킴·앞부분은 보인다).
+const URL_MAX_LINES = 3;
 
 // 로딩·에러 상태에도 뒤로가기는 유지한다(즐겨찾기·더보기는 데이터가 있어야 해 콘텐츠 상태에서만).
 function LinkDetailBackHeader() {
@@ -111,6 +119,11 @@ function LinkDetailContent() {
     ...linkQueries.detail(id),
     refetchInterval: (query) => getDetailRefetchInterval(query.state.data),
   });
+  // 앱 전용 링크는 서버가 제목을 만들지 못하고 출처도 스킴 뒤 첫 조각("place")이라 오해를 부른다 —
+  // 주소 자체를 제목으로 보여주고 출처는 숨긴다.
+  const isWebLink = isWebUrl(linkDetail.url);
+  const isUrlTitle = !isWebLink && linkDetail.title.trim() === "";
+  const displaySource = isWebLink ? linkDetail.source : "";
 
   const router = useRouter();
   const { show } = useSnackbar();
@@ -119,6 +132,7 @@ function LinkDetailContent() {
   // 폴더 이동(MoveLinksSheet)의 "동작 시점 저장"과도 일관된다. 상세: plan/task/task-server-integration.md.
   const { mutate: updateLink } = useUpdateLinkMutation();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isLinkConfirmOpen, setIsLinkConfirmOpen] = useState(false);
 
   // 별은 낙관적으로 먼저 뒤집고, PATCH 가 실패하면 원복 + 스낵바로 알린다
   // (성공 시에만 refetch 되므로, 실패를 삼키면 서버와 어긋난 별이 그대로 남는다).
@@ -212,8 +226,27 @@ function LinkDetailContent() {
     if (result === "copied") show({ message: "링크가 복사됐어요" });
   };
 
+  const openOriginal = async () => {
+    setIsLinkConfirmOpen(false);
+    if ((await openExternalUrl(linkDetail.url)) === "failed") {
+      show({ message: "이 링크를 열 수 있는 앱이 없어요" });
+    }
+  };
+
   // 우하단 ↗ 버튼이 잘 안 보인다는 피드백 — 출처 도메인 탭도 원문 이동 경로로 연다.
-  const handleOpenOriginal = () => openExternalUrl(linkDetail.url);
+  // 앱 전용 링크는 다른 앱을 바로 실행하고, 지금 저장 규칙에 어긋나는 웹 주소(예전에 저장된 것)는 보이는 것과
+  // 다른 곳이 열릴 수 있어 한 번 묻는다. 위험한 링크는 묻지 않고 막는다.
+  const handleOpenOriginal = async () => {
+    if (!isOpenableLinkUrl(linkDetail.url)) {
+      show({ message: "보안상 열 수 없는 링크예요" });
+      return;
+    }
+    if (!isWebLink || !normalizeLinkUrl(linkDetail.url).ok) {
+      setIsLinkConfirmOpen(true);
+      return;
+    }
+    await openOriginal();
+  };
 
   const handleDeleteConfirm = async () => {
     setIsDeleteOpen(false);
@@ -294,7 +327,7 @@ function LinkDetailContent() {
               imageUrls={
                 linkDetail.thumbnailUrl ? [linkDetail.thumbnailUrl] : []
               }
-              url={linkDetail.url}
+              onOpenOriginal={handleOpenOriginal}
             />
           </View>
 
@@ -311,21 +344,28 @@ function LinkDetailContent() {
                 />
               )}
             />
-            <Text variant="heading-1">{linkDetail.title}</Text>
+            <Text
+              variant="heading-1"
+              numberOfLines={isUrlTitle ? URL_MAX_LINES : undefined}
+            >
+              {isUrlTitle ? linkDetail.url : linkDetail.title}
+            </Text>
             <Text variant="caption-1" className="text-opacity-white-70">
-              {linkDetail.source ? (
-                <Text
-                  accessibilityRole="link"
-                  onPress={handleOpenOriginal}
-                  variant="caption-1"
-                  className="text-opacity-white-70 underline"
-                >
-                  {linkDetail.source}
-                </Text>
+              {displaySource ? (
+                <>
+                  <Text
+                    accessibilityRole="link"
+                    onPress={handleOpenOriginal}
+                    variant="caption-1"
+                    className="text-opacity-white-70 underline"
+                  >
+                    {displaySource}
+                  </Text>
+                  <Text variant="caption-1" className="text-opacity-white-40">
+                    {" · "}
+                  </Text>
+                </>
               ) : null}
-              <Text variant="caption-1" className="text-opacity-white-40">
-                {" · "}
-              </Text>
               {formatCalendarDate(linkDetail.savedAt)}
             </Text>
           </View>
@@ -394,6 +434,68 @@ function LinkDetailContent() {
           </>
         }
       />
+      <OpenLinkConfirmDialog
+        title={isWebLink ? "주소를 확인하고 열어주세요" : "다른 앱에서 열까요?"}
+        url={linkDetail.url}
+        host={isWebLink ? parseUrlHost(linkDetail.url) : undefined}
+        isOpen={isLinkConfirmOpen}
+        onClose={() => setIsLinkConfirmOpen(false)}
+        onConfirm={openOriginal}
+      />
     </>
   );
+}
+
+interface OpenLinkConfirmDialogProps {
+  title: string;
+  url: string;
+  /** 웹 링크가 실제로 여는 호스트 — 주소 앞에 따로 보여준다. */
+  host?: string;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+// 무엇이 열릴지는 주소로만 알 수 있어 설명 자리에 주소를 그대로 보여준다. 웹 주소는 보이는 것과
+// 실제로 열리는 곳이 다를 수 있어("https:///toss.tech@evil.com" → evil.com) 호스트를 앞에 둔다.
+function OpenLinkConfirmDialog({
+  title,
+  url,
+  host,
+  isOpen,
+  onClose,
+  onConfirm,
+}: OpenLinkConfirmDialogProps) {
+  return (
+    <AlertDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      description={host ? `열리는 곳: ${host}\n${url}` : url}
+      descriptionNumberOfLines={host ? URL_MAX_LINES + 1 : URL_MAX_LINES}
+      actions={
+        <>
+          <AlertDialogButton
+            label="취소"
+            variant="secondary"
+            onPress={onClose}
+          />
+          <AlertDialogButton
+            label="열기"
+            variant="primary"
+            onPress={onConfirm}
+          />
+        </>
+      }
+    />
+  );
+}
+
+function parseUrlHost(url: string): string | undefined {
+  try {
+    return new URL(url).host || undefined;
+  } catch {
+    // 파싱할 수 없는 주소는 호스트 없이 주소만 보여준다.
+    return undefined;
+  }
 }

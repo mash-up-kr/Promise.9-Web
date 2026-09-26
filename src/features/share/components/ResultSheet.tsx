@@ -1,4 +1,6 @@
 import { Text } from "@promise9/ui/text/Text";
+import { LINK_URL_ERROR_MESSAGES } from "@shared/link/link.constants";
+import type { LinkUrlRejectReason } from "@shared/link/link.utils";
 import { Image, Pressable, View } from "react-native";
 import { useCallbackOncePerRender } from "react-simplikit";
 import { createLinkHandoffPath } from "@/constants/routes.constants";
@@ -39,9 +41,9 @@ const RESULT_CONTENT = {
     subtitle: "잠시 후 다시 시도해주세요",
     cta: "닫기",
   },
+  // 부제는 거부 사유(LINK_URL_ERROR_MESSAGES)를 보여준다.
   "invalid-url": {
     title: "저장할 수 있는 링크가 없어요",
-    subtitle: "http:// 또는 https:// 로 시작하는 주소만 저장할 수 있어요",
     cta: "앱에서 직접 입력",
   },
 } as const;
@@ -55,15 +57,25 @@ export function CheckingSheet() {
   );
 }
 
+/** 저장 흐름의 결과(share.reducer)와, 저장할 링크가 없을 때의 안내. */
+type ShareResultState =
+  | Exclude<ShareSaveState, { phase: "editing" } | { phase: "saving" }>
+  | { phase: "invalid-url"; reason: LinkUrlRejectReason };
+
 export interface ResultSheetProps {
-  state: Exclude<ShareSaveState, { phase: "editing" } | { phase: "saving" }>;
-  /** 공유받은 원문 — URL 이 없을 때 인앱 저장 시트를 미리 채우는 데 쓴다. */
-  sharedText: string;
-  onRetry: () => void;
+  state: ShareResultState;
+  /** 공유받은 원문 — invalid-url 에서 "앱에서 직접 입력" 이 인앱 저장 시트를 미리 채우는 데 쓴다. */
+  sharedText?: string;
+  /** failed 에서 "다시 시도" 가 저장을 다시 한다. */
+  onRetry?: () => void;
 }
 
 export function ResultSheet({ state, sharedText, onRetry }: ResultSheetProps) {
   const content = RESULT_CONTENT[state.phase];
+  const subtitle =
+    state.phase === "invalid-url"
+      ? LINK_URL_ERROR_MESSAGES[state.reason]
+      : RESULT_CONTENT[state.phase].subtitle;
   const dismiss = useShareSheetDismiss();
   // 앱을 여는 동안 CTA 를 한 번 더 누르면 앱 열기·익스텐션 닫기가 겹친다.
   const openHostAppOnce = useCallbackOncePerRender(openHostApp, []);
@@ -79,10 +91,10 @@ export function ResultSheet({ state, sharedText, onRetry }: ResultSheetProps) {
         openHostAppOnce(state.linkId != null ? `link/${state.linkId}` : "/");
         return;
       case "failed":
-        onRetry();
+        onRetry?.();
         return;
       case "invalid-url":
-        openHostAppOnce(createLinkHandoffPath(sharedText));
+        openHostAppOnce(createLinkHandoffPath(sharedText ?? ""));
         return;
       case "retry-limit":
         dismiss();
@@ -103,7 +115,7 @@ export function ResultSheet({ state, sharedText, onRetry }: ResultSheetProps) {
             {content.title}
           </Text>
           <Text variant="body-2-reading" className="text-text-alternative">
-            {content.subtitle}
+            {subtitle}
           </Text>
         </View>
         {/* 시안 CTA — 높이 52·라벨 16/600 이라 ActionButton(medium=48/500) 과 값이 다르다. */}

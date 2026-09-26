@@ -1,5 +1,6 @@
 import { AlertCircleIcon } from "@promise9/ui/icon/AlertCircleIcon";
 import { CheckCircleIcon } from "@promise9/ui/icon/CheckCircleIcon";
+import { FrownIcon } from "@promise9/ui/icon/FrownIcon";
 import { WifiOffIcon } from "@promise9/ui/icon/WifiOffIcon";
 
 import { snackbarPresets } from "./snackbar.presets";
@@ -34,6 +35,22 @@ describe("snackbarPresets", () => {
     expect(options.action?.label).toBe("보기");
     options.action?.onPress();
     expect(onView).toHaveBeenCalledTimes(1);
+  });
+
+  test("failed 는 아이콘과 '다시 시도' 액션이 있다", () => {
+    const onRetry = jest.fn();
+    const options = snackbarPresets.failed("저장하지 못했어요", onRetry);
+    expect((options.icon as React.ReactElement).type).toBe(FrownIcon);
+    expect(options.action?.label).toBe("다시 시도");
+    options.action?.onPress();
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  // 같은 입력으로 다시 해도 소용없는 검증 실패는 다시 시도를 붙이지 않는다.
+  test("failed 에 onRetry 를 넘기지 않으면 액션이 없다", () => {
+    const options = snackbarPresets.failed("올바른 링크 주소가 아니에요");
+    expect((options.icon as React.ReactElement).type).toBe(FrownIcon);
+    expect(options.action).toBeUndefined();
   });
 
   test("offline 은 아이콘과 '다시 시도' 액션이 있고, 액션은 전달한 콜백을 그대로 호출한다", () => {

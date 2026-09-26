@@ -92,6 +92,9 @@
             {
               "type": "url",
               "max": 1
+            },
+            {
+              "type": "text"
             }
           ],
           "backgroundColor": {
