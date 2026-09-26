@@ -61,15 +61,19 @@ export function ShareExtension({ url }: { url?: string }) {
   // 모듈 싱글턴이 아니라 마운트마다 새로 만들어 테스트 간 캐시가 새지 않게 한다.
   const [queryClient] = useState(createQueryClient);
   // 로그인·저장 요청이 끝나기 전에 닫으면 그 결과(새 토큰·저장)가 프로세스와 함께 버려진다.
-  const closeAfterPendingWork = useCallback(
-    () => runAfterPendingWork(close, queryClient),
+  const waitForPendingWork = useCallback(
+    (proceed: () => void) => runAfterPendingWork(proceed, queryClient),
     [queryClient],
   );
 
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
-        <ShareSheet onClose={closeAfterPendingWork} isLocked={isSaving}>
+        <ShareSheet
+          onClose={close}
+          isLocked={isSaving}
+          waitBeforeClose={waitForPendingWork}
+        >
           {(status === "checking" ||
             (status === "authenticated" && !isTokenReady)) && <CheckingSheet />}
           {status === "unauthenticated" && (

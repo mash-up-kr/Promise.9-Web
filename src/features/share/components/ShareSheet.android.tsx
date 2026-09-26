@@ -15,13 +15,22 @@ export const ShareSheetView = BottomSheetView;
 export const ShareSheetScrollView = BottomSheetScrollView;
 export const ShareSheetMemoField = MemoField;
 
-export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
+export function ShareSheet({
+  onClose,
+  isLocked,
+  waitBeforeClose,
+  children,
+}: ShareSheetProps) {
+  // Android 는 닫아도 앱 프로세스가 살아 있어 급하지 않다 — gorhom 이 내린 뒤에 기다린다.
+  const handleClose = () =>
+    waitBeforeClose ? waitBeforeClose(onClose) : onClose();
+
   return (
     // 앱 _layout 과 같은 루트 프로바이더 — 시트 제스처(gesture-handler)·Dialog 키보드 회피.
     <GestureHandlerRootView className="flex-1">
       <KeyboardProvider>
         <BottomSheet
-          onClose={onClose}
+          onClose={handleClose}
           backdropPressBehavior={isLocked ? "none" : "close"}
           isLocked={isLocked}
         >

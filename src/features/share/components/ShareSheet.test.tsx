@@ -52,17 +52,33 @@ function CancelButton() {
   );
 }
 
-async function renderSheet({ isLocked = false } = {}) {
+interface RenderSheetOptions {
+  isLocked?: boolean;
+  waitBeforeClose?: (proceed: () => void) => void;
+}
+
+async function renderSheet({
+  isLocked = false,
+  waitBeforeClose,
+}: RenderSheetOptions = {}) {
   const onClose = jest.fn();
+  const onOtherPress = jest.fn();
   await render(
     <SafeAreaProvider initialMetrics={metrics}>
-      <ShareSheet onClose={onClose} isLocked={isLocked}>
+      <ShareSheet
+        onClose={onClose}
+        isLocked={isLocked}
+        waitBeforeClose={waitBeforeClose}
+      >
         <Text>내용</Text>
         <CancelButton />
+        <Pressable accessibilityRole="button" onPress={onOtherPress}>
+          <Text>다른 동작</Text>
+        </Pressable>
       </ShareSheet>
     </SafeAreaProvider>,
   );
-  return { onClose };
+  return { onClose, onOtherPress };
 }
 
 interface TouchPoint {
@@ -160,6 +176,32 @@ test("여러 번 닫기를 요청해도 onClose 는 한 번만 부른다", async
   const user = setupUser();
   await user.press(screen.getByText("취소"));
   await user.press(screen.getByLabelText("시트 닫기"));
+  await finishAnimations();
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+// 기다리는 동안 보이지 않는 전체 화면이 호스트를 막지 않도록, 시트를 띄워 둔 채 기다렸다가 내려간다.
+test("닫기 전에 기다릴 일이 있으면 시트를 띄운 채 조작을 막고, 끝나면 내려간다", async () => {
+  const { NativeAnimatedModule } = NativeModules;
+  let proceed!: () => void;
+  const { onClose, onOtherPress } = await renderSheet({
+    waitBeforeClose: (next) => {
+      proceed = next;
+    },
+  });
+  NativeAnimatedModule.startAnimatingNode.mockClear();
+  const user = setupUser();
+
+  await user.press(screen.getByLabelText("시트 닫기"));
+  await finishAnimations();
+  expect(NativeAnimatedModule.startAnimatingNode).not.toHaveBeenCalled();
+  expect(onClose).not.toHaveBeenCalled();
+  await user.press(screen.getByText("다른 동작"));
+  expect(onOtherPress).not.toHaveBeenCalled();
+
+  await act(async () => {
+    proceed();
+  });
   await finishAnimations();
   expect(onClose).toHaveBeenCalledTimes(1);
 });

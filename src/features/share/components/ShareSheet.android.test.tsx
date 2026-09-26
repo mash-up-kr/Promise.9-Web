@@ -55,3 +55,26 @@ test("시트 안에서 useShareSheetDismiss 로 닫을 수 있다", async () => 
   await userEvent.setup().press(screen.getByText("취소"));
   expect(onClose).toHaveBeenCalledTimes(1);
 });
+
+test("닫기 전에 기다릴 일이 있으면 끝난 뒤에 onClose 를 부른다", async () => {
+  const onClose = jest.fn();
+  let proceed!: () => void;
+  await render(
+    <SafeAreaProvider initialMetrics={metrics}>
+      <ShareSheet
+        onClose={onClose}
+        isLocked={false}
+        waitBeforeClose={(next) => {
+          proceed = next;
+        }}
+      >
+        <CancelButton />
+      </ShareSheet>
+    </SafeAreaProvider>,
+  );
+  await userEvent.setup().press(screen.getByLabelText("sheet-backdrop"));
+  expect(onClose).not.toHaveBeenCalled();
+
+  proceed();
+  expect(onClose).toHaveBeenCalledTimes(1);
+});

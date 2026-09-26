@@ -12,6 +12,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import {
   Animated,
@@ -55,6 +56,8 @@ export interface ShareSheetProps extends PropsWithChildren {
   onClose: () => void;
   /** true 면 백드롭 탭·끌어 내리기로 닫히지 않는다(저장 중). */
   isLocked: boolean;
+  /** 닫기 전에 끝나야 할 일을 기다렸다가 proceed 를 부른다 — 그동안 시트는 떠 있고 조작을 막는다. */
+  waitBeforeClose?: (proceed: () => void) => void;
 }
 
 const DRAG_CLOSE_DISTANCE = 120;
@@ -66,7 +69,12 @@ export function shouldDismissByDrag(dy: number, vy: number) {
   return dy >= DRAG_MIN_DISTANCE && vy >= DRAG_CLOSE_VELOCITY;
 }
 
-export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
+export function ShareSheet({
+  onClose,
+  isLocked,
+  waitBeforeClose,
+  children,
+}: ShareSheetProps) {
   const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   // null 이면 아직 모른다 — 첫 등장은 설정을 읽은 뒤로 미룬다.
@@ -80,6 +88,7 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
   const measuredHeightRef = useRef<number | null>(null);
   const hasEnteredRef = useRef(false);
   const isClosingRef = useRef(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   const settle = useCallback(() => {
     if (isReduceMotionEnabled) {
@@ -110,9 +119,7 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
   useEffect(enter, [enter]);
 
   // 인앱 시트(gorhom)처럼 닫힐 때도 같은 스프링으로 내려간다.
-  const dismiss = useCallback(() => {
-    if (isClosingRef.current) return;
-    isClosingRef.current = true;
+  const slideOut = useCallback(() => {
     if (isReduceMotionEnabled) {
       onClose();
       return;
@@ -128,8 +135,20 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
       }
       // 끊긴 채 닫는 중으로 남으면 시트를 다시 닫을 수 없다.
       isClosingRef.current = false;
+      setIsClosing(false);
     });
   }, [translateY, windowHeight, onClose, isReduceMotionEnabled]);
+
+  const dismiss = useCallback(() => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    setIsClosing(true);
+    if (waitBeforeClose) {
+      waitBeforeClose(slideOut);
+    } else {
+      slideOut();
+    }
+  }, [waitBeforeClose, slideOut]);
 
   // 콘텐츠가 바뀌면(확인 → 저장 → 결과, 리마인드 펼침) 잰 높이로 시트 높이를 따라 움직인다.
   // 처음 잰 뒤에 올라와야 빈 시트가 비치지 않는다.
@@ -209,7 +228,10 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
 
   return (
     <ShareSheetDismissContext.Provider value={dismiss}>
-      <View className="flex-1 justify-end">
+      <View
+        pointerEvents={isClosing ? "none" : "auto"}
+        className="flex-1 justify-end"
+      >
         <Animated.View
           style={[StyleSheet.absoluteFill, { opacity: backdropOpacity }]}
         >
