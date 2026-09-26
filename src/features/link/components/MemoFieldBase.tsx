@@ -1,6 +1,11 @@
 import { Text } from "@promise9/ui/text/Text";
-import { useLayoutEffect, useRef } from "react";
-import { TextInput, View } from "react-native";
+import {
+  type ComponentType,
+  type RefAttributes,
+  useLayoutEffect,
+  useRef,
+} from "react";
+import { TextInput, type TextInputProps, View } from "react-native";
 import { isShareExtension, isWeb } from "@/constants/platform.constants";
 
 import { MEMO_MAX_LENGTH } from "../link.contracts";
@@ -13,7 +18,7 @@ export interface MemoFieldBaseProps {
   /** 포커스 해제 시 — 자동 저장 트리거에 쓴다. */
   onBlur?: () => void;
   /** 입력 컴포넌트 — gorhom 시트 안에서는 BottomSheetTextInput 을 넘긴다(MemoField). */
-  Input?: typeof TextInput;
+  Input?: ComponentType<TextInputProps & RefAttributes<TextInput>>;
 }
 
 // gorhom 을 import 하지 않는 메모 입력 — iOS 공유 익스텐션은 이것을 그대로 쓴다.
@@ -30,8 +35,9 @@ export function MemoFieldBase({
   // biome-ignore lint/correctness/useExhaustiveDependencies: memo 를 직접 읽지 않고 ref 로 DOM 을 재측정하는 트리거로만 쓴다 — 값이 바뀔 때마다 다시 실행돼야 한다.
   useLayoutEffect(() => {
     if (!isWeb) return;
-    const node = inputRef.current as unknown as HTMLTextAreaElement | null;
-    if (!node) return;
+    // react-native-web 은 여러 줄 입력을 <textarea> 로 그린다.
+    const node = inputRef.current;
+    if (!(node instanceof HTMLTextAreaElement)) return;
     node.style.height = "auto";
     node.style.height = `${node.scrollHeight}px`;
   }, [memo]);
