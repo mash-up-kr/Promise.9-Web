@@ -122,7 +122,12 @@ export function ShareSheet({ onClose, isLocked, children }: ShareSheetProps) {
       ...SHEET_SPRING,
       useNativeDriver: true,
     }).start(({ finished }) => {
-      if (finished) onClose();
+      if (finished) {
+        onClose();
+        return;
+      }
+      // 끊긴 채 닫는 중으로 남으면 시트를 다시 닫을 수 없다.
+      isClosingRef.current = false;
     });
   }, [translateY, windowHeight, onClose, isReduceMotionEnabled]);
 

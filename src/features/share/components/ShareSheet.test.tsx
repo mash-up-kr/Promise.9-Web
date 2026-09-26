@@ -227,10 +227,15 @@ test("퇴장 애니메이션이 끝까지 가지 못하면 onClose 를 부르지
     ) => endCallback({ finished: false }),
   );
 
-  await setupUser().press(screen.getByLabelText("시트 닫기"));
+  const user = setupUser();
+  await user.press(screen.getByLabelText("시트 닫기"));
   await finishAnimations();
-
   expect(onClose).not.toHaveBeenCalled();
+
+  // 닫는 중 상태에 갇히지 않고 다시 닫을 수 있다.
+  await user.press(screen.getByLabelText("시트 닫기"));
+  await finishAnimations();
+  expect(onClose).toHaveBeenCalledTimes(1);
 });
 
 test("콘텐츠 높이를 재면 시트를 그 높이로 맞춘다", async () => {
