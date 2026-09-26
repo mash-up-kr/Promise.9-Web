@@ -12,7 +12,6 @@ import {
 } from "react";
 import Animated, { FadeInDown, FadeOutDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTimeout } from "react-simplikit";
 
 import { isIOS } from "@/constants/platform.constants";
 
@@ -47,7 +46,7 @@ export function useSnackbar(): SnackbarContextValue {
 }
 
 interface ActiveSnackbar extends SnackbarOptions {
-  // show 마다 증가 — 호스트를 remount 시켜 자동 dismiss 타이머를 재시작한다.
+  // show 마다 증가 — 같은 내용을 다시 띄워도 새 스낵바로 본다(등장 애니메이션·자동 dismiss).
   id: number;
 }
 
@@ -89,6 +88,13 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
     idRef.current += 1;
     setCurrent({ ...options, id: idRef.current });
   }, []);
+
+  // 그리는 자리와 따로 잰다 — 시트가 닫혀 아래 화면으로 옮겨 그려도 처음부터 다시 재지 않는다.
+  useEffect(() => {
+    if (!current) return;
+    const timer = setTimeout(hide, current.duration ?? DEFAULT_DURATION);
+    return () => clearTimeout(timer);
+  }, [current, hide]);
 
   const registerOutlet = useCallback((outletId: string) => {
     setOutletIds((ids) => [...ids, outletId]);
@@ -153,8 +159,6 @@ function SnackbarSlot({ outletId }: { outletId: string }) {
   );
 }
 
-// key(id) 로 show 마다 remount → useTimeout 이 매번 새로 시작하고,
-// 언마운트(교체·hide) 시 대기 중인 자동 dismiss 타이머를 스스로 정리한다.
 function SnackbarHost({
   options,
   insetBottom,
@@ -168,8 +172,6 @@ function SnackbarHost({
   onEntered: (id: number) => void;
   onDismiss: () => void;
 }) {
-  useTimeout(onDismiss, options.duration ?? DEFAULT_DURATION);
-
   useEffect(() => onEntered(options.id), [onEntered, options.id]);
 
   return (

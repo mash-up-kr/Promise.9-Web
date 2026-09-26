@@ -207,5 +207,27 @@ describe("Snackbar", () => {
       expect(screen.queryByTestId("sheet-route")).toBeNull();
       expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
     });
+
+    test("아래 화면으로 옮겨 그려도 자동으로 사라지는 시각은 그대로다", async () => {
+      jest.useFakeTimers();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      try {
+        await render(<App isSheetOpen />);
+        await user.press(screen.getByLabelText("show"));
+        await act(async () => {
+          jest.advanceTimersByTime(2000);
+        });
+
+        await screen.rerender(<App isSheetOpen={false} />);
+        expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
+        await act(async () => {
+          jest.advanceTimersByTime(500);
+        });
+
+        expect(screen.queryByText("링크를 저장했어요.")).toBeNull();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
   });
 });
