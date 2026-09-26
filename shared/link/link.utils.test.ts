@@ -309,6 +309,19 @@ describe("findLinkInText", () => {
     }
   });
 
+  // 작은따옴표는 주소 안에도 쓰인다(RFC 3986 sub-delims) — 작은따옴표로 감싼 링크만 거기서 끝낸다.
+  test("작은따옴표는 작은따옴표로 연 링크에서만 링크를 끝낸다", () => {
+    const wikiUrl = "https://en.wikipedia.org/wiki/Ender's_Game";
+    expect(findLinkInText(`${wikiUrl} 추천`)).toEqual(accepted(wikiUrl));
+    for (const text of [
+      "'https://toss.tech/a'",
+      "'https://toss.tech/a'를 봐",
+      "'참고 https://toss.tech/a'",
+    ]) {
+      expect(findLinkInText(text)).toEqual(accepted("https://toss.tech/a"));
+    }
+  });
+
   test("전각·CJK 괄호와 문장 부호도 걷어낸다", () => {
     for (const text of [
       "（https://toss.tech/a）",

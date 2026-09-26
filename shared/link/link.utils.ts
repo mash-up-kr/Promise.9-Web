@@ -249,8 +249,9 @@ const CLOSING_TO_OPENING = new Map([
   ["＞", "＜"],
 ]);
 const OPENING_BRACKETS = new Set(CLOSING_TO_OPENING.values());
-// 따옴표·꺾쇠에서 주소가 끝난다 — HTML 을 그대로 공유하면 속성·태그가 붙어 온다(<a href="…">·<p>…</p>).
-const LINK_TERMINATORS = new Set(['"', "'", "<", ">"]);
+// 큰따옴표·꺾쇠에서 주소가 끝난다 — HTML 을 그대로 공유하면 속성·태그가 붙어 온다(<a href="…">·<p>…</p>).
+// 작은따옴표는 주소 안에도 쓰여(…/wiki/Ender's_Game) 작은따옴표로 연 링크에서만 끝낸다.
+const LINK_TERMINATORS = new Set(['"', "<", ">"]);
 // 이모지·그림 문자 — 링크 끝에 붙여 쓴 것만 뗀다. 주소 중간의 것은 주소의 일부일 수 있다(i❤.ws·/w/★/…).
 const PICTOGRAPHIC_RANGES: ReadonlyArray<readonly [number, number]> = [
   [0x2190, 0x21ff],
@@ -273,8 +274,12 @@ const EMOJI_JOINER_RANGES: ReadonlyArray<readonly [number, number]> = [
   [0xfe0e, 0xfe0f],
   [0xe0020, 0xe007f],
 ];
-const LEADING_PUNCTUATION = new Set([...OPENING_BRACKETS, ...LINK_TERMINATORS]);
-const TRAILING_PUNCTUATION = new Set([...".,!?;:。、，！？：；"]);
+const LEADING_PUNCTUATION = new Set([
+  ...OPENING_BRACKETS,
+  ...LINK_TERMINATORS,
+  "'",
+]);
+const TRAILING_PUNCTUATION = new Set([..."'.,!?;:。、，！？：；"]);
 // 링크 바로 뒤에 붙여 쓴 조사("…/abc에서") — 두 글자 조사를 먼저 본다.
 const TRAILING_PARTICLES = `에서 에게 으로 까지 부터 이나 이랑 처럼
   로 을 를 이 가 은 는 의 에 와 과 도 만 나 랑`.split(/\s+/);
@@ -311,11 +316,14 @@ function trimTrailingParticle(value: string): string {
 function trimLinkPunctuation(token: string): string {
   let start = 0;
   while (LEADING_PUNCTUATION.has(token.charAt(start))) start += 1;
+  const isSingleQuoted = token.slice(0, start).includes("'");
   const openBrackets: string[] = [];
   let end = start;
   for (; end < token.length; end += 1) {
     const char = token.charAt(end);
-    if (LINK_TERMINATORS.has(char)) break;
+    if (LINK_TERMINATORS.has(char) || (isSingleQuoted && char === "'")) {
+      break;
+    }
     const opening = CLOSING_TO_OPENING.get(char);
     if (opening === undefined) {
       if (OPENING_BRACKETS.has(char)) openBrackets.push(char);
@@ -331,8 +339,13 @@ function trimLinkPunctuation(token: string): string {
 }
 
 function findWebLinkCandidate(token: string): string | null {
-  const start = token.search(WEB_URL_START_PATTERN);
-  return start === -1 ? null : trimLinkPunctuation(token.slice(start));
+  let start = token.search(WEB_URL_START_PATTERN);
+  if (start === -1) return null;
+  // 링크를 연 괄호·따옴표까지 넘긴다 — 작은따옴표로 연 링크인지 알아야 한다.
+  while (start > 0 && LEADING_PUNCTUATION.has(token.charAt(start - 1))) {
+    start -= 1;
+  }
+  return trimLinkPunctuation(token.slice(start));
 }
 
 // 공유 텍스트는 문장이 섞여 오므로 입력 검증보다 좁게 본다 — "참고:이거"·"todo:장보기"·"사진.jpg" 를
