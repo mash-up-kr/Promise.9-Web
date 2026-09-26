@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { AccessibilityInfo, NativeModules } from "react-native";
 
 import { AlertDialog, AlertDialogButton } from "./AlertDialog";
@@ -109,6 +109,24 @@ describe("AlertDialog", () => {
     );
     fireEvent.press(screen.getByText("로그아웃"));
     expect(onPress).not.toHaveBeenCalled();
+  });
+
+  test("동작 줄이기 설정을 읽기 전에는 등장 애니메이션을 시작하지 않는다", async () => {
+    const { NativeAnimatedModule } = NativeModules;
+    let resolveSetting!: (isEnabled: boolean) => void;
+    isReduceMotionEnabled.mockReturnValue(
+      new Promise((resolve) => {
+        resolveSetting = resolve;
+      }),
+    );
+    NativeAnimatedModule.startAnimatingNode.mockClear();
+    await renderDialog();
+    expect(NativeAnimatedModule.startAnimatingNode).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveSetting(false);
+    });
+    expect(NativeAnimatedModule.startAnimatingNode).toHaveBeenCalled();
   });
 
   test("동작 줄이기가 켜져 있으면 등장 애니메이션 없이 바로 그린다", async () => {
