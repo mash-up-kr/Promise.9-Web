@@ -48,6 +48,8 @@ export function useSnackbar(): SnackbarContextValue {
 interface ActiveSnackbar extends SnackbarOptions {
   // show 마다 증가 — 같은 내용을 다시 띄워도 새 스낵바로 본다(등장 애니메이션·자동 dismiss).
   id: number;
+  /** 띄울 때 열려 있던 자리들(아래 → 위). */
+  outletIds: string[];
 }
 
 interface SnackbarOutletContextValue {
@@ -78,15 +80,20 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
   const idRef = useRef(0);
   const [current, setCurrent] = useState<ActiveSnackbar | null>(null);
   const [enteredId, setEnteredId] = useState<number | null>(null);
-  // 루트 위에 뜬 화면들의 자리 — 가장 나중에 열린(맨 위) 화면의 자리가 그리고, 없으면 루트가 그린다.
+  // 루트 위에 뜬 화면들의 자리(아래 → 위). show 가 띄우는 순간의 목록을 읽도록 ref 에도 둔다.
   const [outletIds, setOutletIds] = useState<string[]>([]);
+  const outletIdsRef = useRef<string[]>([]);
 
   const hide = useCallback(() => setCurrent(null), []);
 
   // 한 번에 하나만 — 새 show 는 이전 것을 대체한다.
   const show = useCallback((options: SnackbarOptions) => {
     idRef.current += 1;
-    setCurrent({ ...options, id: idRef.current });
+    setCurrent({
+      ...options,
+      id: idRef.current,
+      outletIds: outletIdsRef.current,
+    });
   }, []);
 
   // 그리는 자리와 따로 잰다 — 시트가 닫혀 아래 화면으로 옮겨 그려도 처음부터 다시 재지 않는다.
@@ -97,8 +104,14 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
   }, [current, hide]);
 
   const registerOutlet = useCallback((outletId: string) => {
-    setOutletIds((ids) => [...ids, outletId]);
-    return () => setOutletIds((ids) => ids.filter((id) => id !== outletId));
+    outletIdsRef.current = [...outletIdsRef.current, outletId];
+    setOutletIds(outletIdsRef.current);
+    return () => {
+      outletIdsRef.current = outletIdsRef.current.filter(
+        (id) => id !== outletId,
+      );
+      setOutletIds(outletIdsRef.current);
+    };
   }, []);
 
   const value = useMemo(() => ({ show, hide }), [show, hide]);
@@ -106,7 +119,7 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
     () => ({
       current,
       enteredId,
-      activeOutletId: outletIds[outletIds.length - 1] ?? ROOT_OUTLET_ID,
+      activeOutletId: findActiveOutletId(current, outletIds),
       registerOutlet,
       onEntered: setEnteredId,
       hide,
@@ -122,6 +135,18 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
       </SnackbarOutletContext.Provider>
     </SnackbarContext.Provider>
   );
+}
+
+// 띄울 때 열려 있던 자리 중 아직 열린 맨 위 자리에 그린다. 나중에 열린 시트로 옮기면 원래 자리의 퇴장
+// 애니메이션이 dim 아래로 비치고 시트에는 애니메이션 없이 새로 뜬다.
+function findActiveOutletId(
+  snackbar: ActiveSnackbar | null,
+  openOutletIds: string[],
+): string {
+  const outletIds = (snackbar?.outletIds ?? []).filter((id) =>
+    openOutletIds.includes(id),
+  );
+  return outletIds[outletIds.length - 1] ?? ROOT_OUTLET_ID;
 }
 
 /**

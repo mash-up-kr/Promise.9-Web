@@ -151,13 +151,25 @@ describe("Snackbar", () => {
 
   // 시트 라우트(투명 모달)는 루트 위에 따로 뜨는 화면이라, 루트에 그린 스낵바는 그 아래에 깔린다.
   describe("시트 라우트 위의 스낵바", () => {
-    function App({ isSheetOpen }: { isSheetOpen: boolean }) {
+    function App({
+      isSheetOpen,
+      isFolderSheetOpen = false,
+    }: {
+      isSheetOpen: boolean;
+      isFolderSheetOpen?: boolean;
+    }) {
       return (
         <SafeAreaProvider initialMetrics={SAFE_AREA_METRICS}>
           <SnackbarProvider>
             <Harness />
             {isSheetOpen && (
               <View testID="sheet-route">
+                <SnackbarOutlet />
+              </View>
+            )}
+            {/* 시트 위에 연 시트(링크 저장 → 폴더 추가) */}
+            {isFolderSheetOpen && (
+              <View testID="folder-sheet-route">
                 <SnackbarOutlet />
               </View>
             )}
@@ -205,6 +217,75 @@ describe("Snackbar", () => {
       await screen.rerender(<App isSheetOpen={false} />);
 
       expect(screen.queryByTestId("sheet-route")).toBeNull();
+      expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
+    });
+
+    test("위에 연 시트가 닫히면 그 시트의 스낵바를 아래 시트에 이어서 그린다", async () => {
+      const user = userEvent.setup();
+      await render(<App isSheetOpen isFolderSheetOpen />);
+      await user.press(screen.getByLabelText("show"));
+      expect(
+        within(screen.getByTestId("folder-sheet-route")).getByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeOnTheScreen();
+
+      await screen.rerender(<App isSheetOpen />);
+
+      expect(
+        within(screen.getByTestId("sheet-route")).getByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeOnTheScreen();
+    });
+
+    test("루트에 뜬 스낵바는 시트가 열려도 루트에 남는다", async () => {
+      const user = userEvent.setup();
+      await render(<App isSheetOpen={false} />);
+      await user.press(screen.getByLabelText("show"));
+
+      await screen.rerender(<App isSheetOpen />);
+
+      expect(
+        within(screen.getByTestId("sheet-route")).queryByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeNull();
+      expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
+    });
+
+    test("시트에 뜬 스낵바는 그 위에 시트가 열려도 그 시트에 남는다", async () => {
+      const user = userEvent.setup();
+      await render(<App isSheetOpen />);
+      await user.press(screen.getByLabelText("show"));
+
+      await screen.rerender(<App isSheetOpen isFolderSheetOpen />);
+
+      expect(
+        within(screen.getByTestId("sheet-route")).getByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeOnTheScreen();
+      expect(
+        within(screen.getByTestId("folder-sheet-route")).queryByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeNull();
+    });
+
+    test("띄운 시트가 닫힌 뒤 새로 열린 시트로는 옮기지 않는다", async () => {
+      const user = userEvent.setup();
+      await render(<App isSheetOpen />);
+      await user.press(screen.getByLabelText("show"));
+      await screen.rerender(<App isSheetOpen={false} />);
+
+      await screen.rerender(<App isSheetOpen={false} isFolderSheetOpen />);
+
+      expect(
+        within(screen.getByTestId("folder-sheet-route")).queryByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeNull();
       expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
     });
 
