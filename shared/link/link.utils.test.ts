@@ -294,6 +294,21 @@ describe("findLinkInText", () => {
     }
   });
 
+  // HTML 을 변환 없이 공유 텍스트로 받으면 속성·태그가 주소에 붙어 온다.
+  test("따옴표·꺾쇠에서 링크가 끝난다", () => {
+    for (const text of [
+      '<a href="https://toss.tech/article/x">토스</a>',
+      "<a href='https://toss.tech/article/x'>토스</a>",
+      "<p>https://toss.tech/article/x</p>",
+      '<meta content="https://toss.tech/article/x"/>',
+      '<a href="https://toss.tech/article/x"target="_blank">토스</a>',
+    ]) {
+      expect(findLinkInText(text)).toEqual(
+        accepted("https://toss.tech/article/x"),
+      );
+    }
+  });
+
   test("전각·CJK 괄호와 문장 부호도 걷어낸다", () => {
     for (const text of [
       "（https://toss.tech/a）",

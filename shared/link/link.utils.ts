@@ -236,7 +236,6 @@ const CLOSING_TO_OPENING = new Map([
   [")", "("],
   ["]", "["],
   ["}", "{"],
-  [">", "<"],
   ["”", "“"],
   ["’", "‘"],
   ["」", "「"],
@@ -250,6 +249,8 @@ const CLOSING_TO_OPENING = new Map([
   ["＞", "＜"],
 ]);
 const OPENING_BRACKETS = new Set(CLOSING_TO_OPENING.values());
+// 따옴표·꺾쇠에서 주소가 끝난다 — HTML 을 그대로 공유하면 속성·태그가 붙어 온다(<a href="…">·<p>…</p>).
+const LINK_TERMINATORS = new Set(['"', "'", "<", ">"]);
 // 이모지·그림 문자 — 링크 끝에 붙여 쓴 것만 뗀다. 주소 중간의 것은 주소의 일부일 수 있다(i❤.ws·/w/★/…).
 const PICTOGRAPHIC_RANGES: ReadonlyArray<readonly [number, number]> = [
   [0x2190, 0x21ff],
@@ -272,8 +273,8 @@ const EMOJI_JOINER_RANGES: ReadonlyArray<readonly [number, number]> = [
   [0xfe0e, 0xfe0f],
   [0xe0020, 0xe007f],
 ];
-const LEADING_PUNCTUATION = new Set([...OPENING_BRACKETS, '"', "'"]);
-const TRAILING_PUNCTUATION = new Set([..."\"'.,!?;:。、，！？：；"]);
+const LEADING_PUNCTUATION = new Set([...OPENING_BRACKETS, ...LINK_TERMINATORS]);
+const TRAILING_PUNCTUATION = new Set([...".,!?;:。、，！？：；"]);
 // 링크 바로 뒤에 붙여 쓴 조사("…/abc에서") — 두 글자 조사를 먼저 본다.
 const TRAILING_PARTICLES = `에서 에게 으로 까지 부터 이나 이랑 처럼
   로 을 를 이 가 은 는 의 에 와 과 도 만 나 랑`.split(/\s+/);
@@ -306,7 +307,7 @@ function trimTrailingParticle(value: string): string {
 }
 
 // 링크를 감싼 괄호·따옴표와 뒤따른 문장 부호·이모지·조사를 걷어낸다. 짝이 맞는 괄호는 주소의 일부로 남기고
-// ("…/Foo_(bar)"), 짝 없는 닫는 괄호에서 주소가 끝난다("누리집(https://www.korea.kr)에서").
+// ("…/Foo_(bar)"), 짝 없는 닫는 괄호나 따옴표·꺾쇠에서 주소가 끝난다("누리집(https://www.korea.kr)에서").
 function trimLinkPunctuation(token: string): string {
   let start = 0;
   while (LEADING_PUNCTUATION.has(token.charAt(start))) start += 1;
@@ -314,6 +315,7 @@ function trimLinkPunctuation(token: string): string {
   let end = start;
   for (; end < token.length; end += 1) {
     const char = token.charAt(end);
+    if (LINK_TERMINATORS.has(char)) break;
     const opening = CLOSING_TO_OPENING.get(char);
     if (opening === undefined) {
       if (OPENING_BRACKETS.has(char)) openBrackets.push(char);
