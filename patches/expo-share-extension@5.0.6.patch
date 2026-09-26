@@ -43,7 +43,7 @@ index 3816339ae033c7b49c7d683d4c432888d5080788..27f41d12b95e29fa951d46c48abb0ebc
          PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
          PRODUCT_NAME: `"${targetName}"`,
 diff --git a/plugin/swift/ShareExtensionViewController.swift b/plugin/swift/ShareExtensionViewController.swift
-index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..f3587f4b7b71f7331e107ef5bfe38257c6a122a5 100644
+index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..896330182ebdbef158eafcb6f06ac0d5dc15d9ad 100644
 --- a/plugin/swift/ShareExtensionViewController.swift
 +++ b/plugin/swift/ShareExtensionViewController.swift
 @@ -1,6 +1,7 @@
@@ -313,7 +313,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..f3587f4b7b71f7331e107ef5bfe38257
                }
                group.leave()
              }
-@@ -604,7 +718,38 @@ class ShareExtensionViewController: UIViewController {
+@@ -604,7 +718,47 @@ class ShareExtensionViewController: UIViewController {
      }
      
      group.notify(queue: .main) {
@@ -349,6 +349,15 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..f3587f4b7b71f7331e107ef5bfe38257
 +        documentAttributes: nil
 +      ).string
 +    }
-+    return String(data: data, encoding: .utf8) ?? String(data: data, encoding: .utf16)
++    // UTF-16 은 BOM 이 없을 때 형식마다 바이트 순서가 다르다 — external 은 빅 엔디언(.utf16 의 기본),
++    // 일반은 기기 순서(리틀 엔디언)다. 나머지는 UTF-8 로만 읽는다: 다른 인코딩을 UTF-16 으로 읽으면 글자가 깨진다.
++    if type.conforms(to: .utf16ExternalPlainText) {
++      return String(data: data, encoding: .utf16)
++    }
++    if type.conforms(to: .utf16PlainText) {
++      let hasByteOrderMark = data.starts(with: [0xFF, 0xFE]) || data.starts(with: [0xFE, 0xFF])
++      return String(data: data, encoding: hasByteOrderMark ? .utf16 : .utf16LittleEndian)
++    }
++    return String(data: data, encoding: .utf8)
 +  }
  }
