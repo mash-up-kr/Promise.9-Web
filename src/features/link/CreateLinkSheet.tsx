@@ -21,6 +21,7 @@ import { Keyboard, View } from "react-native";
 import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
+import { useSheetRouteNavigation } from "@/components/ui/sheet-screen/useSheetRouteNavigation";
 import {
   type SnackbarOptions,
   useSnackbar,
@@ -47,6 +48,7 @@ const SAVE_SNACKBAR_DURATION = 4000;
 
 export function CreateLinkSheet() {
   const router = useRouter();
+  const { closeSheet, navigateFromSheet } = useSheetRouteNavigation();
   const { show } = useSnackbar();
   // 시트를 연 채로 알린다 — 입력하다 바로 저장하면 키보드가 올라온 채라 시트 아래쪽 스낵바가 가려 먼저 내린다.
   const showInSheet = (options: SnackbarOptions) => {
@@ -74,16 +76,6 @@ export function CreateLinkSheet() {
   const url = useWatch({ control, name: "url" });
   const isSaving = createLinkMutation.isPending;
 
-  const closeSheet = () => {
-    // 웹에서 히스토리가 없으면(직접 진입 등) back 이 실패하므로 홈으로 대체한다.
-    if (router.canGoBack()) {
-      router.back();
-
-      return;
-    }
-    router.replace("/");
-  };
-
   // dismiss 는 gorhom 컨텍스트 안(헤더)에서만 얻을 수 있어 헤더가 이 핸들러에 주입한다.
   const save = (dismiss: () => void) =>
     handleSubmit((values) => {
@@ -110,7 +102,7 @@ export function CreateLinkSheet() {
           onSuccess: (created) => {
             show({
               ...snackbarPresets.success("링크를 저장했어요", () =>
-                router.push(linkDetailHref(String(created.linkId))),
+                navigateFromSheet(linkDetailHref(String(created.linkId))),
               ),
               duration: SAVE_SNACKBAR_DURATION,
             });
@@ -124,7 +116,10 @@ export function CreateLinkSheet() {
                 ...snackbarPresets.duplicate(
                   "이미 저장된 링크예요",
                   duplicateLinkId != null
-                    ? () => router.push(linkDetailHref(String(duplicateLinkId)))
+                    ? () =>
+                        navigateFromSheet(
+                          linkDetailHref(String(duplicateLinkId)),
+                        )
                     : undefined,
                 ),
                 duration: SAVE_SNACKBAR_DURATION,

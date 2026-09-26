@@ -9,7 +9,8 @@ import {
 import { Keyboard } from "react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
-const mockBack = jest.fn();
+// 시트 닫기는 시트 라우트 자신을 대상으로 한 navigation.dispatch 다(useSheetRouteNavigation).
+const mockDispatch = jest.fn();
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
 const mockCanGoBack = jest.fn(() => true);
@@ -19,12 +20,9 @@ const mockSearchParams: { current: Record<string, string | undefined> } = {
   current: {},
 };
 jest.mock("expo-router", () => ({
-  useRouter: () => ({
-    back: mockBack,
-    replace: mockReplace,
-    push: mockPush,
-    canGoBack: mockCanGoBack,
-  }),
+  useRouter: () => ({ replace: mockReplace, push: mockPush }),
+  useNavigation: () => ({ dispatch: mockDispatch, canGoBack: mockCanGoBack }),
+  useRoute: () => ({ key: "create-link" }),
   useLocalSearchParams: () => mockSearchParams.current,
 }));
 // iOS 만 투명 모달 라우트를 네이티브 모달로 띄운다 — 테스트별로 플랫폼을 바꿔 본다.
@@ -163,7 +161,7 @@ async function pressSave() {
 
 describe("CreateLinkSheet", () => {
   beforeEach(() => {
-    mockBack.mockClear();
+    mockDispatch.mockClear();
     mockReplace.mockClear();
     mockPush.mockClear();
     mockCanGoBack.mockClear();
@@ -223,7 +221,7 @@ describe("CreateLinkSheet", () => {
       }),
     );
     expect(await screen.findByText("링크를 저장했어요")).toBeTruthy();
-    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    await waitFor(() => expect(mockDispatch).toHaveBeenCalled());
   });
 
   test("'폴더 추가'를 누르면 폴더 생성 화면으로 이동한다", async () => {
@@ -233,6 +231,7 @@ describe("CreateLinkSheet", () => {
     expect(mockPush).toHaveBeenCalledWith("/create-folder");
   });
 
+  // 저장하면 시트가 먼저 닫히므로 그 뒤의 '보기'는 평소처럼 push 한다.
   test("성공 스낵바의 '보기'를 누르면 링크 상세로 이동한다", async () => {
     await renderSheet();
     await fillValidUrl();
@@ -308,7 +307,7 @@ describe("CreateLinkSheet", () => {
     // 같은 입력으로 다시 저장해도 결과가 같아 다시 시도는 두지 않는다.
     expect(screen.queryByText("다시 시도")).toBeNull();
     expect(mockPost).not.toHaveBeenCalled();
-    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
     expect(
       screen.getByPlaceholderText("링크 주소를 입력해주세요").props.value,
     ).toBe("abc");
@@ -415,7 +414,7 @@ describe("CreateLinkSheet", () => {
 
     expect(await screen.findByText("저장하지 못했어요")).toBeTruthy();
     expect(screen.getByText("다시 시도")).toBeTruthy();
-    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
     expect(
       screen.getByPlaceholderText("링크 주소를 입력해주세요").props.value,
     ).toBe("https://example.com");
@@ -424,7 +423,7 @@ describe("CreateLinkSheet", () => {
     await user.press(screen.getByText("다시 시도"));
 
     await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(2));
-    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    await waitFor(() => expect(mockDispatch).toHaveBeenCalled());
   });
 
   test("중복(errorCode 930003) → 중복 스낵바, 시트 유지, linkId 없으면(구버전 응답) '보기' 없음", async () => {
@@ -449,10 +448,11 @@ describe("CreateLinkSheet", () => {
 
     expect(await screen.findByText("이미 저장된 링크예요")).toBeTruthy();
     expect(screen.queryByText("보기")).toBeNull();
-    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
   });
 
-  test("중복 응답에 linkId 가 있으면 '보기'가 기존 링크 상세를 연다", async () => {
+  // 시트가 떠 있는 채로 push 하면 iOS 는 상세가 투명 모달 시트 뒤에 쌓여 보이지 않는다.
+  test("중복 응답에 linkId 가 있으면 '보기'가 시트 자리를 기존 링크 상세로 바꾼다", async () => {
     const { ApiError } = jest.requireActual("@shared/api/errors");
     mockPost.mockRejectedValueOnce(
       new ApiError({
@@ -476,9 +476,10 @@ describe("CreateLinkSheet", () => {
     expect(await screen.findByText("이미 저장된 링크예요")).toBeTruthy();
 
     await userEvent.setup().press(screen.getByText("보기"));
-    expect(mockPush).toHaveBeenCalledWith(
+    expect(mockReplace).toHaveBeenCalledWith(
       expect.objectContaining({ params: { id: "77" } }),
     );
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   test("저장 중에는 pan-down 으로 닫히지 않는다", async () => {
@@ -493,9 +494,9 @@ describe("CreateLinkSheet", () => {
     await pressSave();
 
     await fireEvent.press(screen.getByLabelText("sheet-dismiss"));
-    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
     await fireEvent.press(screen.getByLabelText("sheet-backdrop"));
-    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
 
     resolvePost({
       data: {
@@ -503,7 +504,7 @@ describe("CreateLinkSheet", () => {
         data: { linkId: 1, url: "https://example.com", savedAt: "" },
       },
     });
-    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    await waitFor(() => expect(mockDispatch).toHaveBeenCalled());
   });
 
   test("백드롭을 누르면 시트가 닫힌다", async () => {
@@ -511,7 +512,7 @@ describe("CreateLinkSheet", () => {
 
     await fireEvent.press(screen.getByLabelText("sheet-backdrop"));
 
-    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    await waitFor(() => expect(mockDispatch).toHaveBeenCalled());
   });
 
   test("저장 중에는 취소 버튼을 눌러도 시트가 닫히지 않는다", async () => {
@@ -526,7 +527,7 @@ describe("CreateLinkSheet", () => {
     await pressSave();
 
     await fireEvent.press(screen.getByText("취소"));
-    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
 
     resolvePost({
       data: {
@@ -534,13 +535,13 @@ describe("CreateLinkSheet", () => {
         data: { linkId: 1, url: "https://example.com", savedAt: "" },
       },
     });
-    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    await waitFor(() => expect(mockDispatch).toHaveBeenCalled());
   });
 
   test("취소하면 시트를 닫는다", async () => {
     await renderSheet();
     await fireEvent.press(screen.getByText("취소"));
-    expect(mockBack).toHaveBeenCalled();
+    expect(mockDispatch).toHaveBeenCalled();
   });
 
   test("뒤로 갈 수 없으면 닫기 시 홈으로 이동한다", async () => {
@@ -548,7 +549,7 @@ describe("CreateLinkSheet", () => {
     await renderSheet();
     await fireEvent.press(screen.getByText("취소"));
     expect(mockReplace).toHaveBeenCalledWith("/");
-    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
   });
 
   test("클립보드에 문자열이 있으면 붙여넣기 버튼을 노출한다", async () => {
@@ -707,7 +708,7 @@ describe("CreateLinkSheet", () => {
         ),
       ).toBeTruthy();
       expect(mockPost).not.toHaveBeenCalled();
-      expect(mockBack).not.toHaveBeenCalled();
+      expect(mockDispatch).not.toHaveBeenCalled();
     } finally {
       jest.useRealTimers();
     }

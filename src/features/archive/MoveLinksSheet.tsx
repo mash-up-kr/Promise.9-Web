@@ -6,12 +6,13 @@ import { Text } from "@promise9/ui/text/Text";
 import { folderQueries } from "@shared/entities/folder/folder.queries";
 import { useMoveLinksToFolderMutation } from "@shared/entities/link/link.queries";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
+import { useSheetRouteNavigation } from "@/components/ui/sheet-screen/useSheetRouteNavigation";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { UNCATEGORIZED_FOLDER } from "./archive.constants";
@@ -26,28 +27,24 @@ import { FolderSelectItem } from "./components/FolderSelectItem";
  * 선택 모드의 여러 개도 같은 시트를 쓴다. 이동은 일괄 API 한 번으로 처리한다.
  */
 export function MoveLinksSheet() {
-  const router = useRouter();
-
-  const closeSheet = () => {
-    // 웹에서 히스토리가 없으면(직접 진입 등) back 이 실패하므로 홈으로 대체한다.
-    if (router.canGoBack()) {
-      router.back();
-
-      return;
-    }
-    router.replace("/");
-  };
+  const { closeSheet, navigateFromSheet } = useSheetRouteNavigation();
 
   return (
     <SheetScreen onClose={closeSheet}>
-      <MoveLinksSheetContent />
+      <MoveLinksSheetContent navigateFromSheet={navigateFromSheet} />
     </SheetScreen>
   );
 }
 
+interface MoveLinksSheetContentProps {
+  navigateFromSheet: (href: Href) => void;
+}
+
 // 취소·저장은 라우트를 바로 제거하지 않고 시트 닫힘 애니메이션을 거친다
 // (useSheetDismiss 는 시트 자손에서만 쓸 수 있어 본문을 분리).
-function MoveLinksSheetContent() {
+function MoveLinksSheetContent({
+  navigateFromSheet,
+}: MoveLinksSheetContentProps) {
   const dismiss = useSheetDismiss();
   const router = useRouter();
   const { show } = useSnackbar();
@@ -85,7 +82,7 @@ function MoveLinksSheetContent() {
       await moveLinks({ linkIds, folderId: toRequestFolderId(target.id) });
       show(
         snackbarPresets.success(`${target.name}에 저장됨`, () =>
-          router.push({
+          navigateFromSheet({
             pathname: "/archive/[id]",
             params: { id: target.id, name: target.name },
           }),
