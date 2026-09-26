@@ -29,24 +29,22 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-// iOS 는 닫으면 네이티브가 곧 프로세스를 끝낸다 — 재발급 도중에 끊기면 회전된 리프레시 토큰을 잃는다.
-test.each([
-  ["닫기", () => close(), () => ShareExtension.close],
-  ["본 앱 열기", () => openHostApp("link/1"), () => ShareExtension.openHostApp],
-])("%s는 진행 중인 토큰 재발급이 끝난 뒤에 한다", async (_, callHost, native) => {
+// iOS 는 앱을 연 뒤 네이티브가 곧 프로세스를 끝낸다 — 재발급 도중에 끊기면 회전된 리프레시 토큰을 잃는다.
+test("본 앱 열기는 진행 중인 토큰 재발급이 끝난 뒤에 한다", async () => {
   const refresh = deferred();
   mockGetPendingRefresh.mockReturnValue(refresh.promise);
 
-  callHost();
+  openHostApp("link/1");
   await jest.advanceTimersByTimeAsync(0);
-  expect(native()).not.toHaveBeenCalled();
+  expect(ShareExtension.openHostApp).not.toHaveBeenCalled();
 
   refresh.resolve();
   await jest.advanceTimersByTimeAsync(0);
-  expect(native()).toHaveBeenCalledTimes(1);
+  expect(ShareExtension.openHostApp).toHaveBeenCalledWith("link/1");
 });
 
-test("진행 중인 재발급이 없으면 바로 닫는다", () => {
+test("닫기는 기다리지 않고 바로 닫는다", () => {
+  mockGetPendingRefresh.mockReturnValue(deferred().promise);
   close();
   expect(ShareExtension.close).toHaveBeenCalledTimes(1);
 });
