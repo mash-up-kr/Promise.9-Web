@@ -21,8 +21,9 @@ const metrics: Metrics = {
 
 // 시트 애니메이션은 네이티브 드라이버라 jest 의 NativeAnimatedModule 목이 16ms 뒤에 끝낸다 —
 // 실제로 기다리지 않고 가짜 타이머로 흘려보낸다.
-const isReduceMotionEnabled =
-  AccessibilityInfo.isReduceMotionEnabled as jest.Mock;
+const isReduceMotionEnabled = jest.mocked(
+  AccessibilityInfo.isReduceMotionEnabled,
+);
 
 beforeEach(() => {
   jest.useFakeTimers();

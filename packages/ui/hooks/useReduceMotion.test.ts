@@ -3,9 +3,13 @@ import { AccessibilityInfo } from "react-native";
 
 import { useReduceMotion } from "./useReduceMotion";
 
-const isReduceMotionEnabled =
-  AccessibilityInfo.isReduceMotionEnabled as jest.Mock;
-const addEventListener = AccessibilityInfo.addEventListener as jest.Mock;
+const isReduceMotionEnabled = jest.mocked(
+  AccessibilityInfo.isReduceMotionEnabled,
+);
+// 이벤트마다 시그니처가 다른 오버로드라 엄격한 목 타입으로는 핸들러를 꺼낼 수 없다 — 느슨한 목으로 받는다.
+const addEventListener: jest.Mock = jest.mocked(
+  AccessibilityInfo.addEventListener,
+);
 
 afterEach(() => {
   isReduceMotionEnabled.mockImplementation(() => Promise.resolve(false));

@@ -3,8 +3,9 @@ import { AccessibilityInfo, NativeModules } from "react-native";
 
 import { AlertDialog, AlertDialogButton } from "./AlertDialog";
 
-const isReduceMotionEnabled =
-  AccessibilityInfo.isReduceMotionEnabled as jest.Mock;
+const isReduceMotionEnabled = jest.mocked(
+  AccessibilityInfo.isReduceMotionEnabled,
+);
 
 afterEach(() => {
   isReduceMotionEnabled.mockImplementation(() => Promise.resolve(false));

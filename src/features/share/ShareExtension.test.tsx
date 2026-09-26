@@ -183,9 +183,9 @@ beforeEach(() => {
 
 afterEach(() => {
   globalThis.__promise9ShareExtension = undefined;
-  (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockImplementation(
-    () => Promise.resolve(false),
-  );
+  jest
+    .mocked(AccessibilityInfo.isReduceMotionEnabled)
+    .mockImplementation(() => Promise.resolve(false));
 });
 
 test("공유받은 URL 을 표시한다", async () => {
@@ -605,9 +605,7 @@ test("로그인에 성공하면 같은 시트에서 저장 화면으로 넘어�
 // 닫자마자 네이티브가 프로세스를 끝내므로 로그인 결과(새 토큰)를 저장하기 전에 끊기면 안 된다.
 // 동작 줄이기면 시트가 퇴장 애니메이션 없이 바로 닫기를 요청한다 — 닫기의 대기만 관찰한다.
 test("로그인 요청이 진행 중이면 끝난 뒤에 익스텐션을 닫는다", async () => {
-  (AccessibilityInfo.isReduceMotionEnabled as jest.Mock).mockResolvedValue(
-    true,
-  );
+  jest.mocked(AccessibilityInfo.isReduceMotionEnabled).mockResolvedValue(true);
   storedRefreshToken = null;
   mockGetIdToken.mockResolvedValue("google-id-token");
   let resolveLogin!: (value: unknown) => void;

@@ -4,8 +4,9 @@ import { AccessibilityInfo, NativeModules } from "react-native";
 import { SkeletonBlock } from "./SkeletonBlock";
 
 const { NativeAnimatedModule } = NativeModules;
-const isReduceMotionEnabled =
-  AccessibilityInfo.isReduceMotionEnabled as jest.Mock;
+const isReduceMotionEnabled = jest.mocked(
+  AccessibilityInfo.isReduceMotionEnabled,
+);
 
 // jest 의 NativeAnimatedModule 목은 넘겨받은 네이티브 애니메이션을 16ms 뒤에 끝낸다 —
 // 무엇을 네이티브로 넘겼는지로 루프를 확인한다.

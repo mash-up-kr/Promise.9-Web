@@ -3,8 +3,9 @@ import { AccessibilityInfo, NativeModules } from "react-native";
 
 import { ReminderSection } from "./ReminderSection";
 
-const isReduceMotionEnabled =
-  AccessibilityInfo.isReduceMotionEnabled as jest.Mock;
+const isReduceMotionEnabled = jest.mocked(
+  AccessibilityInfo.isReduceMotionEnabled,
+);
 
 beforeEach(() => {
   jest.useFakeTimers({ doNotFake: ["queueMicrotask"] });
