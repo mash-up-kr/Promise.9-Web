@@ -65,7 +65,7 @@ export function FolderFormCard({
         setIsDuplicateOpen(true);
         return;
       }
-      // 호출부가 스낵바로 알린다 — 키보드가 올라와 있으면 화면 아래 스낵바가 가려 먼저 내린다.
+      // 앱 호출부는 화면 아래 스낵바로 알린다 — 키보드가 올라와 있으면 가려 먼저 내린다.
       Keyboard.dismiss();
       onError(error);
     }

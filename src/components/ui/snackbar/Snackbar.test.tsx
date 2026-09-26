@@ -192,7 +192,6 @@ describe("Snackbar", () => {
       expect(screen.getAllByText("링크를 저장했어요.")).toHaveLength(1);
     });
 
-    // 저장 성공처럼 스낵바를 띄우고 바로 시트를 닫아도 아래 화면에서 이어서 보인다.
     // Android·웹은 루트 스낵바가 시트 위에 그대로 보인다.
     test("iOS 가 아니면 시트 라우트가 열려 있어도 루트에 그린다", async () => {
       mockPlatform.isIOS = false;
@@ -209,6 +208,7 @@ describe("Snackbar", () => {
       expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
     });
 
+    // 저장 성공처럼 스낵바를 띄우고 바로 시트를 닫아도 아래 화면에서 이어서 보인다.
     test("시트 라우트가 닫히면 떠 있던 스낵바를 아래 화면에 이어서 그린다", async () => {
       const user = userEvent.setup();
       await render(<App isSheetOpen />);
