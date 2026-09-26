@@ -161,6 +161,18 @@ describe("Dialog — iOS 공유 익스텐션", () => {
     ).toMatchObject({ paddingTop: 62 + 16 });
   });
 
+  // 모달 안 Safe Area 를 재기 전 첫 프레임은 익스텐션 root 의 top 0 으로 그려져 카드가 위로 튀었다가 내려온다.
+  test("모달 안의 Safe Area 를 재기 전에는 입력 카드를 보이지 않게 둔다", async () => {
+    await renderInExtension({ hasTextInput: true });
+    const scrollView = scrollViewOf(screen.getByTestId("card"));
+    expect(scrollView).toHaveStyle({ opacity: 0 });
+
+    await reportModalSafeArea(62);
+    expect(scrollViewOf(screen.getByTestId("card"))).toHaveStyle({
+      opacity: 1,
+    });
+  });
+
   // react-native-css 는 contentContainerClassName 과 contentContainerStyle 을 합치지 않는다 —
   // 클래스로 준 가운데 정렬·좌우 여백이 인라인 스타일에 덮여 카드가 왼쪽에 붙었다.
   test("입력 카드는 좌우 여백을 두고 가운데 놓는다", async () => {

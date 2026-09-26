@@ -1,8 +1,9 @@
 import type { PropsWithChildren, ReactNode } from "react";
+import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
+  type EdgeInsets,
+  SafeAreaListener,
 } from "react-native-safe-area-context";
 
 import { KeyboardAvoidingView } from "./dialogKeyboardAvoidingView";
@@ -86,34 +87,29 @@ function CenteredContainer({ children }: PropsWithChildren) {
 
 // 입력 카드는 위에 붙여 키보드가 올라와도 입력이 보이게 하고, 작은 화면에서 가려진 버튼은
 // 네이티브 키보드 인셋으로 스크롤해 꺼낸다(EntrySheet 와 같은 방식).
-// 익스텐션 root 는 상태바 아래에서 시작해 그 Safe Area 는 top 0 이다 — 화면 맨 위부터 덮는 모달 안에서 다시 잰다.
+// 익스텐션 root 는 상태바 아래에서 시작해 그 Safe Area 는 top 0 이다 — 화면 맨 위부터 덮는 모달 안에서
+// 다시 재고, 재기 전(첫 프레임)엔 위치가 틀려 튀어 보이므로 숨겨 둔다.
 function ExtensionInputContainer({ children }: PropsWithChildren) {
+  const [insets, setInsets] = useState<EdgeInsets | null>(null);
   return (
-    <SafeAreaProvider>
-      <TopAnchoredScrollView>{children}</TopAnchoredScrollView>
-    </SafeAreaProvider>
-  );
-}
-
-function TopAnchoredScrollView({ children }: PropsWithChildren) {
-  const insets = useSafeAreaInsets();
-  return (
-    <ScrollView
-      automaticallyAdjustKeyboardInsets
-      keyboardShouldPersistTaps="handled"
-      // 배경(dim)도 스크롤 안에 있어 튕기면 dim 바깥이 드러난다.
-      bounces={false}
-      className="flex-1"
-      // react-native-css 는 contentContainerClassName 을 contentContainerStyle 과 합치지 않는다 — 한곳에 둔다.
-      contentContainerStyle={{
-        flexGrow: 1,
-        alignItems: "center",
-        paddingHorizontal: EXTENSION_SIDE_PADDING,
-        paddingTop: insets.top + EXTENSION_EDGE_GAP,
-        paddingBottom: insets.bottom + EXTENSION_EDGE_GAP,
-      }}
-    >
-      {children}
-    </ScrollView>
+    <SafeAreaListener onChange={(metrics) => setInsets(metrics.insets)}>
+      <ScrollView
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+        // 배경(dim)도 스크롤 안에 있어 튕기면 dim 바깥이 드러난다.
+        bounces={false}
+        style={{ flex: 1, opacity: insets ? 1 : 0 }}
+        // react-native-css 는 contentContainerClassName 을 contentContainerStyle 과 합치지 않는다 — 한곳에 둔다.
+        contentContainerStyle={{
+          flexGrow: 1,
+          alignItems: "center",
+          paddingHorizontal: EXTENSION_SIDE_PADDING,
+          paddingTop: (insets?.top ?? 0) + EXTENSION_EDGE_GAP,
+          paddingBottom: (insets?.bottom ?? 0) + EXTENSION_EDGE_GAP,
+        }}
+      >
+        {children}
+      </ScrollView>
+    </SafeAreaListener>
   );
 }
