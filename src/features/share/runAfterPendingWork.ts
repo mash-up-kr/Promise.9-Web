@@ -1,5 +1,6 @@
 import { getPendingRefresh } from "@shared/api";
 import type { QueryClient } from "@tanstack/react-query";
+import { isNotNil, noop, withTimeout } from "es-toolkit";
 
 export const PENDING_WORK_TIMEOUT_MS = 5000;
 
@@ -16,22 +17,16 @@ export function runAfterPendingWork(
   const pendingWork = [
     getPendingRefresh(),
     queryClient ? getPendingMutations(queryClient) : null,
-  ].filter((work) => work !== null);
+  ].filter(isNotNil);
   if (pendingWork.length === 0) {
     run();
     return;
   }
 
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<void>((resolve) => {
-    timer = setTimeout(resolve, PENDING_WORK_TIMEOUT_MS);
-  });
-  // 기다리던 작업이 실패해도 run 은 부른다 — 결과는 작업을 시작한 쪽이 처리한다.
-  const finish = () => {
-    clearTimeout(timer);
-    run();
-  };
-  void Promise.race([Promise.all(pendingWork), timeout]).then(finish, finish);
+  // 기다리던 작업이 실패하거나 제한 시간을 넘겨도 run 은 부른다 — 결과는 작업을 시작한 쪽이 처리한다.
+  void withTimeout(() => Promise.all(pendingWork), PENDING_WORK_TIMEOUT_MS)
+    .catch(noop)
+    .then(() => run());
 }
 
 function getPendingMutations(queryClient: QueryClient): Promise<void> | null {
