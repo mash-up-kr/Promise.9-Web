@@ -5,31 +5,15 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { BottomSheet } from "@/components/ui/bottom-sheet/BottomSheet";
 import { MemoField } from "@/features/link/components/MemoField";
 
-import type { ShareSheetProps, ShareSheetScrollViewProps } from "./ShareSheet";
+import type { ShareSheetProps } from "./ShareSheet";
 
 // Android 공유 액티비티는 메인 번들·앱 프로세스를 공유해 Reanimated 가 이미 로드돼 있다 —
 // 메모리 이점이 없으니 인앱과 같은 gorhom 시트를 쓴다(iOS 는 ShareSheet.tsx 경량 시트).
 
 export { useSheetDismiss as useShareSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 export const ShareSheetView = BottomSheetView;
+export const ShareSheetScrollView = BottomSheetScrollView;
 export const ShareSheetMemoField = MemoField;
-
-// 헤더는 스크롤의 sticky 첫 요소로 둔다 — gorhom 은 스크롤 위 콘텐츠도 끌어 시트를 움직인다.
-export function ShareSheetScrollView({
-  header,
-  children,
-  ...props
-}: ShareSheetScrollViewProps) {
-  return (
-    <BottomSheetScrollView
-      stickyHeaderIndices={header ? [0] : undefined}
-      {...props}
-    >
-      {header}
-      {children}
-    </BottomSheetScrollView>
-  );
-}
 
 export function ShareSheet({
   onClose,

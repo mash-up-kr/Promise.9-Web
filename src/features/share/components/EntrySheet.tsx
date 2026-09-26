@@ -28,7 +28,7 @@ export interface EntrySheetProps {
   onSave: () => void;
 }
 
-// 인앱 저장 시트(SheetScreen)와 같은 스캐폴드 — 헤더는 스크롤 위에 고정, 본문은 px-5.
+// 인앱 저장 시트(SheetScreen)와 같은 스캐폴드 — 헤더는 스크롤뷰의 sticky 첫 요소, 본문은 px-5.
 // 시트 높이는 콘텐츠만큼 자라고(상단 Safe Area 까지), 넘치면 안에서 스크롤한다.
 export function EntrySheet({
   url,
@@ -52,11 +52,20 @@ export function EntrySheet({
       // iOS 익스텐션 프로세스는 RN 키보드 이벤트 높이가 0 으로 와서 JS 로는 키보드를 피할 수 없다 —
       // 네이티브 스크롤 인셋으로 포커스한 입력을 키보드 위로 드러낸다(Android 는 gorhom 이 시트를 올린다).
       automaticallyAdjustKeyboardInsets
+      stickyHeaderIndices={[0]}
       contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
-      header={
-        <EntryHeader isSaving={isSaving} onCancel={dismiss} onSave={onSave} />
-      }
     >
+      <View
+        pointerEvents={isSaving ? "none" : "auto"}
+        className="bg-background-base"
+      >
+        <BottomSheetHeader
+          title="링크 저장"
+          onCancel={dismiss}
+          onConfirm={onSave}
+          isConfirmPending={isSaving}
+        />
+      </View>
       <View
         pointerEvents={isSaving ? "none" : "auto"}
         className="gap-6 px-5 pt-1"
@@ -95,27 +104,5 @@ export function EntrySheet({
         <FolderCreateModal onClose={() => setIsCreatingFolder(false)} />
       )}
     </ShareSheetScrollView>
-  );
-}
-
-interface EntryHeaderProps {
-  isSaving: boolean;
-  onCancel: () => void;
-  onSave: () => void;
-}
-
-function EntryHeader({ isSaving, onCancel, onSave }: EntryHeaderProps) {
-  return (
-    <View
-      pointerEvents={isSaving ? "none" : "auto"}
-      className="bg-background-base"
-    >
-      <BottomSheetHeader
-        title="링크 저장"
-        onCancel={onCancel}
-        onConfirm={onSave}
-        isConfirmPending={isSaving}
-      />
-    </View>
   );
 }
