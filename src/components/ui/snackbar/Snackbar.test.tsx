@@ -1,9 +1,19 @@
-import { act, render, screen, userEvent } from "@testing-library/react-native";
+import {
+  act,
+  render,
+  screen,
+  userEvent,
+  within,
+} from "@testing-library/react-native";
 import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { SnackbarProvider, useSnackbar } from "./SnackbarProvider";
+import {
+  SnackbarOutlet,
+  SnackbarProvider,
+  useSnackbar,
+} from "./SnackbarProvider";
 
 const SAFE_AREA_METRICS = {
   frame: { x: 0, y: 0, width: 375, height: 812 },
@@ -120,5 +130,49 @@ describe("Snackbar", () => {
     await user.press(screen.getByLabelText("show"));
     const messageText = screen.getByText(longMessage);
     expect(messageText.props.numberOfLines).toBeUndefined();
+  });
+
+  // 시트 라우트(투명 모달)는 루트 위에 따로 뜨는 화면이라, 루트에 그린 스낵바는 그 아래에 깔린다.
+  describe("시트 라우트 위의 스낵바", () => {
+    function App({ isSheetOpen }: { isSheetOpen: boolean }) {
+      return (
+        <SafeAreaProvider initialMetrics={SAFE_AREA_METRICS}>
+          <SnackbarProvider>
+            <Harness />
+            {isSheetOpen && (
+              <View testID="sheet-route">
+                <SnackbarOutlet />
+              </View>
+            )}
+          </SnackbarProvider>
+        </SafeAreaProvider>
+      );
+    }
+
+    test("시트 라우트가 열려 있으면 스낵바를 그 화면 안에 그린다", async () => {
+      const user = userEvent.setup();
+      await render(<App isSheetOpen />);
+
+      await user.press(screen.getByLabelText("show"));
+
+      expect(
+        within(screen.getByTestId("sheet-route")).getByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeOnTheScreen();
+      expect(screen.getAllByText("링크를 저장했어요.")).toHaveLength(1);
+    });
+
+    // 저장 성공처럼 스낵바를 띄우고 바로 시트를 닫아도 아래 화면에서 이어서 보인다.
+    test("시트 라우트가 닫히면 떠 있던 스낵바를 아래 화면에 이어서 그린다", async () => {
+      const user = userEvent.setup();
+      await render(<App isSheetOpen />);
+      await user.press(screen.getByLabelText("show"));
+
+      await screen.rerender(<App isSheetOpen={false} />);
+
+      expect(screen.queryByTestId("sheet-route")).toBeNull();
+      expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
+    });
   });
 });
