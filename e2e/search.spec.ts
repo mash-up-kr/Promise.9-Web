@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 /**
  * 검색 화면 웹 런타임 스모크 — "검색 실행 → 결과" 와 "최근 검색어 영속" 경로를 검증한다.
