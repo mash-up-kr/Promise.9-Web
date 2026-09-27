@@ -1,8 +1,10 @@
+import { SHEET_BACKDROP_OPACITY } from "@promise9/ui/sheet/sheet.constants";
 import { act, render, screen, userEvent } from "@testing-library/react-native";
 import {
   AccessibilityInfo,
   NativeModules,
   Pressable,
+  StyleSheet,
   Text,
 } from "react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
@@ -13,6 +15,11 @@ import {
   shouldDismissByDrag,
   useShareSheetDismiss,
 } from "./ShareSheet";
+
+jest.mock("../shareHost", () => ({ notifyContentReady: jest.fn() }));
+const mockNotifyContentReady = jest.mocked(
+  jest.requireMock("../shareHost").notifyContentReady,
+);
 
 const metrics: Metrics = {
   frame: { x: 0, y: 0, width: 375, height: 812 },
@@ -151,6 +158,27 @@ async function layoutContent(height: number) {
     });
   });
 }
+
+// 전체화면 프레젠테이션엔 시스템 dim 이 없어 네이티브가 같은 농도의 dim 을 먼저 깔아 둔다 —
+// JS 가 그 dim 을 이어받아야 올라오는 동안 화면이 밝아졌다 어두워지지 않는다.
+test("올라오기 전에도 백드롭은 최대 농도다", async () => {
+  await renderSheet({ contentHeight: null });
+  const backdrop = screen.getByLabelText("시트 닫기").parent;
+  expect(StyleSheet.flatten(backdrop?.props.style)).toMatchObject({
+    opacity: SHEET_BACKDROP_OPACITY,
+  });
+});
+
+// 네이티브 로딩 dim 은 시트 백드롭이 화면에 있어야 걷힌다 — 콘텐츠를 처음 잰 뒤(레이아웃 완료) 한 번만 알린다.
+test("콘텐츠 높이를 처음 재면 네이티브에 준비됐다고 한 번 알린다", async () => {
+  mockNotifyContentReady.mockClear();
+  await renderSheet({ contentHeight: null });
+  expect(mockNotifyContentReady).not.toHaveBeenCalled();
+  await layoutContent(300);
+  expect(mockNotifyContentReady).toHaveBeenCalledTimes(1);
+  await layoutContent(400);
+  expect(mockNotifyContentReady).toHaveBeenCalledTimes(1);
+});
 
 test("children 을 렌더한다", async () => {
   await renderSheet();

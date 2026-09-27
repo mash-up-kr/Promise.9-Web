@@ -1,3 +1,19 @@
+diff --git a/ios/ExpoShareExtensionModule.swift b/ios/ExpoShareExtensionModule.swift
+index 770e9408992060207e34b377d404b6146b611ac0..31dc6d12823872ff0e308fc380e585985b14dc01 100644
+--- a/ios/ExpoShareExtensionModule.swift
++++ b/ios/ExpoShareExtensionModule.swift
+@@ -8,6 +8,11 @@ public class ExpoShareExtensionModule: Module {
+       NotificationCenter.default.post(name: NSNotification.Name("close"), object: nil)
+     }
+ 
++    // JS 시트가 자기 백드롭을 그린 뒤 부른다 — 네이티브가 먼저 깔아 둔 로딩 dim 을 걷는다.
++    Function("contentReady") { () in
++      NotificationCenter.default.post(name: NSNotification.Name("contentReady"), object: nil)
++    }
++
+     Function("openHostApp") { (path: String) in
+       let userInfo: [String: String] = ["path": path]
+       NotificationCenter.default.post(name: NSNotification.Name("openHostApp"), object: nil, userInfo: userInfo)
 diff --git a/metro.js b/metro.js
 index c58058c0ddd077d877954a187966f312c5b601a2..7eae5a9fe96457525f8deee02f82f3ef8421f4a6 100644
 --- a/metro.js
@@ -14,6 +30,33 @@ index c58058c0ddd077d877954a187966f312c5b601a2..7eae5a9fe96457525f8deee02f82f3ef
      }
  
      return rewrittenUrl;
+diff --git a/plugin/build/withPodfile.js b/plugin/build/withPodfile.js
+index f0dd0bfbb342dc61b98860015c1e18d46caaeacf..e0ab62eb76d6be5243c0cccac32d5f4d9f49d7e0 100644
+--- a/plugin/build/withPodfile.js
++++ b/plugin/build/withPodfile.js
+@@ -39,6 +39,12 @@ const withPodfile = (config, { excludedPackages }) => {
+                 : ["expo-updates"];
+             const useExpoModules = `exclude = ["${exclude.join(`", "`)}"]
+   use_expo_modules!(exclude: exclude)`;
++            // excludedPackages 는 RN 커뮤니티 모듈(reanimated·screens 등)에도 적용한다 — 익스텐션 타깃은
++            // -ObjC 링크라 안 쓰는 pod 의 클래스까지 전부 실려 프로세스 기동이 느려진다.
++            // expo-modules-autolinking 의 react-native-config 는 --exclude 를 지원한다(커뮤니티 CLI 분기는 미지원).
++            const reactNativeConfigExclude = exclude
++                .map((name) => `,\n      '${name}'`)
++                .join("");
+             const expoVersion = semver_1.default.parse(config.sdkVersion);
+             const majorVersion = expoVersion?.major ?? 0;
+             const shareExtensionTarget = `
+@@ -55,7 +61,8 @@ target '${targetName}' do
+       'react-native-config',
+       '--json',
+       '--platform',
+-      'ios'
++      'ios',
++      '--exclude'${reactNativeConfigExclude}
+     ]
+   end
+ 
 diff --git a/plugin/build/withShareExtensionInfoPlist.js b/plugin/build/withShareExtensionInfoPlist.js
 index ac2693dda6d3478ebce0ea72131dd5020f3bc7dc..fb10b2d41853a0aa346fcdd4926de0a95c3b123d 100644
 --- a/plugin/build/withShareExtensionInfoPlist.js
@@ -43,7 +86,7 @@ index 3816339ae033c7b49c7d683d4c432888d5080788..27f41d12b95e29fa951d46c48abb0ebc
          PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
          PRODUCT_NAME: `"${targetName}"`,
 diff --git a/plugin/swift/ShareExtensionViewController.swift b/plugin/swift/ShareExtensionViewController.swift
-index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..896330182ebdbef158eafcb6f06ac0d5dc15d9ad 100644
+index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..aa3eca4f6aed11cdd098f6e3d4ee347a1ff833cc 100644
 --- a/plugin/swift/ShareExtensionViewController.swift
 +++ b/plugin/swift/ShareExtensionViewController.swift
 @@ -1,6 +1,7 @@
@@ -196,17 +239,64 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..896330182ebdbef158eafcb6f06ac0d5
        
        var initialProps = sharedData ?? [:]
        
-@@ -130,6 +218,9 @@ class ShareExtensionViewController: UIViewController {
+@@ -130,6 +218,10 @@ class ShareExtensionViewController: UIViewController {
        
        configureRootView(reactNativeRootView, withBackgroundColorDict: backgroundFromInfoPlist, withHeight: heightFromInfoPlist)
        view.addSubview(reactNativeRootView)
++      showLoadingDim()
 +      // 익스텐션 프로세스에선 RCTSharedApplication() 이 nil 이라 RCTPresentedViewController() 도
 +      // nil 이다 — 소셜 로그인 SDK 가 프레젠팅 VC 를 찾도록 RN 오버라이드 훅에 이 VC 를 넣는다.
 +      RCTUtilsUIOverride.setPresentedViewController(self)
  
        // Hide loading indicator once React content is ready
        self.loadingIndicator.stopAnimating()
-@@ -171,6 +262,7 @@ class ShareExtensionViewController: UIViewController {
+@@ -160,6 +252,45 @@ class ShareExtensionViewController: UIViewController {
+     rootView.frame = frame
+   }
+   
++  // 전체화면 프레젠테이션(NSExtensionShareWantsFullScreenPresentation)엔 시스템 dim 이 없어 JS 가 뜰 때까지
++  // 화면이 그대로다 — JS 시트가 자기 백드롭을 그렸다고 알릴 때까지(contentReady) 같은 농도의 dim 과
++  // 스피너를 먼저 보여 준다. RN 의 loadingView 는 첫 마운트 직후 걷혀 JS 백드롭이 보이기 전 한순간
++  // 밝아진다(실측) — 직접 들고 있다가 알림을 받으면 바로 걷는다(같은 농도라 끊기지 않는다).
++  private var loadingDim: UIView?
++  // JS 가 끝내 뜨지 않으면(번들 실패 등) 전체화면이라 쓸어 닫을 시스템 시트도 없다 — 시한 뒤엔 탭으로 닫게 한다.
++  private static let loadingDimStuckTimeout: TimeInterval = 10
++
++  private func showLoadingDim() {
++    let dim = UIView(frame: view.bounds)
++    dim.autoresizingMask = [.flexibleWidth, .flexibleHeight]
++    // JS 시트 백드롭(SHEET_BACKDROP_OPACITY)과 같은 농도.
++    dim.backgroundColor = UIColor.black.withAlphaComponent(0.6)
++    let spinner = UIActivityIndicatorView(style: .large)
++    spinner.color = .white
++    spinner.translatesAutoresizingMaskIntoConstraints = false
++    dim.addSubview(spinner)
++    NSLayoutConstraint.activate([
++      spinner.centerXAnchor.constraint(equalTo: dim.centerXAnchor),
++      spinner.centerYAnchor.constraint(equalTo: dim.centerYAnchor)
++    ])
++    spinner.startAnimating()
++    view.addSubview(dim)
++    loadingDim = dim
++    DispatchQueue.main.asyncAfter(deadline: .now() + ShareExtensionViewController.loadingDimStuckTimeout) { [weak self, weak dim] in
++      guard let self = self, let dim = dim, dim.superview != nil else { return }
++      dim.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.closeFromStuckLoading)))
++    }
++  }
++
++  @objc private func closeFromStuckLoading() {
++    close()
++  }
++
++  private func hideLoadingDim() {
++    loadingDim?.removeFromSuperview()
++    loadingDim = nil
++  }
++
+   private func setupLoadingIndicator() {
+     view.addSubview(loadingIndicator)
+     loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
+@@ -171,6 +302,7 @@ class ShareExtensionViewController: UIViewController {
    }
    
    private func openHostApp(path: String?) {
@@ -214,7 +304,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..896330182ebdbef158eafcb6f06ac0d5
      guard let scheme = Bundle.main.object(forInfoDictionaryKey: "HostAppScheme") as? String else { return }
      var urlComponents = URLComponents()
      urlComponents.scheme = scheme
-@@ -202,21 +294,34 @@ class ShareExtensionViewController: UIViewController {
+@@ -202,21 +334,34 @@ class ShareExtensionViewController: UIViewController {
    }
    
    @objc @discardableResult private func openURL(_ url: URL) -> Bool {
@@ -251,7 +341,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..896330182ebdbef158eafcb6f06ac0d5
          responder2!.perform(selector, with: url)
          return true
        }
-@@ -227,13 +332,13 @@ class ShareExtensionViewController: UIViewController {
+@@ -227,13 +372,13 @@ class ShareExtensionViewController: UIViewController {
    }
    
    private func setupNotificationCenterObserver() {
@@ -267,17 +357,23 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..896330182ebdbef158eafcb6f06ac0d5
        DispatchQueue.main.async {
          if let userInfo = notification.userInfo {
            if let path = userInfo["path"] as? String {
-@@ -242,13 +347,16 @@ class ShareExtensionViewController: UIViewController {
+@@ -242,13 +387,22 @@ class ShareExtensionViewController: UIViewController {
          }
        }
      }
-+    notificationObservers = [closeObserver, openHostAppObserver]
++    let contentReadyObserver = NotificationCenter.default.addObserver(forName: NSNotification.Name("contentReady"), object: nil, queue: nil) { [weak self] _ in
++      DispatchQueue.main.async {
++        self?.hideLoadingDim()
++      }
++    }
++    notificationObservers = [closeObserver, openHostAppObserver, contentReadyObserver]
    }
    
    private func cleanupAfterClose() {
      if isCleanedUp { return }
      isCleanedUp = true
 +    RCTUtilsUIOverride.setPresentedViewController(nil)
++    hideLoadingDim()
      
 -    NotificationCenter.default.removeObserver(self)
 +    notificationObservers.forEach { NotificationCenter.default.removeObserver($0) }
@@ -285,7 +381,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..896330182ebdbef158eafcb6f06ac0d5
      
      // Remove React Native view and deallocate resources
      view.subviews.forEach { subview in
-@@ -279,6 +387,9 @@ class ShareExtensionViewController: UIViewController {
+@@ -279,6 +433,9 @@ class ShareExtensionViewController: UIViewController {
      }
      
      var sharedItems: [String: Any] = [:]
@@ -295,7 +391,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..896330182ebdbef158eafcb6f06ac0d5
      
      let group = DispatchGroup()
      
-@@ -368,11 +479,14 @@ class ShareExtensionViewController: UIViewController {
+@@ -368,11 +525,14 @@ class ShareExtensionViewController: UIViewController {
  
          // Only check for plain text if no URL was found
          if !provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) && provider.hasItemConformingToTypeIdentifier(UTType.text.identifier) {
@@ -313,7 +409,7 @@ index 7f9f6d84323d9fdcc80b23a661f76af8dd8bf793..896330182ebdbef158eafcb6f06ac0d5
                }
                group.leave()
              }
-@@ -604,7 +718,47 @@ class ShareExtensionViewController: UIViewController {
+@@ -604,7 +764,47 @@ class ShareExtensionViewController: UIViewController {
      }
      
      group.notify(queue: .main) {

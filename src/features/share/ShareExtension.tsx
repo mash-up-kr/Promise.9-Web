@@ -13,7 +13,11 @@ import {
   useRef,
   useState,
 } from "react";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Dimensions } from "react-native";
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+} from "react-native-safe-area-context";
 import { SwitchCase } from "react-simplikit";
 
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
@@ -29,6 +33,7 @@ import { ShareSheet } from "./components/ShareSheet";
 import { ExtensionLoginSheet } from "./ExtensionLoginSheet";
 import { runAfterPendingWork } from "./runAfterPendingWork";
 import { INITIAL_SHARE_SAVE_STATE, shareSaveReducer } from "./share.reducer";
+import { resolveInitialMetrics } from "./share.safeArea";
 import { close } from "./shareHost";
 import { useAccessTokenWarmup } from "./useAccessTokenWarmup";
 
@@ -59,7 +64,12 @@ export function ShareExtension({ url, text }: { url?: string; text?: string }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
+      <SafeAreaProvider
+        initialMetrics={resolveInitialMetrics(
+          initialWindowMetrics,
+          Dimensions.get("window"),
+        )}
+      >
         <ShareSheet
           onClose={close}
           isLocked={isSaving}
