@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/snackbar/SnackbarProvider";
 import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
 import { isWeb } from "@/constants/platform.constants";
+import { AuthGateProvider } from "@/features/auth/AuthGateContext";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
 import { SplashOverlay } from "@/features/splash/components/SplashOverlay";
 import { useSplashPhase } from "@/features/splash/hooks/useSplashPhase";
@@ -102,37 +103,39 @@ export default function RootLayout() {
               <SnackbarProvider>
                 <HeaderScrollProvider>
                   <ThemeProvider value={transparentBackgroundTheme}>
-                    <Stack
-                      screenOptions={{
-                        contentStyle: { backgroundColor: "transparent" },
-                      }}
-                      screenLayout={renderScreenLayout}
-                    >
-                      <Stack.Screen
-                        name="(tabs)"
-                        options={{ headerShown: false }}
-                      />
-                      <Stack.Screen
-                        name="(auth)"
-                        options={{ headerShown: false }}
-                      />
-                      <Stack.Screen
-                        name="create-link"
-                        options={sheetScreenOptions}
-                      />
-                      <Stack.Screen
-                        name="create-folder"
-                        options={sheetScreenOptions}
-                      />
-                      <Stack.Screen
-                        name="edit-folder"
-                        options={sheetScreenOptions}
-                      />
-                      <Stack.Screen
-                        name="move-links"
-                        options={sheetScreenOptions}
-                      />
-                    </Stack>
+                    <AuthGateProvider status={authStatus}>
+                      <Stack
+                        screenOptions={{
+                          contentStyle: { backgroundColor: "transparent" },
+                        }}
+                        screenLayout={renderScreenLayout}
+                      >
+                        <Stack.Screen
+                          name="(tabs)"
+                          options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
+                          name="(auth)"
+                          options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
+                          name="create-link"
+                          options={sheetScreenOptions}
+                        />
+                        <Stack.Screen
+                          name="create-folder"
+                          options={sheetScreenOptions}
+                        />
+                        <Stack.Screen
+                          name="edit-folder"
+                          options={sheetScreenOptions}
+                        />
+                        <Stack.Screen
+                          name="move-links"
+                          options={sheetScreenOptions}
+                        />
+                      </Stack>
+                    </AuthGateProvider>
                   </ThemeProvider>
                 </HeaderScrollProvider>
               </SnackbarProvider>
