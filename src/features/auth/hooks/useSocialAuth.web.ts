@@ -31,15 +31,62 @@ const POPUP_FEATURES = "popup,width=480,height=640";
 const POPUP_BLOCKED_MESSAGE =
   "팝업이 차단되었습니다. 브라우저 설정을 확인해주세요.";
 /**
- * 응답이 올 때까지 기다리는 최대 시간(ms). 초과하면 취소로 보고 조용히 종료한다.
- *
- * 팝업이 구글/카카오(COOP: same-origin)로 이동하면 opener 관계가 끊겨, Chrome 은 그 팝업의
- * `popup.closed` 를 (예외가 아니라) `true` 로 돌려준다. 그래서 `.closed` 폴링으로는 로그인 진행
- * 중과 사용자가 닫은 상태를 구분할 수 없다(동의 화면을 거치느라 오래 걸리는 계정이 "취소됨"으로
- * 오판돼 로그인이 조용히 실패한다). `.closed` 를 보지 않고, 응답이 끝내 오지 않을 때만 이 타임아웃으로
- * 종료한다 — 동의·2단계 인증 등으로 오래 걸려도 넉넉하도록 길게 잡는다.
+ * 사용자가 팝업을 닫아도 부모 창엔 아무 이벤트가 오지 않는다 — `popup.closed` 폴링이 유일한 신호다
+ * (Apple JS SDK 도 같은 방식). 구글·카카오 로그인 페이지는 COOP 를 강제하지 않아(구글은 report-only)
+ * 팝업이 열려 있는 동안 `closed` 는 false 로 유지된다(2026-09-27 실측). 이때 Chrome 콘솔에
+ * "COOP policy would block the window.closed call" 이 찍히지만 report-only 라 값은 정상이다.
+ * COOP 가 강제되는 환경이라면 콜백 페이지의 opener 도 끊겨 결과가 전달될 수 없으므로,
+ * 그때 취소로 처리해도 잃는 것이 없다.
  */
+const POPUP_CLOSED_POLL_MS = 300;
+/** 닫힘을 본 뒤 응답을 더 기다리는 시간 — 콜백 페이지는 postMessage 직후 창을 닫는다. */
+const POPUP_CLOSED_GRACE_MS = 1000;
+/** 닫힘도 응답도 없이 멈춘 경우의 최후 안전장치. 동의·2단계 인증으로 오래 걸려도 넉넉하도록 길게 잡는다. */
 const LOGIN_POPUP_TIMEOUT_MS = 3 * 60 * 1000;
+
+/**
+ * 로그인 팝업이 콜백 페이지를 거쳐 보내는 메시지를 기다린다.
+ *
+ * 우리 origin 에서 온, 모양이 맞는 첫 메시지로 끝난다. 사용자가 팝업을 닫으면(유예 후) 또는
+ * 타임아웃이면 SocialLoginCancelledError 로 끝나 화면이 조용히 원복된다.
+ */
+function waitForPopupMessage<T>(
+  popup: Window,
+  origin: string,
+  isMessage: (data: unknown) => data is T,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    let graceTimer: ReturnType<typeof setTimeout> | null = null;
+    const timeoutTimer = setTimeout(cancel, LOGIN_POPUP_TIMEOUT_MS);
+    const closedPoll = setInterval(() => {
+      if (!popup.closed || graceTimer) return;
+      graceTimer = setTimeout(cancel, POPUP_CLOSED_GRACE_MS);
+    }, POPUP_CLOSED_POLL_MS);
+
+    function cleanup() {
+      window.removeEventListener("message", handleMessage);
+      clearTimeout(timeoutTimer);
+      clearInterval(closedPoll);
+      if (graceTimer) clearTimeout(graceTimer);
+      popup.close();
+    }
+
+    function cancel() {
+      cleanup();
+      reject(new SocialLoginCancelledError());
+    }
+
+    function handleMessage(event: MessageEvent) {
+      // 콜백 페이지는 우리 origin 에서 뜬다 — 다른 origin 의 메시지는 신뢰하지 않는다.
+      if (event.origin !== origin) return;
+      if (!isMessage(event.data)) return;
+      cleanup();
+      resolve(event.data);
+    }
+
+    window.addEventListener("message", handleMessage);
+  });
+}
 
 interface GoogleCallbackMessage {
   source: string;
@@ -136,47 +183,22 @@ async function getGoogleIdToken(): Promise<string> {
     throw new Error(POPUP_BLOCKED_MESSAGE);
   }
 
-  return new Promise<string>((resolve, reject) => {
-    // COOP 로 popup.closed 를 신뢰할 수 없어(위 LOGIN_POPUP_TIMEOUT_MS 참고) 취소 감지를
-    // 폴링 대신 타임아웃으로 한다. 응답이 오지 않으면 사용자가 닫은 것으로 보고 조용히 종료한다.
-    const timeoutTimer = setTimeout(() => {
-      cleanup();
-      popup?.close();
-      reject(new SocialLoginCancelledError());
-    }, LOGIN_POPUP_TIMEOUT_MS);
-
-    function cleanup() {
-      window.removeEventListener("message", handleMessage);
-      clearTimeout(timeoutTimer);
-    }
-
-    function handleMessage(event: MessageEvent) {
-      // 콜백 페이지는 우리 origin 에서 뜬다 — 다른 origin 의 메시지는 신뢰하지 않는다.
-      if (event.origin !== origin) return;
-      if (!isCallbackMessage(event.data)) return;
-
-      cleanup();
-      popup?.close();
-
-      const { idToken, state: returnedState, error } = event.data;
-      if (error) {
-        reject(new Error(`구글 로그인에 실패했습니다: ${error}`));
-        return;
-      }
-      // state 불일치는 CSRF 의심 상황 — 받은 토큰을 쓰지 않는다.
-      if (returnedState !== state) {
-        reject(new Error("구글 로그인 응답의 state 가 일치하지 않습니다."));
-        return;
-      }
-      if (!idToken) {
-        reject(new Error("구글 로그인 응답에 idToken 이 없습니다."));
-        return;
-      }
-      resolve(idToken);
-    }
-
-    window.addEventListener("message", handleMessage);
-  });
+  const {
+    idToken,
+    state: returnedState,
+    error,
+  } = await waitForPopupMessage(popup, origin, isCallbackMessage);
+  if (error) {
+    throw new Error(`구글 로그인에 실패했습니다: ${error}`);
+  }
+  // state 불일치는 CSRF 의심 상황 — 받은 토큰을 쓰지 않는다.
+  if (returnedState !== state) {
+    throw new Error("구글 로그인 응답의 state 가 일치하지 않습니다.");
+  }
+  if (!idToken) {
+    throw new Error("구글 로그인 응답에 idToken 이 없습니다.");
+  }
+  return idToken;
 }
 
 /**
@@ -204,46 +226,21 @@ async function getKakaoIdToken(): Promise<string> {
     throw new Error(POPUP_BLOCKED_MESSAGE);
   }
 
-  const code = await new Promise<string>((resolve, reject) => {
-    // 구글 웹과 동일 — COOP 로 popup.closed 를 신뢰할 수 없어 취소 감지를 타임아웃으로 한다.
-    const timeoutTimer = setTimeout(() => {
-      cleanup();
-      popup?.close();
-      reject(new SocialLoginCancelledError());
-    }, LOGIN_POPUP_TIMEOUT_MS);
-
-    function cleanup() {
-      window.removeEventListener("message", handleMessage);
-      clearTimeout(timeoutTimer);
-    }
-
-    function handleMessage(event: MessageEvent) {
-      // 콜백 페이지는 우리 origin 에서 뜬다 — 다른 origin 의 메시지는 신뢰하지 않는다.
-      if (event.origin !== origin) return;
-      if (!isKakaoCallbackMessage(event.data)) return;
-
-      cleanup();
-      popup?.close();
-
-      const { code, state: returnedState, error } = event.data;
-      if (error) {
-        reject(new Error(`카카오 로그인에 실패했습니다: ${error}`));
-        return;
-      }
-      // state 불일치는 CSRF 의심 — 받은 code 를 쓰지 않는다.
-      if (returnedState !== state) {
-        reject(new Error("카카오 로그인 응답의 state 가 일치하지 않습니다."));
-        return;
-      }
-      if (!code) {
-        reject(new Error("카카오 로그인 응답에 code 가 없습니다."));
-        return;
-      }
-      resolve(code);
-    }
-
-    window.addEventListener("message", handleMessage);
-  });
+  const {
+    code,
+    state: returnedState,
+    error,
+  } = await waitForPopupMessage(popup, origin, isKakaoCallbackMessage);
+  if (error) {
+    throw new Error(`카카오 로그인에 실패했습니다: ${error}`);
+  }
+  // state 불일치는 CSRF 의심 — 받은 code 를 쓰지 않는다.
+  if (returnedState !== state) {
+    throw new Error("카카오 로그인 응답의 state 가 일치하지 않습니다.");
+  }
+  if (!code) {
+    throw new Error("카카오 로그인 응답에 code 가 없습니다.");
+  }
 
   const { data } = await apiClient.post<SuccessResponse<unknown>>(
     "/auth/kakao/exchange",

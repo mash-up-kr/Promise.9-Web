@@ -198,8 +198,40 @@ describe("useSocialAuth (웹)", () => {
     await expect(promise).rejects.toThrow();
   });
 
-  // 응답이 끝내 오지 않으면(사용자가 팝업을 닫았거나 멈춤) 타임아웃으로 조용히 종료한다.
-  // COOP 환경에선 popup.closed 로 종료를 신뢰성 있게 감지할 수 없어 타임아웃이 유일한 취소 신호다.
+  // 사용자가 팝업을 닫으면 부모 창엔 아무 이벤트도 오지 않는다 — popup.closed 폴링이 유일한 신호다.
+  // (Apple JS SDK 도 같은 방식으로 popup_closed_by_user 를 낸다.)
+  it("팝업을 닫으면 곧 SocialLoginCancelledError 로 끝난다", async () => {
+    jest.useFakeTimers();
+    const { result } = await renderHook(() => useSocialAuth());
+
+    const promise = result.current.getIdToken("google");
+    promise.catch(() => {}); // 타이머 진행 전에 unhandled rejection 으로 잡히지 않도록.
+    popup.closed = true;
+    jest.advanceTimersByTime(2 * 1000);
+
+    await expect(promise).rejects.toBeInstanceOf(SocialLoginCancelledError);
+    jest.useRealTimers();
+  });
+
+  // 콜백 페이지는 postMessage 직후 창을 닫는다 — 닫힘을 먼저 봤더라도 짧은 유예 안에 온 응답은 살린다.
+  it("팝업이 닫힌 직후 도착한 응답은 살린다", async () => {
+    jest.useFakeTimers();
+    const { result } = await renderHook(() => useSocialAuth());
+
+    const promise = result.current.getIdToken("google");
+    popup.closed = true;
+    jest.advanceTimersByTime(500); // 폴링이 닫힘을 감지한 뒤, 유예가 끝나기 전
+    emitMessage({
+      source: "promise9-google-auth",
+      idToken: "web-id-token",
+      state: sentState(),
+    });
+
+    await expect(promise).resolves.toBe("web-id-token");
+    jest.useRealTimers();
+  });
+
+  // 닫힘도 응답도 없이 멈춘 경우의 최후 안전장치 — 타임아웃으로 조용히 종료한다.
   it("응답 없이 타임아웃되면 SocialLoginCancelledError 로 끝난다", async () => {
     jest.useFakeTimers();
     const { result } = await renderHook(() => useSocialAuth());
@@ -210,29 +242,6 @@ describe("useSocialAuth (웹)", () => {
 
     await expect(promise).rejects.toBeInstanceOf(SocialLoginCancelledError);
     jest.useRealTimers();
-  });
-
-  // 회귀: COOP(Cross-Origin-Opener-Policy)가 켜진 구글 페이지는 opener 관계를 끊고, Chrome 은
-  // 그 팝업의 popup.closed 를 (예외가 아니라) true 로 돌려준다. 예전 폴링 구현은 이를 "닫힘"으로
-  // 오판해 로그인 진행 중에 취소해버렸다. 이제 popup.closed 를 보지 않으므로, closed 가 true 라도
-  // 뒤늦게 온 idToken 을 그대로 살려야 한다.
-  it("COOP 로 popup.closed 가 true 여도 뒤늦은 idToken 을 살린다", async () => {
-    jest.useFakeTimers();
-    popup.closed = true;
-    const { result } = await renderHook(() => useSocialAuth());
-
-    const promise = result.current.getIdToken("google");
-    // 동의 화면을 거치느라 오래 걸리는 상황(예전 폴링 주기 400ms 를 훨씬 초과).
-    jest.advanceTimersByTime(30 * 1000);
-    jest.useRealTimers();
-
-    emitMessage({
-      source: "promise9-google-auth",
-      idToken: "web-id-token",
-      state: sentState(),
-    });
-
-    await expect(promise).resolves.toBe("web-id-token");
   });
 });
 
@@ -333,7 +342,21 @@ describe("useSocialAuth 카카오 (웹)", () => {
     await expect(promise).rejects.toThrow();
   });
 
-  // 구글 웹과 동일 — COOP 로 popup.closed 를 못 믿으므로, 응답이 오지 않으면 타임아웃으로 종료한다.
+  it("팝업을 닫으면 곧 SocialLoginCancelledError 로 끝난다", async () => {
+    jest.useFakeTimers();
+    const { result } = await renderHook(() => useSocialAuth());
+
+    const promise = result.current.getIdToken("kakao");
+    promise.catch(() => {}); // 타이머 진행 전에 unhandled rejection 으로 잡히지 않도록.
+    popup.closed = true;
+    jest.advanceTimersByTime(2 * 1000);
+
+    await expect(promise).rejects.toBeInstanceOf(SocialLoginCancelledError);
+    expect(mockPost).not.toHaveBeenCalled();
+    jest.useRealTimers();
+  });
+
+  // 구글 웹과 동일 — 닫힘도 응답도 없이 멈춘 경우의 최후 안전장치.
   it("응답 없이 타임아웃되면 SocialLoginCancelledError 로 끝난다", async () => {
     jest.useFakeTimers();
     const { result } = await renderHook(() => useSocialAuth());
