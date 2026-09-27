@@ -6,9 +6,8 @@ import {
 import { useAuthGateContext } from "@/features/auth/AuthGateContext";
 import { CreateLinkSheet } from "@/features/link/CreateLinkSheet";
 
-// 공유 익스텐션의 "앱에서 직접 입력" 딥링크로도 열린다. (tabs) 의 인증 가드는 포커스된 화면에서만
-// 리다이렉트해 이 오버레이 라우트를 막지 못하므로, 로그인 안 된 콜드 스타트면 로그인 화면 위에
-// 시트가 그대로 떴다 — 공유 URL 을 들고 로그인으로 보내고, 로그인 화면이 next 를 보고 시트를 다시 연다.
+// 공유 익스텐션의 "앱에서 직접 입력" 딥링크로도 열린다. 루트의 Stack.Protected 밖에 두는 이유 —
+// 로그인 안 된 딥링크에서도 공유 URL 을 들고 로그인으로 보내야 하고, 로그인 화면이 next 를 보고 시트를 다시 연다.
 export default function Route() {
   const { status: authStatus } = useAuthGateContext();
   const { share } = useLocalSearchParams<{ share?: string }>();
