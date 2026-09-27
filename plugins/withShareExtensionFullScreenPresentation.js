@@ -1,7 +1,16 @@
-const plist = require("@expo/plist").default;
-const { IOSConfig, withFinalizedMod } = require("expo/config-plugins");
-const fs = require("node:fs");
-const path = require("node:path");
+const { withShareExtensionInfoPlist } = require("./shareExtensionInfoPlist");
+
+const PLUGIN_NAME = "withShareExtensionFullScreenPresentation";
+
+function enableFullScreenPresentation(parsed) {
+  const attributes = parsed.NSExtension?.NSExtensionAttributes;
+  if (!attributes) {
+    throw new Error(
+      `[${PLUGIN_NAME}] Info.plist 에 NSExtension.NSExtensionAttributes 가 없습니다.`,
+    );
+  }
+  attributes.NSExtensionShareWantsFullScreenPresentation = true;
+}
 
 /**
  * 공유 익스텐션을 시스템 시트 대신 전체화면으로 띄우게 한다.
@@ -11,25 +20,10 @@ const path = require("node:path");
  * expo-share-extension 은 이 키를 옵션으로 주지 않아 표시명 플러그인과 같이 finalized 단계에서 더한다.
  */
 module.exports = function withShareExtensionFullScreenPresentation(config) {
-  return withFinalizedMod(config, [
-    "ios",
-    (config) => {
-      // expo-share-extension 의 getShareExtensionName 과 같은 규칙으로 타깃 폴더를 찾는다.
-      const targetName = `${IOSConfig.XcodeUtils.sanitizedName(config.name)}ShareExtension`;
-      const filePath = path.join(
-        config.modRequest.platformProjectRoot,
-        targetName,
-        "Info.plist",
-      );
-      if (!fs.existsSync(filePath)) {
-        throw new Error(
-          `[withShareExtensionFullScreenPresentation] 익스텐션 Info.plist 가 없습니다: ${filePath}`,
-        );
-      }
-      const parsed = plist.parse(fs.readFileSync(filePath, "utf8"));
-      parsed.NSExtension.NSExtensionAttributes.NSExtensionShareWantsFullScreenPresentation = true;
-      fs.writeFileSync(filePath, plist.build(parsed));
-      return config;
-    },
-  ]);
+  return withShareExtensionInfoPlist(
+    config,
+    PLUGIN_NAME,
+    enableFullScreenPresentation,
+  );
 };
+module.exports.enableFullScreenPresentation = enableFullScreenPresentation;
