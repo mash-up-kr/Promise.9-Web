@@ -6,6 +6,7 @@ jest.mock(
 jest.mock("expo-share-extension", () => ({
   close: jest.fn(),
   openHostApp: jest.fn(),
+  contentReady: jest.fn(),
 }));
 jest.mock("@shared/api", () => {
   const errors = jest.requireActual("@shared/api/errors");
