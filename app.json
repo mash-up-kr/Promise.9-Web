@@ -102,7 +102,29 @@
             "green": 0,
             "blue": 0,
             "alpha": 0
-          }
+          },
+          "excludedPackages": [
+            "expo-router",
+            "expo-splash-screen",
+            "expo-glass-effect",
+            "expo-linear-gradient",
+            "@expo/dom-webview",
+            "expo-web-browser",
+            "expo-blur",
+            "expo-clipboard",
+            "expo-symbols",
+            "expo-network",
+            "expo-device",
+            "expo-system-ui",
+            "expo-linking",
+            "expo-image",
+            "expo-font",
+            "@expo/ui",
+            "react-native-reanimated",
+            "react-native-worklets",
+            "@react-native-masked-view/masked-view",
+            "@react-native-async-storage/async-storage"
+          ]
         }
       ],
       [
