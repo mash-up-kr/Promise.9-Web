@@ -18,7 +18,9 @@ export default function Route() {
       <Redirect
         href={{
           pathname: ROUTES.LOGIN,
-          params: { next: SHARE_LOGIN_NEXT_CREATE_LINK, share: share ?? "" },
+          params: share
+            ? { next: SHARE_LOGIN_NEXT_CREATE_LINK, share }
+            : { next: SHARE_LOGIN_NEXT_CREATE_LINK },
         }}
       />
     );

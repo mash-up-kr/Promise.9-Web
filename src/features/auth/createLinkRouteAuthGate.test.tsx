@@ -44,12 +44,12 @@ describe("create-link 라우트 — 인증 가드", () => {
     expect(screen.queryByText("create-link-sheet")).not.toBeOnTheScreen();
   });
 
-  test("공유 URL 없이 열렸어도 로그인 뒤 빈 저장 시트로 돌아오게 next 를 붙인다", async () => {
+  test("공유 URL 없이 열렸어도 로그인 뒤 빈 저장 시트로 돌아오게 next 만 붙인다", async () => {
     mockUseAuthGate.mockReturnValue("unauthenticated");
     await render(<CreateLinkRoute />);
     expect(
       screen.getByText(
-        'redirect:{"pathname":"/login","params":{"next":"create-link","share":""}}',
+        'redirect:{"pathname":"/login","params":{"next":"create-link"}}',
       ),
     ).toBeOnTheScreen();
   });

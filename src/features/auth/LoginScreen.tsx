@@ -53,11 +53,7 @@ export function LoginScreen() {
   const [pendingProvider, setPendingProvider] = useState<SocialProvider | null>(
     null,
   );
-  // 공유 익스텐션 인계: next 가 화이트리스트 키면 공유 URL(share)을 들고 저장 시트로, 아니면 홈.
-  const destination: Href =
-    next === SHARE_LOGIN_NEXT_CREATE_LINK && typeof share === "string"
-      ? { pathname: ROUTES.CREATE_LINK, params: { share } }
-      : ROUTES.HOME;
+  const destination = resolveLoginDestination(next, share);
   // 방금 로그인에 성공한 익스텐션 탭 — authStatus 는 마운트 시점 값이라 따로 기억한다.
   const [connectAfterLogin, setConnectAfterLogin] = useState(false);
   // 저장된 리프레시 토큰이 서버에서 이미 폐기된 경우. authStatus 는 토큰의 존재만 보므로
@@ -166,4 +162,12 @@ export function LoginScreen() {
       </View>
     </View>
   );
+}
+
+// 저장 시트 인계: next 가 화이트리스트 키면 저장 시트로(익스텐션이 준 공유 URL 이 있으면 들고), 아니면 홈.
+function resolveLoginDestination(next?: string, share?: string): Href {
+  if (next !== SHARE_LOGIN_NEXT_CREATE_LINK) return ROUTES.HOME;
+  return share
+    ? { pathname: ROUTES.CREATE_LINK, params: { share } }
+    : ROUTES.CREATE_LINK;
 }

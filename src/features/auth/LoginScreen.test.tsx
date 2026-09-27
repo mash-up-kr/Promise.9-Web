@@ -362,6 +362,27 @@ describe("LoginScreen", () => {
     );
   });
 
+  // 앱 안에서 로그인 안 된 채 저장 시트를 열었다가 보내진 경우 — 공유 URL 은 없다.
+  test("next 가 create-link 이고 공유 URL 이 없으면 빈 저장 시트로 이동한다", async () => {
+    mockParams.mockReturnValue({ next: "create-link" });
+    mockSignIn.mockResolvedValue(googleSuccess());
+    mockPost.mockResolvedValue({
+      data: {
+        success: true,
+        data: { accessToken: "atk", refreshToken: "rtk", isNewUser: false },
+      },
+    });
+    await renderScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Google로 계속하기" }),
+    );
+
+    await waitFor(() =>
+      expect(mockReplace).toHaveBeenCalledWith("/create-link"),
+    );
+  });
+
   test("next 가 모르는 값이면 홈으로 이동한다", async () => {
     mockParams.mockReturnValue({ next: "https://evil.com" });
     mockSignIn.mockResolvedValue(googleSuccess());
