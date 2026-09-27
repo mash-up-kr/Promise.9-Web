@@ -62,6 +62,8 @@ const CLOSE_DEADLINE_MS = 7000;
 const DRAG_CLOSE_DISTANCE = 120;
 const DRAG_CLOSE_VELOCITY = 1;
 const DRAG_MIN_DISTANCE = 20;
+// 백드롭이 이어받은 고정 농도에서 시트 위치를 따르는 농도로 건너가는 시간.
+const BACKDROP_BLEND_MS = 150;
 
 type EntranceState = "waiting" | "entering" | "entered";
 
@@ -91,9 +93,11 @@ export function ShareSheet({
   // 올라오기 전 탭(호스트 공유 시트 위로 뜨는 동안)이 보이지도 않는 시트를 닫지 않게 백드롭을 잠가 둔다.
   const [hasEntranceStarted, setHasEntranceStarted] = useState(false);
   const isDraggingRef = useRef(false);
-  // 전체화면 프레젠테이션엔 시스템 dim 이 없어 네이티브가 JS 가 뜰 때까지 같은 농도의 dim(loadingView)을
-  // 깔아 둔다 — 올라오는 동안엔 그 농도를 그대로 이어받고, 끌거나 닫을 때만 시트 위치를 따라 옅어진다.
-  const [isBackdropTrackingSheet, setIsBackdropTrackingSheet] = useState(false);
+  // 전체화면 프레젠테이션엔 시스템 dim 이 없어 네이티브가 JS 가 뜰 때까지 같은 농도의 dim 을 깔아 둔다 —
+  // 올라오는 동안엔 그 농도를 그대로 이어받고(0), 끌거나 닫을 때 시트 위치를 따르는 농도로 건너간다(1).
+  // 한 번에 바꾸면 올라오던 중에 잡았을 때 농도가 한 프레임에 떨어진다.
+  const backdropBlend = useRef(new Animated.Value(0)).current;
+  const isBackdropTrackingRef = useRef(false);
   const isClosingRef = useRef(false);
   const hasClosedRef = useRef(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -161,6 +165,20 @@ export function ShareSheet({
     setHasEntranceStarted(true);
   }, [translateY]);
 
+  const trackBackdropToSheet = useCallback(() => {
+    if (isBackdropTrackingRef.current) return;
+    isBackdropTrackingRef.current = true;
+    if (isReduceMotionEnabled) {
+      backdropBlend.setValue(1);
+      return;
+    }
+    Animated.timing(backdropBlend, {
+      toValue: 1,
+      duration: BACKDROP_BLEND_MS,
+      useNativeDriver: true,
+    }).start();
+  }, [backdropBlend, isReduceMotionEnabled]);
+
   const finishClose = useCallback(() => {
     clearTimeout(closeTimerRef.current);
     if (hasClosedRef.current) return;
@@ -190,8 +208,15 @@ export function ShareSheet({
         isClosingRef.current = false;
         setIsClosing(false);
       });
+      trackBackdropToSheet();
     },
-    [translateY, windowHeight, finishClose, isReduceMotionEnabled],
+    [
+      translateY,
+      windowHeight,
+      finishClose,
+      isReduceMotionEnabled,
+      trackBackdropToSheet,
+    ],
   );
 
   const closeSheet = useCallback(
@@ -199,7 +224,6 @@ export function ShareSheet({
       if (isClosingRef.current) return;
       isClosingRef.current = true;
       setIsClosing(true);
-      setIsBackdropTrackingSheet(true);
       // 기다림이나 퇴장 애니메이션이 끝나지 않아도 조작이 막힌 채 남지 않게 시한 뒤엔 닫는다.
       closeTimerRef.current = setTimeout(finishClose, CLOSE_DEADLINE_MS);
       if (waitBeforeClose) {
@@ -274,7 +298,7 @@ export function ShareSheet({
         // 오프셋으로 넘겨받는다.
         onPanResponderGrant: () => {
           isDraggingRef.current = true;
-          setIsBackdropTrackingSheet(true);
+          trackBackdropToSheet();
           // 올라오던 중에 잡으면 그 자리에서 끄는 것이 곧 등장을 마친 것이다.
           if (entranceRef.current === "entering") {
             entranceRef.current = "entered";
@@ -301,7 +325,7 @@ export function ShareSheet({
           settle();
         },
       }),
-    [isLocked, translateY, closeSheet, settle],
+    [isLocked, translateY, closeSheet, settle, trackBackdropToSheet],
   );
 
   const { sheetTranslateY, backdropOpacity } = useMemo(
@@ -312,13 +336,23 @@ export function ShareSheet({
         outputRange: [0, 1],
         extrapolateLeft: "clamp",
       }),
-      backdropOpacity: Animated.divide(translateY, backdropRange).interpolate({
-        inputRange: [0, 1],
-        outputRange: [SHEET_BACKDROP_OPACITY, 0],
-        extrapolate: "clamp",
-      }),
+      // 이어받은 고정 농도(blend 0)와 시트가 자기 높이만큼 내려가면 0 이 되는 농도(blend 1)를 섞는다.
+      backdropOpacity: Animated.add(
+        backdropBlend.interpolate({
+          inputRange: [0, 1],
+          outputRange: [SHEET_BACKDROP_OPACITY, 0],
+        }),
+        Animated.multiply(
+          Animated.divide(translateY, backdropRange).interpolate({
+            inputRange: [0, 1],
+            outputRange: [SHEET_BACKDROP_OPACITY, 0],
+            extrapolate: "clamp",
+          }),
+          backdropBlend,
+        ),
+      ),
     }),
-    [translateY, backdropRange],
+    [translateY, backdropRange, backdropBlend],
   );
 
   return (
@@ -328,14 +362,7 @@ export function ShareSheet({
         className="flex-1 justify-end"
       >
         <Animated.View
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              opacity: isBackdropTrackingSheet
-                ? backdropOpacity
-                : SHEET_BACKDROP_OPACITY,
-            },
-          ]}
+          style={[StyleSheet.absoluteFill, { opacity: backdropOpacity }]}
         >
           <Pressable
             accessibilityRole="button"
