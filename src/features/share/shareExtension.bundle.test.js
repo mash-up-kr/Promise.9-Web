@@ -11,7 +11,7 @@ const ts = require("typescript");
 // 익스텐션 번들(index.share.js)의 import 그래프에 아래 패키지가 들어오면 안 된다.
 // 그래프는 우리 소스만 걷고 node_modules 안으로는 들어가지 않는다 — 그래서 모듈을 불러오는 순간
 // Reanimated 를 require 하는 패키지도 이름으로 막는다(@expo/ui: State/index.fx).
-const FORBIDDEN_PACKAGES = [
+const REANIMATED_PACKAGES = [
   "react-native-reanimated",
   "react-native-worklets",
   "@gorhom/bottom-sheet",
@@ -21,6 +21,20 @@ const FORBIDDEN_PACKAGES = [
 ];
 
 const ROOT = path.resolve(__dirname, "../../..");
+
+// app.json 이 익스텐션 네이티브 타깃에서 뺀 패키지(excludedPackages)는 네이티브 모듈이 없어
+// import 만으로 익스텐션이 기동 시 죽는다 — 같은 목록을 그대로 막는다.
+function readExcludedPackages() {
+  const { expo } = require(path.join(ROOT, "app.json"));
+  const entry = expo.plugins.find(
+    (plugin) => Array.isArray(plugin) && plugin[0] === "expo-share-extension",
+  );
+  return entry?.[1]?.excludedPackages ?? [];
+}
+
+const FORBIDDEN_PACKAGES = [
+  ...new Set([...REANIMATED_PACKAGES, ...readExcludedPackages()]),
+];
 // Metro iOS 번들과 같은 순서로 해석한다 — 소스 확장자마다 .ios → .native → 플랫폼 없음.
 const { sourceExts } = require(path.join(ROOT, "metro.config.js")).resolver;
 const SOURCE_SUFFIXES = sourceExts.flatMap((ext) => [
@@ -210,7 +224,7 @@ describe("iOS 공유 익스텐션 번들(index.share.js)", () => {
     expect(graph.unresolvedImports).toEqual([]);
   });
 
-  test("Reanimated 계열 패키지를 import 하지 않는다", () => {
+  test("Reanimated 계열·익스텐션 타깃에서 제외한 패키지를 import 하지 않는다", () => {
     expect(graph.forbiddenImports).toEqual([]);
   });
 
@@ -220,6 +234,14 @@ describe("iOS 공유 익스텐션 번들(index.share.js)", () => {
 });
 
 describe("검사 도구", () => {
+  test("app.json 의 excludedPackages 를 금지 목록에 합친다", () => {
+    const excluded = readExcludedPackages();
+    expect(excluded.length).toBeGreaterThan(0);
+    expect(FORBIDDEN_PACKAGES).toEqual(
+      expect.arrayContaining([...excluded, ...REANIMATED_PACKAGES]),
+    );
+  });
+
   test("Metro 처럼 확장자마다 .ios → .native → 기본 순으로 찾는다", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "share-bundle-"));
     try {
