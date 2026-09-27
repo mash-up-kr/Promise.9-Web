@@ -25,6 +25,7 @@ import {
 import { EXTENSION_LOGIN_MESSAGE_SOURCE } from "@shared/extension/extensionLogin.contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -33,11 +34,13 @@ import {
 } from "@testing-library/react-native";
 import type { AxiosResponse } from "axios";
 import * as AppleAuthentication from "expo-apple-authentication";
+import type { PropsWithChildren } from "react";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
-
+import { AuthGateProvider } from "./AuthGateContext";
 import { AUTH_ERROR_CODE } from "./auth.errors";
+import { type AuthGateStatus, useAuthGate } from "./hooks/useAuthGate";
 
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
@@ -58,19 +61,48 @@ const metrics: Metrics = {
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
 };
 
-const renderScreen = () => {
+// 앱에선 루트 레이아웃이 저장소를 읽어 인증 상태를 내려준다 — 같은 경로로 로그인 결과가 반영되게 한다.
+function AuthGateFromStorage({ children }: PropsWithChildren) {
+  return <AuthGateProvider status={useAuthGate()}>{children}</AuthGateProvider>;
+}
+
+// 로그인 성공 뒤 리프레시 토큰이 저장돼야 인증 상태가 authenticated 로 바뀐다.
+let storedRefreshToken: string | null = null;
+const memoryPersistence = {
+  getRefreshToken: async () => storedRefreshToken,
+  setRefreshToken: async (token: string | null) => {
+    storedRefreshToken = token;
+  },
+};
+
+// status 를 주면 그 값에 고정된 컨텍스트로, 없으면 저장소를 읽는 컨텍스트로 그린다.
+const renderScreen = async (status?: AuthGateStatus) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  return render(
+  const tree = (fixedStatus?: AuthGateStatus) => (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider initialMetrics={metrics}>
         <SnackbarProvider>
-          <LoginScreen />
+          {fixedStatus ? (
+            <AuthGateProvider status={fixedStatus}>
+              <LoginScreen />
+            </AuthGateProvider>
+          ) : (
+            <AuthGateFromStorage>
+              <LoginScreen />
+            </AuthGateFromStorage>
+          )}
         </SnackbarProvider>
       </SafeAreaProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  const result = await render(tree(status));
+  return {
+    ...result,
+    rerenderWithStatus: (nextStatus: AuthGateStatus) =>
+      result.rerender(tree(nextStatus)),
+  };
 };
 
 const googleSuccess = (idToken: string | null = "mock-id-token") => ({
@@ -104,10 +136,13 @@ describe("LoginScreen", () => {
     (AppleAuthentication.signInAsync as jest.Mock).mockReset();
     // useSocialAuth 의 구글 경로는 webClientId 가 있어야 진행된다.
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = "test-web-client-id";
+    storedRefreshToken = null;
+    setTokenPersistence(memoryPersistence);
   });
 
   afterEach(() => {
     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = originalWebClientId;
+    setTokenPersistence(null);
   });
 
   test("소셜 버튼 3개를 노출하고, iOS 에선 셋 다 활성화한다", async () => {
@@ -360,6 +395,29 @@ describe("LoginScreen", () => {
         params: { share: "6162" },
       }),
     );
+  });
+
+  // 보호 라우트(Stack.Protected)는 인증 상태가 반영된 뒤에야 내비게이터에 생긴다 —
+  // 토큰을 저장한 직후 바로 이동하면 아직 없는 라우트라 무시된다.
+  test("로그인 성공 뒤 이동은 인증 상태가 반영된 다음에 한다", async () => {
+    mockSignIn.mockResolvedValue(googleSuccess());
+    mockPost.mockResolvedValue({
+      data: {
+        success: true,
+        data: { accessToken: "atk", refreshToken: "rtk", isNewUser: false },
+      },
+    });
+    const { rerenderWithStatus } = await renderScreen("unauthenticated");
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Google로 계속하기" }),
+    );
+    await waitFor(() => expect(mockPost).toHaveBeenCalled());
+    await act(async () => {});
+    expect(mockReplace).not.toHaveBeenCalled();
+
+    await rerenderWithStatus("authenticated");
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
   });
 
   // 앱 안에서 로그인 안 된 채 저장 시트를 열었다가 보내진 경우 — 공유 URL 은 없다.

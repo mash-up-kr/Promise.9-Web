@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -10,7 +10,7 @@ import {
   ROUTES,
   SHARE_LOGIN_NEXT_CREATE_LINK,
 } from "@/constants/routes.constants";
-
+import { useAuthGateContext } from "./AuthGateContext";
 import { useSocialLoginMutation } from "./api/auth.queries";
 import { SOCIAL_PROVIDERS, type SocialProvider } from "./auth.constants";
 import {
@@ -22,7 +22,6 @@ import { ExtensionConnect } from "./components/ExtensionConnect";
 import { LoginGraphic } from "./components/LoginGraphic";
 import { SocialLoginButton } from "./components/SocialLoginButton";
 import { canConnectExtension, isExtensionReturn } from "./extensionHandoff";
-import { useAuthGate } from "./hooks/useAuthGate";
 import { useSocialAuth } from "./hooks/useSocialAuth";
 
 const LOGIN_FAILED_MESSAGE = "로그인에 실패했어요. 다시 시도해주세요.";
@@ -45,7 +44,7 @@ export function LoginScreen() {
   const isExtensionConnect =
     isExtensionReturn(returnTo) && canConnectExtension();
   // 익스텐션이 연 탭이면 기존 로그인 여부부터 본다 — 있으면 소셜 로그인 없이 바로 연결한다.
-  const authStatus = useAuthGate();
+  const { status: authStatus } = useAuthGateContext();
   const insets = useSafeAreaInsets();
   const { show } = useSnackbar();
   const { getIdToken } = useSocialAuth();
@@ -53,7 +52,14 @@ export function LoginScreen() {
   const [pendingProvider, setPendingProvider] = useState<SocialProvider | null>(
     null,
   );
-  const destination = resolveLoginDestination(next, share);
+  // 보호 라우트(Stack.Protected)는 인증 상태가 반영된 뒤에야 내비게이터에 생긴다 —
+  // 토큰 저장 직후 이동하면 아직 없는 라우트라 무시되므로, 상태가 바뀐 것을 보고 이동한다.
+  const [hasLoginSucceeded, setHasLoginSucceeded] = useState(false);
+  useEffect(() => {
+    if (!hasLoginSucceeded || authStatus !== "authenticated") return;
+    setHasLoginSucceeded(false);
+    router.replace(resolveLoginDestination(next, share));
+  }, [hasLoginSucceeded, authStatus, next, share, router]);
   // 방금 로그인에 성공한 익스텐션 탭 — authStatus 는 마운트 시점 값이라 따로 기억한다.
   const [connectAfterLogin, setConnectAfterLogin] = useState(false);
   // 저장된 리프레시 토큰이 서버에서 이미 폐기된 경우. authStatus 는 토큰의 존재만 보므로
@@ -93,7 +99,7 @@ export function LoginScreen() {
             return;
           }
           // TODO(#53): 온보딩 화면이 생기면 isNewUser 로 분기한다. 지금은 신규·기존 모두 홈으로.
-          router.replace(destination);
+          setHasLoginSucceeded(true);
         },
         onError: (error) => {
           setPendingProvider(null);

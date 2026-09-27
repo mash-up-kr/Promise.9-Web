@@ -34,6 +34,7 @@ import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 
+import { AuthGateProvider } from "./AuthGateContext";
 import { LoginScreen } from "./LoginScreen";
 
 const metrics: Metrics = {
@@ -46,7 +47,9 @@ const renderScreen = () =>
     <QueryClientProvider client={new QueryClient()}>
       <SafeAreaProvider initialMetrics={metrics}>
         <SnackbarProvider>
-          <LoginScreen />
+          <AuthGateProvider status="unauthenticated">
+            <LoginScreen />
+          </AuthGateProvider>
         </SnackbarProvider>
       </SafeAreaProvider>
     </QueryClientProvider>,
