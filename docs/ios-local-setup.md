@@ -64,9 +64,9 @@ iOS 는 시뮬레이터 빌드도 서명이 필요하다. **유료·무료 Apple
 
 ### 3-2. 워크스페이스 열고 팀 지정
 ```bash
-open ios/Promise9Web.xcworkspace     # 반드시 .xcworkspace (.xcodeproj 아님)
+open ios/app.xcworkspace             # 반드시 .xcworkspace (.xcodeproj 아님)
 ```
-4. 좌측 네비게이터 최상단 **Promise9Web** ▸ **TARGETS ▸ Promise9Web**
+4. 좌측 네비게이터 최상단 **app** ▸ **TARGETS ▸ app**
 5. **Signing & Capabilities** 탭
 6. **Automatically manage signing** 체크
 7. **Team** 드롭다운에서 본인 팀 선택 → **Signing Certificate: Apple Development** 가 뜨면 성공

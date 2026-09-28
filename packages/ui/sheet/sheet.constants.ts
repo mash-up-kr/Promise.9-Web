@@ -8,4 +8,6 @@ export const SHEET_SPRING = {
   overshootClamping: true,
 } as const;
 
+// iOS 공유 익스텐션은 JS 가 뜨기 전 네이티브가 같은 농도의 로딩 dim 을 먼저 깐다 — 바꾸면
+// patches/expo-share-extension 의 showLoadingDim(alpha) 도 같이 바꾼다.
 export const SHEET_BACKDROP_OPACITY = 0.6;

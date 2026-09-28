@@ -1,6 +1,7 @@
 jest.mock("expo-share-extension", () => ({
   close: jest.fn(),
   openHostApp: jest.fn(),
+  contentReady: jest.fn(),
 }));
 const mockGetPendingRefresh = jest.fn<Promise<void> | null, []>();
 jest.mock("@shared/api", () => ({
@@ -9,7 +10,7 @@ jest.mock("@shared/api", () => ({
 
 import * as ShareExtension from "expo-share-extension";
 
-import { close, openHostApp } from "./shareHost";
+import { close, notifyContentReady, openHostApp } from "./shareHost";
 
 function deferred() {
   let resolve!: () => void;
@@ -47,4 +48,10 @@ test("닫기는 기다리지 않고 바로 닫는다", () => {
   mockGetPendingRefresh.mockReturnValue(deferred().promise);
   close();
   expect(ShareExtension.close).toHaveBeenCalledTimes(1);
+});
+
+// 전체화면 프레젠테이션에서 네이티브가 JS 대신 깔아 둔 로딩 dim 은 시트가 백드롭을 그린 뒤 걷힌다.
+test("콘텐츠 준비 알림은 네이티브 모듈에 전달한다", () => {
+  notifyContentReady();
+  expect(ShareExtension.contentReady).toHaveBeenCalledTimes(1);
 });

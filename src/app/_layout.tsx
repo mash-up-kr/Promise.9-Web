@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/snackbar/SnackbarProvider";
 import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
 import { isWeb } from "@/constants/platform.constants";
+import { AuthGateProvider } from "@/features/auth/AuthGateContext";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
 import { SplashOverlay } from "@/features/splash/components/SplashOverlay";
 import { useSplashPhase } from "@/features/splash/hooks/useSplashPhase";
@@ -72,15 +73,16 @@ export default function RootLayout() {
     "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
   });
 
-  // 초기화(폰트 + 인증 상태 확인)가 끝날 때까지 스플래시를 유지한다.
-  // 홈/로그인 분기는 (tabs) 의 인증 가드가 스플래시 아래에서 처리한다.
+  // 초기화(폰트 + 인증 상태 확인)가 끝날 때까지 스플래시를 유지하고 내비게이터도 띄우지 않는다 —
+  // 확인 중에 띄우면 보호 라우트가 빠진 채 로그인이 첫 화면으로 잡혀 인증 뒤에도 거기 머문다.
+  // 홈/로그인 분기는 아래 Stack.Protected 가 한다.
   // 웹은 스플래시를 노출하지 않는다(웹 관례상 인위적 대기 없이 다크 배경만) —
   // 실제 초기화가 짧아 최소 노출을 빼면 마스코트가 깜빡이는 플리커만 남는다.
   const isSplashEnabled = !isWeb;
   const authStatus = useAuthGate();
   const splashPhase = useSplashPhase(fontsLoaded && authStatus !== "checking");
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded || authStatus === "checking") {
     return (
       <View className="flex-1 bg-background-base">
         {isSplashEnabled && <SplashOverlay isFadingOut={false} />}
@@ -102,37 +104,54 @@ export default function RootLayout() {
               <SnackbarProvider>
                 <HeaderScrollProvider>
                   <ThemeProvider value={transparentBackgroundTheme}>
-                    <Stack
-                      screenOptions={{
-                        contentStyle: { backgroundColor: "transparent" },
-                      }}
-                      screenLayout={renderScreenLayout}
-                    >
-                      <Stack.Screen
-                        name="(tabs)"
-                        options={{ headerShown: false }}
-                      />
-                      <Stack.Screen
-                        name="(auth)"
-                        options={{ headerShown: false }}
-                      />
-                      <Stack.Screen
-                        name="create-link"
-                        options={sheetScreenOptions}
-                      />
-                      <Stack.Screen
-                        name="create-folder"
-                        options={sheetScreenOptions}
-                      />
-                      <Stack.Screen
-                        name="edit-folder"
-                        options={sheetScreenOptions}
-                      />
-                      <Stack.Screen
-                        name="move-links"
-                        options={sheetScreenOptions}
-                      />
-                    </Stack>
+                    <AuthGateProvider status={authStatus}>
+                      <Stack
+                        screenOptions={{
+                          contentStyle: { backgroundColor: "transparent" },
+                        }}
+                        screenLayout={renderScreenLayout}
+                      >
+                        {/* 앱 스킴으로는 (tabs) 밖 라우트도 바로 열린다 — 로그인 안 된 상태면 보호 라우트가
+                            내비게이터에서 빠져 (auth) 가 첫 화면이 되고, 화면 위에서 세션이 끊겨도
+                            (refresh 실패 → clearTokens) 같은 길로 나간다. */}
+                        <Stack.Protected guard={authStatus === "authenticated"}>
+                          <Stack.Screen
+                            name="(tabs)"
+                            options={{ headerShown: false }}
+                          />
+                          <Stack.Screen
+                            name="create-folder"
+                            options={sheetScreenOptions}
+                          />
+                          <Stack.Screen
+                            name="edit-folder"
+                            options={sheetScreenOptions}
+                          />
+                          <Stack.Screen
+                            name="move-links"
+                            options={sheetScreenOptions}
+                          />
+                          <Stack.Screen name="link/[id]" />
+                          <Stack.Screen name="archive/[id]" />
+                          <Stack.Screen name="search" />
+                          <Stack.Screen name="settings/withdraw" />
+                          <Stack.Screen name="support" />
+                        </Stack.Protected>
+                        <Stack.Screen
+                          name="(auth)"
+                          options={{ headerShown: false }}
+                        />
+                        {/* 약관·개인정보처리방침은 로그인 화면에서도 연다. */}
+                        <Stack.Screen name="settings/terms" />
+                        <Stack.Screen name="settings/privacy" />
+                        {/* 저장 시트는 로그인 안 된 딥링크에서 공유 URL 을 next 로 들고 로그인으로 가야 해서
+                            보호 밖에서 라우트가 직접 가른다(create-link.tsx). */}
+                        <Stack.Screen
+                          name="create-link"
+                          options={sheetScreenOptions}
+                        />
+                      </Stack>
+                    </AuthGateProvider>
                   </ThemeProvider>
                 </HeaderScrollProvider>
               </SnackbarProvider>

@@ -21,3 +21,6 @@ export function openHostApp(path: string) {
     getShareHost().close();
   });
 }
+
+/** Android 는 인앱과 같은 gorhom 시트가 백드롭까지 그린다 — 네이티브 로딩 dim 이 없어 알릴 것이 없다. */
+export function notifyContentReady() {}

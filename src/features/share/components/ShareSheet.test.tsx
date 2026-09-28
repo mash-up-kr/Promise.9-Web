@@ -1,8 +1,10 @@
+import { SHEET_BACKDROP_OPACITY } from "@promise9/ui/sheet/sheet.constants";
 import { act, render, screen, userEvent } from "@testing-library/react-native";
 import {
   AccessibilityInfo,
   NativeModules,
   Pressable,
+  StyleSheet,
   Text,
 } from "react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
@@ -13,6 +15,11 @@ import {
   shouldDismissByDrag,
   useShareSheetDismiss,
 } from "./ShareSheet";
+
+jest.mock("../shareHost", () => ({ notifyContentReady: jest.fn() }));
+const mockNotifyContentReady = jest.mocked(
+  jest.requireMock("../shareHost").notifyContentReady,
+);
 
 const metrics: Metrics = {
   frame: { x: 0, y: 0, width: 375, height: 812 },
@@ -142,6 +149,21 @@ async function dragHandle(dy: number, durationMs: number) {
   return isGranted;
 }
 
+/** 핸들을 잡고 조금 끌기만 하고 손을 떼지 않는다. */
+async function grabHandle() {
+  const handle = screen.getByTestId("share-sheet-handle");
+  const down = { y: 100, timestamp: 1000 };
+  const start = { y: 110, timestamp: 1016 };
+  const moved = { y: 140, timestamp: 1032 };
+  await act(async () => {
+    handle.props.onStartShouldSetResponderCapture(touchEvent(down, down));
+    handle.props.onMoveShouldSetResponderCapture(touchEvent(start, down));
+    handle.props.onMoveShouldSetResponder(touchEvent(start, down));
+    handle.props.onResponderGrant(touchEvent(start, down));
+    handle.props.onResponderMove(touchEvent(moved, start));
+  });
+}
+
 // jest 에는 레이아웃 엔진이 없다 — 시트가 재는 콘텐츠(핸들 포함) 높이를 직접 알려준다.
 async function layoutContent(height: number) {
   const content = screen.getByTestId("share-sheet-handle").parent;
@@ -151,6 +173,37 @@ async function layoutContent(height: number) {
     });
   });
 }
+
+// 전체화면 프레젠테이션엔 시스템 dim 이 없어 네이티브가 같은 농도의 dim 을 먼저 깔아 둔다 —
+// JS 가 그 dim 을 이어받아야 올라오는 동안 화면이 밝아졌다 어두워지지 않는다.
+test("올라오기 전에도 백드롭은 최대 농도다", async () => {
+  await renderSheet({ contentHeight: null });
+  const backdrop = screen.getByLabelText("시트 닫기").parent;
+  expect(StyleSheet.flatten(backdrop?.props.style)).toMatchObject({
+    opacity: SHEET_BACKDROP_OPACITY,
+  });
+});
+
+// 올라오는 도중에 잡으면 그 자리부터 시트를 따라가되, 이어받은 농도에서 한 프레임에 떨어지지 않고 이어진다.
+test("올라오는 중에 핸들을 잡아도 백드롭 농도가 한 번에 떨어지지 않는다", async () => {
+  await renderSheet();
+  await grabHandle();
+  const backdrop = screen.getByLabelText("시트 닫기").parent;
+  expect(StyleSheet.flatten(backdrop?.props.style)).toMatchObject({
+    opacity: SHEET_BACKDROP_OPACITY,
+  });
+});
+
+// 네이티브 로딩 dim 은 시트 백드롭이 화면에 있어야 걷힌다 — 콘텐츠를 처음 잰 뒤(레이아웃 완료) 한 번만 알린다.
+test("콘텐츠 높이를 처음 재면 네이티브에 준비됐다고 한 번 알린다", async () => {
+  mockNotifyContentReady.mockClear();
+  await renderSheet({ contentHeight: null });
+  expect(mockNotifyContentReady).not.toHaveBeenCalled();
+  await layoutContent(300);
+  expect(mockNotifyContentReady).toHaveBeenCalledTimes(1);
+  await layoutContent(400);
+  expect(mockNotifyContentReady).toHaveBeenCalledTimes(1);
+});
 
 test("children 을 렌더한다", async () => {
   await renderSheet();
