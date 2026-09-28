@@ -1,3 +1,5 @@
+// 다른 모듈이 URL 을 쓰기 전에 앱과 같은 WHATWG URL 을 깐다 — 반드시 첫 import 로 둔다.
+import "./src/features/share/installWhatwgUrl";
 import { AppRegistry } from "react-native";
 
 import "./src/global.css";

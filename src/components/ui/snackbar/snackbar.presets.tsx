@@ -1,7 +1,7 @@
-import { AlertCircleIcon } from "@/components/ui/icon/AlertCircleIcon";
-import { CheckCircleIcon } from "@/components/ui/icon/CheckCircleIcon";
-import { FrownIcon } from "@/components/ui/icon/FrownIcon";
-import { WifiOffIcon } from "@/components/ui/icon/WifiOffIcon";
+import { AlertCircleIcon } from "@promise9/ui/icon/AlertCircleIcon";
+import { CheckCircleIcon } from "@promise9/ui/icon/CheckCircleIcon";
+import { FrownIcon } from "@promise9/ui/icon/FrownIcon";
+import { WifiOffIcon } from "@promise9/ui/icon/WifiOffIcon";
 
 import type { SnackbarOptions } from "./SnackbarProvider";
 
@@ -20,10 +20,11 @@ export const snackbarPresets = {
     icon: <AlertCircleIcon />,
     ...(onView && { action: { label: "보기", onPress: onView } }),
   }),
-  failed: (message: string, onRetry: () => void): SnackbarOptions => ({
+  // onRetry 를 넘기면 "다시 시도" 액션이 붙는다 — 같은 입력으로 다시 해도 소용없는 검증 실패엔 넘기지 않는다.
+  failed: (message: string, onRetry?: () => void): SnackbarOptions => ({
     message,
     icon: <FrownIcon />,
-    action: { label: "다시 시도", onPress: onRetry },
+    ...(onRetry && { action: { label: "다시 시도", onPress: onRetry } }),
   }),
   offline: (message: string, onRetry: () => void): SnackbarOptions => ({
     message,

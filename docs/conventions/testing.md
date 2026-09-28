@@ -21,11 +21,12 @@ test('...', async () => {
 - 사용자 상호작용은 `const user = userEvent.setup()` 후 `await user.press(...)`.
 
 ## 무엇을 테스트하나 (Zone 별)
-구조는 structure.md 의 3-Zone 을 따른다.
+구조는 structure.md 의 4-Zone 을 따른다.
 
 | 대상 | 종류 | 무엇을 |
 |------|------|--------|
 | `shared/` (분류·검색·URL 정규화·API 변환) | **unit** | 순수 함수 입출력. 표면 무관 핵심 로직 → **1순위 테스트 대상** |
+| `packages/ui/*` 컴포넌트 | **integration** | jest-expo + RNTL 로 렌더·상호작용(루트 `pnpm test`). 익스텐션(react-native-web)에서의 렌더는 `extension/src/rnw/ui.test.tsx` |
 | `src/features/*` 컴포넌트 | **integration** | 사용자 관점 렌더·상호작용 (구현 디테일 X) |
 | `src/features/*/api` react-query 훅 | **integration** | QueryClientProvider 래핑 + 네트워크 mock |
 | `src/utils` 순수 함수 | unit | 입출력 |
@@ -64,6 +65,7 @@ test('링크 목록을 불러온다', async () => {
 });
 ```
 - 네트워크(`shared/api` 의 fetch)는 mock 한다. 실제 백엔드 호출 금지.
+- `jest.mock("@/constants/platform.constants")` 는 **앱 코드의 분기만** 바꾼다 — jest 는 모듈 id 로 mock 하는데 그 파일은 재export 라, 원본을 상대경로로 읽는 `packages/ui` 컴포넌트(`WheelPicker` 등)에는 닿지 않는다. 패키지 컴포넌트의 분기까지 바꾸려면 원본인 `jest.mock("@promise9/ui/constants/platform.constants")` 를 건다 — 이쪽은 패키지 내부와 앱 재export 양쪽에 모두 적용된다.
 
 ## TDD 절차 (요약)
 1. **red** — 원하는 동작을 기술하는 테스트를 먼저 쓴다. 실행 → 실패 확인.

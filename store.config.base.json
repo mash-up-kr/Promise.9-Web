@@ -1,9 +1,12 @@
 {
   "configVersion": 0,
   "apple": {
-    "version": "1.0.0",
+    "version": "1.2.0",
     "copyright": "2026 Promise.9",
-    "categories": ["PRODUCTIVITY", "UTILITIES"],
+    "categories": [
+      "PRODUCTIVITY",
+      "UTILITIES"
+    ],
     "release": {
       "automaticRelease": false
     },
@@ -65,7 +68,7 @@
           "모아보기",
           "세이브"
         ],
-        "releaseNotes": "링띵동의 첫 번째 버전이에요.\n\n· 보던 화면에서 공유 버튼으로 바로 링크를 저장해요\n· 저장한 링크의 제목·이미지·AI 요약을 자동으로 정리해요\n· 다시 볼 날짜를 정하면 그날 이메일로 알려드려요\n· 내용까지 이해하는 검색으로 저장한 링크를 찾아요\n· 폴더로 묶어서 한곳에 모아봐요",
+        "releaseNotes": "• 공유 기능이 더 빠르고 안정적으로 열려요. Safari 등에서 공유 → 링띵동으로 링크를 바로 저장해 보세요.\n• 링크 주소를 입력할 때 잘못된 주소를 바로 알려드려요.\n• 로그인이 필요한 화면으로 바로 들어왔을 때의 처리를 개선했어요.",
         "supportUrl": "https://link-ding-dong.com/support",
         "privacyPolicyUrl": "https://link-ding-dong.com/settings/privacy",
         "screenshots": {

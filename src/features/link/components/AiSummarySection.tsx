@@ -1,12 +1,12 @@
+import { Icon } from "@promise9/ui/icon/Icon";
+import { Spinner } from "@promise9/ui/spinner/Spinner";
+import { Text } from "@promise9/ui/text/Text";
 import MaskedView from "@react-native-masked-view/masked-view";
 import type { LinkProcessingStatus } from "@shared/types/link.types";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChevronDown, ChevronUp, Sparkle } from "lucide-react-native";
 import { useState } from "react";
 import { Platform, Pressable, View } from "react-native";
-import { Icon } from "@/components/ui/icon/Icon";
-import { Spinner } from "@/components/ui/spinner/Spinner";
-import { Text } from "@/components/ui/text/Text";
 import { shouldShowAiSummary } from "../link.utils";
 
 const COLLAPSED_HEIGHT = 116;

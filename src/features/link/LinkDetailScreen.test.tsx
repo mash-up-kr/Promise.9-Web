@@ -233,11 +233,142 @@ describe("LinkDetailScreen", () => {
     expect(screen.getByText("toss.tech · 2026.06.19")).toBeOnTheScreen();
   });
 
+  // 앱 전용 링크는 서버가 제목을 만들지 못하고, 출처도 스킴 뒤 첫 조각("place")이라 오해를 부른다.
+  test("제목 없는 앱 전용 링크는 주소를 제목으로 보여주고 출처는 숨긴다", async () => {
+    mockDetailData.current = {
+      ...mockLinkDetail,
+      url: "nmap://place?id=1",
+      title: "",
+      source: "place",
+    };
+    await renderScreen();
+
+    expect(screen.getByText("nmap://place?id=1")).toBeOnTheScreen();
+    expect(screen.queryByText("place")).toBeNull();
+    expect(screen.getByText("2026.06.19")).toBeOnTheScreen();
+  });
+
+  // 앱 링크 주소는 2,048자까지 길 수 있다 — 제목이 화면을 덮거나 확인 창 버튼이 밀려나지 않게 줄 수를 제한한다.
+  test("긴 앱 링크 주소는 제목과 확인 창에서 3줄까지만 보여준다", async () => {
+    const longUrl = `mailto:?body=${"a".repeat(2000)}`;
+    mockDetailData.current = {
+      ...mockLinkDetail,
+      url: longUrl,
+      title: "",
+      source: "",
+    };
+    const user = userEvent.setup();
+    await renderScreen();
+    expect(screen.getByText(longUrl).props.numberOfLines).toBe(3);
+
+    await user.press(screen.getByLabelText("링크 열기"));
+
+    const texts = screen.getAllByText(longUrl);
+    expect(texts).toHaveLength(2);
+    for (const text of texts) {
+      expect(text.props.numberOfLines).toBe(3);
+    }
+  });
+
+  test("제목 없는 웹 링크(처리 중)는 주소로 대신하지 않는다", async () => {
+    mockDetailData.current = { ...mockLinkDetail, title: "" };
+    await renderScreen();
+
+    expect(screen.queryByText(mockLinkDetail.url)).toBeNull();
+    expect(screen.getByText("toss.tech · 2026.06.19")).toBeOnTheScreen();
+  });
+
   test("도메인 주소를 누르면 원문 링크를 연다", async () => {
     const user = userEvent.setup();
     await renderScreen();
     await user.press(screen.getByText(mockLinkDetail.source));
     expect(openExternalUrl).toHaveBeenCalledWith(mockLinkDetail.url);
+    expect(screen.queryByText("다른 앱에서 열까요?")).toBeNull();
+  });
+
+  // 앱 전용 링크는 다른 앱을 바로 실행하므로 어떤 주소인지 보여주고 한 번 묻는다.
+  test("앱 전용 링크는 열기 전에 확인하고, '열기'를 누르면 연다", async () => {
+    mockDetailData.current = { ...mockLinkDetail, url: "nmap://place?id=1" };
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("링크 열기"));
+    expect(screen.getByText("다른 앱에서 열까요?")).toBeOnTheScreen();
+    expect(screen.queryByText("열리는 곳", { exact: false })).toBeNull();
+    expect(openExternalUrl).not.toHaveBeenCalled();
+
+    await user.press(screen.getByRole("button", { name: "열기" }));
+    expect(openExternalUrl).toHaveBeenCalledWith("nmap://place?id=1");
+  });
+
+  // 규칙이 바뀌기 전에 저장된 주소는 보이는 것과 다른 곳이 열릴 수 있다("https:///toss.tech@evil.com" → evil.com).
+  test("지금 저장 규칙에 어긋나는 웹 링크는 주소를 확인받고 연다", async () => {
+    mockDetailData.current = {
+      ...mockLinkDetail,
+      url: "https:///toss.tech@evil.com",
+    };
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("링크 열기"));
+    expect(screen.getByText("주소를 확인하고 열어주세요")).toBeOnTheScreen();
+    expect(openExternalUrl).not.toHaveBeenCalled();
+
+    await user.press(screen.getByRole("button", { name: "열기" }));
+    expect(openExternalUrl).toHaveBeenCalledWith("https:///toss.tech@evil.com");
+  });
+
+  test("웹 링크를 확인받을 때는 실제로 열리는 호스트를 함께 보여준다", async () => {
+    mockDetailData.current = {
+      ...mockLinkDetail,
+      url: "https:///toss.tech@evil.com",
+    };
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("링크 열기"));
+
+    expect(
+      screen.getByText("열리는 곳: evil.com", { exact: false }),
+    ).toBeOnTheScreen();
+  });
+
+  test("앱 전용 링크 확인에서 '취소'하면 열지 않는다", async () => {
+    mockDetailData.current = { ...mockLinkDetail, url: "nmap://place?id=1" };
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("링크 열기"));
+    await user.press(screen.getByRole("button", { name: "취소" }));
+
+    expect(screen.queryByText("다른 앱에서 열까요?")).toBeNull();
+    expect(openExternalUrl).not.toHaveBeenCalled();
+  });
+
+  test("링크를 열 앱이 없으면 스낵바로 알린다", async () => {
+    (openExternalUrl as jest.Mock).mockResolvedValueOnce("failed");
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("링크 열기"));
+
+    expect(
+      await screen.findByText("이 링크를 열 수 있는 앱이 없어요"),
+    ).toBeOnTheScreen();
+  });
+
+  test("위험한 스킴 링크는 묻지 않고 막은 뒤 스낵바로 알린다", async () => {
+    mockDetailData.current = { ...mockLinkDetail, url: "javascript:alert(1)" };
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("링크 열기"));
+
+    expect(
+      await screen.findByText("보안상 열 수 없는 링크예요"),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText("다른 앱에서 열까요?")).toBeNull();
+    expect(openExternalUrl).not.toHaveBeenCalled();
   });
 
   test("AI 요약 섹션을 렌더한다", async () => {

@@ -1,6 +1,10 @@
 import * as SecureStore from "expo-secure-store";
 
-jest.mock("@/constants/platform.constants", () => ({ isIOS: true }));
+jest.mock("@/constants/platform.constants", () => ({
+  isIOS: true,
+  isShareExtension: jest.requireActual("@/constants/platform.constants")
+    .isShareExtension,
+}));
 
 import { tokenPersistence } from "./tokenStorage";
 

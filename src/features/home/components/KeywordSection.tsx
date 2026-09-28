@@ -1,12 +1,11 @@
+import { Chip } from "@promise9/ui/chip/Chip";
+import { HStack } from "@promise9/ui/hstack/HStack";
+import { Text } from "@promise9/ui/text/Text";
+import { VStack } from "@promise9/ui/vstack/VStack";
 import { chunk } from "es-toolkit";
 import { useRouter } from "expo-router";
 import { Hash } from "lucide-react-native";
 import { ScrollView } from "react-native";
-
-import { Chip } from "@/components/ui/chip/Chip";
-import { HStack } from "@/components/ui/hstack/HStack";
-import { Text } from "@/components/ui/text/Text";
-import { VStack } from "@/components/ui/vstack/VStack";
 import { searchHref } from "@/constants/routes.constants";
 
 import { HOME_POLICY } from "../home.constants";

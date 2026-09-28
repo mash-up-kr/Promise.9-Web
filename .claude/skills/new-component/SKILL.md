@@ -10,7 +10,8 @@ description: NativeWind 기반 React Native 컴포넌트를 팀 컨벤션대로 
 - 규칙: docs/conventions/structure.md, app-web.md, shared.md.
 
 ## 위치 (structure.md 결정 규칙)
-- 기능 무관 공용 UI → `src/components/ui/`
+- 기능 무관 공용 UI 이고 import 가 허용 목록(`react` · `react-native` · `tailwind-variants` · `nativewind` · `lucide-react-native` · `react-native-svg` · `@tanstack/react-query` · `es-toolkit`)과 `packages/ui` 내부 파일로 닫힌다 → `packages/ui/<컴포넌트>/` (익스텐션과 공유). 내부 import 는 상대경로만(`../lib/tv`), `@/` 금지.
+- 기능 무관 공용 UI 인데 `expo-*` · `react-native-reanimated` · `@gorhom/*` · `expo-router` 등이 필요하다 → `src/components/ui/` (앱 전용)
 - 특정 기능 전용 → `src/features/<기능>/components/`
 - 애매하면 위치를 사용자에게 확인한다.
 - (컴포넌트는 RN 의존이므로 절대 `shared/` 에 두지 않는다 — `shared/` 는 순수 TS 전용)

@@ -1,5 +1,7 @@
 const mockPlatform = { isWeb: false };
 jest.mock("@/constants/platform.constants", () => ({
+  isShareExtension: jest.requireActual("@/constants/platform.constants")
+    .isShareExtension,
   get isWeb() {
     return mockPlatform.isWeb;
   },

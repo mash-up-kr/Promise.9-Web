@@ -7,7 +7,7 @@
 1. **pnpm만** 사용. npm / yarn 금지.
 2. 명령 실행 전 **현재 디렉터리 확인**. 루트와 `extension/` 은 `package.json` 이 다르다.
 3. **컴포넌트·훅·유틸·타입을 새로 만들기 전 반드시 기존 코드를 먼저 검색**한다(중복 금지) → `/check-dup`.
-4. import 는 절대경로 `@/`(앱/웹) · `@shared/`(공유 코어). `../../` 상대경로는 같은 기능 폴더 내부에서만.
+4. import 는 절대경로 `@/`(앱/웹) · `@shared/`(공유 코어) · `@promise9/ui/`(공유 UI). `../../` 상대경로는 같은 기능 폴더 내부에서만 — 예외: `packages/ui` 내부는 상대경로만(structure.md).
 5. 스타일은 NativeWind `className`. inline StyleSheet 는 동적 값 등 불가피할 때만.
 6. 커밋 메시지는 Conventional Commits (`feat:`, `fix:`, `chore:` ...). 본문 한국어 OK.
 7. **테스트 먼저 (TDD).** 새 동작·기능 코드는 **실패하는 테스트를 먼저** 쓴다(red) → 통과시키는 **최소** 구현(green) → 정리(refactor). 구현 코드를 먼저 짜지 않는다. 상세·패턴: docs/conventions/testing.md. (E2E 는 별도 담당 — unit·integration 만.)

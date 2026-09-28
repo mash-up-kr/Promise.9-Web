@@ -1,14 +1,13 @@
+import { HStack } from "@promise9/ui/hstack/HStack";
+import { Icon } from "@promise9/ui/icon/Icon";
+import { Text } from "@promise9/ui/text/Text";
+import { VStack } from "@promise9/ui/vstack/VStack";
 import type { Folder } from "@shared/types/folder.types";
 import type { Link } from "@shared/types/link.types";
 import { useRouter } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
 import { Pressable, ScrollView } from "react-native";
-
-import { HStack } from "@/components/ui/hstack/HStack";
-import { Icon } from "@/components/ui/icon/Icon";
 import { LinkTile } from "@/components/ui/link-card/LinkTile";
-import { Text } from "@/components/ui/text/Text";
-import { VStack } from "@/components/ui/vstack/VStack";
 import {
   archiveDetailHref,
   linkDetailHref,

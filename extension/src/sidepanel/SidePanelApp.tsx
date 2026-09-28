@@ -1,8 +1,9 @@
+import { LINK_URL_ERROR_MESSAGES } from "@shared/link/link.constants";
 import { useCallback, useEffect, useState } from "react";
 import { isLoggedIn, subscribeLoggedIn } from "@/lib/auth/session";
 import { MESSAGE_TYPE, type SaveLinkPayload } from "@/lib/messages";
 import { addDaysAtDefaultHour } from "@/lib/remind";
-import { isSavableUrl } from "@/lib/savableUrl";
+import { getSavableUrl } from "@/lib/savableUrl";
 import type { SavePhase } from "@/lib/saveSession";
 import {
   clearSaveRecord,
@@ -126,8 +127,17 @@ export function SidePanelApp() {
   // 활성 탭·로그인 상태를 읽는 동안. chrome 로컬 조회라 사실상 한 프레임이다.
   if (!tab || loggedIn === undefined || saveRecord === undefined) return null;
 
-  if (!isSavableUrl(url)) {
-    return <ResultScreen kind="restricted" onAction={closePanel} />;
+  const savable = getSavableUrl(url);
+  if (!savable.ok) {
+    return (
+      <ResultScreen
+        kind="restricted"
+        description={
+          savable.reason ? LINK_URL_ERROR_MESSAGES[savable.reason] : undefined
+        }
+        onAction={closePanel}
+      />
+    );
   }
 
   if (!loggedIn) {
@@ -176,7 +186,7 @@ export function SidePanelApp() {
   }
 
   // 결과는 "지금 보고 있는 탭의 저장" 일 때만 보여준다 — 다른 탭에서 만든 결과가 따라오면 안 된다.
-  const record = saveRecord?.session.url === url ? saveRecord : null;
+  const record = saveRecord?.session.url === savable.url ? saveRecord : null;
   const resultKind = record ? RESULT_KIND[record.session.phase] : undefined;
 
   if (record && resultKind) {
@@ -213,7 +223,7 @@ export function SidePanelApp() {
   return (
     <SaveScreen
       tab={tab}
-      url={url}
+      url={savable.url}
       folderId={current.folderId}
       onFolderChange={(folderId) =>
         setDraft((previous) => ({ ...previous, folderId }))

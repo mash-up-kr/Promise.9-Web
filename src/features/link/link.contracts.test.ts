@@ -4,30 +4,47 @@ import {
   linkUrlSchema,
 } from "./link.contracts";
 
+// 규칙 자체(허용·차단 스킴, 보정)는 shared/link/link.utils.test.ts 가 검증한다 — 여기선 스키마 연결만 본다.
 describe("linkUrlSchema", () => {
-  test("http 와 https 는 허용한다", () => {
-    for (const url of [
-      "http://example.com",
-      "https://mash-up.co.kr/articles/123",
-    ]) {
-      expect(linkUrlSchema.safeParse(url).success).toBe(true);
-    }
+  test("http·https 주소는 그대로 통과시킨다", () => {
+    expect(
+      linkUrlSchema.safeParse("https://mash-up.co.kr/articles/123"),
+    ).toEqual({ success: true, data: "https://mash-up.co.kr/articles/123" });
   });
 
-  test("URL 형식이 아니면 거부한다", () => {
-    expect(linkUrlSchema.safeParse("not-a-url").success).toBe(false);
+  test("스킴 없이 입력한 주소는 https 를 붙인 값으로 돌려준다", () => {
+    expect(linkUrlSchema.safeParse("naver.me/xYz1")).toEqual({
+      success: true,
+      data: "https://naver.me/xYz1",
+    });
   });
 
-  test("http/https 이외의 스킴을 거부한다", () => {
-    const cases = [
-      "file:///Users/boky/Downloads/secret.pdf",
-      "javascript:alert(1)",
-      "ftp://example.com/file",
-      "chrome://settings",
-      "data:text/html,<script>alert(1)</script>",
+  test("앱 전용 스킴 링크를 통과시킨다", () => {
+    expect(linkUrlSchema.safeParse("nmap://place?id=123").success).toBe(true);
+  });
+
+  test("거부하면 사유별 안내 문구를 오류 메시지로 준다", () => {
+    const cases: [string, string][] = [
+      ["not-a-url", "올바른 링크 주소가 아니에요"],
+      ["javascript:alert(1)", "보안상 저장할 수 없는 형식의 링크예요"],
+      ["https://example.com/a b", "링크 주소에 공백이 들어 있어요"],
+      [
+        `https://exa${String.fromCodePoint(0x200b)}mple.com`,
+        "링크 주소에 보이지 않는 문자가 섞여 있어요",
+      ],
+      [
+        "https://toss.tech@evil.com",
+        "보안상 계정 정보(@)가 담긴 링크는 저장할 수 없어요",
+      ],
+      [
+        `https://example.com/${"a".repeat(2048)}`,
+        "링크 주소는 최대 2,048자까지 저장할 수 있어요",
+      ],
     ];
-    for (const url of cases) {
-      expect(linkUrlSchema.safeParse(url).success).toBe(false);
+    for (const [value, message] of cases) {
+      const result = linkUrlSchema.safeParse(value);
+      expect(result.success).toBe(false);
+      expect(result.error?.issues[0].message).toBe(message);
     }
   });
 });

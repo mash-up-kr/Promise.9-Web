@@ -1,11 +1,11 @@
+import { Icon } from "@promise9/ui/icon/Icon";
+import { MoreButton } from "@promise9/ui/more-button/MoreButton";
+import { Skeleton } from "@promise9/ui/skeleton/Skeleton";
+import { Text } from "@promise9/ui/text/Text";
 import type { FolderColor } from "@shared/types/link.types";
 import { ChevronRight } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
-import { Icon } from "@/components/ui/icon/Icon";
-import { MoreButton } from "@/components/ui/more-button/MoreButton";
-import { Skeleton } from "@/components/ui/skeleton/Skeleton";
-import { Text } from "@/components/ui/text/Text";
 
 import { FolderToneIcon } from "./FolderToneIcon";
 

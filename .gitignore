@@ -70,6 +70,11 @@ store.config.json
 /blob-report/
 /playwright/.cache/
 
+# Playwright (extension E2E) — e2e-dist 는 목 API 주소가 박힌 전용 빌드
+/extension/test-results/
+/extension/playwright-report/
+/extension/e2e-dist/
+
 # Local planning docs (never committed)
 plan/
 _workspace/

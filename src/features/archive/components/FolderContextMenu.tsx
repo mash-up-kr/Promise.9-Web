@@ -1,10 +1,9 @@
+import { Icon, type IconComponent } from "@promise9/ui/icon/Icon";
+import { Text } from "@promise9/ui/text/Text";
 import { Pencil, Trash2 } from "lucide-react-native";
 import { useRef } from "react";
 import { Pressable, View } from "react-native";
-
-import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
 import { Popover } from "@/components/ui/popover/Popover";
-import { Text } from "@/components/ui/text/Text";
 import { isWeb } from "@/constants/platform.constants";
 
 import type { ArchiveFolder } from "../archive.types";

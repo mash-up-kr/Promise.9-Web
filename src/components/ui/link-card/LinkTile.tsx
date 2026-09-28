@@ -1,10 +1,9 @@
+import { Box } from "@promise9/ui/box/Box";
+import { Icon } from "@promise9/ui/icon/Icon";
+import { VStack } from "@promise9/ui/vstack/VStack";
 import type { Link } from "@shared/types/link.types";
 import { Check } from "lucide-react-native";
 import type { PressableProps } from "react-native";
-
-import { Box } from "@/components/ui/box/Box";
-import { Icon } from "@/components/ui/icon/Icon";
-import { VStack } from "@/components/ui/vstack/VStack";
 
 import { LinkCard } from "./LinkCard";
 import { LINK_TILE_THUMBNAIL_RATIO, LINK_TILE_WIDTH } from "./link-grid.utils";

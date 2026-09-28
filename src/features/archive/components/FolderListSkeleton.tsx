@@ -1,9 +1,8 @@
+import { Icon } from "@promise9/ui/icon/Icon";
+import { ListGroup } from "@promise9/ui/list-group/ListGroup";
+import { Skeleton } from "@promise9/ui/skeleton/Skeleton";
 import { ChevronRight } from "lucide-react-native";
 import { View } from "react-native";
-
-import { Icon } from "@/components/ui/icon/Icon";
-import { ListGroup } from "@/components/ui/list-group/ListGroup";
-import { Skeleton } from "@/components/ui/skeleton/Skeleton";
 
 // 실제 폴더 수를 모르는 상태라 적당한 개수만 자리를 잡아둔다. 폴더명 길이는 줄마다 조금씩 다르게.
 const NAME_WIDTHS = ["w-24", "w-16", "w-28"];

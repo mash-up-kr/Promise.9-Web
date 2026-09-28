@@ -1,11 +1,11 @@
+import { FolderIcon } from "@promise9/ui/icon/FolderIcon";
+import { Icon } from "@promise9/ui/icon/Icon";
+import { Text } from "@promise9/ui/text/Text";
 import { folderQueries } from "@shared/entities/folder/folder.queries";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react-native";
 import { useEffect, useRef } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import { FolderIcon } from "@/components/ui/icon/FolderIcon";
-import { Icon } from "@/components/ui/icon/Icon";
-import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
 
 // 미분류 folder 아이콘 색 = folder/gray(#65656b), FolderBadge 와 동일한 Figma 기준.
