@@ -11,10 +11,11 @@ import { isApiError } from "@shared/api/errors";
  */
 export class SocialLoginCancelledError extends Error {}
 
-// 서버 인증 도메인 errorCode — 서버 docs/policy/error-code.md 기준.
+// 서버 errorCode — 서버 docs/policy/error-code.md 기준(95xxxx 인증, 96xxxx 사용자 도메인).
 export const AUTH_ERROR_CODE = {
   SOCIAL_TOKEN_VERIFICATION_FAILED: 950003,
   UNSUPPORTED_PROVIDER: 950004,
+  EMAIL_ALREADY_REGISTERED: 960002,
 } as const;
 
 /** 지원하지 않는 provider(errorCode 950004) — 계약 외 provider 방어용(현재 카카오·애플은 서버 지원). */
@@ -22,5 +23,16 @@ export function isUnsupportedProviderError(error: unknown): boolean {
   return (
     isApiError(error) &&
     error.payload?.error.errorCode === AUTH_ERROR_CODE.UNSUPPORTED_PROVIDER
+  );
+}
+
+/**
+ * 같은 이메일이 다른 provider 로 이미 가입됨(409, errorCode 960002).
+ * 서버는 provider 간 계정을 합치지 않으므로, 처음 가입한 방식으로 다시 로그인하도록 안내해야 한다.
+ */
+export function isEmailAlreadyRegisteredError(error: unknown): boolean {
+  return (
+    isApiError(error) &&
+    error.payload?.error.errorCode === AUTH_ERROR_CODE.EMAIL_ALREADY_REGISTERED
   );
 }
