@@ -342,6 +342,26 @@ describe("LoginScreen", () => {
     ).toBeOnTheScreen();
   });
 
+  // 서버는 같은 이메일을 provider 간에 합치지 않는다 — 어느 방식으로 가입했는지 사용자가 알아야 다시 시도할 수 있다.
+  test("같은 이메일이 다른 provider 로 가입돼 있으면(errorCode 960002) 안내를 보여준다", async () => {
+    mockSignIn.mockResolvedValue(googleSuccess());
+    mockPost.mockRejectedValue(
+      apiError(409, AUTH_ERROR_CODE.EMAIL_ALREADY_REGISTERED),
+    );
+    await renderScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Google로 계속하기" }),
+    );
+
+    expect(
+      await screen.findByText(
+        "이미 다른 방식으로 가입된 이메일이에요. 처음 가입한 방식으로 로그인해주세요.",
+      ),
+    ).toBeOnTheScreen();
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
   test("로그인 진행 중에는 버튼이 비활성화된다", async () => {
     // 즉시 응답하지 않는 대기 상태를 흉내낸다 — 테스트 끝에서 반드시 resolve 해 열린 핸들을 남기지 않는다.
     let resolveSignIn!: (value: { type: string; data: null }) => void;

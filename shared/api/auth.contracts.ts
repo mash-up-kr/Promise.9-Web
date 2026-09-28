@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // provider 계약 — Swagger POST /auth/social 기준. google·kakao·apple 모두 서버 지원.
-// 플랫폼별 활성화(웹/네이티브·iOS 한정)는 SOCIAL_PROVIDERS 에서 관리한다.
+// 플랫폼별 활성화(애플은 iOS·웹만)는 SOCIAL_PROVIDERS 에서 관리한다.
 export const socialProviderSchema = z.enum(["google", "kakao", "apple"]);
 export type SocialProvider = z.infer<typeof socialProviderSchema>;
 
