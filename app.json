@@ -2,6 +2,12 @@
   "expo": {
     "name": "링띵동",
     "slug": "promise9-web",
+    "locales": {
+      "ko": {
+        "CFBundleName": "링띵동",
+        "CFBundleDisplayName": "링띵동"
+      }
+    },
     "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -11,8 +17,7 @@
       "bundleIdentifier": "com.mashup.promise9",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "CFBundleDisplayName": "링띵동",
-        "CFBundleName": "링띵동"
+        "CFBundleDisplayName": "링띵동"
       },
       "config": {
         "usesNonExemptEncryption": false
