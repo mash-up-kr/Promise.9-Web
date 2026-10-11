@@ -185,7 +185,8 @@
             ]
           }
         }
-      ]
+      ],
+      "./plugins/withIosPodDeploymentTarget"
     ],
     "experiments": {
       "typedRoutes": true,
