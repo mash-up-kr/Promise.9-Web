@@ -47,6 +47,31 @@ eas whoami                # 로그인 확인
 
 심사 통과 전에 `main` 에 머지하지 않는다. 리젝되면 웹에만 새 버전이 나가 있는 상태가 된다.
 
+### 업데이트 안내 기준 올리기 (`public/app-release.json`)
+
+앱은 실행마다 `https://link-ding-dong.com/app-release.json` 을 읽어 업데이트 안내를 띄운다
+(`src/features/app-notice/`). 웹 배포에 실려 나가는 파일이라 앱을 다시 올리지 않고도 기준을 바꿀 수 있다.
+
+- `latestVersion` — **스토어에 실제로 풀린 뒤** 올린다. 심사 통과 전에 올리면 받을 수 없는 버전으로
+  업데이트를 유도한다(`appRelease.manifest.test.ts` 가 `app.json` 버전을 넘지 못하게 막는다).
+- `minSupportedVersion` — 구버전을 더는 받을 수 없을 때만 올린다. 올리면 그보다 낮은 버전은
+  **닫을 수 없는** 안내로 막힌다.
+- 바꾼 뒤 `pnpm deploy` 로 웹을 배포해야 적용된다(`main` 머지 시 자동 배포에 포함된다).
+
+**시뮬·에뮬에서 안내를 재현하려면** 기준 파일을 로컬에서 서빙하고 주소를 갈아끼운다
+(`.env.local` 의 `EXPO_PUBLIC_APP_RELEASE_URL` — 개발 빌드에서만 먹는다):
+
+```bash
+python3 -m http.server 8788 -d public
+# .env.local — iOS 시뮬: localhost / Android 에뮬: 10.0.2.2
+EXPO_PUBLIC_APP_RELEASE_URL=http://localhost:8788/app-release.json
+```
+
+그 파일의 `latestVersion` 을 `app.json` 버전보다 높이면 권장 안내, `minSupportedVersion` 을 높이면
+필수(차단) 안내가 뜬다. 기준 조회는 **실행당 1회**라 바꾼 뒤 앱을 완전히 리로드해야 다시 판단한다.
+"나중에" 기록이 남아 안내가 안 뜨면 앱을 지우고 다시 설치한다
+(`xcrun simctl uninstall booted com.mashup.promise9` · `adb uninstall com.mashup.promise9`).
+
 ### 익스텐션 릴리즈
 
 `release/ext-<version>` 에서 `extension/package.json` 의 `version` 을 올리고, zip 을 만들어 업로드한 뒤 심사 통과 후 `main` 에 머지한다.
