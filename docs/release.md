@@ -100,6 +100,25 @@ EXPO_PUBLIC_APP_RELEASE_URL=http://localhost:8788/app-release.json
 - `src/features/app-notice/appRelease.manifest.test.ts` — `latestVersion` 이 `app.json` 버전을 넘으면 실패(아직 받을 수 없는 버전으로 유도 금지), `minSupportedVersion` > `latestVersion` 도 실패. 심사 중이라 `app.json` 만 앞서 있는 상태는 정상이다.
 - `app.config.test.js` — `app.json` 에 스토어 주소(`ios.appStoreUrl` · `android.playStoreUrl`)가 있는지. 빠지면 업데이트 버튼과 인앱 리뷰가 둘 다 조용히 아무 일도 안 한다.
 
+**지금 방식 한 줄 요약**
+
+> 서버 API·Remote Config 없이, 웹 배포에 실어 보내는 **원격 정적 JSON 기반 클라이언트 버전 게이트**.
+> (대안이던 Firebase Remote Config 는 분석 SDK 를 하나도 안 쓰는 현 구성에 SDK 를 들이게 돼 뺐고,
+> 스토어 조회 API 방식은 Play 에 공식 API 가 없어 뺐다.)
+
+**나중에 서버로 옮길 때 — 서버에 이렇게 요청한다**
+
+기준을 바꾸려면 웹 배포가 필요하고, 차단이 클라이언트 판단이라 오프라인이면 지나간다(fail-open).
+서버가 구버전을 **정말로** 못 받는 시점(응답 계약 변경·보안 패치)이 오면 아래 둘을 요청한다:
+
+1. `GET /app/version?platform=ios|android` — `latestVersion` · `minSupportedVersion` 을 내려준다.
+   값의 의미는 지금 JSON 과 같게 가져간다.
+2. **모든 요청의 `X-App-Version` 헤더를 보고 지원하지 않는 버전은 서버가 거부**(전용 `errorCode`).
+   1번만으로는 안내만 하고 실제 차단은 못 한다 — 차단은 서버가, 이유 설명은 모달이 맡는 구조가 맞다.
+
+클라이언트에서 바꿀 곳은 조회 한 군데(`src/features/app-notice/api/appNotice.queries.ts`)와 그 errorCode
+판별(`shared/entities/`)뿐이다. 판정 로직·모달·스누즈는 그대로 쓴다.
+
 ### 익스텐션 릴리즈
 
 `release/ext-<version>` 에서 `extension/package.json` 의 `version` 을 올리고, zip 을 만들어 업로드한 뒤 심사 통과 후 `main` 에 머지한다.
