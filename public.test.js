@@ -83,6 +83,21 @@ describe("index.html 메타", () => {
     expect(html).toMatch(/<html lang="ko">/);
     expect(html).toContain('<div id="root"></div>');
   });
+
+  // iOS Safari 는 16px 미만 인풋에 포커스하면 화면을 확대한다(인풋 본문 14px).
+  test("인풋 포커스 시 화면이 확대되지 않게 최대 배율을 1로 고정한다", () => {
+    const viewport = metaContent(html, "name", "viewport")
+      ?.split(",")
+      .map((entry) => entry.trim());
+
+    expect(viewport).toEqual(
+      expect.arrayContaining([
+        "width=device-width",
+        "initial-scale=1",
+        "maximum-scale=1",
+      ]),
+    );
+  });
 });
 
 describe("검색 노출", () => {

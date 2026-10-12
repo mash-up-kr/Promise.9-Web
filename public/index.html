@@ -3,7 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <!-- iOS Safari 는 16px 미만 인풋에 포커스하면 화면을 확대한다 — 최대 배율을 1로 막는다.
+         iOS 는 사용자 핀치 줌을 그대로 허용하고, Android 는 핀치 줌까지 막힌다(#136). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no" />
     <title>링띵동 - 링크 저장과 재발견</title>
     <!-- 웹은 SPA 라 모든 경로가 이 HTML 을 받는다. 미리보기 봇은 JS 를 실행하지 않으므로 메타는 여기 고정한다.
          문구는 스토어(store.config.base.json)와 맞춘다. -->
