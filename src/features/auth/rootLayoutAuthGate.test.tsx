@@ -25,10 +25,12 @@ jest.mock("@/features/splash/components/SplashOverlay", () => ({
   SplashOverlay: () => null,
 }));
 
+import { userEvent } from "@testing-library/react-native";
 import { Slot } from "expo-router";
 import { renderRouter, screen } from "expo-router/testing-library";
 import { Text } from "react-native";
 import RootLayout from "@/app/_layout";
+import NotFoundRoute from "@/app/+not-found";
 import AuthLayout from "@/app/(auth)/_layout";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
 
@@ -58,6 +60,7 @@ const routes = {
   "settings/terms": label("terms"),
   "settings/withdraw": label("withdraw"),
   support: label("support"),
+  "+not-found": NotFoundRoute,
 };
 
 // 앱 스킴으로는 (tabs) 밖 라우트도 바로 열린다 — 어느 라우트로 들어오든 로그인 안 된 상태면 로그인이 먼저다.
@@ -112,5 +115,30 @@ describe("RootLayout — 보호 라우트", () => {
     mockUseAuthGate.mockReturnValue("unauthenticated");
     await renderRouter(routes, { initialUrl: "/create-link?share=6162" });
     expect(await screen.findByText("create-link")).toBeOnTheScreen();
+  });
+});
+
+describe("RootLayout — 없는 경로", () => {
+  test.each([
+    "authenticated",
+    "unauthenticated",
+  ] as const)("%s 상태에서 없는 경로로 들어오면 404 화면이 뜬다", async (status) => {
+    mockUseAuthGate.mockReturnValue(status);
+    await renderRouter(routes, { initialUrl: "/no-such-page" });
+    expect(
+      await screen.findByText("페이지를 찾을 수 없어요"),
+    ).toBeOnTheScreen();
+  });
+
+  test("로그인 안 된 상태에서 404 의 로그인하러 가기를 누르면 로그인 화면이 뜬다", async () => {
+    mockUseAuthGate.mockReturnValue("unauthenticated");
+    const user = userEvent.setup();
+    await renderRouter(routes, { initialUrl: "/no-such-page" });
+
+    await user.press(
+      await screen.findByRole("button", { name: "로그인하러 가기" }),
+    );
+
+    expect(await screen.findByText("login")).toBeOnTheScreen();
   });
 });
