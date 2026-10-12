@@ -43,9 +43,81 @@ eas whoami                # 로그인 확인
 3. EAS 빌드·제출한다(2장).
 4. 심사 중 버그는 **`dev` 에 먼저 고치고 릴리즈 브랜치로 cherry-pick** 한다.
 5. **심사 통과 후** `main` 에 머지한다 → 웹 배포 + 태그·GitHub Release 자동 생성.
-6. 자동 생성된 `chore: main 을 dev 로 동기화` PR 을 **"Create a merge commit" 으로** 머지한다. squash 로 머지하면 `main` 의 커밋이 `dev` 에서 도달 불가라 동기화 감지기가 이후 계속 오탐한다.
+6. **스토어에 실제로 풀린 것을 확인한 뒤** `public/app-release.json` 의 `latestVersion` 을 올리고 배포한다(아래 "업데이트 안내 기준"). 이걸 빠뜨리면 구버전 사용자에게 업데이트 안내가 영영 안 뜬다.
+7. 자동 생성된 `chore: main 을 dev 로 동기화` PR 을 **"Create a merge commit" 으로** 머지한다. squash 로 머지하면 `main` 의 커밋이 `dev` 에서 도달 불가라 동기화 감지기가 이후 계속 오탐한다.
 
 심사 통과 전에 `main` 에 머지하지 않는다. 리젝되면 웹에만 새 버전이 나가 있는 상태가 된다.
+
+### 업데이트 안내 기준 올리기 (`public/app-release.json`)
+
+앱은 실행마다 `https://link-ding-dong.com/app-release.json` 을 읽어 업데이트 안내를 띄운다
+(`src/features/app-notice/`). 웹 배포에 실려 나가는 파일이라 앱을 다시 올리지 않고도 기준을 바꿀 수 있다
+— 기준을 앱 번들에 박으면 구버전이 새 기준을 영영 모르기 때문이다. 서버 API 에는 해당 엔드포인트가 없다.
+
+플랫폼별로 나뉘어 있다(심사 통과 시점과 Play 롤아웃 시점이 다르다). 앱은 자기 플랫폼 블록만 읽는다:
+
+```json
+{ "ios": { "latestVersion": "1.1.0", "minSupportedVersion": "1.0.0" }, "android": { ... } }
+```
+
+**무엇이 뜨는지** (설치 버전 = `app.json` 의 `version`):
+
+| 조건 | 사용자가 보는 것 |
+|------|------------------|
+| 설치 < `minSupportedVersion` | 차단 안내 — 버튼은 "업데이트" 하나, 배경·뒤로 가기로 닫히지 않는다 |
+| `minSupportedVersion` ≤ 설치 < `latestVersion` | 권장 안내 — "나중에" 로 건너뛸 수 있다 |
+| 설치 ≥ `latestVersion` | 아무것도 안 뜬다 |
+| 기준을 못 읽음(오프라인·404·깨진 JSON) | 아무것도 안 뜬다 (안내 때문에 앱을 막지 않는다) |
+
+- `latestVersion` — **스토어에 실제로 풀린 뒤** 올린다. 심사 통과 전에 올리면 받을 수 없는 버전으로
+  업데이트를 유도한다(`appRelease.manifest.test.ts` 가 `app.json` 버전을 넘지 못하게 막는다).
+- `minSupportedVersion` — 구버전을 더는 받을 수 없을 때만 올린다. 올리면 그보다 낮은 버전은
+  **닫을 수 없는** 안내로 막힌다.
+- 바꾼 뒤 `pnpm deploy` 로 웹을 배포해야 적용된다(`main` 머지 시 자동 배포에 포함된다).
+
+**시뮬·에뮬에서 안내를 재현하려면** 기준 파일을 로컬에서 서빙하고 주소를 갈아끼운다
+(`.env.local` 의 `EXPO_PUBLIC_APP_RELEASE_URL` — 개발 빌드에서만 먹는다):
+
+```bash
+python3 -m http.server 8788 -d public
+# .env.local — iOS 시뮬: localhost / Android 에뮬: 10.0.2.2
+EXPO_PUBLIC_APP_RELEASE_URL=http://localhost:8788/app-release.json
+```
+
+그 파일의 `latestVersion` 을 `app.json` 버전보다 높이면 권장 안내, `minSupportedVersion` 을 높이면
+필수(차단) 안내가 뜬다.
+
+**안내가 안 뜰 때 확인할 것**
+
+- 기준 조회는 **실행당 1회**다(쓰는 도중에 모달이 끼어들지 않게). 기준을 바꿨으면 앱을 완전히 다시 켠다 — Fast Refresh 로는 안 바뀐다.
+- "나중에" 는 그때의 `latestVersion` 을 기기에 적어두고 **그 버전 동안** 다시 띄우지 않는다. 다음 릴리즈로 `latestVersion` 이 올라가면 다시 뜬다. 검증 중이라면 앱을 지우고 다시 설치한다(`xcrun simctl uninstall booted com.mashup.promise9` · `adb uninstall com.mashup.promise9`).
+- 차단 안내에는 스누즈가 없다 — "나중에" 로 건너뛴 기록이 있어도 뜬다.
+- 웹·공유 익스텐션에서는 아무것도 뜨지 않는다(스토어가 없다).
+- 기준 파일을 바꾸고 배포를 안 했는지 본다. 앱이 읽는 건 배포된 `https://link-ding-dong.com/app-release.json` 이지 레포의 파일이 아니다.
+
+**실수를 막는 장치** (CI 에서 돈다)
+
+- `src/features/app-notice/appRelease.manifest.test.ts` — `latestVersion` 이 `app.json` 버전을 넘으면 실패(아직 받을 수 없는 버전으로 유도 금지), `minSupportedVersion` > `latestVersion` 도 실패. 심사 중이라 `app.json` 만 앞서 있는 상태는 정상이다.
+- `app.config.test.js` — `app.json` 에 스토어 주소(`ios.appStoreUrl` · `android.playStoreUrl`)가 있는지. 빠지면 업데이트 버튼과 인앱 리뷰가 둘 다 조용히 아무 일도 안 한다.
+
+**지금 방식 한 줄 요약**
+
+> 서버 API·Remote Config 없이, 웹 배포에 실어 보내는 **원격 정적 JSON 기반 클라이언트 버전 게이트**.
+> (대안이던 Firebase Remote Config 는 분석 SDK 를 하나도 안 쓰는 현 구성에 SDK 를 들이게 돼 뺐고,
+> 스토어 조회 API 방식은 Play 에 공식 API 가 없어 뺐다.)
+
+**나중에 서버로 옮길 때 — 서버에 이렇게 요청한다**
+
+기준을 바꾸려면 웹 배포가 필요하고, 차단이 클라이언트 판단이라 오프라인이면 지나간다(fail-open).
+서버가 구버전을 **정말로** 못 받는 시점(응답 계약 변경·보안 패치)이 오면 아래 둘을 요청한다:
+
+1. `GET /app/version?platform=ios|android` — `latestVersion` · `minSupportedVersion` 을 내려준다.
+   값의 의미는 지금 JSON 과 같게 가져간다.
+2. **모든 요청의 `X-App-Version` 헤더를 보고 지원하지 않는 버전은 서버가 거부**(전용 `errorCode`).
+   1번만으로는 안내만 하고 실제 차단은 못 한다 — 차단은 서버가, 이유 설명은 모달이 맡는 구조가 맞다.
+
+클라이언트에서 바꿀 곳은 조회 한 군데(`src/features/app-notice/api/appNotice.queries.ts`)와 그 errorCode
+판별(`shared/entities/`)뿐이다. 판정 로직·모달·스누즈는 그대로 쓴다.
 
 ### 익스텐션 릴리즈
 

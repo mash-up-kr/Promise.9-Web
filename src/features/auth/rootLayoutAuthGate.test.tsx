@@ -9,6 +9,10 @@ jest.mock("@shared/api", () => ({
 }));
 // 루트 레이아웃이 불러오는 전역 CSS 는 jest 가 파싱하지 못한다.
 jest.mock("@/global.css", () => ({}));
+// 루트의 업데이트 안내가 안내 기록(AsyncStorage)을 읽는다 — 네이티브 저장소 대신 공식 jest mock.
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 // 네트워크·포커스 배선은 네이티브 리스너라 jest 에 없다 — 이 테스트의 관심사도 아니다.
 jest.mock("@/lib/online-manager", () => ({ setupOnlineManager: jest.fn() }));
 jest.mock("@/lib/focus-manager", () => ({ setupFocusManager: jest.fn() }));

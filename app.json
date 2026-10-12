@@ -67,7 +67,8 @@
             ]
           }
         ]
-      }
+      },
+      "appStoreUrl": "https://apps.apple.com/app/id6808223727"
     },
     "android": {
       "package": "com.mashup.promise9",
@@ -82,7 +83,8 @@
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
-      ]
+      ],
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.mashup.promise9"
     },
     "web": {
       "output": "single",
@@ -183,7 +185,8 @@
             ]
           }
         }
-      ]
+      ],
+      "./plugins/withIosPodDeploymentTarget"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -34,11 +34,15 @@ jest.mock("expo-clipboard", () => ({
 jest.mock("@shared/api", () => ({
   apiClient: { get: jest.fn(), post: jest.fn() },
 }));
+// 저장 성공은 후기 요청을 가늠하는 시점이다 — 네이티브 모듈을 타지 않게 판단 함수만 목한다.
+jest.mock("@/features/app-notice/reviewPrompt", () => ({
+  requestReviewAfterSave: jest.fn().mockResolvedValue(false),
+}));
 
 import { apiClient } from "@shared/api";
-
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { encodeSharedUrl } from "@/constants/routes.constants";
+import { requestReviewAfterSave } from "@/features/app-notice/reviewPrompt";
 
 import { CreateLinkSheet } from "./CreateLinkSheet";
 
@@ -205,6 +209,15 @@ describe("CreateLinkSheet", () => {
     );
     expect(await screen.findByText("링크를 저장했어요")).toBeTruthy();
     await waitFor(() => expect(mockDispatch).toHaveBeenCalled());
+  });
+
+  test("저장 성공 → 후기 요청 시점인지 확인한다", async () => {
+    await renderSheet();
+    await fillValidUrl();
+
+    await pressSave();
+
+    await waitFor(() => expect(requestReviewAfterSave).toHaveBeenCalled());
   });
 
   test("'폴더 추가'를 누르면 폴더 생성 화면으로 이동한다", async () => {
