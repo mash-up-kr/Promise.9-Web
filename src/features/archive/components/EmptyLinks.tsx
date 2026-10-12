@@ -1,6 +1,5 @@
+import { EmptyState } from "@promise9/ui/empty-state/EmptyState";
 import { View } from "react-native";
-
-import { EmptyState } from "@/components/ui/empty-state/EmptyState";
 import { useHeaderHeight } from "@/components/ui/header/Header";
 import { Illustration } from "@/components/ui/illustration/Illustration";
 

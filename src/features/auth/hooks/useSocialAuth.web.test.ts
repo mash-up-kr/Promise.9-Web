@@ -29,6 +29,7 @@ interface FakeWindow {
   addEventListener: jest.Mock;
   removeEventListener: jest.Mock;
   location: { origin: string };
+  AppleID?: FakeAppleSdk;
 }
 
 let fakeWindow: FakeWindow;
@@ -56,7 +57,23 @@ function installFakeWindow() {
     configurable: true,
     value: fakeWindow,
   });
+  // 훅이 마운트 시 애플 SDK 를 미리 받으려 document 를 만진다 — 환경의 document 유무에 테스트가
+  // 좌우되지 않게, 기본은 즉시 실패(onerror)하는 문서를 심는다. 로드가 필요한 테스트만 덮어쓴다.
+  installFakeDocument((script) => script.onerror?.());
 }
+
+const ORIGINAL_DOCUMENT = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "document",
+);
+
+afterEach(() => {
+  if (ORIGINAL_DOCUMENT) {
+    Object.defineProperty(globalThis, "document", ORIGINAL_DOCUMENT);
+  } else {
+    delete (globalThis as { document?: unknown }).document;
+  }
+});
 
 function emitMessage(data: unknown, origin = ORIGIN) {
   messageListener?.({ data, origin } as MessageEvent);
@@ -181,8 +198,40 @@ describe("useSocialAuth (웹)", () => {
     await expect(promise).rejects.toThrow();
   });
 
-  // 응답이 끝내 오지 않으면(사용자가 팝업을 닫았거나 멈춤) 타임아웃으로 조용히 종료한다.
-  // COOP 환경에선 popup.closed 로 종료를 신뢰성 있게 감지할 수 없어 타임아웃이 유일한 취소 신호다.
+  // 사용자가 팝업을 닫으면 부모 창엔 아무 이벤트도 오지 않는다 — popup.closed 폴링이 유일한 신호다.
+  // (Apple JS SDK 도 같은 방식으로 popup_closed_by_user 를 낸다.)
+  it("팝업을 닫으면 곧 SocialLoginCancelledError 로 끝난다", async () => {
+    jest.useFakeTimers();
+    const { result } = await renderHook(() => useSocialAuth());
+
+    const promise = result.current.getIdToken("google");
+    promise.catch(() => {}); // 타이머 진행 전에 unhandled rejection 으로 잡히지 않도록.
+    popup.closed = true;
+    jest.advanceTimersByTime(2 * 1000);
+
+    await expect(promise).rejects.toBeInstanceOf(SocialLoginCancelledError);
+    jest.useRealTimers();
+  });
+
+  // 콜백 페이지는 postMessage 직후 창을 닫는다 — 닫힘을 먼저 봤더라도 짧은 유예 안에 온 응답은 살린다.
+  it("팝업이 닫힌 직후 도착한 응답은 살린다", async () => {
+    jest.useFakeTimers();
+    const { result } = await renderHook(() => useSocialAuth());
+
+    const promise = result.current.getIdToken("google");
+    popup.closed = true;
+    jest.advanceTimersByTime(500); // 폴링이 닫힘을 감지한 뒤, 유예가 끝나기 전
+    emitMessage({
+      source: "promise9-google-auth",
+      idToken: "web-id-token",
+      state: sentState(),
+    });
+
+    await expect(promise).resolves.toBe("web-id-token");
+    jest.useRealTimers();
+  });
+
+  // 닫힘도 응답도 없이 멈춘 경우의 최후 안전장치 — 타임아웃으로 조용히 종료한다.
   it("응답 없이 타임아웃되면 SocialLoginCancelledError 로 끝난다", async () => {
     jest.useFakeTimers();
     const { result } = await renderHook(() => useSocialAuth());
@@ -193,29 +242,6 @@ describe("useSocialAuth (웹)", () => {
 
     await expect(promise).rejects.toBeInstanceOf(SocialLoginCancelledError);
     jest.useRealTimers();
-  });
-
-  // 회귀: COOP(Cross-Origin-Opener-Policy)가 켜진 구글 페이지는 opener 관계를 끊고, Chrome 은
-  // 그 팝업의 popup.closed 를 (예외가 아니라) true 로 돌려준다. 예전 폴링 구현은 이를 "닫힘"으로
-  // 오판해 로그인 진행 중에 취소해버렸다. 이제 popup.closed 를 보지 않으므로, closed 가 true 라도
-  // 뒤늦게 온 idToken 을 그대로 살려야 한다.
-  it("COOP 로 popup.closed 가 true 여도 뒤늦은 idToken 을 살린다", async () => {
-    jest.useFakeTimers();
-    popup.closed = true;
-    const { result } = await renderHook(() => useSocialAuth());
-
-    const promise = result.current.getIdToken("google");
-    // 동의 화면을 거치느라 오래 걸리는 상황(예전 폴링 주기 400ms 를 훨씬 초과).
-    jest.advanceTimersByTime(30 * 1000);
-    jest.useRealTimers();
-
-    emitMessage({
-      source: "promise9-google-auth",
-      idToken: "web-id-token",
-      state: sentState(),
-    });
-
-    await expect(promise).resolves.toBe("web-id-token");
   });
 });
 
@@ -316,7 +342,21 @@ describe("useSocialAuth 카카오 (웹)", () => {
     await expect(promise).rejects.toThrow();
   });
 
-  // 구글 웹과 동일 — COOP 로 popup.closed 를 못 믿으므로, 응답이 오지 않으면 타임아웃으로 종료한다.
+  it("팝업을 닫으면 곧 SocialLoginCancelledError 로 끝난다", async () => {
+    jest.useFakeTimers();
+    const { result } = await renderHook(() => useSocialAuth());
+
+    const promise = result.current.getIdToken("kakao");
+    promise.catch(() => {}); // 타이머 진행 전에 unhandled rejection 으로 잡히지 않도록.
+    popup.closed = true;
+    jest.advanceTimersByTime(2 * 1000);
+
+    await expect(promise).rejects.toBeInstanceOf(SocialLoginCancelledError);
+    expect(mockPost).not.toHaveBeenCalled();
+    jest.useRealTimers();
+  });
+
+  // 구글 웹과 동일 — 닫힘도 응답도 없이 멈춘 경우의 최후 안전장치.
   it("응답 없이 타임아웃되면 SocialLoginCancelledError 로 끝난다", async () => {
     jest.useFakeTimers();
     const { result } = await renderHook(() => useSocialAuth());
@@ -327,5 +367,176 @@ describe("useSocialAuth 카카오 (웹)", () => {
 
     await expect(promise).rejects.toBeInstanceOf(SocialLoginCancelledError);
     jest.useRealTimers();
+  });
+});
+
+const APPLE_SDK_URL =
+  "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js";
+
+interface FakeAppleSdk {
+  auth: { init: jest.Mock; signIn: jest.Mock };
+}
+
+/** 이미 로드된 Apple JS SDK 를 흉내낸다. signIn 은 init 에 넘긴 state 를 그대로 돌려준다(정상 응답). */
+function installFakeAppleSdk(): FakeAppleSdk {
+  const init = jest.fn();
+  const signIn = jest.fn(async () => ({
+    authorization: {
+      code: "apple-code",
+      id_token: "apple-web-id-token",
+      state: init.mock.calls[0]?.[0]?.state,
+    },
+  }));
+  const sdk = { auth: { init, signIn } };
+  fakeWindow.AppleID = sdk;
+  return sdk;
+}
+
+interface FakeScript {
+  src?: string;
+  onload?: () => void;
+  onerror?: () => void;
+}
+
+/** SDK 스크립트 로드를 흉내낸다 — appendChild 시점에 onAppend 가 성공(onload)/실패(onerror)를 정한다. */
+function installFakeDocument(onAppend: (script: FakeScript) => void) {
+  const fakeDocument = {
+    createElement: jest.fn((): FakeScript => ({})),
+    head: { appendChild: jest.fn(onAppend) },
+  };
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: fakeDocument,
+  });
+  return fakeDocument;
+}
+
+describe("useSocialAuth 애플 (웹)", () => {
+  beforeEach(() => {
+    installFakeWindow();
+    process.env.EXPO_PUBLIC_APPLE_SERVICES_ID = "apple-services-id";
+  });
+
+  it("SDK 가 돌려준 id_token 을 반환한다", async () => {
+    installFakeAppleSdk();
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).resolves.toBe(
+      "apple-web-id-token",
+    );
+  });
+
+  // 서버가 email 클레임을 요구하므로 scope 를 빼면 안 되고, 정적 호스팅이라 form_post 리다이렉트를
+  // 받을 수 없어 usePopup 이어야 한다. redirectURI 는 Apple 콘솔에 등록한 Return URL 과 같아야 한다.
+  it("Services ID·redirectURI·scope·usePopup 으로 init 한다", async () => {
+    const sdk = installFakeAppleSdk();
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await result.current.getIdToken("apple");
+
+    expect(sdk.auth.init).toHaveBeenCalledWith(
+      expect.objectContaining({
+        clientId: "apple-services-id",
+        redirectURI: `${ORIGIN}/login`,
+        scope: "name email",
+        usePopup: true,
+        state: expect.any(String),
+      }),
+    );
+  });
+
+  it("Services ID 가 없으면 명시적 에러를 던진다", async () => {
+    installFakeAppleSdk();
+    process.env.EXPO_PUBLIC_APPLE_SERVICES_ID = "";
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).rejects.toThrow(
+      "EXPO_PUBLIC_APPLE_SERVICES_ID",
+    );
+  });
+
+  // state 불일치는 CSRF 의심 — 받은 토큰을 쓰지 않는다(구글·카카오 웹과 동일).
+  it("state 가 다르면 토큰을 쓰지 않고 실패시킨다", async () => {
+    const sdk = installFakeAppleSdk();
+    sdk.auth.signIn.mockResolvedValueOnce({
+      authorization: {
+        code: "apple-code",
+        id_token: "apple-web-id-token",
+        state: "tampered-state",
+      },
+    });
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).rejects.toThrow("state");
+  });
+
+  it.each([
+    "popup_closed_by_user",
+    "user_cancelled_authorize",
+  ])("사용자가 취소하면(%s) SocialLoginCancelledError 로 끝난다", async (error) => {
+    const sdk = installFakeAppleSdk();
+    sdk.auth.signIn.mockRejectedValueOnce({ error });
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).rejects.toBeInstanceOf(
+      SocialLoginCancelledError,
+    );
+  });
+
+  it("팝업이 차단되면 에러를 던진다", async () => {
+    const sdk = installFakeAppleSdk();
+    sdk.auth.signIn.mockRejectedValueOnce({
+      error: "popup_blocked_by_browser",
+    });
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).rejects.toThrow("팝업");
+  });
+
+  /** 마운트 시 미리 받기가 시작돼 아직 진행 중인 상태(스크립트는 꽂혔고 onload 전)를 만든다. */
+  async function renderWhileSdkLoading() {
+    let script: FakeScript | undefined;
+    const fakeDocument = installFakeDocument((appended) => {
+      script = appended;
+    });
+    const { result } = await renderHook(() => useSocialAuth());
+    return { result, fakeDocument, finishLoad: () => script?.onload?.() };
+  }
+
+  // 미리 받기가 끝나기 전에 클릭하면 진행 중인 로드를 기다렸다가 이어간다 — 태그를 또 꽂지 않는다.
+  it("SDK 로드 중에 클릭하면 로드를 기다린 뒤 로그인한다", async () => {
+    const { result, fakeDocument, finishLoad } = await renderWhileSdkLoading();
+
+    const promise = result.current.getIdToken("apple");
+    installFakeAppleSdk();
+    finishLoad();
+
+    await expect(promise).resolves.toBe("apple-web-id-token");
+    expect(fakeDocument.createElement).toHaveBeenCalledWith("script");
+    expect(fakeDocument.head.appendChild).toHaveBeenCalledTimes(1);
+    expect(fakeDocument.head.appendChild).toHaveBeenCalledWith(
+      expect.objectContaining({ src: APPLE_SDK_URL }),
+    );
+  });
+
+  // 로드를 기다리는 사이 클릭 제스처가 만료돼 팝업이 막힌 것 — 브라우저 설정 안내가 아니라 재시도 안내여야 한다.
+  it("SDK 로드를 기다린 뒤 팝업이 막히면 재시도를 안내한다", async () => {
+    const { result, finishLoad } = await renderWhileSdkLoading();
+
+    const promise = result.current.getIdToken("apple");
+    const sdk = installFakeAppleSdk();
+    sdk.auth.signIn.mockRejectedValueOnce({
+      error: "popup_blocked_by_browser",
+    });
+    finishLoad();
+
+    await expect(promise).rejects.toThrow("다시 시도");
+  });
+
+  it("스크립트 로드에 실패하면 에러를 던진다", async () => {
+    installFakeDocument((script) => script.onerror?.());
+    const { result } = await renderHook(() => useSocialAuth());
+
+    await expect(result.current.getIdToken("apple")).rejects.toThrow("SDK");
   });
 });

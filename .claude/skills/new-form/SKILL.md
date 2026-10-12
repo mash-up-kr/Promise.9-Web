@@ -42,7 +42,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { Pressable, Text, View } from 'react-native';
 
-import { Input, InputField } from '@/components/ui/input/Input';
+import { Input, InputField } from '@promise9/ui/input/Input';
 
 import { CreateLinkSchema, type CreateLinkFormValues } from '../api/link.contracts';
 import { useCreateLinkMutation } from '../api/link.queries';

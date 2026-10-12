@@ -1,10 +1,10 @@
+import { FolderIcon } from "@promise9/ui/icon/FolderIcon";
+import { Icon } from "@promise9/ui/icon/Icon";
+import { Text } from "@promise9/ui/text/Text";
 import { FOLDER_TONE_HEX } from "@shared/folder/folder.constants";
 import type { FolderColor, LinkFolderRef } from "@shared/types/link.types";
 import { ChevronRight } from "lucide-react-native";
 import { Pressable, View } from "react-native";
-import { FolderIcon } from "@/components/ui/icon/FolderIcon";
-import { Icon } from "@/components/ui/icon/Icon";
-import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
 
 const badgeStyles = tv({

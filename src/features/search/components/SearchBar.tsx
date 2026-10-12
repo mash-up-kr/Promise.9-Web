@@ -1,8 +1,7 @@
+import { Icon } from "@promise9/ui/icon/Icon";
+import { Input, InputField, InputSlot } from "@promise9/ui/input/Input";
 import { Search } from "lucide-react-native";
 import type { TextInputProps } from "react-native";
-
-import { Icon } from "@/components/ui/icon/Icon";
-import { Input, InputField, InputSlot } from "@/components/ui/input/Input";
 import { tv } from "@/lib/tv";
 
 const searchBarStyles = tv({

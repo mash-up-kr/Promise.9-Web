@@ -1,4 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ActionButton } from "@promise9/ui/action-button/ActionButton";
+import { Input, InputField } from "@promise9/ui/input/Input";
+import { Text } from "@promise9/ui/text/Text";
 import { isDuplicateFolderNameError } from "@shared/entities/folder/folder.errors";
 import {
   type CreateFolderInput,
@@ -6,11 +9,8 @@ import {
 } from "@shared/folder/folder.contracts";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { View } from "react-native";
-import { ActionButton } from "@/components/ui/action-button/ActionButton";
+import { Keyboard, View } from "react-native";
 import { Dialog } from "@/components/ui/dialog/Dialog";
-import { Input, InputField } from "@/components/ui/input/Input";
-import { Text } from "@/components/ui/text/Text";
 import { DuplicateFolderNameAlert } from "./DuplicateFolderNameAlert";
 import { FolderColorPicker } from "./FolderColorPicker";
 
@@ -65,13 +65,15 @@ export function FolderFormCard({
         setIsDuplicateOpen(true);
         return;
       }
+      // 앱 호출부는 화면 아래 스낵바로 알린다 — 키보드가 올라와 있으면 가려 먼저 내린다.
+      Keyboard.dismiss();
       onError(error);
     }
   });
 
   return (
     <>
-      <Dialog onDismiss={onClose}>
+      <Dialog onDismiss={onClose} hasTextInput>
         {/* Figma Card: gray-800 + white-05 테두리, radius 36, padding 20, 최대 폭 335. */}
         <View className="w-full max-w-[335px] gap-10 rounded-[36px] border border-opacity-white-05 bg-gray-800 p-5">
           <View className="gap-4">

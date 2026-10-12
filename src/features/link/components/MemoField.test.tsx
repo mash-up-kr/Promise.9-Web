@@ -1,7 +1,9 @@
 import BottomSheet from "@gorhom/bottom-sheet";
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { createRef } from "react";
+import type { TextInput } from "react-native";
 
-import { MemoField } from "./MemoField";
+import { MemoField, SheetTextInput } from "./MemoField";
 
 const PLACEHOLDER = "저장한 이유나 기억하고 싶은 점을 적어보세요";
 
@@ -94,5 +96,20 @@ describe("바텀시트 안팎의 입력 컴포넌트", () => {
     expect(
       screen.getByPlaceholderText(PLACEHOLDER).props.nativeID,
     ).toBeUndefined();
+  });
+});
+
+describe("SheetTextInput", () => {
+  // gorhom 의 ref 타입(TextInput | undefined)을 RN TextInput 계약으로 감싼다 — 실제 입력까지 ref 가 닿아야 한다.
+  test("객체 ref 에 실제 입력을 넘긴다", async () => {
+    const ref = createRef<TextInput>();
+    await render(<SheetTextInput ref={ref} placeholder={PLACEHOLDER} />);
+    expect(ref.current).not.toBeNull();
+  });
+
+  test("콜백 ref 에도 실제 입력을 넘긴다", async () => {
+    const ref = jest.fn();
+    await render(<SheetTextInput ref={ref} placeholder={PLACEHOLDER} />);
+    expect(ref).toHaveBeenCalledWith(expect.anything());
   });
 });

@@ -14,6 +14,7 @@ jest.mock("@shared/api", () => {
   const errors = jest.requireActual("@shared/api/errors");
   return {
     apiClient: { get: jest.fn(), post: jest.fn() },
+    getPendingRefresh: () => null,
     ...token,
     ...contracts,
     ...errors,
@@ -29,6 +30,8 @@ jest.mock("./useExtensionSocialLogin", () => ({
   useExtensionSocialLogin: () => ({ login: mockLogin, ...mockLoginState }),
 }));
 jest.mock("@/constants/platform.constants", () => ({
+  isShareExtension: jest.requireActual("@/constants/platform.constants")
+    .isShareExtension,
   isIOS: true,
   isAndroid: false,
   isWeb: false,

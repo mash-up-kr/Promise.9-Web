@@ -1,13 +1,13 @@
 import type { SocialProvider } from "@shared/api";
 
-import { isIOS } from "@/constants/platform.constants";
+import { isIOS, isWeb } from "@/constants/platform.constants";
 
 // 서버 계약(POST /auth/social)의 provider 타입을 그대로 쓴다 — 여기서 다시 정의하지 않는다.
 export type { SocialProvider } from "@shared/api";
 
 export interface SocialProviderConfig {
   label: string;
-  // 서버·SDK 연동이 끝난 provider 만 true. 애플은 iOS 네이티브만 지원(아래 isIOS 로).
+  // 서버·SDK 연동이 끝난 provider 만 true. 애플은 iOS 네이티브·웹만 지원(안드로이드 제외).
   enabled: boolean;
 }
 
@@ -17,5 +17,5 @@ export interface SocialProviderConfig {
 export const SOCIAL_PROVIDERS = {
   kakao: { label: "카카오로 계속하기", enabled: true },
   google: { label: "Google로 계속하기", enabled: true },
-  apple: { label: "Apple로 계속하기", enabled: isIOS },
+  apple: { label: "Apple로 계속하기", enabled: isIOS || isWeb },
 } satisfies Record<SocialProvider, SocialProviderConfig>;

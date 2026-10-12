@@ -1,9 +1,9 @@
+import { Icon, type IconComponent } from "@promise9/ui/icon/Icon";
+import { Text } from "@promise9/ui/text/Text";
 import { ArrowUpDown, Ellipsis, Plus } from "lucide-react-native";
 import { Pressable, View } from "react-native";
-import { Icon, type IconComponent } from "@/components/ui/icon/Icon";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Popover } from "@/components/ui/popover/Popover";
-import { Text } from "@/components/ui/text/Text";
 
 // Figma: 화면 우측 9px 여백, 너비 220px (node 13:5000). 세로는 Popover 가 트리거 아래로 붙인다.
 const MENU_ANCHOR = { right: 9 };

@@ -30,8 +30,9 @@ describe("SOCIAL_PROVIDERS.apple (플랫폼 분기)", () => {
     expect(loadProviders("ios").apple.enabled).toBe(true);
   });
 
-  it("웹에선 애플이 비활성이다", () => {
-    expect(loadProviders("web").apple.enabled).toBe(false);
+  // 웹은 Apple JS SDK 로 id_token 을 받는다(useSocialAuth.web.ts) — iOS 와 함께 활성.
+  it("웹에선 애플이 활성이다", () => {
+    expect(loadProviders("web").apple.enabled).toBe(true);
   });
 
   it("안드로이드에선 애플이 비활성이다", () => {

@@ -8,7 +8,11 @@ jest.mock("@shared/api", () => {
 import { ApiError } from "@shared/api";
 import type { AxiosResponse } from "axios";
 
-import { AUTH_ERROR_CODE, isUnsupportedProviderError } from "./auth.errors";
+import {
+  AUTH_ERROR_CODE,
+  isEmailAlreadyRegisteredError,
+  isUnsupportedProviderError,
+} from "./auth.errors";
 
 const apiError = (status: number, errorCode: number) =>
   new ApiError({
@@ -39,5 +43,28 @@ describe("isUnsupportedProviderError", () => {
 
   it("API 에러가 아니면 판별하지 않는다", () => {
     expect(isUnsupportedProviderError(new Error("network"))).toBe(false);
+  });
+});
+
+// 같은 이메일이 다른 provider 로 이미 가입된 경우 — 서버는 계정을 합치지 않고 409 를 돌려준다.
+describe("isEmailAlreadyRegisteredError", () => {
+  it("errorCode 960002 를 판별한다", () => {
+    expect(
+      isEmailAlreadyRegisteredError(
+        apiError(409, AUTH_ERROR_CODE.EMAIL_ALREADY_REGISTERED),
+      ),
+    ).toBe(true);
+  });
+
+  it("다른 errorCode 는 판별하지 않는다", () => {
+    expect(
+      isEmailAlreadyRegisteredError(
+        apiError(400, AUTH_ERROR_CODE.UNSUPPORTED_PROVIDER),
+      ),
+    ).toBe(false);
+  });
+
+  it("API 에러가 아니면 판별하지 않는다", () => {
+    expect(isEmailAlreadyRegisteredError(new Error("network"))).toBe(false);
   });
 });

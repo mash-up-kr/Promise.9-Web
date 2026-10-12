@@ -1,4 +1,4 @@
-import { Chip } from "@/components/ui/chip/Chip";
+import { Chip } from "@promise9/ui/chip/Chip";
 
 export interface SearchChipProps {
   keyword: string;

@@ -23,7 +23,7 @@ jest.mock("./token", () => ({
   runExclusive: jest.fn((run: () => Promise<unknown>) => run()),
 }));
 
-import { refreshAccessToken } from "./refresh";
+import { getPendingRefresh, refreshAccessToken } from "./refresh";
 import { clearTokens, getRefreshToken, runExclusive, setTokens } from "./token";
 
 const okResponse = {
@@ -119,4 +119,21 @@ test("리프레시 토큰은 배타 구간에 들어간 뒤에 읽는다", async
   await pending;
 
   expect(getRefreshToken).toHaveBeenCalled();
+});
+
+test("진행 중인 재발급이 없으면 getPendingRefresh 는 null 이다", () => {
+  expect(getPendingRefresh()).toBeNull();
+});
+
+test("getPendingRefresh 는 진행 중인 재발급이 실패로 끝나도 풀린다", async () => {
+  let reject!: (error: unknown) => void;
+  mockPost.mockReturnValue(new Promise((_, r) => (reject = r)));
+  const refresh = refreshAccessToken();
+  const pending = getPendingRefresh();
+  expect(pending).not.toBeNull();
+
+  reject(axiosStatusError(500));
+  await expect(refresh).rejects.toThrow();
+  await expect(pending).resolves.toBeUndefined();
+  expect(getPendingRefresh()).toBeNull();
 });

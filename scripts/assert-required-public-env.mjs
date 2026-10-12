@@ -25,6 +25,7 @@ const REQUIRED_KEYS = [
   "EXPO_PUBLIC_API_BASE_URL", // 서버 API base URL — 없으면 모든 요청이 깨진다.
   "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID", // 구글 웹 로그인 client_id
   "EXPO_PUBLIC_KAKAO_REST_API_KEY", // 카카오 웹 로그인 authorize client_id
+  "EXPO_PUBLIC_APPLE_SERVICES_ID", // 애플 웹 로그인 client_id(Services ID)
   // 크롬 익스텐션 ID. 없으면 canConnectExtension() 이 false 로 굳어 로그인 인계가
   // 조용히 사라진다(에러도 안 난다) — 위 구글 사고와 같은 모양이라 여기서 막는다.
   "EXPO_PUBLIC_EXTENSION_ID",

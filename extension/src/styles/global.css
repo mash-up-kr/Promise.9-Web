@@ -1,11 +1,28 @@
-@import "tailwindcss";
+/*
+ * `@import "tailwindcss"` 한 줄이면 유틸리티가 `@layer utilities` 에 들어간다. react-native-web 은
+ * 기본 스타일(flex-direction·background·font)을 레이어 밖에 주입하고, 레이어 밖 규칙은 레이어 안
+ * 규칙을 항상 이겨서 @promise9/ui 컴포넌트의 클래스가 전부 무시된다. 앱 `src/global.css` 와 같이
+ * 유틸리티만 레이어 밖에 둔다.
+ */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
 /* 디자인 토큰은 앱·웹과 같은 파일을 쓴다 — 값이 갈라지지 않게. */
 @import "../../../shared/styles/tokens.css";
+
+/* extension/ 밖이라 자동 감지되지 않는다. */
+@source "../../../packages/ui";
+
+/* 앱 `src/global.css` 와 같은 플랫폼 variant — 패키지 컴포넌트가 `web:` 을 쓴다. */
+@custom-variant ios (@media ios);
+@custom-variant android (@media android);
+@custom-variant native (@media native);
+@custom-variant web (@supports selector(div > div));
 
 /*
  * 앱과 같은 Pretendard. 루트 assets 의 ttf 를 Vite 가 번들한다.
  * 타이포 토큰이 쓰는 굵기(400·500·600)만 싣는다 — 700 은 쓰는 토큰이 없다.
- * TODO: ttf 3종이 8MB 가 넘는다. woff2 서브셋으로 줄이기.
+ * TODO: ttf 4종(아래 Bold 포함)이 10MB 가 넘는다. woff2 서브셋으로 줄이기.
  */
 @font-face {
   font-family: "Pretendard";
@@ -23,6 +40,31 @@
   font-family: "Pretendard";
   src: url("../../../assets/fonts/Pretendard-SemiBold.ttf") format("truetype");
   font-weight: 600;
+  font-display: swap;
+}
+/*
+ * 앱은 굵기마다 family 이름이 다른 static 폰트를 쓴다(font-pretendard-medium → "Pretendard-Medium").
+ * 패키지의 Text 가 그 이름을 요청하므로 같은 파일을 그 이름으로도 등록한다.
+ * 타이포 프리셋이 font-weight 도 함께 요청한다 — 실제 굵기를 선언하지 않으면(기본 400)
+ * 브라우저가 이미 굵은 파일 위에 가짜 bold 를 한 번 더 얹는다.
+ */
+@font-face {
+  font-family: "Pretendard-Medium";
+  src: url("../../../assets/fonts/Pretendard-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Pretendard-SemiBold";
+  src: url("../../../assets/fonts/Pretendard-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-display: swap;
+}
+/* 타이포 토큰은 700 을 안 쓰지만 공유 Text 의 `bold` 가 이 family 를 요청한다. 파일은 쓰일 때만 로드된다. */
+@font-face {
+  font-family: "Pretendard-Bold";
+  src: url("../../../assets/fonts/Pretendard-Bold.ttf") format("truetype");
+  font-weight: 700;
   font-display: swap;
 }
 @layer base {

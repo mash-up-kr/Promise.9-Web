@@ -1,8 +1,7 @@
+import type { IconComponent } from "@promise9/ui/icon/Icon";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import type { LucideProps } from "lucide-react-native";
 import { registerCSS } from "react-native-css/jest";
-
-import type { IconComponent } from "@/components/ui/icon/Icon";
 
 import { IconButton, iconButtonStyles } from "./IconButton";
 

@@ -1,9 +1,38 @@
-import { act, render, screen, userEvent } from "@testing-library/react-native";
+// iOS 만 투명 모달 라우트를 네이티브 모달로 띄운다 — 테스트별로 플랫폼을 바꿔 본다.
+const mockPlatform = { isIOS: true };
+jest.mock("@/constants/platform.constants", () => ({
+  isShareExtension: jest.requireActual("@/constants/platform.constants")
+    .isShareExtension,
+  get isIOS() {
+    return mockPlatform.isIOS;
+  },
+  get isAndroid() {
+    return !mockPlatform.isIOS;
+  },
+  isWeb: false,
+  isServer: false,
+}));
+
+afterEach(() => {
+  mockPlatform.isIOS = true;
+});
+
+import {
+  act,
+  render,
+  screen,
+  userEvent,
+  within,
+} from "@testing-library/react-native";
 import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { SnackbarProvider, useSnackbar } from "./SnackbarProvider";
+import {
+  SnackbarOutlet,
+  SnackbarProvider,
+  useSnackbar,
+} from "./SnackbarProvider";
 
 const SAFE_AREA_METRICS = {
   frame: { x: 0, y: 0, width: 375, height: 812 },
@@ -120,5 +149,168 @@ describe("Snackbar", () => {
     await user.press(screen.getByLabelText("show"));
     const messageText = screen.getByText(longMessage);
     expect(messageText.props.numberOfLines).toBeUndefined();
+  });
+
+  // 시트 라우트(투명 모달)는 루트 위에 따로 뜨는 화면이라, 루트에 그린 스낵바는 그 아래에 깔린다.
+  describe("시트 라우트 위의 스낵바", () => {
+    function App({
+      isSheetOpen,
+      isFolderSheetOpen = false,
+    }: {
+      isSheetOpen: boolean;
+      isFolderSheetOpen?: boolean;
+    }) {
+      return (
+        <SafeAreaProvider initialMetrics={SAFE_AREA_METRICS}>
+          <SnackbarProvider>
+            <Harness />
+            {isSheetOpen && (
+              <View testID="sheet-route">
+                <SnackbarOutlet />
+              </View>
+            )}
+            {/* 시트 위에 연 시트(링크 저장 → 폴더 추가) */}
+            {isFolderSheetOpen && (
+              <View testID="folder-sheet-route">
+                <SnackbarOutlet />
+              </View>
+            )}
+          </SnackbarProvider>
+        </SafeAreaProvider>
+      );
+    }
+
+    test("시트 라우트가 열려 있으면 스낵바를 그 화면 안에 그린다", async () => {
+      const user = userEvent.setup();
+      await render(<App isSheetOpen />);
+
+      await user.press(screen.getByLabelText("show"));
+
+      expect(
+        within(screen.getByTestId("sheet-route")).getByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeOnTheScreen();
+      expect(screen.getAllByText("링크를 저장했어요.")).toHaveLength(1);
+    });
+
+    // Android·웹은 루트 스낵바가 시트 위에 그대로 보인다.
+    test("iOS 가 아니면 시트 라우트가 열려 있어도 루트에 그린다", async () => {
+      mockPlatform.isIOS = false;
+      const user = userEvent.setup();
+      await render(<App isSheetOpen />);
+
+      await user.press(screen.getByLabelText("show"));
+
+      expect(
+        within(screen.getByTestId("sheet-route")).queryByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeNull();
+      expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
+    });
+
+    // 저장 성공처럼 스낵바를 띄우고 바로 시트를 닫아도 아래 화면에서 이어서 보인다.
+    test("시트 라우트가 닫히면 떠 있던 스낵바를 아래 화면에 이어서 그린다", async () => {
+      const user = userEvent.setup();
+      await render(<App isSheetOpen />);
+      await user.press(screen.getByLabelText("show"));
+
+      await screen.rerender(<App isSheetOpen={false} />);
+
+      expect(screen.queryByTestId("sheet-route")).toBeNull();
+      expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
+    });
+
+    test("위에 연 시트가 닫히면 그 시트의 스낵바를 아래 시트에 이어서 그린다", async () => {
+      const user = userEvent.setup();
+      await render(<App isSheetOpen isFolderSheetOpen />);
+      await user.press(screen.getByLabelText("show"));
+      expect(
+        within(screen.getByTestId("folder-sheet-route")).getByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeOnTheScreen();
+
+      await screen.rerender(<App isSheetOpen />);
+
+      expect(
+        within(screen.getByTestId("sheet-route")).getByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeOnTheScreen();
+    });
+
+    test("루트에 뜬 스낵바는 시트가 열려도 루트에 남는다", async () => {
+      const user = userEvent.setup();
+      await render(<App isSheetOpen={false} />);
+      await user.press(screen.getByLabelText("show"));
+
+      await screen.rerender(<App isSheetOpen />);
+
+      expect(
+        within(screen.getByTestId("sheet-route")).queryByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeNull();
+      expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
+    });
+
+    test("시트에 뜬 스낵바는 그 위에 시트가 열려도 그 시트에 남는다", async () => {
+      const user = userEvent.setup();
+      await render(<App isSheetOpen />);
+      await user.press(screen.getByLabelText("show"));
+
+      await screen.rerender(<App isSheetOpen isFolderSheetOpen />);
+
+      expect(
+        within(screen.getByTestId("sheet-route")).getByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeOnTheScreen();
+      expect(
+        within(screen.getByTestId("folder-sheet-route")).queryByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeNull();
+    });
+
+    test("띄운 시트가 닫힌 뒤 새로 열린 시트로는 옮기지 않는다", async () => {
+      const user = userEvent.setup();
+      await render(<App isSheetOpen />);
+      await user.press(screen.getByLabelText("show"));
+      await screen.rerender(<App isSheetOpen={false} />);
+
+      await screen.rerender(<App isSheetOpen={false} isFolderSheetOpen />);
+
+      expect(
+        within(screen.getByTestId("folder-sheet-route")).queryByText(
+          "링크를 저장했어요.",
+        ),
+      ).toBeNull();
+      expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
+    });
+
+    test("아래 화면으로 옮겨 그려도 자동으로 사라지는 시각은 그대로다", async () => {
+      jest.useFakeTimers();
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      try {
+        await render(<App isSheetOpen />);
+        await user.press(screen.getByLabelText("show"));
+        await act(async () => {
+          jest.advanceTimersByTime(2000);
+        });
+
+        await screen.rerender(<App isSheetOpen={false} />);
+        expect(screen.getByText("링크를 저장했어요.")).toBeOnTheScreen();
+        await act(async () => {
+          jest.advanceTimersByTime(500);
+        });
+
+        expect(screen.queryByText("링크를 저장했어요.")).toBeNull();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
   });
 });

@@ -57,10 +57,16 @@ const RESULT_CONTENT: Record<ResultKind, ResultContent> = {
 
 export interface ResultScreenProps {
   kind: ResultKind;
+  /** 기본 설명 대신 보여줄 문구 — 저장할 수 없는 이유가 따로 있을 때. */
+  description?: string;
   onAction: () => void;
 }
 
-export function ResultScreen({ kind, onAction }: ResultScreenProps) {
+export function ResultScreen({
+  kind,
+  description,
+  onAction,
+}: ResultScreenProps) {
   const content = RESULT_CONTENT[kind];
 
   useEnterShortcut(onAction);
@@ -79,7 +85,7 @@ export function ResultScreen({ kind, onAction }: ResultScreenProps) {
           {content.title}
         </h1>
         <p className="mt-1.5 text-center text-body-2-reading text-text-alternative">
-          {content.description}
+          {description ?? content.description}
         </p>
         <div className="mt-6">
           <ActionButton onClick={onAction}>{content.actionLabel}</ActionButton>

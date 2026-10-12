@@ -1,8 +1,7 @@
+import { Spinner } from "@promise9/ui/spinner/Spinner";
+import { Text } from "@promise9/ui/text/Text";
 import type { PressableProps } from "react-native";
 import { Pressable, View } from "react-native";
-
-import { Spinner } from "@/components/ui/spinner/Spinner";
-import { Text } from "@/components/ui/text/Text";
 import { useDelayedLoading } from "@/hooks/useDelayedLoading";
 import { tv } from "@/lib/tv";
 

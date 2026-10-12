@@ -1,6 +1,6 @@
+import { Text } from "@promise9/ui/text/Text";
 import type { RelatedLink } from "@shared/types/link.types";
 import { ScrollView, View } from "react-native";
-import { Text } from "@/components/ui/text/Text";
 
 import { RelatedLinkCard } from "./RelatedLinkCard";
 

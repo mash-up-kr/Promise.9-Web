@@ -8,6 +8,8 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 import type { AxiosResponse } from "axios";
+import { Keyboard } from "react-native";
+import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 import { FolderFormCard } from "./FolderFormCard";
 
 const conflictError = (errorCode: number) =>
@@ -100,6 +102,19 @@ test("일반 에러면 onError 를 호출하고 onClose 는 호출하지 않는�
   expect(onClose).not.toHaveBeenCalled();
 });
 
+// 앱은 실패를 화면 아래 스낵바로 알린다 — 키보드가 올라와 있으면 가린다.
+test("일반 에러면 키보드를 내린다", async () => {
+  const dismissKeyboard = jest.spyOn(Keyboard, "dismiss");
+  const onSubmit = jest.fn().mockRejectedValue(new Error("network"));
+  const { onError } = await renderCard({ onSubmit });
+  const user = await typeName("디자인");
+  await user.press(screen.getByLabelText("저장"));
+
+  await waitFor(() => expect(onError).toHaveBeenCalled());
+  expect(dismissKeyboard).toHaveBeenCalled();
+  dismissKeyboard.mockRestore();
+});
+
 test("errorMessage 를 넘기면 색상 선택 아래에 문구를 렌더한다", async () => {
   await renderCard({
     errorMessage: "폴더를 만들지 못했어요. 다시 시도해주세요",
@@ -116,4 +131,34 @@ test("취소를 누르면 onClose 를 호출한다", async () => {
   await user.press(screen.getByText("취소"));
 
   expect(onClose).toHaveBeenCalled();
+});
+
+// 이름 입력 카드는 익스텐션에서 키보드에 가리지 않도록 스크롤로 띄운다(Dialog 의 입력 카드 배치).
+test("iOS 공유 익스텐션에선 입력 카드를 키보드 위로 스크롤할 수 있게 띄운다", async () => {
+  const metrics: Metrics = {
+    frame: { x: 0, y: 0, width: 375, height: 750 },
+    insets: { top: 0, left: 0, right: 0, bottom: 34 },
+  };
+  globalThis.__promise9ShareExtension = true;
+  try {
+    await render(
+      <SafeAreaProvider initialMetrics={metrics}>
+        <FolderFormCard
+          title="새 폴더 만들기"
+          defaultValues={defaultValues}
+          onSubmit={jest.fn()}
+          onClose={jest.fn()}
+          onError={jest.fn()}
+        />
+      </SafeAreaProvider>,
+    );
+
+    let node = screen.getByPlaceholderText("폴더 이름을 입력해주세요").parent;
+    while (node && node.props.automaticallyAdjustKeyboardInsets === undefined) {
+      node = node.parent;
+    }
+    expect(node?.props.automaticallyAdjustKeyboardInsets).toBe(true);
+  } finally {
+    globalThis.__promise9ShareExtension = undefined;
+  }
 });

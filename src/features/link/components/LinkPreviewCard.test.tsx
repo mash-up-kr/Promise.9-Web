@@ -76,12 +76,13 @@ describe("LinkPreviewCard", () => {
     expect(await screen.findByText("bucketplace.com")).toBeOnTheScreen();
   });
 
-  test("title 도 도메인도 없으면 안내 문구", async () => {
-    mockPreviewOnce({ title: null, source: "", thumbnailUrl: null });
-    await renderCard("not-a-url");
-    expect(
-      await screen.findByText("제목을 불러오지 못했어요"),
-    ).toBeOnTheScreen();
+  // 서버 미리보기는 http(s) 만 지원한다 — 앱 전용 스킴 등은 요청 없이 바로 기본 카드.
+  test("http(s) 가 아닌 링크는 미리보기를 요청하지 않고 주소를 제목으로 보여준다", async () => {
+    await renderCard("nmap://place?id=123");
+    expect(screen.getByText("nmap://place?id=123")).toBeOnTheScreen();
+    expect(screen.getByTestId("link-preview-placeholder")).toBeOnTheScreen();
+    expect(screen.queryByTestId("link-preview-skeleton")).toBeNull();
+    expect(apiClient.get).not.toHaveBeenCalled();
   });
 
   test("조회 실패 시 도메인 폴백 + 기본 아이콘", async () => {

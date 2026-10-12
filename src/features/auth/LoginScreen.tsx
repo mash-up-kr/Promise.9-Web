@@ -1,6 +1,6 @@
 import type { Href } from "expo-router";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -10,10 +10,11 @@ import {
   ROUTES,
   SHARE_LOGIN_NEXT_CREATE_LINK,
 } from "@/constants/routes.constants";
-
+import { useAuthGateContext } from "./AuthGateContext";
 import { useSocialLoginMutation } from "./api/auth.queries";
 import { SOCIAL_PROVIDERS, type SocialProvider } from "./auth.constants";
 import {
+  isEmailAlreadyRegisteredError,
   isUnsupportedProviderError,
   SocialLoginCancelledError,
 } from "./auth.errors";
@@ -22,10 +23,20 @@ import { ExtensionConnect } from "./components/ExtensionConnect";
 import { LoginGraphic } from "./components/LoginGraphic";
 import { SocialLoginButton } from "./components/SocialLoginButton";
 import { canConnectExtension, isExtensionReturn } from "./extensionHandoff";
-import { useAuthGate } from "./hooks/useAuthGate";
 import { useSocialAuth } from "./hooks/useSocialAuth";
 
 const LOGIN_FAILED_MESSAGE = "로그인에 실패했어요. 다시 시도해주세요.";
+
+// 서버 검증 실패는 원인이 달라도 대부분 같은 문구다 — 사용자가 스스로 고칠 수 있는 경우만 구분해 안내한다.
+function toLoginErrorMessage(error: unknown): string {
+  if (isUnsupportedProviderError(error)) {
+    return "아직 지원하지 않는 로그인 방식이에요.";
+  }
+  if (isEmailAlreadyRegisteredError(error)) {
+    return "이미 다른 방식으로 가입된 이메일이에요. 처음 가입한 방식으로 로그인해주세요.";
+  }
+  return LOGIN_FAILED_MESSAGE;
+}
 
 export function LoginScreen() {
   const router = useRouter();
@@ -45,7 +56,7 @@ export function LoginScreen() {
   const isExtensionConnect =
     isExtensionReturn(returnTo) && canConnectExtension();
   // 익스텐션이 연 탭이면 기존 로그인 여부부터 본다 — 있으면 소셜 로그인 없이 바로 연결한다.
-  const authStatus = useAuthGate();
+  const { status: authStatus } = useAuthGateContext();
   const insets = useSafeAreaInsets();
   const { show } = useSnackbar();
   const { getIdToken } = useSocialAuth();
@@ -53,11 +64,14 @@ export function LoginScreen() {
   const [pendingProvider, setPendingProvider] = useState<SocialProvider | null>(
     null,
   );
-  // 공유 익스텐션 인계: next 가 화이트리스트 키면 공유 URL(share)을 들고 저장 시트로, 아니면 홈.
-  const destination: Href =
-    next === SHARE_LOGIN_NEXT_CREATE_LINK && typeof share === "string"
-      ? { pathname: ROUTES.CREATE_LINK, params: { share } }
-      : ROUTES.HOME;
+  // 보호 라우트(Stack.Protected)는 인증 상태가 반영된 뒤에야 내비게이터에 생긴다 —
+  // 토큰 저장 직후 이동하면 아직 없는 라우트라 무시되므로, 상태가 바뀐 것을 보고 이동한다.
+  const [hasLoginSucceeded, setHasLoginSucceeded] = useState(false);
+  useEffect(() => {
+    if (!hasLoginSucceeded || authStatus !== "authenticated") return;
+    setHasLoginSucceeded(false);
+    router.replace(resolveLoginDestination(next, share));
+  }, [hasLoginSucceeded, authStatus, next, share, router]);
   // 방금 로그인에 성공한 익스텐션 탭 — authStatus 는 마운트 시점 값이라 따로 기억한다.
   const [connectAfterLogin, setConnectAfterLogin] = useState(false);
   // 저장된 리프레시 토큰이 서버에서 이미 폐기된 경우. authStatus 는 토큰의 존재만 보므로
@@ -97,16 +111,13 @@ export function LoginScreen() {
             return;
           }
           // TODO(#53): 온보딩 화면이 생기면 isNewUser 로 분기한다. 지금은 신규·기존 모두 홈으로.
-          router.replace(destination);
+          setHasLoginSucceeded(true);
         },
         onError: (error) => {
           setPendingProvider(null);
           // 서버 검증 실패도 원인 불문 같은 토스트라, provider·실제 원인(errorCode·status)을 콘솔에 남긴다.
           console.error("소셜 로그인 실패", provider, error);
-          const message = isUnsupportedProviderError(error)
-            ? "아직 지원하지 않는 로그인 방식이에요."
-            : LOGIN_FAILED_MESSAGE;
-          show({ message });
+          show({ message: toLoginErrorMessage(error) });
         },
       },
     );
@@ -139,7 +150,7 @@ export function LoginScreen() {
 
       <View className="gap-3 px-5">
         {Object.entries(SOCIAL_PROVIDERS)
-          // 미지원 플랫폼의 provider(웹·안드로이드의 애플)는 노출하지 않는다.
+          // 미지원 플랫폼의 provider(안드로이드의 애플)는 노출하지 않는다.
           .filter(([, config]) => config.enabled)
           .map(([key, config]) => {
             const provider = key as SocialProvider;
@@ -166,4 +177,12 @@ export function LoginScreen() {
       </View>
     </View>
   );
+}
+
+// 저장 시트 인계: next 가 화이트리스트 키면 저장 시트로(익스텐션이 준 공유 URL 이 있으면 들고), 아니면 홈.
+function resolveLoginDestination(next?: string, share?: string): Href {
+  if (next !== SHARE_LOGIN_NEXT_CREATE_LINK) return ROUTES.HOME;
+  return share
+    ? { pathname: ROUTES.CREATE_LINK, params: { share } }
+    : ROUTES.CREATE_LINK;
 }

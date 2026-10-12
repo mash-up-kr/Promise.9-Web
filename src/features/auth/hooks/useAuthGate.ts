@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 export type AuthGateStatus = "checking" | "authenticated" | "unauthenticated";
 
 /**
- * 보호된 화면(탭)·공유 익스텐션 진입 가드 — 영속 저장된 리프레시 토큰 유무만 본다.
+ * 보호 라우트(루트 Stack.Protected)·공유 익스텐션 진입 가드 — 영속 저장된 리프레시 토큰 유무만 본다.
  *
  * 토큰이 실제로 유효한지(만료·폐기 여부)는 검사하지 않는다 — 그건 401 응답 시
  * refresh 인터셉터(shared/api/client.ts)가 재발급을 시도해 처리한다. 토큰 변경 구독으로

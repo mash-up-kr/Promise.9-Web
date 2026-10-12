@@ -17,8 +17,8 @@
 - 타입·상수 등 모음 파일: `<도메인>.<역할>.ts` (`link.types.ts`, `link.constants.ts` — 상세: structure.md 공통 규칙).
 
 ## import
-- 절대경로 `@/`(앱/웹) · `@shared/`(공유 코어) 사용. 상대경로는 같은 기능 폴더 내부에서만.
-- 그룹 순서: ① 외부 라이브러리 → ② `@shared/` → ③ `@/` → ④ 상대경로.
+- 절대경로 `@/`(앱/웹) · `@shared/`(공유 코어) · `@promise9/ui/`(공유 UI) 사용. 상대경로는 같은 기능 폴더 내부에서만 — 예외: `packages/ui` 내부는 상대경로만(structure.md).
+- 그룹 순서: ① 외부 라이브러리(`@promise9/ui/` 는 워크스페이스 패키지라 여기로 정렬된다) → ② `@shared/` → ③ `@/` → ④ 상대경로.
 - 저장 시 VSCode `organizeImports` 가 자동 정렬한다(.vscode/settings.json).
 
 ## 에러 / 비동기

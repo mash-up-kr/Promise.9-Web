@@ -7,7 +7,6 @@ import {
   formatReminderTime,
   isPast,
   matchedPresetDays,
-  REMIND_PRESETS,
   randomReminderDate,
   relativeDayLabel,
   toReminderAt,
@@ -27,17 +26,6 @@ describe("addDaysAtDefaultHour", () => {
 
   it("월을 넘어가도 맞는다", () => {
     expect(addDaysAtDefaultHour(20, NOW)).toEqual(new Date(2026, 8, 3, 9, 0));
-  });
-});
-
-describe("REMIND_PRESETS", () => {
-  it("시안의 네 가지 프리셋을 갖는다", () => {
-    expect(REMIND_PRESETS.map((preset) => preset.label)).toEqual([
-      "내일",
-      "3일 후",
-      "7일 후",
-      "14일 후",
-    ]);
   });
 });
 

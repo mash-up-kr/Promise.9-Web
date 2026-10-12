@@ -1,7 +1,7 @@
+import { FolderIcon } from "@promise9/ui/icon/FolderIcon";
 import { FOLDER_TONE_HEX } from "@shared/folder/folder.constants";
 import type { FolderColor } from "@shared/types/link.types";
 import { View } from "react-native";
-import { FolderIcon } from "@/components/ui/icon/FolderIcon";
 import { tv } from "@/lib/tv";
 
 // 폴더 아이콘 채움색(raw hex). 12색은 shared 팔레트(= tokens.css --color-folder-*-solid)를 그대로 쓰고,

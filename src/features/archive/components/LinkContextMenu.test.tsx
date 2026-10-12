@@ -2,6 +2,8 @@
 // jest 는 항상 네이티브로 도는 환경이라 플랫폼 판별을 갈아끼워 양쪽을 다 검증한다.
 const mockPlatform = { isWeb: false };
 jest.mock("@/constants/platform.constants", () => ({
+  isShareExtension: jest.requireActual("@/constants/platform.constants")
+    .isShareExtension,
   get isWeb() {
     return mockPlatform.isWeb;
   },

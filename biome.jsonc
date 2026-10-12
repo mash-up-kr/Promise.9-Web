@@ -343,6 +343,17 @@
       "javascript": {
         "globals": ["chrome"]
       }
+    },
+    {
+      // Biome 은 가장 가까운 package.json 의 의존성(react·jest)을 보고 도메인 규칙과 테스트 전역을
+      // 자동으로 켠다. packages/ui 는 의존성을 선언하지 않으므로(structure.md) 직접 켜준다.
+      "includes": ["packages/ui/**"],
+      "linter": {
+        "domains": {
+          "react": "recommended",
+          "test": "recommended"
+        }
+      }
     }
   ]
 }

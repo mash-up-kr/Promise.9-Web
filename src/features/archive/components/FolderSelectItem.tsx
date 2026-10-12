@@ -1,7 +1,6 @@
+import { Text } from "@promise9/ui/text/Text";
 import type { FolderColor } from "@shared/types/link.types";
 import { Pressable, View } from "react-native";
-
-import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
 
 import { FolderToneIcon } from "./FolderToneIcon";

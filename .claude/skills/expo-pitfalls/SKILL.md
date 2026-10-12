@@ -37,8 +37,8 @@ jest-expo 환경에는 className→style 해석기가 없다. className 스타�
 `ios:`/`android:`/`native:`/`web:` variant 는 `src/global.css` 에 `@custom-variant` 로 발췌돼 있다. **`nativewind/theme.css` 전체 import 금지** — 미설치 의존성(tailwindcss-safe-area 등)이 딸려온다. 새 variant 가 필요하면 같은 방식으로 발췌 추가.
 
 ## 7. className 으로 안 되는 스타일은 prop/래퍼로
-- `TextInput` 의 placeholder·커서·선택 색은 RN 특성상 prop 전용 (`placeholderTextColor` 등) — 토큰 hex 를 상수로 두고 prop 지정. 적용례: `src/components/ui/input/Input.tsx`.
-- svg 아이콘(lucide 포함) 색은 `src/components/ui/icon/Icon.tsx` 래퍼로만 — className→color 매핑 + WeakMap 캐시가 들어 있다. 아이콘을 직접 styled 로 재래핑하지 않는다 (매 렌더 재생성 → native 크래시 이력).
+- `TextInput` 의 placeholder·커서·선택 색은 RN 특성상 prop 전용 (`placeholderTextColor` 등) — 토큰 hex 를 상수로 두고 prop 지정. 적용례: `packages/ui/input/Input.tsx`.
+- svg 아이콘(lucide 포함) 색은 `packages/ui/icon/Icon.tsx` 래퍼로만 — className→color 매핑 + WeakMap 캐시가 들어 있다. 아이콘을 직접 styled 로 재래핑하지 않는다 (매 렌더 재생성 → native 크래시 이력).
 - `expo-image` 의 `Image` 는 react-native 코어가 아니라 리졸버가 감싸지 않는다 → 네이티브에서 className 이 통째로 무시돼 **릴리즈 빌드에서 썸네일이 0×0 으로 접혔다**(2026-09-07 TestFlight). className 을 쓰려면 `src/components/ui/image/Image.tsx`(styled 매핑) 를 import 하고, 기존 `style` 사용처는 그대로 둔다.
 
 ## 업그레이드 체크리스트 (expo / nativewind / react-native-css)

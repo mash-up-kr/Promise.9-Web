@@ -1,7 +1,6 @@
+import { Spinner } from "@promise9/ui/spinner/Spinner";
+import { Text } from "@promise9/ui/text/Text";
 import { Pressable, View } from "react-native";
-
-import { Spinner } from "@/components/ui/spinner/Spinner";
-import { Text } from "@/components/ui/text/Text";
 import { tv } from "@/lib/tv";
 
 // Figma Bottom Sheet Header: 취소(Assistive)·타이틀/설명·저장(Primary).

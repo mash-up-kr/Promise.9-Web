@@ -1,3 +1,5 @@
+import { Icon } from "@promise9/ui/icon/Icon";
+import { Text } from "@promise9/ui/text/Text";
 import { Menu } from "lucide-react-native";
 import { useMemo } from "react";
 import { View } from "react-native";
@@ -8,9 +10,6 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from "react-native-reanimated";
-
-import { Icon } from "@/components/ui/icon/Icon";
-import { Text } from "@/components/ui/text/Text";
 
 import type { ArchiveFolder } from "../archive.types";
 import { FolderToneIcon } from "./FolderToneIcon";

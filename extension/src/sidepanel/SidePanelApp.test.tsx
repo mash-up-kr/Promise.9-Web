@@ -66,6 +66,21 @@ describe("SidePanelApp", () => {
     ).toBeInTheDocument();
   });
 
+  it("앱의 저장 규칙에 어긋나는 페이지면 안내 화면에 그 이유를 보여준다", async () => {
+    installChromeMock({
+      tab: { url: `https://example.com/${"a".repeat(2048)}`, title: "긴 주소" },
+    });
+
+    renderPanel(<SidePanelApp />);
+
+    expect(
+      await screen.findByText("이 페이지는 저장할 수 없어요"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("링크 주소는 최대 2,048자까지 저장할 수 있어요"),
+    ).toBeInTheDocument();
+  });
+
   it("로그인 전이면 로그인 화면을 보여준다", async () => {
     installChromeMock({ tab: SAVABLE_TAB });
 

@@ -1,3 +1,5 @@
+import { Icon } from "@promise9/ui/icon/Icon";
+import { Text } from "@promise9/ui/text/Text";
 import {
   ArrowUpDown,
   Check,
@@ -9,12 +11,9 @@ import {
 } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
-
-import { Icon } from "@/components/ui/icon/Icon";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { Popover } from "@/components/ui/popover/Popover";
 import { PopoverMenuItem } from "@/components/ui/popover/PopoverMenuItem";
-import { Text } from "@/components/ui/text/Text";
 
 import { LINK_SORT_OPTIONS } from "../archive.constants";
 import type { LinkSortOption } from "../archive.types";

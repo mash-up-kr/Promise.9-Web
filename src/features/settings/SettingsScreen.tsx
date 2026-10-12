@@ -1,3 +1,9 @@
+import { AsyncBoundary } from "@promise9/ui/async-boundary/AsyncBoundary";
+import { ListGroup } from "@promise9/ui/list-group/ListGroup";
+import { ListRow } from "@promise9/ui/list-row/ListRow";
+import { ListSection } from "@promise9/ui/list-section/ListSection";
+import { Skeleton } from "@promise9/ui/skeleton/Skeleton";
+import { Text } from "@promise9/ui/text/Text";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -7,14 +13,8 @@ import {
   AlertDialog,
   AlertDialogButton,
 } from "@/components/ui/alert-dialog/AlertDialog";
-import { AsyncBoundary } from "@/components/ui/async-boundary/AsyncBoundary";
 import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
-import { ListGroup } from "@/components/ui/list-group/ListGroup";
-import { ListRow } from "@/components/ui/list-row/ListRow";
-import { ListSection } from "@/components/ui/list-section/ListSection";
-import { Skeleton } from "@/components/ui/skeleton/Skeleton";
-import { Text } from "@/components/ui/text/Text";
 
 import { settingsQueries } from "./api/settings.queries";
 import { useLogout } from "./hooks/useLogout";

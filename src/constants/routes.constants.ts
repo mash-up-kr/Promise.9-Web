@@ -1,3 +1,4 @@
+import { isWebUrl, normalizeLinkUrl } from "@shared/link/link.utils";
 import type { Href } from "expo-router";
 
 export const ROUTES = {
@@ -64,12 +65,13 @@ export function shareLoginHandoffPath(sharedUrl: string): string {
 
 /**
  * 공유 텍스트에 저장 가능한 URL 이 없을 때 "앱에서 직접 입력" 이 여는 인앱 저장 시트 경로.
- * 공백 없는 한 토큰(스킴이 빠진 주소 등)만 URL 칸에 미리 채우고, 문장은 빈 시트로 연다.
+ * 웹 주소로 보정되는 한 토큰(스킴이 빠진 주소 등)만 URL 칸에 미리 채우고, 나머지는 빈 시트로 연다 —
+ * 입력칸은 앱 전용 링크도 받아서 메모·Wi-Fi QR 같은 원문을 채우면 그대로 저장될 수 있다.
  */
 export function createLinkHandoffPath(sharedText: string): string {
-  const token = sharedText.trim();
-  if (token.length === 0 || /\s/.test(token)) return "create-link";
-  return `create-link?share=${encodeSharedUrl(token)}`;
+  const link = normalizeLinkUrl(sharedText);
+  if (!link.ok || !isWebUrl(link.url)) return "create-link";
+  return `create-link?share=${encodeSharedUrl(sharedText.trim())}`;
 }
 
 /**

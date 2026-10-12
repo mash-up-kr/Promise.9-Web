@@ -1,6 +1,5 @@
+import { Text as AppText } from "@promise9/ui/text/Text";
 import { Text } from "react-native";
-
-import { Text as AppText } from "@/components/ui/text/Text";
 
 export type LegalDocumentKind = "terms" | "privacy";
 

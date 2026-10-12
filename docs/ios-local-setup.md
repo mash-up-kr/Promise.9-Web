@@ -64,9 +64,9 @@ iOS 는 시뮬레이터 빌드도 서명이 필요하다. **유료·무료 Apple
 
 ### 3-2. 워크스페이스 열고 팀 지정
 ```bash
-open ios/Promise9Web.xcworkspace     # 반드시 .xcworkspace (.xcodeproj 아님)
+open ios/app.xcworkspace             # 반드시 .xcworkspace (.xcodeproj 아님)
 ```
-4. 좌측 네비게이터 최상단 **Promise9Web** ▸ **TARGETS ▸ Promise9Web**
+4. 좌측 네비게이터 최상단 **app** ▸ **TARGETS ▸ app**
 5. **Signing & Capabilities** 탭
 6. **Automatically manage signing** 체크
 7. **Team** 드롭다운에서 본인 팀 선택 → **Signing Certificate: Apple Development** 가 뜨면 성공
@@ -112,7 +112,7 @@ pnpm ios         # = expo run:ios (booted 시뮬에 빌드·설치·실행)
 | --- | --- | --- |
 | 구글 | ✅ | Google Cloud 콘솔에 iOS 클라이언트 등록돼 있어야 함 |
 | 카카오 | ✅ | 카카오톡 미설치 시 카카오계정(웹뷰)으로 진행 — 정상 |
-| 애플 | ✅ | 4번 시뮬 Apple ID 로그인 필요. iOS 만 버튼 활성(웹·안드는 비활성) |
+| 애플 | ✅ | 4번 시뮬 Apple ID 로그인 필요. iOS·웹만 버튼 활성(안드는 비활성) |
 
 - 로그인 실패 시 **Metro 콘솔에 `소셜 로그인 실패 <원인>`** 이 찍힌다 — 원인 진단용.
 - 실패 원인이 미설정(env·앱키)인지, 콘솔 등록(redirect·SHA·클라이언트ID)인지부터 확인한다.
