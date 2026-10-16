@@ -29,3 +29,14 @@
     --font-rounded: ui-rounded;
   }
 }
+
+/* 웹은 폰트를 기다리지 않고 그리므로(swap) 조각이 오기 전엔 시스템 sans 로 그린다.
+   네이티브는 family 이름을 그대로 써야 해서 tokens.css 가 아니라 여기(웹 전용)에 둔다. */
+@supports selector(div > div) {
+  :root {
+    --font-pretendard: "Pretendard", system-ui, sans-serif;
+    --font-pretendard-medium: "Pretendard-Medium", system-ui, sans-serif;
+    --font-pretendard-semibold: "Pretendard-SemiBold", system-ui, sans-serif;
+    --font-pretendard-bold: "Pretendard-Bold", system-ui, sans-serif;
+  }
+}

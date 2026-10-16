@@ -19,7 +19,14 @@
 @custom-variant native (@media native);
 @custom-variant web (@supports selector(div > div));
 
-/* Pretendard 는 앱 웹과 같은 생성 CSS(public/fonts/pretendard.css)를 main.tsx 가 불러온다. */
+/* Pretendard 는 앱 웹과 같은 생성 CSS(public/fonts/pretendard.css)를 main.tsx 가 불러온다.
+   조각이 오기 전엔 시스템 sans 로 그린다(앱 src/global.css 의 웹 전용 블록과 동일). */
+:root {
+  --font-pretendard: "Pretendard", system-ui, sans-serif;
+  --font-pretendard-medium: "Pretendard-Medium", system-ui, sans-serif;
+  --font-pretendard-semibold: "Pretendard-SemiBold", system-ui, sans-serif;
+  --font-pretendard-bold: "Pretendard-Bold", system-ui, sans-serif;
+}
 @layer base {
   /*
    * 사이드패널은 크기를 브라우저가 정해준다 — 세로는 창 전체, 가로는 사용자가 드래그로

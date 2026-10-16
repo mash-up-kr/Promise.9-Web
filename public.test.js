@@ -138,15 +138,18 @@ describe("검색 노출", () => {
 // 그 글자만 기본 폰트로 떨어지고, 조각 파일이 빠지면 해당 글자 범위만 폴백으로 남는다.
 describe("웹 폰트 (public/fonts)", () => {
   const fontCss = readPublic("fonts/pretendard.css");
+  const tokens = fs.readFileSync(
+    path.join(__dirname, "shared/styles/tokens.css"),
+    "utf8",
+  );
+  const requested = [
+    ...tokens.matchAll(/--font-pretendard[\w-]*:\s*"([^"]+)"/g),
+  ].map((match) => match[1]);
+  const urls = [...fontCss.matchAll(/url\(([^)]+)\)/g)].map(
+    (match) => match[1],
+  );
 
   test("토큰의 --font-pretendard* family 는 모두 @font-face 로 선언돼 있다", () => {
-    const tokens = fs.readFileSync(
-      path.join(__dirname, "shared/styles/tokens.css"),
-      "utf8",
-    );
-    const requested = [
-      ...tokens.matchAll(/--font-pretendard[\w-]*:\s*"([^"]+)"/g),
-    ].map((match) => match[1]);
     const registered = new Set(
       [...fontCss.matchAll(/font-family:\s*"([^"]+)"/g)].map(
         (match) => match[1],
@@ -158,9 +161,6 @@ describe("웹 폰트 (public/fonts)", () => {
   });
 
   test("CSS 가 참조하는 woff2 조각이 전부 존재한다", () => {
-    const urls = [...fontCss.matchAll(/url\(([^)]+)\)/g)].map(
-      (match) => match[1],
-    );
     expect(urls.length).toBeGreaterThan(0);
     const missing = urls.filter(
       (url) => !fs.existsSync(path.join(PUBLIC_DIR, "fonts", url)),
@@ -168,9 +168,41 @@ describe("웹 폰트 (public/fonts)", () => {
     expect(missing).toEqual([]);
   });
 
+  // 조각 이름에 해시가 없으므로 디렉터리에 버전을 넣어야 immutable 캐시가 안전하다.
+  test("조각은 버전 디렉터리에 있고 _headers 가 그 디렉터리만 장기 캐시한다", () => {
+    const dirs = new Set(urls.map((url) => url.split("/")[1]));
+    expect([...dirs]).toEqual([
+      expect.stringMatching(/^pretendard-\d+\.\d+\.\d+$/),
+    ]);
+    expect(readPublic("_headers")).toMatch(
+      /^\/fonts\/:dir\/\*\n\s+Cache-Control: public, max-age=31536000, immutable$/m,
+    );
+  });
+
   test("index.html 이 폰트 CSS 를 링크한다", () => {
     expect(readPublic("index.html")).toContain(
       '<link rel="stylesheet" href="/fonts/pretendard.css" />',
     );
+  });
+
+  // 웹은 폰트를 기다리지 않고 그리므로(swap) 폴백이 없으면 첫 페인트가 브라우저 기본(세리프)으로 뜬다.
+  test("웹·익스텐션은 조각이 오기 전 시스템 sans 로 그린다", () => {
+    const appCss = fs.readFileSync(
+      path.join(__dirname, "src/global.css"),
+      "utf8",
+    );
+    const extensionCss = fs.readFileSync(
+      path.join(__dirname, "extension/src/styles/global.css"),
+      "utf8",
+    );
+    const webOnly = appCss.match(
+      /@supports selector\(div > div\) {[^}]*}/,
+    )?.[0];
+    expect(webOnly).toBeDefined();
+    for (const family of requested) {
+      const fallback = `"${family}", system-ui, sans-serif;`;
+      expect(webOnly).toContain(fallback);
+      expect(extensionCss).toContain(fallback);
+    }
   });
 });
