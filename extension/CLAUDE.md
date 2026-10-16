@@ -9,6 +9,7 @@
   - `@shared/*` → 루트 `shared/*` (타입 · API 클라이언트 · 엔티티 쿼리 · 폴더 팔레트)
   - `@promise9/ui/*` → 루트 `packages/ui/*` (앱과 공유하는 RN 컴포넌트)
   - `@assets/*` → 루트 `assets/*` (캐릭터 이미지 · Pretendard)
+  - `@public/*` → 루트 `public/*` (생성 웹 폰트 CSS)
 - 테스트는 **vitest + @testing-library/react** (루트의 jest-expo 와 별개). `pnpm test`.
 - 디자인 토큰은 `shared/styles/tokens.css` 단일 출처. 값을 여기서 다시 정의하지 않는다.
 - 로컬 확인 방법은 `README.md` 참고.

@@ -76,6 +76,8 @@ export default defineConfig(({ mode }) => {
         "@shared": resolvePath("../shared"),
         // 앱과 같은 이미지·폰트를 쓴다(캐릭터·Pretendard) — 복사본을 만들지 않는다.
         "@assets": resolvePath("../assets"),
+        // 앱 웹과 같은 생성 웹 폰트(public/fonts)를 쓴다.
+        "@public": resolvePath("../public"),
       },
     },
     // dev 서버의 의존성 사전 번들은 Vite 플러그인을 타지 않는다 — 위 리졸버가 안 먹혀 라이브러리의
