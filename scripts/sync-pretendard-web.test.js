@@ -31,8 +31,8 @@ describe("transform", () => {
     expect(rules[3]).toContain('font-family: "Pretendard-Bold";');
     expect(rules[3]).toContain("font-weight: 700;");
     for (const rule of rules) {
-      expect(rule).toContain(
-        'src: url(./pretendard/PretendardVariable.subset.0.woff2) format("woff2-variations");',
+      expect(rule).toMatch(
+        /src: url\(\.\/pretendard-\d+\.\d+\.\d+\/PretendardVariable\.subset\.0\.woff2\) format\("woff2-variations"\);/,
       );
       expect(rule).toContain("unicode-range: U+f9ca-fa0b, U+ff03-ff05;");
       expect(rule).toContain("font-display: swap;");

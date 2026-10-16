@@ -5,13 +5,15 @@
  *   node scripts/sync-pretendard-web.js   ← 버전을 올릴 때만 돌리고 산출물을 커밋한다
  */
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 
 const VERSION = "1.3.9";
 const BASE_URL = `https://cdn.jsdelivr.net/npm/pretendard@${VERSION}/dist/web/variable/`;
 const SOURCE_CSS = "pretendardvariable-dynamic-subset.css";
 const OUT_DIR = path.join(__dirname, "..", "public", "fonts");
-const CHUNK_DIR = "pretendard";
+// 조각 이름에 해시가 없어 디렉터리에 버전을 넣는다 — public/_headers 가 이 경로만 immutable 캐시한다.
+const CHUNK_DIR = `pretendard-${VERSION}`;
 const DOWNLOAD_BATCH = 8;
 
 // 앱 네이티브가 굵기별 static family 를 쓰므로(#25) 웹도 같은 이름을 선언한다. 가변 폰트는 family 의
@@ -66,9 +68,8 @@ async function main() {
   const officialCss = await (await download(BASE_URL + SOURCE_CSS)).text();
   const { css, files } = transform(officialCss);
 
-  const chunkDir = path.join(OUT_DIR, CHUNK_DIR);
-  fs.rmSync(chunkDir, { recursive: true, force: true });
-  fs.mkdirSync(chunkDir, { recursive: true });
+  // 다 받은 뒤에야 옛 조각을 바꿔치기한다 — 중간에 실패해도 산출물이 반쯤 남지 않게.
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "pretendard-"));
   for (let i = 0; i < files.length; i += DOWNLOAD_BATCH) {
     await Promise.all(
       files.slice(i, i + DOWNLOAD_BATCH).map(async (file) => {
@@ -76,12 +77,20 @@ async function main() {
           `${BASE_URL}woff2-dynamic-subset/${file}`,
         );
         fs.writeFileSync(
-          path.join(chunkDir, file),
+          path.join(tmpDir, file),
           Buffer.from(await response.arrayBuffer()),
         );
       }),
     );
   }
+  fs.mkdirSync(OUT_DIR, { recursive: true });
+  for (const entry of fs.readdirSync(OUT_DIR)) {
+    if (entry.startsWith("pretendard-")) {
+      fs.rmSync(path.join(OUT_DIR, entry), { recursive: true });
+    }
+  }
+  fs.cpSync(tmpDir, path.join(OUT_DIR, CHUNK_DIR), { recursive: true });
+  fs.rmSync(tmpDir, { recursive: true });
   fs.writeFileSync(path.join(OUT_DIR, "pretendard.css"), `${HEADER}${css}\n`);
   console.log(
     `pretendard@${VERSION}: 조각 ${files.length}개, @font-face ${files.length * FAMILIES.length}개 → public/fonts`,
