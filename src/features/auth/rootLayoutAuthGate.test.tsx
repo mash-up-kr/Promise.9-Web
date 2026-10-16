@@ -12,8 +12,13 @@ jest.mock("@/global.css", () => ({}));
 // 네트워크·포커스 배선은 네이티브 리스너라 jest 에 없다 — 이 테스트의 관심사도 아니다.
 jest.mock("@/lib/online-manager", () => ({ setupOnlineManager: jest.fn() }));
 jest.mock("@/lib/focus-manager", () => ({ setupFocusManager: jest.fn() }));
-// 폰트·스플래시는 이 테스트의 관심사가 아니다 — 바로 초기화된 것으로 둔다.
-jest.mock("expo-font", () => ({ useFonts: () => [true, null] }));
+// 폰트·스플래시는 보호 라우트 테스트의 관심사가 아니다 — 기본은 바로 초기화된 것으로 두고
+// 폰트 게이트 테스트만 결과를 바꾼다.
+const mockUseFonts = jest.fn((): [boolean, Error | null] => [true, null]);
+jest.mock("expo-font", () => ({
+  useFonts: () => mockUseFonts(),
+  FontDisplay: { SWAP: "swap" },
+}));
 jest.mock("expo-splash-screen", () => ({
   preventAutoHideAsync: jest.fn(),
   hideAsync: jest.fn(),
@@ -115,6 +120,33 @@ describe("RootLayout — 보호 라우트", () => {
     mockUseAuthGate.mockReturnValue("unauthenticated");
     await renderRouter(routes, { initialUrl: "/create-link?share=6162" });
     expect(await screen.findByText("create-link")).toBeOnTheScreen();
+  });
+});
+
+// 폰트가 안 와도 앱이 멈추면 안 된다 — 실패는 시스템 폰트로 진입한다(#144).
+describe("RootLayout — 폰트 게이트", () => {
+  afterEach(() => {
+    mockUseFonts.mockReturnValue([true, null]);
+  });
+
+  test("폰트 로드가 실패해도 로그인 화면이 뜬다", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    mockUseAuthGate.mockReturnValue("unauthenticated");
+    mockUseFonts.mockReturnValue([false, new Error("ERR_DOWNLOAD")]);
+
+    await renderRouter(routes, { initialUrl: "/" });
+
+    expect(await screen.findByText("login")).toBeOnTheScreen();
+    errorSpy.mockRestore();
+  });
+
+  test("네이티브는 폰트 로드 전에는 어떤 화면도 그리지 않는다", async () => {
+    mockUseAuthGate.mockReturnValue("unauthenticated");
+    mockUseFonts.mockReturnValue([false, null]);
+
+    await renderRouter(routes, { initialUrl: "/" });
+
+    expect(screen.queryByText("login")).not.toBeOnTheScreen();
   });
 });
 
