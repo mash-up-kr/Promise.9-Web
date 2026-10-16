@@ -6,24 +6,12 @@ import { describe, expect, it } from "vitest";
 const read = (relative: string) =>
   readFileSync(fileURLToPath(new URL(relative, import.meta.url)), "utf8");
 
-// 앱 네이티브는 굵기마다 family 이름이 다른 static 폰트를 expo-font 로 등록한다. 익스텐션은 앱 웹과
-// 같은 생성 CSS(public/fonts)를 쓰므로, 토큰에 family 가 추가됐는데 거기 @font-face 가 없으면
-// 그 글자만 기본 폰트로 떨어진다.
-describe("공유 Text 가 요청하는 폰트 family", () => {
-  it("토큰의 --font-pretendard* family 는 모두 웹 폰트 CSS 에 @font-face 로 등록돼 있다", () => {
-    const tokens = read("../../../shared/styles/tokens.css");
-    const globalCss = read("../../../public/fonts/pretendard.css");
-
-    const requested = [
-      ...tokens.matchAll(/--font-pretendard[\w-]*:\s*"([^"]+)"/g),
-    ].map((match) => match[1]);
-    const registered = new Set(
-      [...globalCss.matchAll(/font-family:\s*"([^"]+)"/g)].map(
-        (match) => match[1],
-      ),
+// 토큰 family 와 생성 CSS 의 대조는 루트 public.test.js 가 한다. 여기선 익스텐션이 그 CSS 를
+// 실제로 불러오는지만 본다 — import 가 빠지면 사이드패널 전체가 폴백 폰트로 뜬다.
+describe("익스텐션 폰트", () => {
+  it("사이드패널 진입점이 공용 웹 폰트 CSS 를 불러온다", () => {
+    expect(read("../sidepanel/main.tsx")).toContain(
+      'import "@public/fonts/pretendard.css";',
     );
-
-    expect(requested.length).toBeGreaterThan(0);
-    expect(requested.filter((family) => !registered.has(family))).toEqual([]);
   });
 });
