@@ -3,7 +3,6 @@ import { renderHook } from "@testing-library/react-native";
 const mockUseFonts = jest.fn();
 jest.mock("expo-font", () => ({
   useFonts: (map: unknown) => mockUseFonts(map),
-  FontDisplay: { SWAP: "swap" },
 }));
 
 import { useAppFonts } from "./useAppFonts";
@@ -36,21 +35,15 @@ test("폰트 로드가 실패해도 진입하고 실패는 로그로 남긴다",
   errorSpy.mockRestore();
 });
 
-test("Pretendard 굵기별 폰트 4종을 전부 swap 으로 등록한다", async () => {
+test("토큰이 쓰는 Pretendard 굵기별 family 4종을 등록한다", async () => {
   mockUseFonts.mockReturnValue([true, null]);
   await renderHook(() => useAppFonts());
 
-  const map = mockUseFonts.mock.calls[0][0] as Record<
-    string,
-    { display: string }
-  >;
+  const map = mockUseFonts.mock.calls[0][0] as Record<string, unknown>;
   expect(Object.keys(map).sort()).toEqual([
     "Pretendard",
     "Pretendard-Bold",
     "Pretendard-Medium",
     "Pretendard-SemiBold",
   ]);
-  for (const source of Object.values(map)) {
-    expect(source.display).toBe("swap");
-  }
 });

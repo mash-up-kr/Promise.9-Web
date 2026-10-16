@@ -17,7 +17,6 @@ jest.mock("@/lib/focus-manager", () => ({ setupFocusManager: jest.fn() }));
 const mockUseFonts = jest.fn((): [boolean, Error | null] => [true, null]);
 jest.mock("expo-font", () => ({
   useFonts: () => mockUseFonts(),
-  FontDisplay: { SWAP: "swap" },
 }));
 jest.mock("expo-splash-screen", () => ({
   preventAutoHideAsync: jest.fn(),
