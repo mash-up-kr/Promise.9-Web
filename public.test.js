@@ -133,3 +133,44 @@ describe("검색 노출", () => {
     );
   });
 });
+
+// 웹 폰트는 scripts/sync-pretendard-web.js 가 생성한다 — 토큰에 family 가 추가됐는데 CSS 에 없으면
+// 그 글자만 기본 폰트로 떨어지고, 조각 파일이 빠지면 해당 글자 범위만 폴백으로 남는다.
+describe("웹 폰트 (public/fonts)", () => {
+  const fontCss = readPublic("fonts/pretendard.css");
+
+  test("토큰의 --font-pretendard* family 는 모두 @font-face 로 선언돼 있다", () => {
+    const tokens = fs.readFileSync(
+      path.join(__dirname, "shared/styles/tokens.css"),
+      "utf8",
+    );
+    const requested = [
+      ...tokens.matchAll(/--font-pretendard[\w-]*:\s*"([^"]+)"/g),
+    ].map((match) => match[1]);
+    const registered = new Set(
+      [...fontCss.matchAll(/font-family:\s*"([^"]+)"/g)].map(
+        (match) => match[1],
+      ),
+    );
+
+    expect(requested.length).toBeGreaterThan(0);
+    expect(requested.filter((family) => !registered.has(family))).toEqual([]);
+  });
+
+  test("CSS 가 참조하는 woff2 조각이 전부 존재한다", () => {
+    const urls = [...fontCss.matchAll(/url\(([^)]+)\)/g)].map(
+      (match) => match[1],
+    );
+    expect(urls.length).toBeGreaterThan(0);
+    const missing = urls.filter(
+      (url) => !fs.existsSync(path.join(PUBLIC_DIR, "fonts", url)),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  test("index.html 이 폰트 CSS 를 링크한다", () => {
+    expect(readPublic("index.html")).toContain(
+      '<link rel="stylesheet" href="/fonts/pretendard.css" />',
+    );
+  });
+});
