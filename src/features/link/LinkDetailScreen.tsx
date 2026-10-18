@@ -27,7 +27,7 @@ import {
   AlertDialog,
   AlertDialogButton,
 } from "@/components/ui/alert-dialog/AlertDialog";
-import { Header, useHeaderHeight } from "@/components/ui/header/Header";
+import { HEADER_BAR_HEIGHT, Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
@@ -113,8 +113,8 @@ export function LinkDetailScreen() {
 }
 
 function LinkDetailContent() {
-  const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
+  const headerHeight = insets.top + HEADER_BAR_HEIGHT;
   const { id } = useLocalSearchParams<"/link/[id]">();
   // 저장 직후엔 제목·요약이 비어 온다 — 처리 중인 동안만 다시 조회하고, 확정되면 멈춘다.
   const { data: linkDetail } = useSuspenseQuery({
