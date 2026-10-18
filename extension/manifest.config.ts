@@ -38,6 +38,8 @@ export default defineManifest({
   name: "링띵동",
   version: pkg.version,
   description: "보고 있는 페이지를 링띵동에 저장합니다.",
+  // 아이콘 우클릭 메뉴의 확장 이름 항목이 여는 주소. 없으면 Chrome 이 웹 스토어 페이지로 보낸다.
+  homepage_url: "https://link-ding-dong.com/",
   action: {
     default_title: "링띵동에 저장",
   },
