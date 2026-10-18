@@ -5,6 +5,7 @@ import {
   userEvent,
   waitFor,
 } from "@testing-library/react-native";
+import { StyleSheet } from "react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
@@ -507,5 +508,31 @@ describe("LinkDetailScreen", () => {
 
     expect(mockBack).not.toHaveBeenCalled();
     expect(mockReplace).toHaveBeenCalledWith("/");
+  });
+});
+
+describe("LinkDetailScreen — 스크롤 영역", () => {
+  const scroll = () => screen.getByTestId("link-detail-scroll");
+
+  test("섹션 간격·위아래 여백을 한 인라인 스타일에 둔다", async () => {
+    await renderScreen();
+    expect(
+      StyleSheet.flatten(scroll().props.contentContainerStyle),
+    ).toMatchObject({
+      paddingTop: 47 + 60 + 16,
+      gap: 24,
+      paddingBottom: 34 + 32,
+    });
+  });
+
+  // iOS 가 safe-area 만큼 인셋을 한 번 더 넣어 상단이 다른 OS 보다 내려갔다.
+  test("iOS 자동 인셋 없이 직접 계산한 여백만 쓴다", async () => {
+    await renderScreen();
+    expect(scroll().props.contentInsetAdjustmentBehavior).toBeUndefined();
+  });
+
+  test("다른 화면처럼 세로 스크롤바를 숨긴다", async () => {
+    await renderScreen();
+    expect(scroll().props.showsVerticalScrollIndicator).toBe(false);
   });
 });
