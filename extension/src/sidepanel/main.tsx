@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { installTokenPersistence } from "@/lib/auth/session";
 import { createExtensionQueryClient } from "@/lib/queryClient";
 import { SidePanelApp } from "@/sidepanel/SidePanelApp";
+import "@public/fonts/pretendard.css";
 import "@/styles/global.css";
 
 const queryClient = createExtensionQueryClient();

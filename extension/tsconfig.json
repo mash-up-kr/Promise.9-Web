@@ -18,7 +18,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@shared/*": ["../shared/*"],
-      "@assets/*": ["../assets/*"]
+      "@assets/*": ["../assets/*"],
+      "@public/*": ["../public/*"]
     }
   },
   "include": [
