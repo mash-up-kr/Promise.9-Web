@@ -57,3 +57,39 @@ describe("background 저장", () => {
     expect(createLink).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("background 툴바 메뉴", () => {
+  // 이름 항목은 Chrome 이 homepage_url(웹 홈)로 연결하므로 보관함만 더한다.
+  it("설치 시 아이콘 우클릭 메뉴에 보관함 열기를 등록한다", async () => {
+    const chromeMock = installChromeMock();
+    await loadBackground();
+
+    chromeMock.emitInstalled();
+
+    expect(chromeMock.createContextMenu).toHaveBeenCalledWith({
+      id: "open-archive",
+      title: "보관함 열기",
+      contexts: ["action"],
+    });
+  });
+
+  it("보관함 열기를 누르면 웹앱 보관함을 새 탭으로 연다", async () => {
+    const chromeMock = installChromeMock();
+    await loadBackground();
+
+    chromeMock.emitContextMenuClick("open-archive");
+
+    expect(chromeMock.createTab).toHaveBeenCalledWith({
+      url: "https://link-ding-dong.com/archive",
+    });
+  });
+
+  it("다른 메뉴 항목 클릭에는 반응하지 않는다", async () => {
+    const chromeMock = installChromeMock();
+    await loadBackground();
+
+    chromeMock.emitContextMenuClick("something-else");
+
+    expect(chromeMock.createTab).not.toHaveBeenCalled();
+  });
+});

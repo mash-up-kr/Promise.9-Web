@@ -11,4 +11,8 @@ describe("아이콘 우클릭 메뉴", () => {
   it("이름 항목은 웹앱 홈을 연다", () => {
     expect(manifest.homepage_url).toBe(webAppUrl(WEB_APP_PATH.home));
   });
+
+  it("보관함 열기 항목을 더할 contextMenus 권한이 있다", () => {
+    expect(manifest.permissions).toContain("contextMenus");
+  });
 });

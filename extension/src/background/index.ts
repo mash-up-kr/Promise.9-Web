@@ -15,6 +15,9 @@ import {
   type SaveRecord,
   writeSaveRecord,
 } from "@/lib/storage";
+import { WEB_APP_PATH, webAppUrl } from "@/lib/webApp";
+
+const ARCHIVE_MENU_ID = "open-archive";
 
 /**
  * 저장을 수행한다.
@@ -105,6 +108,19 @@ chrome.runtime.onMessage.addListener((message: unknown) => {
  */
 chrome.runtime.onInstalled.addListener(() => {
   void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+  // 아이콘 우클릭 메뉴. 확장 이름 항목은 Chrome 이 homepage_url(웹 홈)로 연결하므로 보관함만 더한다.
+  // Chrome 이 메뉴를 보존하니 설치 때 한 번만 만든다 — 워커가 뜰 때마다 만들면 중복 id 오류.
+  chrome.contextMenus.create({
+    id: ARCHIVE_MENU_ID,
+    title: "보관함 열기",
+    contexts: ["action"],
+  });
+});
+
+chrome.contextMenus.onClicked.addListener((info) => {
+  if (info.menuItemId !== ARCHIVE_MENU_ID) return;
+
+  void chrome.tabs.create({ url: webAppUrl(WEB_APP_PATH.archive) });
 });
 
 /**
