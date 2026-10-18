@@ -22,6 +22,7 @@ import {
   useForm,
 } from "react-hook-form";
 import { ScrollView, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AlertDialog,
   AlertDialogButton,
@@ -113,6 +114,7 @@ export function LinkDetailScreen() {
 
 function LinkDetailContent() {
   const headerHeight = useHeaderHeight();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<"/link/[id]">();
   // 저장 직후엔 제목·요약이 비어 온다 — 처리 중인 동안만 다시 조회하고, 확정되면 멈춘다.
   const { data: linkDetail } = useSuspenseQuery({
@@ -315,10 +317,15 @@ function LinkDetailContent() {
       {/* 배경은 다른 화면과 동일한 기본 배경 — 이미지 블러·대표색 추출 없음(Figma 정책 106:12076). */}
       <View className="flex-1 bg-background-base">
         <ScrollView
+          testID="link-detail-scroll"
           className="flex-1"
-          contentContainerClassName="gap-6 pb-8"
-          contentContainerStyle={{ paddingTop: headerHeight + 16 }}
-          contentInsetAdjustmentBehavior="automatic"
+          // react-native-css 는 contentContainerClassName 을 contentContainerStyle 과 합치지 않는다 — 한곳에 둔다.
+          contentContainerStyle={{
+            paddingTop: headerHeight + 16,
+            gap: 24,
+            paddingBottom: insets.bottom + 32,
+          }}
+          showsVerticalScrollIndicator={false}
         >
           <View className="px-5">
             {/* 서버는 현재 대표 이미지를 단수(thumbnailUrl)로 준다 — 배열로 매핑해
