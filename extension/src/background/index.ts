@@ -15,6 +15,9 @@ import {
   type SaveRecord,
   writeSaveRecord,
 } from "@/lib/storage";
+import { WEB_APP_PATH, webAppUrl } from "@/lib/webApp";
+
+const ARCHIVE_MENU_ID = "open-archive";
 
 /**
  * 저장을 수행한다.
@@ -98,13 +101,29 @@ chrome.runtime.onMessage.addListener((message: unknown) => {
 });
 
 /**
- * 아이콘 클릭 = 사이드패널 열기.
+ * 설치·업데이트 때 한 번 하는 설정.
  *
- * `default_popup` 이 없을 때 크롬이 아이콘 클릭을 사이드패널로 연결해주는 설정이다.
- * 이걸 켜지 않으면 아이콘을 눌러도 아무 일도 일어나지 않는다.
+ * - 아이콘 클릭 = 사이드패널 열기. `default_popup` 이 없을 때 크롬이 아이콘 클릭을 사이드패널로
+ *   연결해주는 설정으로, 켜지 않으면 아이콘을 눌러도 아무 일도 일어나지 않는다.
+ * - 아이콘 우클릭 메뉴. 확장 이름 항목은 Chrome 이 homepage_url(웹 홈)로 연결하므로 보관함만 더한다.
+ *   브라우저 업데이트(chrome_update)에도 이 이벤트가 뜨는데 그때는 저장된 메뉴가 남아 있어
+ *   바로 만들면 중복 id 오류가 난다 — 비우고 만든다.
  */
 chrome.runtime.onInstalled.addListener(() => {
   void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+  void chrome.contextMenus.removeAll().then(() => {
+    chrome.contextMenus.create({
+      id: ARCHIVE_MENU_ID,
+      title: "보관함 열기",
+      contexts: ["action"],
+    });
+  });
+});
+
+chrome.contextMenus.onClicked.addListener((info) => {
+  if (info.menuItemId !== ARCHIVE_MENU_ID) return;
+
+  void chrome.tabs.create({ url: webAppUrl(WEB_APP_PATH.archive) });
 });
 
 /**

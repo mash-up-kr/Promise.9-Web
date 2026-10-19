@@ -1,0 +1,16 @@
+User-agent: *
+# 로그인이 필요한 경로 — 크롤러에게는 빈 화면이라 색인하지 않는다.
+Disallow: /archive
+Disallow: /link/
+Disallow: /search
+Disallow: /support
+Disallow: /settings$
+Disallow: /settings/withdraw
+Disallow: /create-link
+Disallow: /create-folder
+Disallow: /edit-folder
+Disallow: /move-links
+# 소셜 로그인 콜백
+Disallow: /auth/
+
+Sitemap: https://link-ding-dong.com/sitemap.xml

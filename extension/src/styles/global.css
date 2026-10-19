@@ -19,53 +19,13 @@
 @custom-variant native (@media native);
 @custom-variant web (@supports selector(div > div));
 
-/*
- * 앱과 같은 Pretendard. 루트 assets 의 ttf 를 Vite 가 번들한다.
- * 타이포 토큰이 쓰는 굵기(400·500·600)만 싣는다 — 700 은 쓰는 토큰이 없다.
- * TODO: ttf 4종(아래 Bold 포함)이 10MB 가 넘는다. woff2 서브셋으로 줄이기.
- */
-@font-face {
-  font-family: "Pretendard";
-  src: url("../../../assets/fonts/Pretendard-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Pretendard";
-  src: url("../../../assets/fonts/Pretendard-Medium.ttf") format("truetype");
-  font-weight: 500;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Pretendard";
-  src: url("../../../assets/fonts/Pretendard-SemiBold.ttf") format("truetype");
-  font-weight: 600;
-  font-display: swap;
-}
-/*
- * 앱은 굵기마다 family 이름이 다른 static 폰트를 쓴다(font-pretendard-medium → "Pretendard-Medium").
- * 패키지의 Text 가 그 이름을 요청하므로 같은 파일을 그 이름으로도 등록한다.
- * 타이포 프리셋이 font-weight 도 함께 요청한다 — 실제 굵기를 선언하지 않으면(기본 400)
- * 브라우저가 이미 굵은 파일 위에 가짜 bold 를 한 번 더 얹는다.
- */
-@font-face {
-  font-family: "Pretendard-Medium";
-  src: url("../../../assets/fonts/Pretendard-Medium.ttf") format("truetype");
-  font-weight: 500;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Pretendard-SemiBold";
-  src: url("../../../assets/fonts/Pretendard-SemiBold.ttf") format("truetype");
-  font-weight: 600;
-  font-display: swap;
-}
-/* 타이포 토큰은 700 을 안 쓰지만 공유 Text 의 `bold` 가 이 family 를 요청한다. 파일은 쓰일 때만 로드된다. */
-@font-face {
-  font-family: "Pretendard-Bold";
-  src: url("../../../assets/fonts/Pretendard-Bold.ttf") format("truetype");
-  font-weight: 700;
-  font-display: swap;
+/* Pretendard 는 앱 웹과 같은 생성 CSS(public/fonts/pretendard.css)를 main.tsx 가 불러온다.
+   조각이 오기 전엔 시스템 sans 로 그린다(앱 src/global.css 의 웹 전용 블록과 동일). */
+:root {
+  --font-pretendard: "Pretendard", system-ui, sans-serif;
+  --font-pretendard-medium: "Pretendard-Medium", system-ui, sans-serif;
+  --font-pretendard-semibold: "Pretendard-SemiBold", system-ui, sans-serif;
+  --font-pretendard-bold: "Pretendard-Bold", system-ui, sans-serif;
 }
 @layer base {
   /*
