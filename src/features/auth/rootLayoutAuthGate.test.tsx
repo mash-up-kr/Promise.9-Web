@@ -27,11 +27,17 @@ jest.mock("expo-splash-screen", () => ({
   hideAsync: jest.fn(),
 }));
 jest.mock("@/features/splash/hooks/useSplashPhase", () => ({
-  useSplashPhase: () => "hidden",
+  useSplashPhase: jest.fn(() => "hidden"),
 }));
 jest.mock("@/features/splash/components/SplashOverlay", () => ({
   SplashOverlay: () => null,
 }));
+// 업데이트 안내는 스플래시가 걷힌 뒤에만 마운트되는지만 본다 — 안내 자체는 AppNoticeGate.test 가 지킨다.
+jest.mock("@/features/app-notice/AppNoticeGate", () => {
+  const { createElement } = require("react");
+  const { Text } = require("react-native");
+  return { AppNoticeGate: () => createElement(Text, null, "app-notice-gate") };
+});
 
 import { userEvent } from "@testing-library/react-native";
 import { Slot } from "expo-router";
@@ -41,8 +47,10 @@ import RootLayout from "@/app/_layout";
 import NotFoundRoute from "@/app/+not-found";
 import AuthLayout from "@/app/(auth)/_layout";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
+import { useSplashPhase } from "@/features/splash/hooks/useSplashPhase";
 
 const mockUseAuthGate = jest.mocked(useAuthGate);
+const mockUseSplashPhase = jest.mocked(useSplashPhase);
 
 const label = (name: string) => () => <Text>{name}</Text>;
 
@@ -175,5 +183,26 @@ describe("RootLayout — 없는 경로", () => {
     );
 
     expect(await screen.findByText("login")).toBeOnTheScreen();
+  });
+});
+
+// 업데이트 안내는 자체 Modal 이라 스플래시 오버레이보다 위에 그려진다 — 스플래시가 걷힌 뒤에 띄운다.
+describe("RootLayout — 업데이트 안내", () => {
+  afterEach(() => {
+    mockUseSplashPhase.mockReturnValue("hidden");
+  });
+
+  test("스플래시가 걷히기 전에는 업데이트 안내를 마운트하지 않는다", async () => {
+    mockUseAuthGate.mockReturnValue("authenticated");
+    mockUseSplashPhase.mockReturnValue("shown");
+    await renderRouter(routes, { initialUrl: "/" });
+    expect(await screen.findByText("home")).toBeOnTheScreen();
+    expect(screen.queryByText("app-notice-gate")).not.toBeOnTheScreen();
+  });
+
+  test("스플래시가 걷히면 업데이트 안내를 마운트한다", async () => {
+    mockUseAuthGate.mockReturnValue("authenticated");
+    await renderRouter(routes, { initialUrl: "/" });
+    expect(await screen.findByText("app-notice-gate")).toBeOnTheScreen();
   });
 });

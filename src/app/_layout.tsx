@@ -153,8 +153,9 @@ export default function RootLayout() {
               </SnackbarProvider>
             </View>
             {/* 업데이트 안내 — 스토어가 있는 네이티브에서만, 로그인 여부와 무관하게 띄운다.
-                자체 Modal 로 그려 화면 폭 제한(위 View) 밖에 둔다. */}
-            {!isWeb && <AppNoticeGate />}
+                자체 Modal 로 그려 화면 폭 제한(위 View) 밖에 두며, 스플래시 오버레이보다 위에
+                뜨므로 스플래시가 걷힌 뒤에 마운트한다. */}
+            {!isWeb && splashPhase === "hidden" && <AppNoticeGate />}
           </KeyboardProvider>
         </SafeAreaProvider>
         {isSplashEnabled && splashPhase !== "hidden" && (
