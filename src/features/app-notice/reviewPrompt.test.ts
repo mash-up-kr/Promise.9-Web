@@ -5,6 +5,7 @@ jest.mock("@/constants/app.constants", () => ({ APP_VERSION: "1.2.0" }));
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as StoreReview from "expo-store-review";
+import { AppState } from "react-native";
 
 import { queryClient } from "@/lib/queryClient";
 
@@ -144,11 +145,44 @@ test("리뷰 창을 띄울 수 없는 기기면 조용히 넘어간다 — 요�
   ).resolves.toBeNull();
 });
 
-test("리뷰 창이 실패해도 저장 흐름으로 에러를 던지지 않는다", async () => {
+test("리뷰 창이 실패해도 저장 흐름으로 에러를 던지지 않고 기록도 남기지 않는다", async () => {
   await setSaveCount(REVIEW_PROMPT.minSaveCount);
   mockRequestReview.mockRejectedValue(new Error("ERR_STORE_REVIEW_FAILED"));
 
   await expect(run()).resolves.toBe(false);
+
+  await expect(
+    AsyncStorage.getItem(APP_NOTICE_STORAGE_KEYS.reviewRequestedVersion),
+  ).resolves.toBeNull();
+});
+
+test("기다리는 사이 앱이 뒤로 갔으면 요청하지 않고 기록도 남기지 않는다", async () => {
+  await setSaveCount(REVIEW_PROMPT.minSaveCount - 1);
+  Object.assign(AppState, { currentState: "background" });
+
+  try {
+    await expect(run()).resolves.toBe(false);
+  } finally {
+    Object.assign(AppState, { currentState: "active" });
+  }
+
+  expect(mockRequestReview).not.toHaveBeenCalled();
+  await expect(
+    AsyncStorage.getItem(APP_NOTICE_STORAGE_KEYS.reviewRequestedVersion),
+  ).resolves.toBeNull();
+});
+
+// 기록은 OS 창을 띄운 뒤에 남으므로, 지연 중에 들어온 두 번째 저장도 검사를 통과해 버린다.
+test("지연 중에 두 번째 저장이 들어와도 요청은 한 번만 나간다", async () => {
+  await setSaveCount(REVIEW_PROMPT.minSaveCount - 1);
+
+  const first = requestReviewAfterSave(NOW);
+  const second = requestReviewAfterSave(NOW);
+  await jest.advanceTimersByTimeAsync(REVIEW_PROMPT.delayMs);
+
+  await expect(first).resolves.toBe(true);
+  await expect(second).resolves.toBe(false);
+  expect(mockRequestReview).toHaveBeenCalledTimes(1);
 });
 
 test("저장 횟수는 요청 여부와 무관하게 쌓인다", async () => {
@@ -184,12 +218,6 @@ describe("원격 설정(기준 파일 review 블록)", () => {
     setRemotePolicy({ cooldownDays: 10 });
     await setSaveCount(REVIEW_PROMPT.minSaveCount * 3);
     await setRequested(daysBefore(NOW, 11), "1.1.0");
-
-    await expect(run()).resolves.toBe(true);
-  });
-
-  test("기준 파일을 아직 못 읽었으면 앱 기본값을 쓴다", async () => {
-    await setSaveCount(REVIEW_PROMPT.minSaveCount - 1);
 
     await expect(run()).resolves.toBe(true);
   });

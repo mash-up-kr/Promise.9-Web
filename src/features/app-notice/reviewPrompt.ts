@@ -1,5 +1,6 @@
 import { delay } from "es-toolkit";
 import * as StoreReview from "expo-store-review";
+import { AppState } from "react-native";
 
 import { APP_VERSION } from "@/constants/app.constants";
 import { isShareExtension, isWeb } from "@/constants/platform.constants";
@@ -14,6 +15,9 @@ import {
 } from "./noticeStorage";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+// 기록은 OS 창을 띄운 뒤에 남으므로, 지연 중에 들어온 두 번째 저장이 검사를 또 통과하지 않게 막는다.
+let isRequesting = false;
 
 function isWithinCooldown(
   requestedAt: string | null,
@@ -69,6 +73,10 @@ export async function requestReviewAfterSave(
     return false;
   }
 
+  if (isRequesting) {
+    return false;
+  }
+  isRequesting = true;
   try {
     // isAvailableAsync: 기기 능력(TestFlight·구형 안드로이드 제외) · hasAction: 실제로 보낼 곳이 있는지.
     const [isAvailable, hasAction] = await Promise.all([
@@ -80,13 +88,18 @@ export async function requestReviewAfterSave(
     }
 
     await delay(REVIEW_PROMPT.delayMs);
+    // 기다리는 사이 앱이 뒤로 갔으면 창이 뜨지 않는데(Android 는 성공으로 끝난다) 이 버전의 기회만 쓴다.
+    if (AppState.currentState === "background") {
+      return false;
+    }
     await StoreReview.requestReview();
+    // 띄운 뒤에만 기록한다 — 띄우지 못한 실행이 쿨다운을 먹지 않게.
+    await markReviewRequested(now, APP_VERSION);
+    return true;
   } catch (error) {
     console.error("[app-notice] 인앱 리뷰 요청 실패", error);
     return false;
+  } finally {
+    isRequesting = false;
   }
-
-  // 띄운 뒤에만 기록한다 — 띄우지 못한 실행이 쿨다운을 먹지 않게.
-  await markReviewRequested(now, APP_VERSION);
-  return true;
 }
