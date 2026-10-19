@@ -13,7 +13,7 @@ const isDevelopmentBuild = process.env.NODE_ENV !== "production";
 /**
  * 업데이트 기준 파일의 주소.
  *
- * 서버 API 가 아니라 `public/app-release.json` 이다 — 웹 배포(`pnpm deploy`)에 실려 나가므로
+ * 서버 API 가 아니라 `public/app-release.json` 이다 — 웹 배포(`main` 머지)에 실려 나가므로
  * 앱을 다시 올리지 않고도 기준을 바꿀 수 있다. 갱신·로컬 검증 절차는 docs/release.md 참고.
  */
 export const APP_RELEASE_MANIFEST_URL =
