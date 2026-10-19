@@ -87,14 +87,15 @@ describe("AlertDialog", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  test("closeOnOverlayClick=false 면 backdrop 을 눌러도 닫히지 않는다", async () => {
+  // 닫을 수 없는 대화상자에서 아무 일도 안 하는 '닫기' 버튼이 스크린리더에 읽히면 안 된다.
+  test("closeOnOverlayClick=false 면 backdrop 이 '닫기' 버튼으로 잡히지 않는다", async () => {
     const { onClose } = await renderDialog({ closeOnOverlayClick: false });
-    fireEvent.press(
-      screen.getByRole("button", {
+    expect(
+      screen.queryByRole("button", {
         name: "닫기",
         includeHiddenElements: true,
       }),
-    );
+    ).toBeNull();
     expect(onClose).not.toHaveBeenCalled();
   });
 
