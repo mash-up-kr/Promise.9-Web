@@ -17,8 +17,9 @@ const RELEASE = {
 
 function createWrapper() {
   // gcTime 기본값(5분) 타이머가 남으면 jest worker 가 바로 종료되지 않아 0 으로 둔다(link.mutations.test 선례).
+  // 쿼리 자체 retry 가 래퍼 기본값을 덮으므로 재시도 대기만 0 으로 줄인다.
   const client = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    defaultOptions: { queries: { retry: false, retryDelay: 0, gcTime: 0 } },
   });
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
@@ -59,13 +60,17 @@ test("응답이 없으면 기다리지 않고 포기한다 — 안내 판단이 
   );
 });
 
-// 실패한 조회가 포커스 복귀·재연결마다 되살아나면 쓰는 중에 모달이 끼어든다 — 실행당 한 번만 묻는다.
-test("실패해도 재시도·포커스 복귀·재연결로 다시 묻지 않는다", () => {
-  expect(appNoticeQueries.release()).toMatchObject({
-    retry: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+// 실행 직후 순단 한 번으로 차단 안내가 그 프로세스 내내 사라지면 안 된다 — 몇 번은 다시 묻고,
+// 한 번 읽은 뒤에는 다시 묻지 않는다(포커스 복귀마다 권유 모달이 끼어들지 않게).
+test("실패하면 몇 번 재시도하고, 성공한 뒤에는 다시 묻지 않는다", () => {
+  const options = appNoticeQueries.release();
+
+  expect(options).toMatchObject({
+    retry: 2,
+    staleTime: Number.POSITIVE_INFINITY,
   });
+  expect(options).not.toHaveProperty("refetchOnWindowFocus");
+  expect(options).not.toHaveProperty("refetchOnReconnect");
 });
 
 test("파일이 없으면 에러 — 호출부가 안내를 건너뛴다", async () => {

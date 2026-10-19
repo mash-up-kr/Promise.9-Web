@@ -15,8 +15,9 @@ export const appNoticeQueries = {
    * 업데이트 기준(최신·필수 버전). 서버 API 가 아니라 웹에 올려둔 정적 파일이라
    * apiClient(baseURL·토큰·에러 매핑)를 타지 않고 axios 로 직접 읽는다.
    *
-   * 실행당 한 번만 읽는다 — 안내는 콜드 스타트에 한 번 판단하면 되고, 실패한 조회가
-   * 재시도·포커스 복귀·재연결마다 되살아나면 쓰는 중에 모달이 끼어든다.
+   * 한 번 읽으면 다시 묻지 않는다(`staleTime`) — 포커스 복귀마다 권유 모달이 끼어들지 않게.
+   * 실패는 몇 번 재시도하고, 그래도 못 읽었으면 재연결·포커스 복귀 때 다시 읽는다(기본값) —
+   * 실행 직후 순단 한 번으로 차단 안내가 그 프로세스 내내 사라지면 안 된다.
    * 파일은 `max-age=0, must-revalidate` 로 서빙돼 기준을 바꾼 직후에도 옛 값을 받지 않는다.
    */
   release: () =>
@@ -31,8 +32,6 @@ export const appNoticeQueries = {
         return appReleaseSchema.parse(data);
       },
       staleTime: Number.POSITIVE_INFINITY,
-      retry: false,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
+      retry: 2,
     }),
 };

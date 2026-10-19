@@ -37,8 +37,9 @@ function manifest(ios: Manifest["ios"]): Manifest {
 }
 
 function renderGate() {
+  // 쿼리 자체 retry 가 래퍼 기본값을 덮으므로 재시도 대기만 0 으로 줄인다.
   const client = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    defaultOptions: { queries: { retry: false, retryDelay: 0, gcTime: 0 } },
   });
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
