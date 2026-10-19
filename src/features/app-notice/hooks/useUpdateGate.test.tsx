@@ -8,6 +8,7 @@ jest.mock("@/constants/app.constants", () => ({ APP_VERSION: "1.2.0" }));
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
+import axios from "axios";
 import type { ReactNode } from "react";
 
 import { APP_NOTICE_STORAGE_KEYS } from "../appNotice.constants";
@@ -19,11 +20,12 @@ interface Manifest {
 }
 
 function mockManifest(manifest: Manifest | null) {
-  globalThis.fetch = jest.fn().mockResolvedValue({
-    ok: manifest !== null,
-    status: manifest === null ? 404 : 200,
-    json: async () => manifest ?? {},
-  }) as unknown as typeof fetch;
+  const get = jest.spyOn(axios, "get");
+  if (manifest === null) {
+    get.mockRejectedValue(new Error("Request failed with status code 404"));
+  } else {
+    get.mockResolvedValue({ data: manifest });
+  }
 }
 
 // 테스트는 jest-expo 기본 플랫폼(iOS)에서 돈다 — android 기준은 일부러 다르게 둬 섞이지 않는지 본다.

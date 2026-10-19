@@ -23,6 +23,7 @@ import {
   userEvent,
   waitFor,
 } from "@testing-library/react-native";
+import axios from "axios";
 
 import { openExternalUrl } from "@/utils/openExternalUrl";
 
@@ -30,14 +31,12 @@ import { AppNoticeGate } from "./AppNoticeGate";
 import { STORE_URL } from "./appNotice.constants";
 
 function mockManifest(latestVersion: string, minSupportedVersion: string) {
-  globalThis.fetch = jest.fn().mockResolvedValue({
-    ok: true,
-    status: 200,
-    json: async () => ({
+  jest.spyOn(axios, "get").mockResolvedValue({
+    data: {
       ios: { latestVersion, minSupportedVersion },
       android: { latestVersion, minSupportedVersion },
-    }),
-  }) as unknown as typeof fetch;
+    },
+  });
 }
 
 async function renderGate() {
@@ -75,7 +74,7 @@ test("최신 버전이면 아무것도 그리지 않는다", async () => {
 
   await renderGate();
 
-  await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
+  await waitFor(() => expect(axios.get).toHaveBeenCalled());
   expect(screen.queryByText("새 버전이 나왔어요")).not.toBeOnTheScreen();
   expect(screen.queryByText("업데이트가 필요해요")).not.toBeOnTheScreen();
 });

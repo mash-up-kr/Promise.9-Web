@@ -4,6 +4,7 @@ import {
   useQuery,
 } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react-native";
+import axios from "axios";
 import type { ReactNode } from "react";
 
 import { APP_RELEASE_MANIFEST_URL } from "../appNotice.constants";
@@ -24,14 +25,8 @@ function createWrapper() {
   );
 }
 
-function mockFetchResponse(response: Partial<Response>) {
-  const fetchMock = jest.fn().mockResolvedValue({
-    ok: true,
-    status: 200,
-    ...response,
-  });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
-  return fetchMock;
+function mockManifest(data: unknown) {
+  return jest.spyOn(axios, "get").mockResolvedValue({ data });
 }
 
 function renderRelease() {
@@ -40,27 +35,43 @@ function renderRelease() {
   });
 }
 
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
 test("기준 파일을 읽어 검증된 값을 돌려준다", async () => {
-  mockFetchResponse({ json: async () => RELEASE });
+  mockManifest(RELEASE);
 
   const { result } = await renderRelease();
 
   await waitFor(() => expect(result.current.data).toEqual(RELEASE));
 });
 
-test("엣지 캐시된 옛 기준을 받지 않도록 캐시를 우회해 요청한다", async () => {
-  const fetchMock = mockFetchResponse({ json: async () => RELEASE });
+test("응답이 없으면 기다리지 않고 포기한다 — 안내 판단이 영영 미뤄지지 않게", async () => {
+  const get = mockManifest(RELEASE);
 
   const { result } = await renderRelease();
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-  const [url, init] = fetchMock.mock.calls[0];
-  expect(url).toContain(APP_RELEASE_MANIFEST_URL);
-  expect(init).toMatchObject({ cache: "no-store" });
+  expect(get).toHaveBeenCalledWith(
+    APP_RELEASE_MANIFEST_URL,
+    expect.objectContaining({ timeout: expect.any(Number) }),
+  );
+});
+
+// 실패한 조회가 포커스 복귀·재연결마다 되살아나면 쓰는 중에 모달이 끼어든다 — 실행당 한 번만 묻는다.
+test("실패해도 재시도·포커스 복귀·재연결로 다시 묻지 않는다", () => {
+  expect(appNoticeQueries.release()).toMatchObject({
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
 });
 
 test("파일이 없으면 에러 — 호출부가 안내를 건너뛴다", async () => {
-  mockFetchResponse({ ok: false, status: 404, json: async () => ({}) });
+  jest
+    .spyOn(axios, "get")
+    .mockRejectedValue(new Error("Request failed with status code 404"));
 
   const { result } = await renderRelease();
 
@@ -68,7 +79,7 @@ test("파일이 없으면 에러 — 호출부가 안내를 건너뛴다", async
 });
 
 test("기준 파일 모양이 깨져 있으면 에러", async () => {
-  mockFetchResponse({ json: async () => ({ ios: RELEASE.ios }) });
+  mockManifest({ ios: RELEASE.ios });
 
   const { result } = await renderRelease();
 
