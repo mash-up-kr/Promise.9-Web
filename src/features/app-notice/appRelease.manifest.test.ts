@@ -8,6 +8,11 @@ test("기준 파일은 계약을 지킨다", () => {
   expect(() => appReleaseSchema.parse(manifest)).not.toThrow();
 });
 
+// review 블록은 깨져도 parse 가 throw 하지 않으므로(끄기로 떨어진다) 값이 그대로 읽히는지 따로 본다.
+test("review 블록이 그대로 읽힌다 — 오타면 여기서 잡는다", () => {
+  expect(appReleaseSchema.parse(manifest).review).toEqual(manifest.review);
+});
+
 test("필수 버전이 최신 버전보다 높지 않다", () => {
   for (const platform of ["ios", "android"] as const) {
     const { latestVersion, minSupportedVersion } = manifest[platform];

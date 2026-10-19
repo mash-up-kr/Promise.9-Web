@@ -27,8 +27,9 @@ const reviewPolicySchema = z
 export const appReleaseSchema = z.object({
   ios: platformReleaseSchema,
   android: platformReleaseSchema,
-  // 이 블록의 오타가 업데이트 안내까지 지우면 안 된다 — 깨져 있으면 블록만 버리고 기본값으로 간다.
-  review: reviewPolicySchema.optional().catch(undefined),
+  // 이 블록의 오타가 업데이트 안내까지 지우면 안 되고, 끄려던 스위치가 열려서도 안 된다 —
+  // 깨져 있으면 후기 요청만 멈춘다(없으면 앱 기본값).
+  review: reviewPolicySchema.optional().catch({ enabled: false }),
 });
 
 export type AppRelease = z.infer<typeof appReleaseSchema>;

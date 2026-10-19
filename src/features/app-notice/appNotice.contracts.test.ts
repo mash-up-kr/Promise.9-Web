@@ -43,13 +43,18 @@ test("review 는 일부 필드만 둘 수 있다 — 끄기만 할 때", () => {
   ).toEqual({ enabled: false });
 });
 
-// 후기 설정 오타 때문에 업데이트 안내까지 사라지면 안 된다 — 그 블록만 버리고 기본값으로 떨어진다.
-test("review 블록이 깨져 있어도 업데이트 기준은 읽힌다", () => {
+// 후기 설정 오타 때문에 업데이트 안내까지 사라지면 안 되고, 끄려던 스위치가 열려서도 안 된다 —
+// 블록이 깨지면 후기 요청만 멈춘다.
+test("review 블록이 깨져 있으면 후기 요청을 끄고 업데이트 기준은 그대로 읽힌다", () => {
   const parsed = appReleaseSchema.parse({
     ...VALID,
-    review: { enabled: "yes", minSaveCount: 0 },
+    review: { enabled: false, minSaveCount: "5" },
   });
 
   expect(parsed.ios).toEqual(VALID.ios);
-  expect(parsed.review).toBeUndefined();
+  expect(parsed.review).toEqual({ enabled: false });
+});
+
+test("review 블록이 없으면 undefined — 앱 기본값으로 동작한다", () => {
+  expect(appReleaseSchema.parse(VALID).review).toBeUndefined();
 });
