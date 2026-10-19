@@ -147,7 +147,11 @@ export function installChromeMock(options: ChromeMockOptions = {}): ChromeMock {
       onInstalled: installed.event,
     },
     sidePanel: { setPanelBehavior: vi.fn(async () => undefined) },
-    contextMenus: { create: createContextMenu, onClicked: menuClick.event },
+    contextMenus: {
+      create: createContextMenu,
+      removeAll: vi.fn(async () => undefined),
+      onClicked: menuClick.event,
+    },
   });
 
   return {

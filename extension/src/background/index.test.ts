@@ -65,6 +65,7 @@ describe("background 툴바 메뉴", () => {
     await loadBackground();
 
     chromeMock.emitInstalled();
+    await flush();
 
     expect(chromeMock.createContextMenu).toHaveBeenCalledWith({
       id: "open-archive",
