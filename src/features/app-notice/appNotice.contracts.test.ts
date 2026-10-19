@@ -27,3 +27,29 @@ test("빈 버전 문자열은 거부한다 — 배포 실수로 기준이 비는
     }),
   ).toThrow();
 });
+
+test("후기 요청 설정(review)을 읽는다", () => {
+  const review = { enabled: true, minSaveCount: 5, cooldownDays: 90 };
+
+  expect(appReleaseSchema.parse({ ...VALID, review })).toEqual({
+    ...VALID,
+    review,
+  });
+});
+
+test("review 는 일부 필드만 둘 수 있다 — 끄기만 할 때", () => {
+  expect(
+    appReleaseSchema.parse({ ...VALID, review: { enabled: false } }).review,
+  ).toEqual({ enabled: false });
+});
+
+// 후기 설정 오타 때문에 업데이트 안내까지 사라지면 안 된다 — 그 블록만 버리고 기본값으로 떨어진다.
+test("review 블록이 깨져 있어도 업데이트 기준은 읽힌다", () => {
+  const parsed = appReleaseSchema.parse({
+    ...VALID,
+    review: { enabled: "yes", minSaveCount: 0 },
+  });
+
+  expect(parsed.ios).toEqual(VALID.ios);
+  expect(parsed.review).toBeUndefined();
+});

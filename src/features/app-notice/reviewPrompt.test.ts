@@ -6,7 +6,11 @@ jest.mock("@/constants/app.constants", () => ({ APP_VERSION: "1.2.0" }));
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as StoreReview from "expo-store-review";
 
+import { queryClient } from "@/lib/queryClient";
+
+import { appNoticeQueries } from "./api/appNotice.queries";
 import { APP_NOTICE_STORAGE_KEYS, REVIEW_PROMPT } from "./appNotice.constants";
+import type { AppRelease } from "./appNotice.contracts";
 import { requestReviewAfterSave } from "./reviewPrompt";
 
 const mockIsAvailable = StoreReview.isAvailableAsync as jest.Mock;
@@ -33,6 +37,15 @@ async function setRequested(requestedAt: Date, version = "1.1.0") {
   );
 }
 
+// 앱 실행 때 읽어 둔 기준 파일을 흉내 낸다 — 후기 정책은 그 안의 review 블록에서 온다.
+function setRemotePolicy(review: AppRelease["review"]) {
+  queryClient.setQueryData(appNoticeQueries.release().queryKey, {
+    ios: { latestVersion: "1.2.0", minSupportedVersion: "1.0.0" },
+    android: { latestVersion: "1.2.0", minSupportedVersion: "1.0.0" },
+    review,
+  });
+}
+
 function daysBefore(date: Date, days: number) {
   const result = new Date(date);
   result.setDate(result.getDate() - days);
@@ -48,6 +61,7 @@ async function run(now = NOW) {
 
 beforeEach(async () => {
   jest.useFakeTimers();
+  queryClient.clear();
   await AsyncStorage.clear();
   jest.clearAllMocks();
   mockIsAvailable.mockResolvedValue(true);
@@ -144,4 +158,39 @@ test("저장 횟수는 요청 여부와 무관하게 쌓인다", async () => {
   await expect(
     AsyncStorage.getItem(APP_NOTICE_STORAGE_KEYS.reviewSaveCount),
   ).resolves.toBe("2");
+});
+
+describe("원격 설정(기준 파일 review 블록)", () => {
+  test("끄면 조건이 맞아도 요청하지 않는다 — 저장 횟수는 계속 센다", async () => {
+    setRemotePolicy({ enabled: false });
+    await setSaveCount(REVIEW_PROMPT.minSaveCount - 1);
+
+    await expect(run()).resolves.toBe(false);
+
+    expect(mockRequestReview).not.toHaveBeenCalled();
+    await expect(
+      AsyncStorage.getItem(APP_NOTICE_STORAGE_KEYS.reviewSaveCount),
+    ).resolves.toBe(String(REVIEW_PROMPT.minSaveCount));
+  });
+
+  test("저장 횟수 기준을 원격 값으로 바꾼다", async () => {
+    setRemotePolicy({ minSaveCount: 2 });
+    await setSaveCount(1);
+
+    await expect(run()).resolves.toBe(true);
+  });
+
+  test("쿨다운을 원격 값으로 바꾼다", async () => {
+    setRemotePolicy({ cooldownDays: 10 });
+    await setSaveCount(REVIEW_PROMPT.minSaveCount * 3);
+    await setRequested(daysBefore(NOW, 11), "1.1.0");
+
+    await expect(run()).resolves.toBe(true);
+  });
+
+  test("기준 파일을 아직 못 읽었으면 앱 기본값을 쓴다", async () => {
+    await setSaveCount(REVIEW_PROMPT.minSaveCount - 1);
+
+    await expect(run()).resolves.toBe(true);
+  });
 });

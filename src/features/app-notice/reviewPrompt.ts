@@ -3,7 +3,9 @@ import * as StoreReview from "expo-store-review";
 
 import { APP_VERSION } from "@/constants/app.constants";
 import { isShareExtension, isWeb } from "@/constants/platform.constants";
+import { queryClient } from "@/lib/queryClient";
 
+import { appNoticeQueries } from "./api/appNotice.queries";
 import { REVIEW_PROMPT } from "./appNotice.constants";
 import {
   getReviewState,
@@ -13,13 +15,25 @@ import {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function isWithinCooldown(requestedAt: string | null, now: Date): boolean {
+function isWithinCooldown(
+  requestedAt: string | null,
+  now: Date,
+  cooldownDays: number,
+): boolean {
   if (requestedAt === null) {
     return false;
   }
   const elapsed = now.getTime() - new Date(requestedAt).getTime();
   // 날짜가 깨져 있으면(NaN) 쿨다운을 적용해 둔다 — 잘못된 값으로 반복 요청하는 쪽이 나쁘다.
-  return Number.isNaN(elapsed) || elapsed < REVIEW_PROMPT.cooldownDays * DAY_MS;
+  return Number.isNaN(elapsed) || elapsed < cooldownDays * DAY_MS;
+}
+
+// 앱 실행 때 읽어 둔 기준 파일의 review 블록이 기본값을 덮어쓴다 — 아직 못 읽었으면 기본값(fail-open).
+function readReviewPolicy() {
+  const remote = queryClient.getQueryData(
+    appNoticeQueries.release().queryKey,
+  )?.review;
+  return { enabled: true, ...REVIEW_PROMPT, ...remote };
 }
 
 /**
@@ -29,6 +43,7 @@ function isWithinCooldown(requestedAt: string | null, now: Date): boolean {
  * 우리 모달을 먼저 끼우지 않고 OS 창을 바로 띄운다 — iOS HIG·Android 가이드가 사전 질문 없이
  * "뭔가를 끝낸 자연스러운 시점에, 드물게" 띄우기를 요구한다(Apple 은 자체 리뷰 프롬프트를 심사에서 거절한다).
  * 앱 버전당 한 번·쿨다운으로 거르고, 저장 완료 스낵바가 지나간 뒤 띄운다. 노출 빈도는 OS 가 한 번 더 조절한다.
+ * 횟수·쿨다운·끄기는 기준 파일(`public/app-release.json` 의 review)로 배포 없이 바꾼다.
  *
  * 어떤 실패도 저장 흐름으로 번지지 않게 한다 — 후기 요청은 저장의 곁가지다.
  */
@@ -40,13 +55,17 @@ export async function requestReviewAfterSave(
     return false;
   }
 
+  const policy = readReviewPolicy();
   const saveCount = await increaseReviewSaveCount();
-  if (saveCount < REVIEW_PROMPT.minSaveCount) {
+  if (!policy.enabled || saveCount < policy.minSaveCount) {
     return false;
   }
 
   const { requestedAt, requestedVersion } = await getReviewState();
-  if (requestedVersion === APP_VERSION || isWithinCooldown(requestedAt, now)) {
+  if (
+    requestedVersion === APP_VERSION ||
+    isWithinCooldown(requestedAt, now, policy.cooldownDays)
+  ) {
     return false;
   }
 

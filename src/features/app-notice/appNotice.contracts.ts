@@ -10,6 +10,16 @@ const platformReleaseSchema = z.object({
   minSupportedVersion: z.string().min(1).max(MAX_VERSION_LENGTH),
 });
 
+/** 후기(인앱 리뷰) 요청 정책. 비운 필드는 앱 기본값(`REVIEW_PROMPT`)을 쓴다. */
+const reviewPolicySchema = z
+  .object({
+    /** false 면 배포 없이 후기 요청을 멈춘다. */
+    enabled: z.boolean(),
+    minSaveCount: z.number().int().positive(),
+    cooldownDays: z.number().int().positive(),
+  })
+  .partial();
+
 /**
  * `public/app-release.json` 의 계약 — 서버가 아니라 **우리가 정한** 파일이다.
  * 웹 배포에 실려 `https://link-ding-dong.com/app-release.json` 로 서빙되고, 앱이 실행마다 읽는다.
@@ -17,6 +27,8 @@ const platformReleaseSchema = z.object({
 export const appReleaseSchema = z.object({
   ios: platformReleaseSchema,
   android: platformReleaseSchema,
+  // 이 블록의 오타가 업데이트 안내까지 지우면 안 된다 — 깨져 있으면 블록만 버리고 기본값으로 간다.
+  review: reviewPolicySchema.optional().catch(undefined),
 });
 
 export type AppRelease = z.infer<typeof appReleaseSchema>;

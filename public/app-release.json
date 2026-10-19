@@ -6,5 +6,10 @@
   "android": {
     "latestVersion": "1.1.0",
     "minSupportedVersion": "1.0.0"
+  },
+  "review": {
+    "enabled": true,
+    "minSaveCount": 5,
+    "cooldownDays": 90
   }
 }

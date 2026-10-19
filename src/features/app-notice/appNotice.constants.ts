@@ -34,7 +34,7 @@ export const APP_NOTICE_STORAGE_KEYS = {
 } as const;
 
 /**
- * 후기 요청 조건.
+ * 후기 요청 조건의 기본값 — 기준 파일(`public/app-release.json`)의 review 블록이 있으면 그 값이 우선한다.
  *
  * iOS·Android 가이드가 "버튼이 아니라 사용자가 뭔가를 끝낸 자연스러운 시점에, 드물게" 를 요구한다 —
  * 그래서 저장을 몇 번 해본 사용자에게만, 앱 버전당 한 번·쿨다운을 두고 OS 리뷰 창을 띄운다.
