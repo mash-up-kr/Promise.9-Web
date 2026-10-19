@@ -9,6 +9,10 @@ jest.mock("@shared/api", () => ({
 }));
 // 루트 레이아웃이 불러오는 전역 CSS 는 jest 가 파싱하지 못한다.
 jest.mock("@/global.css", () => ({}));
+// 루트의 업데이트 안내가 안내 기록(AsyncStorage)을 읽는다 — 네이티브 저장소 대신 공식 jest mock.
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 // 네트워크·포커스 배선은 네이티브 리스너라 jest 에 없다 — 이 테스트의 관심사도 아니다.
 jest.mock("@/lib/online-manager", () => ({ setupOnlineManager: jest.fn() }));
 jest.mock("@/lib/focus-manager", () => ({ setupFocusManager: jest.fn() }));
@@ -23,11 +27,20 @@ jest.mock("expo-splash-screen", () => ({
   hideAsync: jest.fn(),
 }));
 jest.mock("@/features/splash/hooks/useSplashPhase", () => ({
-  useSplashPhase: () => "hidden",
+  useSplashPhase: jest.fn(() => "hidden"),
 }));
 jest.mock("@/features/splash/components/SplashOverlay", () => ({
   SplashOverlay: () => null,
 }));
+// 업데이트 안내는 스플래시가 걷힌 뒤에만 보이는지만 본다 — 안내 자체는 AppNoticeGate.test 가 지킨다.
+jest.mock("@/features/app-notice/AppNoticeGate", () => {
+  const { createElement } = require("react");
+  const { Text } = require("react-native");
+  return {
+    AppNoticeGate: ({ isVisible }: { isVisible: boolean }) =>
+      isVisible ? createElement(Text, null, "app-notice-gate") : null,
+  };
+});
 
 import { userEvent } from "@testing-library/react-native";
 import { Slot } from "expo-router";
@@ -37,8 +50,10 @@ import RootLayout from "@/app/_layout";
 import NotFoundRoute from "@/app/+not-found";
 import AuthLayout from "@/app/(auth)/_layout";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
+import { useSplashPhase } from "@/features/splash/hooks/useSplashPhase";
 
 const mockUseAuthGate = jest.mocked(useAuthGate);
+const mockUseSplashPhase = jest.mocked(useSplashPhase);
 
 const label = (name: string) => () => <Text>{name}</Text>;
 
@@ -171,5 +186,26 @@ describe("RootLayout — 없는 경로", () => {
     );
 
     expect(await screen.findByText("login")).toBeOnTheScreen();
+  });
+});
+
+// 업데이트 안내는 자체 Modal 이라 스플래시 오버레이보다 위에 그려진다 — 스플래시가 걷힌 뒤에 띄운다.
+describe("RootLayout — 업데이트 안내", () => {
+  afterEach(() => {
+    mockUseSplashPhase.mockReturnValue("hidden");
+  });
+
+  test("스플래시가 걷히기 전에는 업데이트 안내를 보이지 않는다", async () => {
+    mockUseAuthGate.mockReturnValue("authenticated");
+    mockUseSplashPhase.mockReturnValue("shown");
+    await renderRouter(routes, { initialUrl: "/" });
+    expect(await screen.findByText("home")).toBeOnTheScreen();
+    expect(screen.queryByText("app-notice-gate")).not.toBeOnTheScreen();
+  });
+
+  test("스플래시가 걷히면 업데이트 안내를 보인다", async () => {
+    mockUseAuthGate.mockReturnValue("authenticated");
+    await renderRouter(routes, { initialUrl: "/" });
+    expect(await screen.findByText("app-notice-gate")).toBeOnTheScreen();
   });
 });

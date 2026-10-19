@@ -29,6 +29,7 @@ import {
 import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
 import { isWeb } from "@/constants/platform.constants";
 import { decodeSharedUrl, linkDetailHref } from "@/constants/routes.constants";
+import { requestReviewAfterSave } from "@/features/app-notice/reviewPrompt";
 import { FolderChipList } from "@/features/link/components/FolderChipList";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { MemoField } from "@/features/link/components/MemoField";
@@ -107,6 +108,8 @@ export function CreateLinkSheet() {
               duration: SAVE_SNACKBAR_DURATION,
             });
             dismiss();
+            // 저장을 끝낸 직후가 후기를 물어볼 유일한 자연스러운 시점이다 — 조건은 그쪽이 판단한다.
+            requestReviewAfterSave();
           },
           onError: (error) => {
             if (isAlreadySavedLinkError(error)) {

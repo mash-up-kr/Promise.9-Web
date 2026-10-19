@@ -44,5 +44,7 @@ module.exports = {
     // 애플 로그인 SDK 도 네이티브 모듈이라 jest 환경에서 동작할 수 없다 — jest.fn() stub 으로 대체.
     "^expo-apple-authentication$":
       "<rootDir>/src/__mocks__/expo-apple-authentication.js",
+    // 인앱 리뷰도 네이티브 모듈이라 jest 환경에서 동작할 수 없다 — jest.fn() stub 으로 대체.
+    "^expo-store-review$": "<rootDir>/src/__mocks__/expo-store-review.js",
   },
 };

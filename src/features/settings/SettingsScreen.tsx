@@ -15,10 +15,10 @@ import {
 } from "@/components/ui/alert-dialog/AlertDialog";
 import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
+import { APP_VERSION } from "@/constants/app.constants";
 
 import { settingsQueries } from "./api/settings.queries";
 import { useLogout } from "./hooks/useLogout";
-import { APP_VERSION } from "./settings.constants";
 
 function ValueText({ children }: { children: string }) {
   return (

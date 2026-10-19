@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/snackbar/SnackbarProvider";
 import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
 import { isWeb } from "@/constants/platform.constants";
+import { AppNoticeGate } from "@/features/app-notice/AppNoticeGate";
 import { AuthGateProvider } from "@/features/auth/AuthGateContext";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
 import { SplashOverlay } from "@/features/splash/components/SplashOverlay";
@@ -151,6 +152,10 @@ export default function RootLayout() {
                 </HeaderScrollProvider>
               </SnackbarProvider>
             </View>
+            {/* 업데이트 안내 — 스토어가 있는 네이티브에서만, 로그인 여부와 무관하게 띄운다.
+                자체 Modal 로 그려 화면 폭 제한(위 View) 밖에 두며, 스플래시 오버레이보다 위에
+                뜨므로 스플래시가 걷힌 뒤에 보인다(기준 조회는 그 전에 시작한다). */}
+            {!isWeb && <AppNoticeGate isVisible={splashPhase === "hidden"} />}
           </KeyboardProvider>
         </SafeAreaProvider>
         {isSplashEnabled && splashPhase !== "hidden" && (
