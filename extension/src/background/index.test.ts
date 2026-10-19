@@ -59,10 +59,10 @@ describe("background 저장", () => {
 });
 
 describe("background 툴바 메뉴", () => {
-  // 이름 항목은 Chrome 이 homepage_url(웹 홈)로 연결하므로 보관함만 더한다.
   it("설치 시 아이콘 우클릭 메뉴에 보관함 열기를 등록한다", async () => {
     const chromeMock = installChromeMock();
     await loadBackground();
+    expect(chromeMock.createContextMenu).not.toHaveBeenCalled();
 
     chromeMock.emitInstalled();
     await flush();
