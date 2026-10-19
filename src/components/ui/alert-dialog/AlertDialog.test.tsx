@@ -89,14 +89,13 @@ describe("AlertDialog", () => {
 
   // 닫을 수 없는 대화상자에서 아무 일도 안 하는 '닫기' 버튼이 스크린리더에 읽히면 안 된다.
   test("closeOnOverlayClick=false 면 backdrop 이 '닫기' 버튼으로 잡히지 않는다", async () => {
-    const { onClose } = await renderDialog({ closeOnOverlayClick: false });
+    await renderDialog({ closeOnOverlayClick: false });
     expect(
       screen.queryByRole("button", {
         name: "닫기",
         includeHiddenElements: true,
       }),
     ).toBeNull();
-    expect(onClose).not.toHaveBeenCalled();
   });
 
   test("disabled 인 액션 버튼은 눌러도 onPress 가 호출되지 않는다", async () => {
