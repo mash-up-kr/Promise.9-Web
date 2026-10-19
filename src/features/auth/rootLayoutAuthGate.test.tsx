@@ -32,11 +32,14 @@ jest.mock("@/features/splash/hooks/useSplashPhase", () => ({
 jest.mock("@/features/splash/components/SplashOverlay", () => ({
   SplashOverlay: () => null,
 }));
-// 업데이트 안내는 스플래시가 걷힌 뒤에만 마운트되는지만 본다 — 안내 자체는 AppNoticeGate.test 가 지킨다.
+// 업데이트 안내는 스플래시가 걷힌 뒤에만 보이는지만 본다 — 안내 자체는 AppNoticeGate.test 가 지킨다.
 jest.mock("@/features/app-notice/AppNoticeGate", () => {
   const { createElement } = require("react");
   const { Text } = require("react-native");
-  return { AppNoticeGate: () => createElement(Text, null, "app-notice-gate") };
+  return {
+    AppNoticeGate: ({ isVisible }: { isVisible: boolean }) =>
+      isVisible ? createElement(Text, null, "app-notice-gate") : null,
+  };
 });
 
 import { userEvent } from "@testing-library/react-native";
@@ -192,7 +195,7 @@ describe("RootLayout — 업데이트 안내", () => {
     mockUseSplashPhase.mockReturnValue("hidden");
   });
 
-  test("스플래시가 걷히기 전에는 업데이트 안내를 마운트하지 않는다", async () => {
+  test("스플래시가 걷히기 전에는 업데이트 안내를 보이지 않는다", async () => {
     mockUseAuthGate.mockReturnValue("authenticated");
     mockUseSplashPhase.mockReturnValue("shown");
     await renderRouter(routes, { initialUrl: "/" });
@@ -200,7 +203,7 @@ describe("RootLayout — 업데이트 안내", () => {
     expect(screen.queryByText("app-notice-gate")).not.toBeOnTheScreen();
   });
 
-  test("스플래시가 걷히면 업데이트 안내를 마운트한다", async () => {
+  test("스플래시가 걷히면 업데이트 안내를 보인다", async () => {
     mockUseAuthGate.mockReturnValue("authenticated");
     await renderRouter(routes, { initialUrl: "/" });
     expect(await screen.findByText("app-notice-gate")).toBeOnTheScreen();

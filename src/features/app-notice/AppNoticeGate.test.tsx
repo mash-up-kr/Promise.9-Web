@@ -39,13 +39,13 @@ function mockManifest(latestVersion: string, minSupportedVersion: string) {
   });
 }
 
-async function renderGate() {
+async function renderGate(isVisible = true) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
   return render(
     <QueryClientProvider client={client}>
-      <AppNoticeGate />
+      <AppNoticeGate isVisible={isVisible} />
     </QueryClientProvider>,
   );
 }
@@ -87,4 +87,14 @@ test("지원이 끊긴 버전이면 차단 안내를 띄운다", async () => {
   await waitFor(() =>
     expect(screen.getByText("업데이트가 필요해요")).toBeOnTheScreen(),
   );
+});
+
+// 스플래시 동안은 그리지 않되 기준 조회는 시작해 둔다 — 스플래시가 걷히자마자 띄울 수 있게.
+test("isVisible 이 false 면 새 버전이 있어도 그리지 않고 기준만 읽어 둔다", async () => {
+  mockManifest("1.3.0", "1.0.0");
+
+  await renderGate(false);
+
+  await waitFor(() => expect(axios.get).toHaveBeenCalled());
+  expect(screen.queryByText("새 버전이 나왔어요")).not.toBeOnTheScreen();
 });
