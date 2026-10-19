@@ -14,6 +14,8 @@ const DEFAULT_BASE_URL = "https://link-ding-dong.com";
  */
 export const WEB_APP_PATH = {
   home: "/",
+  /** `src/app/(tabs)/archive.tsx` */
+  archive: "/archive",
   /** `src/app/link/[id].tsx` */
   linkDetail: (linkId: number) => `/link/${linkId}`,
   /**
