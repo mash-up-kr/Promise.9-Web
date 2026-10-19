@@ -1,5 +1,7 @@
+import { delay } from "es-toolkit";
 import * as StoreReview from "expo-store-review";
 
+import { APP_VERSION } from "@/constants/app.constants";
 import { isShareExtension, isWeb } from "@/constants/platform.constants";
 
 import { REVIEW_PROMPT } from "./appNotice.constants";
@@ -25,7 +27,8 @@ function isWithinCooldown(requestedAt: string | null, now: Date): boolean {
  * 띄웠으면 true.
  *
  * 우리 모달을 먼저 끼우지 않고 OS 창을 바로 띄운다 — iOS HIG·Android 가이드가 사전 질문 없이
- * "뭔가를 끝낸 자연스러운 시점에, 드물게" 띄우기를 요구한다. 노출 빈도는 OS 가 한 번 더 조절한다.
+ * "뭔가를 끝낸 자연스러운 시점에, 드물게" 띄우기를 요구한다(Apple 은 자체 리뷰 프롬프트를 심사에서 거절한다).
+ * 앱 버전당 한 번·쿨다운으로 거르고, 저장 완료 스낵바가 지나간 뒤 띄운다. 노출 빈도는 OS 가 한 번 더 조절한다.
  *
  * 어떤 실패도 저장 흐름으로 번지지 않게 한다 — 후기 요청은 저장의 곁가지다.
  */
@@ -42,8 +45,8 @@ export async function requestReviewAfterSave(
     return false;
   }
 
-  const { requestedAt } = await getReviewState();
-  if (isWithinCooldown(requestedAt, now)) {
+  const { requestedAt, requestedVersion } = await getReviewState();
+  if (requestedVersion === APP_VERSION || isWithinCooldown(requestedAt, now)) {
     return false;
   }
 
@@ -57,6 +60,7 @@ export async function requestReviewAfterSave(
       return false;
     }
 
+    await delay(REVIEW_PROMPT.delayMs);
     await StoreReview.requestReview();
   } catch (error) {
     console.error("[app-notice] 인앱 리뷰 요청 실패", error);
@@ -64,6 +68,6 @@ export async function requestReviewAfterSave(
   }
 
   // 띄운 뒤에만 기록한다 — 띄우지 못한 실행이 쿨다운을 먹지 않게.
-  await markReviewRequested(now);
+  await markReviewRequested(now, APP_VERSION);
   return true;
 }

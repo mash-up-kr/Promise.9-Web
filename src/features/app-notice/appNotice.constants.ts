@@ -29,19 +29,24 @@ export const APP_NOTICE_STORAGE_KEYS = {
   reviewSaveCount: "appNotice.review.saveCount",
   /** 마지막으로 후기 요청을 띄운 시각(ISO). */
   reviewRequestedAt: "appNotice.review.requestedAt",
+  /** 마지막으로 후기 요청을 띄운 앱 버전 — 같은 버전에서는 다시 띄우지 않는다. */
+  reviewRequestedVersion: "appNotice.review.requestedVersion",
 } as const;
 
 /**
  * 후기 요청 조건.
  *
  * iOS·Android 가이드가 "버튼이 아니라 사용자가 뭔가를 끝낸 자연스러운 시점에, 드물게" 를 요구한다 —
- * 그래서 저장을 몇 번 해본 사용자에게만, 쿨다운을 두고 OS 리뷰 창을 띄운다.
+ * 그래서 저장을 몇 번 해본 사용자에게만, 앱 버전당 한 번·쿨다운을 두고 OS 리뷰 창을 띄운다.
+ * (OS 도 따로 조절한다 — iOS 는 365일에 최대 3번·같은 버전엔 다시 묻지 않고, Android 는 할당량이 있다.)
  */
 export const REVIEW_PROMPT = {
   /** 이 횟수만큼 저장해 본 뒤부터 요청한다. */
   minSaveCount: 5,
-  /** 한 번 띄운 뒤 다시 띄우지 않는 기간(일). */
+  /** 한 번 띄운 뒤 다시 띄우지 않는 기간(일). 같은 앱 버전에서는 기간과 무관하게 다시 띄우지 않는다. */
   cooldownDays: 90,
+  /** 조건이 맞아도 이만큼 기다렸다 띄운다 — 저장 완료 스낵바(4초)·닫히는 시트와 겹치지 않게. */
+  delayMs: 4_000,
 } as const;
 
 /**

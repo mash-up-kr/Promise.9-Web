@@ -44,6 +44,7 @@ describe("후기 요청 기록", () => {
     await expect(getReviewState()).resolves.toEqual({
       saveCount: 0,
       requestedAt: null,
+      requestedVersion: null,
     });
   });
 
@@ -61,11 +62,12 @@ describe("후기 요청 기록", () => {
     await expect(increaseReviewSaveCount()).resolves.toBe(1);
   });
 
-  test("요청 시각을 ISO 로 남긴다", async () => {
-    await markReviewRequested(new Date("2026-10-11T09:00:00.000Z"));
+  test("요청 시각(ISO)과 그때의 앱 버전을 남긴다", async () => {
+    await markReviewRequested(new Date("2026-10-11T09:00:00.000Z"), "1.2.0");
 
     await expect(getReviewState()).resolves.toMatchObject({
       requestedAt: "2026-10-11T09:00:00.000Z",
+      requestedVersion: "1.2.0",
     });
   });
 });

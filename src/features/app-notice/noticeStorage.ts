@@ -45,15 +45,18 @@ export interface ReviewState {
   saveCount: number;
   /** 마지막으로 후기 요청을 띄운 시각(ISO). 아직 없으면 null. */
   requestedAt: string | null;
+  /** 마지막으로 후기 요청을 띄운 앱 버전. 아직 없으면 null. */
+  requestedVersion: string | null;
 }
 
 export async function getReviewState(): Promise<ReviewState> {
-  const [saveCount, requestedAt] = await Promise.all([
+  const [saveCount, requestedAt, requestedVersion] = await Promise.all([
     readItem(APP_NOTICE_STORAGE_KEYS.reviewSaveCount),
     readItem(APP_NOTICE_STORAGE_KEYS.reviewRequestedAt),
+    readItem(APP_NOTICE_STORAGE_KEYS.reviewRequestedVersion),
   ]);
 
-  return { saveCount: parseCount(saveCount), requestedAt };
+  return { saveCount: parseCount(saveCount), requestedAt, requestedVersion };
 }
 
 /** 저장 횟수를 1 올리고 올린 값을 돌려준다. */
@@ -64,9 +67,12 @@ export async function increaseReviewSaveCount(): Promise<number> {
   return next;
 }
 
-export function markReviewRequested(now: Date): Promise<void> {
-  return writeItem(
-    APP_NOTICE_STORAGE_KEYS.reviewRequestedAt,
-    now.toISOString(),
-  );
+export async function markReviewRequested(
+  now: Date,
+  version: string,
+): Promise<void> {
+  await Promise.all([
+    writeItem(APP_NOTICE_STORAGE_KEYS.reviewRequestedAt, now.toISOString()),
+    writeItem(APP_NOTICE_STORAGE_KEYS.reviewRequestedVersion, version),
+  ]);
 }
