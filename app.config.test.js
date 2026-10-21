@@ -27,3 +27,13 @@ test("스토어 주소가 app.json 에 들어 있다", () => {
     appConfig.expo.android.package,
   );
 });
+
+// 최상위 키는 Android strings.xml 에도 들어가 release lint(ExtraTranslation)가 빌드를 막는다 — iOS 키는 ios 블록에.
+test("iOS 전용 지역화 키는 ios 블록에만 둔다", () => {
+  for (const { ios, android, ...shared } of Object.values(
+    appConfig.expo.locales,
+  )) {
+    expect(Object.keys(shared)).toEqual([]);
+  }
+  expect(appConfig.expo.locales.ko.ios.CFBundleDisplayName).toBe("링띵동");
+});
