@@ -9,30 +9,51 @@ jest.mock("@shared/api", () => ({
 }));
 // 루트 레이아웃이 불러오는 전역 CSS 는 jest 가 파싱하지 못한다.
 jest.mock("@/global.css", () => ({}));
+// 루트의 업데이트 안내가 안내 기록(AsyncStorage)을 읽는다 — 네이티브 저장소 대신 공식 jest mock.
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 // 네트워크·포커스 배선은 네이티브 리스너라 jest 에 없다 — 이 테스트의 관심사도 아니다.
 jest.mock("@/lib/online-manager", () => ({ setupOnlineManager: jest.fn() }));
 jest.mock("@/lib/focus-manager", () => ({ setupFocusManager: jest.fn() }));
-// 폰트·스플래시는 이 테스트의 관심사가 아니다 — 바로 초기화된 것으로 둔다.
-jest.mock("expo-font", () => ({ useFonts: () => [true, null] }));
+// 폰트·스플래시는 보호 라우트 테스트의 관심사가 아니다 — 기본은 바로 초기화된 것으로 두고
+// 폰트 게이트 테스트만 결과를 바꾼다.
+const mockUseFonts = jest.fn((): [boolean, Error | null] => [true, null]);
+jest.mock("expo-font", () => ({
+  useFonts: () => mockUseFonts(),
+}));
 jest.mock("expo-splash-screen", () => ({
   preventAutoHideAsync: jest.fn(),
   hideAsync: jest.fn(),
 }));
 jest.mock("@/features/splash/hooks/useSplashPhase", () => ({
-  useSplashPhase: () => "hidden",
+  useSplashPhase: jest.fn(() => "hidden"),
 }));
 jest.mock("@/features/splash/components/SplashOverlay", () => ({
   SplashOverlay: () => null,
 }));
+// 업데이트 안내는 스플래시가 걷힌 뒤에만 보이는지만 본다 — 안내 자체는 AppNoticeGate.test 가 지킨다.
+jest.mock("@/features/app-notice/AppNoticeGate", () => {
+  const { createElement } = require("react");
+  const { Text } = require("react-native");
+  return {
+    AppNoticeGate: ({ isVisible }: { isVisible: boolean }) =>
+      isVisible ? createElement(Text, null, "app-notice-gate") : null,
+  };
+});
 
+import { userEvent } from "@testing-library/react-native";
 import { Slot } from "expo-router";
 import { renderRouter, screen } from "expo-router/testing-library";
 import { Text } from "react-native";
 import RootLayout from "@/app/_layout";
+import NotFoundRoute from "@/app/+not-found";
 import AuthLayout from "@/app/(auth)/_layout";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
+import { useSplashPhase } from "@/features/splash/hooks/useSplashPhase";
 
 const mockUseAuthGate = jest.mocked(useAuthGate);
+const mockUseSplashPhase = jest.mocked(useSplashPhase);
 
 const label = (name: string) => () => <Text>{name}</Text>;
 
@@ -58,6 +79,7 @@ const routes = {
   "settings/terms": label("terms"),
   "settings/withdraw": label("withdraw"),
   support: label("support"),
+  "+not-found": NotFoundRoute,
 };
 
 // 앱 스킴으로는 (tabs) 밖 라우트도 바로 열린다 — 어느 라우트로 들어오든 로그인 안 된 상태면 로그인이 먼저다.
@@ -112,5 +134,78 @@ describe("RootLayout — 보호 라우트", () => {
     mockUseAuthGate.mockReturnValue("unauthenticated");
     await renderRouter(routes, { initialUrl: "/create-link?share=6162" });
     expect(await screen.findByText("create-link")).toBeOnTheScreen();
+  });
+});
+
+// 폰트가 안 와도 앱이 멈추면 안 된다 — 실패는 시스템 폰트로 진입한다(#144).
+describe("RootLayout — 폰트 게이트", () => {
+  afterEach(() => {
+    mockUseFonts.mockReturnValue([true, null]);
+  });
+
+  test("폰트 로드가 실패해도 로그인 화면이 뜬다", async () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    mockUseAuthGate.mockReturnValue("unauthenticated");
+    mockUseFonts.mockReturnValue([false, new Error("ERR_DOWNLOAD")]);
+
+    await renderRouter(routes, { initialUrl: "/" });
+
+    expect(await screen.findByText("login")).toBeOnTheScreen();
+    errorSpy.mockRestore();
+  });
+
+  test("네이티브는 폰트 로드 전에는 어떤 화면도 그리지 않는다", async () => {
+    mockUseAuthGate.mockReturnValue("unauthenticated");
+    mockUseFonts.mockReturnValue([false, null]);
+
+    await renderRouter(routes, { initialUrl: "/" });
+
+    expect(screen.queryByText("login")).not.toBeOnTheScreen();
+  });
+});
+
+describe("RootLayout — 없는 경로", () => {
+  test.each([
+    "authenticated",
+    "unauthenticated",
+  ] as const)("%s 상태에서 없는 경로로 들어오면 404 화면이 뜬다", async (status) => {
+    mockUseAuthGate.mockReturnValue(status);
+    await renderRouter(routes, { initialUrl: "/no-such-page" });
+    expect(
+      await screen.findByText("페이지를 찾을 수 없어요"),
+    ).toBeOnTheScreen();
+  });
+
+  test("로그인 안 된 상태에서 404 의 로그인하러 가기를 누르면 로그인 화면이 뜬다", async () => {
+    mockUseAuthGate.mockReturnValue("unauthenticated");
+    const user = userEvent.setup();
+    await renderRouter(routes, { initialUrl: "/no-such-page" });
+
+    await user.press(
+      await screen.findByRole("button", { name: "로그인하러 가기" }),
+    );
+
+    expect(await screen.findByText("login")).toBeOnTheScreen();
+  });
+});
+
+// 업데이트 안내는 자체 Modal 이라 스플래시 오버레이보다 위에 그려진다 — 스플래시가 걷힌 뒤에 띄운다.
+describe("RootLayout — 업데이트 안내", () => {
+  afterEach(() => {
+    mockUseSplashPhase.mockReturnValue("hidden");
+  });
+
+  test("스플래시가 걷히기 전에는 업데이트 안내를 보이지 않는다", async () => {
+    mockUseAuthGate.mockReturnValue("authenticated");
+    mockUseSplashPhase.mockReturnValue("shown");
+    await renderRouter(routes, { initialUrl: "/" });
+    expect(await screen.findByText("home")).toBeOnTheScreen();
+    expect(screen.queryByText("app-notice-gate")).not.toBeOnTheScreen();
+  });
+
+  test("스플래시가 걷히면 업데이트 안내를 보인다", async () => {
+    mockUseAuthGate.mockReturnValue("authenticated");
+    await renderRouter(routes, { initialUrl: "/" });
+    expect(await screen.findByText("app-notice-gate")).toBeOnTheScreen();
   });
 });

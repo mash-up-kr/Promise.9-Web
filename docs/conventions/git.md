@@ -17,6 +17,7 @@
 - base 는 **`dev`** (통합 브랜치). `main` 은 릴리즈 브랜치다 — 사용자에게 실제로 나가 있는 코드만 담는다.
 - 릴리즈 준비: `release/<version>` (앱 `release/1.1.0`, 익스텐션 `release/ext-1.0.1`). `dev` 에서 분기.
 - 긴급 수정: `hotfix/<issue#>-<slug>`. `main` 에서 분기.
+- 예외: `public/app-release.json` 만 바꾸는 `chore/app-release-<version>` 도 `main` 에서 분기한다(프로덕션 웹이 `main` 에서 빌드된다 — `docs/release.md`).
 - `main` 에 머지한 뒤에는 **반드시 `dev` 로 백머지**한다. 빠뜨리면 다음 릴리즈에 같은 버그가 재발한다(워크플로가 동기화 PR 을 자동 생성한다).
 - 머지된 브랜치는 즉시 삭제.
 - `main` · `dev` 직접 push 금지.

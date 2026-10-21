@@ -36,6 +36,12 @@ function Overlay({
 }
 
 function Backdrop({ onPress }: { onPress?: () => void }) {
+  // 닫을 수 없는 대화상자에서는 아무 일도 안 하는 '닫기' 버튼이 스크린리더에 읽히지 않게 한다.
+  if (!onPress) {
+    return (
+      <View style={StyleSheet.absoluteFill} className="bg-opacity-black-70" />
+    );
+  }
   return (
     <Pressable
       accessibilityRole="button"

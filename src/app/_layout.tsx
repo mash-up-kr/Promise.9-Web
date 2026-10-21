@@ -1,6 +1,5 @@
 import { setTokenPersistence } from "@shared/api";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { useFonts } from "expo-font";
 import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import type { ReactNode } from "react";
@@ -15,9 +14,11 @@ import {
 } from "@/components/ui/snackbar/SnackbarProvider";
 import { CONTENT_MAX_WIDTH } from "@/constants/layout.constants";
 import { isWeb } from "@/constants/platform.constants";
+import { AppNoticeGate } from "@/features/app-notice/AppNoticeGate";
 import { AuthGateProvider } from "@/features/auth/AuthGateContext";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
 import { SplashOverlay } from "@/features/splash/components/SplashOverlay";
+import { useAppFonts } from "@/features/splash/hooks/useAppFonts";
 import { useSplashPhase } from "@/features/splash/hooks/useSplashPhase";
 import { setupFocusManager } from "@/lib/focus-manager";
 import { setupOnlineManager } from "@/lib/online-manager";
@@ -66,12 +67,7 @@ function renderScreenLayout({
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
-    Pretendard: require("../../assets/fonts/Pretendard-Regular.ttf"),
-    "Pretendard-Medium": require("../../assets/fonts/Pretendard-Medium.ttf"),
-    "Pretendard-SemiBold": require("../../assets/fonts/Pretendard-SemiBold.ttf"),
-    "Pretendard-Bold": require("../../assets/fonts/Pretendard-Bold.ttf"),
-  });
+  const isFontsReady = useAppFonts();
 
   // 초기화(폰트 + 인증 상태 확인)가 끝날 때까지 스플래시를 유지하고 내비게이터도 띄우지 않는다 —
   // 확인 중에 띄우면 보호 라우트가 빠진 채 로그인이 첫 화면으로 잡혀 인증 뒤에도 거기 머문다.
@@ -80,9 +76,9 @@ export default function RootLayout() {
   // 실제 초기화가 짧아 최소 노출을 빼면 마스코트가 깜빡이는 플리커만 남는다.
   const isSplashEnabled = !isWeb;
   const authStatus = useAuthGate();
-  const splashPhase = useSplashPhase(fontsLoaded && authStatus !== "checking");
+  const splashPhase = useSplashPhase(isFontsReady && authStatus !== "checking");
 
-  if (!fontsLoaded || authStatus === "checking") {
+  if (!isFontsReady || authStatus === "checking") {
     return (
       <View className="flex-1 bg-background-base">
         {isSplashEnabled && <SplashOverlay isFadingOut={false} />}
@@ -156,6 +152,10 @@ export default function RootLayout() {
                 </HeaderScrollProvider>
               </SnackbarProvider>
             </View>
+            {/* 업데이트 안내 — 스토어가 있는 네이티브에서만, 로그인 여부와 무관하게 띄운다.
+                자체 Modal 로 그려 화면 폭 제한(위 View) 밖에 두며, 스플래시 오버레이보다 위에
+                뜨므로 스플래시가 걷힌 뒤에 보인다(기준 조회는 그 전에 시작한다). */}
+            {!isWeb && <AppNoticeGate isVisible={splashPhase === "hidden"} />}
           </KeyboardProvider>
         </SafeAreaProvider>
         {isSplashEnabled && splashPhase !== "hidden" && (
