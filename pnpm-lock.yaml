@@ -49,6 +49,9 @@ importers:
       '@react-native-seoul/kakao-login':
         specifier: ^6.0.4
         version: 6.0.4(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+      '@smithy/util-utf8':
+        specifier: ^4.5.2
+        version: 4.5.2
       '@tailwindcss/postcss':
         specifier: ^4.3.1
         version: 4.3.1
@@ -2158,6 +2161,10 @@ packages:
 
   '@sinonjs/fake-timers@10.3.0':
     resolution: {integrity: sha512-V4BG07kuYSUkTCSBHG8G8TNhM+F19jXFWnQtzj+we8DrkpSBCee9Z3Ms8yiGer/dlmhe35/Xdgyo3/0rQKg7YA==}
+
+  '@smithy/util-utf8@4.5.2':
+    resolution: {integrity: sha512-7wNWV7SugHpcMA7uzEawJNpE0GrasXM7a9E+1+Wm6NxVuDClESac/AKt+G7jMZNUz5vBLWqKlqVV7Sv7AtUr6Q==}
+    engines: {node: '>=18.0.0'}
 
   '@speed-highlight/core@1.2.17':
     resolution: {integrity: sha512-Z92FwKpCtfaW1V0jTU/fh3QzYEZN8wDwrzRIBoADCJfn4mJCNcJN/XegifX7BDrQ8/h9Xh/JnbyMchL0FqXrkg==}
@@ -8036,6 +8043,11 @@ snapshots:
   '@sinonjs/fake-timers@10.3.0':
     dependencies:
       '@sinonjs/commons': 3.0.1
+
+  '@smithy/util-utf8@4.5.2':
+    dependencies:
+      '@smithy/core': 3.36.0
+      tslib: 2.8.1
 
   '@speed-highlight/core@1.2.17': {}
 
