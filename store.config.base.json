@@ -1,12 +1,9 @@
 {
   "configVersion": 0,
   "apple": {
-    "version": "1.2.0",
+    "version": "1.3.0",
     "copyright": "2026 Promise.9",
-    "categories": [
-      "PRODUCTIVITY",
-      "UTILITIES"
-    ],
+    "categories": ["PRODUCTIVITY", "UTILITIES"],
     "release": {
       "automaticRelease": false
     },
@@ -68,7 +65,7 @@
           "모아보기",
           "세이브"
         ],
-        "releaseNotes": "• 공유 기능이 더 빠르고 안정적으로 열려요. Safari 등에서 공유 → 링띵동으로 링크를 바로 저장해 보세요.\n• 링크 주소를 입력할 때 잘못된 주소를 바로 알려드려요.\n• 로그인이 필요한 화면으로 바로 들어왔을 때의 처리를 개선했어요.",
+        "releaseNotes": "• 새 버전이 나오면 앱에서 바로 알려드려요.\n• 글꼴을 늦게 불러오는 환경에서도 빈 화면에 머물지 않고 바로 열려요.\n• 링크 상세 화면의 여백을 기기와 상관없이 고르게 다듬었어요.",
         "supportUrl": "https://link-ding-dong.com/support",
         "privacyPolicyUrl": "https://link-ding-dong.com/settings/privacy",
         "screenshots": {
