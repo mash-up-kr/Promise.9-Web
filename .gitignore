@@ -17,6 +17,8 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+# `eas credentials` 내려받기 결과 — 키스토어 비밀번호가 평문으로 들어 있다
+credentials.json
 
 # Metro
 .metro-health-check*
