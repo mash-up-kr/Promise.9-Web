@@ -1,10 +1,9 @@
 import { Stack } from "expo-router";
 import { ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { Markdown } from "@/components/ui/markdown/Markdown";
+import { useScreenBottomPadding } from "@/hooks/useScreenBottomPadding";
 
 import { LEGAL_CONTENT } from "./legal/legal.content";
 import type { LegalKind } from "./legal/legal.types";
@@ -14,7 +13,7 @@ export interface LegalScreenProps {
 }
 
 export function LegalScreen({ kind }: LegalScreenProps) {
-  const insets = useSafeAreaInsets();
+  const bottomPadding = useScreenBottomPadding();
   const { title, markdown } = LEGAL_CONTENT[kind];
 
   return (
@@ -23,10 +22,7 @@ export function LegalScreen({ kind }: LegalScreenProps) {
       <Stack.Screen options={{ headerShown: false }} />
       <Header title={title} left={<HeaderBackButton />} />
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View
-          className="px-5 pt-5"
-          style={{ paddingBottom: insets.bottom + 24 }}
-        >
+        <View className="px-5 pt-5" style={{ paddingBottom: bottomPadding }}>
           <Markdown>{markdown}</Markdown>
         </View>
       </ScrollView>

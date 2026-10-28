@@ -2,12 +2,12 @@ import { AsyncBoundary } from "@promise9/ui/async-boundary/AsyncBoundary";
 import { Text } from "@promise9/ui/text/Text";
 import { useState } from "react";
 import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
 import { FolderChipList } from "@/features/link/components/FolderChipList";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
 import { ReminderSection } from "@/features/link/components/ReminderSection";
 import type { ReminderValue } from "@/features/link/reminder.utils";
+import { useScreenBottomPadding } from "@/hooks/useScreenBottomPadding";
 
 import { FolderCreateModal } from "./FolderCreateModal";
 import {
@@ -42,7 +42,7 @@ export function EntrySheet({
   onSave,
 }: EntrySheetProps) {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
-  const insets = useSafeAreaInsets();
+  const bottomPadding = useScreenBottomPadding();
   const dismiss = useShareSheetDismiss();
 
   return (
@@ -53,7 +53,7 @@ export function EntrySheet({
       // 네이티브 스크롤 인셋으로 포커스한 입력을 키보드 위로 드러낸다(Android 는 gorhom 이 시트를 올린다).
       automaticallyAdjustKeyboardInsets
       stickyHeaderIndices={[0]}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+      contentContainerStyle={{ paddingBottom: bottomPadding }}
     >
       <View
         pointerEvents={isSaving ? "none" : "auto"}
