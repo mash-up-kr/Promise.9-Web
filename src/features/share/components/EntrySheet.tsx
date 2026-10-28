@@ -68,7 +68,7 @@ export function EntrySheet({
       </View>
       <View
         pointerEvents={isSaving ? "none" : "auto"}
-        className="gap-6 px-5 pt-1"
+        className="gap-6 px-5 pt-5"
       >
         {/* 시안 통합 카드(인앱 CreateLinkSheet 미러) — 프리뷰(파비콘·제목)와 URL 을 한 카드로. */}
         <View className="w-full rounded-[20px] bg-opacity-white-10">

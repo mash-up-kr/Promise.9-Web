@@ -33,7 +33,7 @@ export function SheetScreen({
         contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
         {header}
-        <VStack space="2xl" className="px-5 pt-1">
+        <VStack space="2xl" className="px-5 pt-5">
           {children}
         </VStack>
       </BottomSheetScrollView>
