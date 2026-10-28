@@ -8,13 +8,13 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AlertDialog,
   AlertDialogButton,
 } from "@/components/ui/alert-dialog/AlertDialog";
 import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
+import { useTabScreenBottomPadding } from "@/components/ui/tab-bar/useTabScreenBottomPadding";
 import { APP_VERSION } from "@/constants/app.constants";
 
 import { settingsQueries } from "./api/settings.queries";
@@ -36,9 +36,7 @@ function EmailValue() {
 
 export function SettingsScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  // 하단 플로팅 탭바(pill 60 + safe-area)에 가리지 않도록 여백을 준다.
-  const bottomPadding = Math.max(insets.bottom, 20) + 60 + 16;
+  const bottomPadding = useTabScreenBottomPadding();
 
   const { logout, isPending: isLoggingOut } = useLogout();
   const [isLogoutOpen, setLogoutOpen] = useState(false);
@@ -57,7 +55,11 @@ export function SettingsScreen() {
     <View className="flex-1 bg-background-base">
       <Header title="설정" left={<HeaderBackButton />} />
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View className="gap-8 pt-5" style={{ paddingBottom: bottomPadding }}>
+        <View
+          testID="settings-scroll-content"
+          className="gap-8 pt-5"
+          style={{ paddingBottom: bottomPadding }}
+        >
           <ListSection title="계정">
             <ListGroup>
               <ListRow

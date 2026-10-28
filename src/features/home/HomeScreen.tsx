@@ -27,6 +27,7 @@ import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwa
 import { Illustration } from "@/components/ui/illustration/Illustration";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
 import { snackbarPresets } from "@/components/ui/snackbar/snackbar.presets";
+import { useTabScreenBottomPadding } from "@/components/ui/tab-bar/useTabScreenBottomPadding";
 
 import { FolderSection } from "./components/FolderSection";
 import { HomeSkeleton } from "./components/HomeSkeleton";
@@ -54,6 +55,7 @@ export function HomeScreen() {
 
 function HomeSections() {
   const headerHeight = useHeaderHeight();
+  const bottomPadding = useTabScreenBottomPadding();
   const scrollHandler = useHeaderAwareScrollHandler("home");
   const { isRefreshing, refresh } = useHomeRefresh();
 
@@ -126,7 +128,10 @@ function HomeSections() {
   return (
     <Animated.ScrollView
       className="flex-1"
-      contentContainerStyle={{ paddingTop: headerHeight }}
+      contentContainerStyle={{
+        paddingTop: headerHeight,
+        paddingBottom: bottomPadding,
+      }}
       showsVerticalScrollIndicator={false}
       onScroll={scrollHandler}
       scrollEventThrottle={16}
@@ -143,7 +148,7 @@ function HomeSections() {
         />
       }
     >
-      <VStack className="gap-12 pt-5 pb-8">
+      <VStack className="gap-12 pt-5">
         {/* 둘 다 빈 배열이면 시안 정책대로 섹션째 숨는다(RemindSection·KeywordSection 내부). */}
         <RemindSection links={remindLinksQuery.data} />
         <KeywordSection keywords={keywordsQuery.data} />

@@ -353,6 +353,15 @@ describe("HomeScreen", () => {
     expect(progressViewOffset).toBeGreaterThan(0);
   });
 
+  test("스크롤 끝은 플로팅 탭바(safe-area 34 + 바 60) 위로 36 을 남긴다", async () => {
+    await renderScreen();
+    await screen.findByText("최근 저장");
+
+    expect(
+      screen.getByTestId("home-scroll").props.contentContainerStyle,
+    ).toMatchObject({ paddingBottom: 130 });
+  });
+
   test("당겨서 새로고침하면 전 섹션을 다시 불러온다", async () => {
     await renderScreen();
     await screen.findByText("최근 저장");
