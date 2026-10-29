@@ -39,6 +39,7 @@
     "expo-store-review": "~56.0.4",
     "expo-symbols": "~56.0.6",
     "expo-system-ui": "~56.0.5",
+    "expo-updates": "~56.0.28",
     "expo-web-browser": "~56.0.5",
     "lucide-react-native": "^1.23.0",
     "nativewind": "5.0.0-preview.2",
@@ -93,6 +94,7 @@
     "assert-required-public-env": "node scripts/assert-required-public-env.mjs",
     "build:web": "pnpm assert-no-master-token && pnpm assert-required-public-env && pnpm expo export -p web",
     "deploy": "pnpm build:web && wrangler deploy",
+    "ota:production": "pnpm install --frozen-lockfile && eas update --channel production --environment production --clear-cache",
     "preview": "pnpm build:web && wrangler dev",
     "eas-build-pre-install": "pnpm assert-no-master-token"
   },

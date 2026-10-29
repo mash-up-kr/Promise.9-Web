@@ -134,7 +134,12 @@
             "react-native-worklets",
             "@react-native-masked-view/masked-view",
             "@react-native-async-storage/async-storage",
-            "expo-store-review"
+            "expo-store-review",
+            "expo-eas-client",
+            "expo-manifests",
+            "expo-json-utils",
+            "expo-structured-headers",
+            "expo-updates-interface"
           ]
         }
       ],
@@ -189,7 +194,8 @@
           }
         }
       ],
-      "./plugins/withIosPodDeploymentTarget"
+      "./plugins/withIosPodDeploymentTarget",
+      "./plugins/withAndroidGradleJvmArgs"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -200,6 +206,12 @@
         "projectId": "2500b250-2b53-41ad-88d9-5b86b054ede1"
       }
     },
-    "owner": "bokeeeey"
+    "owner": "bokeeeey",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2500b250-2b53-41ad-88d9-5b86b054ede1"
+    }
   }
 }
