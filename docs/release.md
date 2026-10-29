@@ -151,38 +151,60 @@ JS 만 고치는 앱 핫픽스는 아래 OTA 로 보낸다 — 이때는 **버�
 ### OTA 업데이트 (EAS Update)
 
 스토어 심사 없이 이미 설치된 앱에 JS 번들을 내려보낸다. 호환 기준(`runtimeVersion`)은 **앱 버전**(`appVersion` 정책)이라
-1.3.1 설치본은 1.3.1 로 게시한 업데이트만 받는다.
+1.3.1 설치본은 1.3.1 로 게시한 업데이트만 받는다. `expo-updates` 가 들어간 빌드(1.3.1)부터 받을 수 있다.
+
+**버전 규칙** — 앱 버전 정책은 "같은 버전이면 네이티브도 같다" 가 지켜질 때만 안전하다.
+
+- 네이티브를 바꾸는 변경(아래 표 오른쪽)은 반드시 버전을 올려 스토어로 낸다.
+- 한 버전의 스토어 빌드(iOS·Android)는 같은 `release/*` 커밋에서 만든다. 네이티브가 다른 커밋으로 같은 버전을 다시 빌드하지 않는다.
+- 지켜졌는지는 게시 직전 `eas fingerprint:compare` 로 확인한다(절차 4).
 
 **OTA 로 보낼 수 있는 것 / 없는 것**
 
 | OTA 가능 | 스토어 빌드 필요 |
 | --- | --- |
 | `src/`·`shared/`·`packages/ui` 의 JS·스타일, 번들 이미지·폰트 | 네이티브 패키지 추가·업그레이드, `app.json`·`plugins/`·패치 변경, 권한·Info.plist |
-| Android 공유 시트(앱과 같은 번들) | **iOS 공유 익스텐션**(별도 번들 — `expo-share-extension` 이 익스텐션에서 `expo-updates` 를 뺀다) |
+| Android 공유 시트(앱과 같은 번들) | **iOS 공유 익스텐션**(별도 번들이라 OTA 가 닿지 않는다) |
 
-네이티브를 바꾸는 변경은 반드시 버전을 올려 스토어로 낸다. 버전을 그대로 두고 네이티브를 바꾼 뒤 OTA 를 게시하면 설치본에 없는 네이티브 코드를 불러 크래시한다.
-공유 익스텐션이 쓰는 화면(`src/features/share/`)을 고치면 iOS 는 다음 스토어 릴리즈까지 옛 화면이 남는다는 점도 감안한다.
+iOS 공유 익스텐션 번들은 `index.share.js` 가 import 하는 전부다 — `src/features/share/` 뿐 아니라 `shared/api`(API 클라이언트·토큰 갱신)·`src/lib/tokenStorage`·`packages/ui`·`src/global.css` 도 들어간다.
+OTA 뒤에는 앱은 새 JS, iOS 익스텐션은 옛 JS 로 같은 키체인·App Group 을 쓴다. 그래서 **앱과 익스텐션이 함께 쓰는 저장 형식(토큰 키·형식)이나 API 계약을 바꾸는 변경은 OTA 로 보내지 않는다** — 익스텐션의 로그인·저장이 깨진다.
 
-**절차**
+**절차** — 브랜치 규칙은 `docs/conventions/git.md` 의 핫픽스와 같고, 버전만 올리지 않는다.
 
-1. 수정은 평소처럼 `dev` 에 PR 로 머지한다.
-2. `main` 에서 `hotfix/<issue#>-<slug>` 를 잘라 수정을 cherry-pick 한다. **`app.json` 의 `version` 은 그대로 둔다**(올리면 기존 설치본과 호환이 끊긴다).
-3. `main` 에 merge commit 으로 머지한다(웹도 함께 배포된다). 버전이 그대로라 새 태그는 생기지 않는다.
-4. `main` 머지 커밋을 깨끗한 작업 트리로 체크아웃한 뒤 게시한다.
+1. 고칠 설치본의 버전 태그(`v<버전>`, 보통 `main` 과 같다)에서 `hotfix/<issue#>-<slug>` 를 자른다. **`app.json` 의 `version` 은 그대로 둔다**(올리면 기존 설치본과 호환이 끊긴다).
+   - `node -p "require('./app.json').expo.version"` 이 대상 설치본 버전과 같은지 확인한다. 심사 중인 스토어 핫픽스가 먼저 머지돼 `main` 버전이 앞서 있으면 `main` 이 아니라 사용자 버전 태그에서 자른다.
+   - iOS·Android 출시 버전이 다르면 게시할 때 `--platform ios|android` 로 한정한다.
+2. PR 을 `main` 에 merge commit 으로 머지한다(웹도 함께 배포된다). 버전이 그대로라 새 태그는 생기지 않는다. 열린 `release/*` 가 있으면 같은 수정을 거기에도 cherry-pick 한다(빠뜨리면 다음 스토어 버전에서 다시 깨진다).
+3. 게시할 커밋을 깨끗한 작업 트리로 체크아웃하고 검사한다. 앱 테스트·lint·타입은 CI 에서 돌지 않는다.
    ```bash
-   eas update --channel production --environment production --message "<요약> (#PR번호)"
+   pnpm install --frozen-lockfile
+   pnpm test && pnpm check && pnpm exec tsc --noEmit
    ```
-   - `--environment production` 이면 EAS 환경변수만 쓰고 로컬 `.env.local` 은 읽지 않는다(스토어 빌드와 같은 값).
-   - 영향이 클 땐 `--rollout-percentage 10` 처럼 일부에만 먼저 낸다.
-5. 실기기에서 앱을 **완전히 종료했다가 다시 여는 것을 최대 두 번** 반복해 반영을 확인한다(첫 실행에 받고, 다음 실행에 적용).
-6. 백머지(동기화) PR 을 merge commit 으로 머지한다.
+4. 사용자가 가진 스토어 빌드와 네이티브가 같은지 플랫폼마다 확인한다. 다르면 **게시하지 않고** 버전을 올려 스토어로 낸다.
+   ```bash
+   eas build:list -p ios --limit 5              # 스토어에 나간 빌드 ID 확인(android 도 같은 방법)
+   eas fingerprint:compare --build-id <빌드 ID>
+   ```
+   같은 커밋이면 로컬과 EAS 의 지문이 정확히 일치한다(1.3.0 iOS 빌드로 확인함).
+5. 게시는 **반드시 스크립트로** 한다. `eas update` 를 직접 부르다 `--environment` 를 빠뜨리면 로컬 `.env.local`(로컬 API 주소 등)이 운영 번들에 들어간다.
+   ```bash
+   pnpm ota:production --message "<요약> (#PR번호)" --rollout-percentage 10
+   ```
+   스크립트는 의존성을 lockfile 대로 다시 깔고 `--channel production --environment production --clear-cache` 로 게시한다(EAS 환경변수만 쓰고 `.env.local` 은 읽지 않는다).
+6. 실기기에서 앱을 **완전히 종료했다가 다시 여는 것을 최대 두 번** 반복해 반영을 확인한다(첫 실행에 받고, 다음 실행에 적용). 롤아웃 중이면 내 기기가 대상에서 빠질 수 있으니 `eas update:insights` 로 적용 수·크래시를 함께 본다.
+7. 이상이 없으면 롤아웃을 끝까지 올린다: `eas update:edit <업데이트 그룹 ID> --rollout-percentage 100`. 거두려면 `eas update:revert-update-rollout --channel production`.
+8. 자동 생성된 동기화 PR 을 merge commit 으로 머지한다. 이미 열린 동기화 PR 이 있으면 새 커밋이 반영되지 않으니 그것부터 머지한다.
 
-문제가 생기면 `eas update:rollback`(직전 업데이트나 스토어 빌드에 들어 있던 번들로 되돌림)으로 롤백한다.
-게시 내역·크래시는 `eas update:list`·`eas update:insights` 로 본다.
+**롤백** — `eas update:rollback` 으로 직전 업데이트나 스토어 빌드에 들어 있던 번들로 되돌린다. 되돌아가는 건 OTA 뿐이라
+`main`(웹 포함)·`dev` 에는 문제 코드가 남는다 → revert 핫픽스 PR 을 `main` 에 머지하고 동기화 PR 까지 머지한다.
 
-- 채널은 빌드 프로필과 같다: `production`(스토어 빌드) · `preview`(내부 배포 빌드). 채널은 빌드에 박히므로 OTA 를 받을 수 있는 건 이 설정이 들어간 빌드부터다(1.3.0 이하는 받지 못한다).
-- 스토어 빌드 점검 때 내장 업데이트 정보가 들어갔는지 본다 — Android AAB 의 `assets/app.manifest`, iOS 앱의 `EXUpdates.bundle/app.manifest`. 로컬 Android 빌드에서 한 번 빠진 적이 있다(멈춘 Gradle 데몬 정리 직후, 원인 미확인).
-- 무료 플랜은 OTA 를 받는 월간 사용자 1,000명까지다(초과 과금 없음, 한도 제한).
+**알아둘 것**
+
+- 사전 검증용 채널이 없다. TestFlight·Play 테스트 빌드도 스토어 빌드와 같은 `production` 채널이라 테스터와 사용자가 동시에 받는다. 단계적 배포는 롤아웃 비율뿐이다. `preview` 채널은 내부 배포(`preview` 프로필) 빌드용이다.
+- EAS 프로젝트가 개인 계정(`bokeeeey`) 소유라 그 계정만 게시·롤백할 수 있다. 여러 사람이 대응하려면 Expo 조직으로 옮겨야 한다.
+- 업데이트에 코드 서명이 없다(무료 플랜 미지원). 게시 권한이 곧 모든 설치본의 JS 를 바꾸는 권한이니 Expo 계정 2단계 인증을 켜고, 오래 가는 `EXPO_TOKEN` 을 CI 등에 두지 않는다.
+- 무료 플랜은 OTA 를 받는 월간 사용자 1,000명·대역폭 100GiB 까지다(계정 단위, 초과 과금 없이 한도로 제한).
+- 스토어 빌드 점검 때 내장 업데이트 정보가 들어갔는지 본다 — Android AAB 의 `base/assets/app.manifest`, iOS 앱의 `EXUpdates.bundle/app.manifest`. 로컬 Android 빌드에서 한 번 빠진 적이 있는데(멈춘 Gradle 데몬 정리 직후, 원인 미확인), 그 빌드는 실행은 됐지만 `expo-updates` 가 동작하지 않았다.
 
 ### 릴리즈 노트
 
