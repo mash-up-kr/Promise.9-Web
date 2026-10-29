@@ -37,3 +37,11 @@ test("iOS 전용 지역화 키는 ios 블록에만 둔다", () => {
   }
   expect(appConfig.expo.locales.ko.ios.CFBundleDisplayName).toBe("링띵동");
 });
+
+// OTA 호환 기준은 앱 버전 — 네이티브가 바뀌는 릴리즈는 늘 버전을 올리므로, 같은 버전 설치본에만 JS 업데이트가 간다.
+test("OTA 업데이트는 같은 앱 버전 설치본에만 내려간다", () => {
+  expect(appConfig.expo.runtimeVersion).toEqual({ policy: "appVersion" });
+  expect(appConfig.expo.updates.url).toBe(
+    `https://u.expo.dev/${appConfig.expo.extra.eas.projectId}`,
+  );
+});

@@ -201,6 +201,12 @@
         "projectId": "2500b250-2b53-41ad-88d9-5b86b054ede1"
       }
     },
-    "owner": "bokeeeey"
+    "owner": "bokeeeey",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2500b250-2b53-41ad-88d9-5b86b054ede1"
+    }
   }
 }
