@@ -146,6 +146,44 @@ EXPO_PUBLIC_APP_RELEASE_URL=http://localhost:8788/app-release.json
 
 앱까지 고치는 핫픽스라면 태그는 `main` 머지 즉시 생기지만 앱은 아직 심사 중이다 — 이 태그는 웹 릴리즈 기준이고 앱은 뒤따른다.
 
+JS 만 고치는 앱 핫픽스는 아래 OTA 로 보낸다 — 이때는 **버전을 올리지 않는다**.
+
+### OTA 업데이트 (EAS Update)
+
+스토어 심사 없이 이미 설치된 앱에 JS 번들을 내려보낸다. 호환 기준(`runtimeVersion`)은 **앱 버전**(`appVersion` 정책)이라
+1.3.1 설치본은 1.3.1 로 게시한 업데이트만 받는다.
+
+**OTA 로 보낼 수 있는 것 / 없는 것**
+
+| OTA 가능 | 스토어 빌드 필요 |
+| --- | --- |
+| `src/`·`shared/`·`packages/ui` 의 JS·스타일, 번들 이미지·폰트 | 네이티브 패키지 추가·업그레이드, `app.json`·`plugins/`·패치 변경, 권한·Info.plist |
+| Android 공유 시트(앱과 같은 번들) | **iOS 공유 익스텐션**(별도 번들 — `expo-share-extension` 이 익스텐션에서 `expo-updates` 를 뺀다) |
+
+네이티브를 바꾸는 변경은 반드시 버전을 올려 스토어로 낸다. 버전을 그대로 두고 네이티브를 바꾼 뒤 OTA 를 게시하면 설치본에 없는 네이티브 코드를 불러 크래시한다.
+공유 익스텐션이 쓰는 화면(`src/features/share/`)을 고치면 iOS 는 다음 스토어 릴리즈까지 옛 화면이 남는다는 점도 감안한다.
+
+**절차**
+
+1. 수정은 평소처럼 `dev` 에 PR 로 머지한다.
+2. `main` 에서 `hotfix/<issue#>-<slug>` 를 잘라 수정을 cherry-pick 한다. **`app.json` 의 `version` 은 그대로 둔다**(올리면 기존 설치본과 호환이 끊긴다).
+3. `main` 에 merge commit 으로 머지한다(웹도 함께 배포된다). 버전이 그대로라 새 태그는 생기지 않는다.
+4. `main` 머지 커밋을 깨끗한 작업 트리로 체크아웃한 뒤 게시한다.
+   ```bash
+   eas update --channel production --environment production --message "<요약> (#PR번호)"
+   ```
+   - `--environment production` 이면 EAS 환경변수만 쓰고 로컬 `.env.local` 은 읽지 않는다(스토어 빌드와 같은 값).
+   - 영향이 클 땐 `--rollout-percentage 10` 처럼 일부에만 먼저 낸다.
+5. 실기기에서 앱을 **완전히 종료했다가 다시 여는 것을 최대 두 번** 반복해 반영을 확인한다(첫 실행에 받고, 다음 실행에 적용).
+6. 백머지(동기화) PR 을 merge commit 으로 머지한다.
+
+문제가 생기면 `eas update:rollback`(직전 업데이트나 스토어 빌드에 들어 있던 번들로 되돌림)으로 롤백한다.
+게시 내역·크래시는 `eas update:list`·`eas update:insights` 로 본다.
+
+- 채널은 빌드 프로필과 같다: `production`(스토어 빌드) · `preview`(내부 배포 빌드). 채널은 빌드에 박히므로 OTA 를 받을 수 있는 건 이 설정이 들어간 빌드부터다(1.3.0 이하는 받지 못한다).
+- 스토어 빌드 점검 때 내장 업데이트 정보가 들어갔는지 본다 — Android AAB 의 `assets/app.manifest`, iOS 앱의 `EXUpdates.bundle/app.manifest`. 로컬 Android 빌드에서 한 번 빠진 적이 있다(멈춘 Gradle 데몬 정리 직후, 원인 미확인).
+- 무료 플랜은 OTA 를 받는 월간 사용자 1,000명까지다(초과 과금 없음, 한도 제한).
+
 ### 릴리즈 노트
 
 GitHub Release 가 직전 같은 계열 태그 이후의 PR 목록으로 자동 생성한다. 별도 CHANGELOG 파일은 두지 않는다.
@@ -156,8 +194,8 @@ GitHub Release 가 직전 같은 계열 태그 이후의 PR 목록으로 자동 
 
 | 파일 | 역할 |
 | --- | --- |
-| `eas.json` | 빌드 프로필. `base`(pnpm 버전·공통 env) 를 `preview`(내부 배포)·`production`(스토어, 빌드번호 자동 증가) 이 상속 |
-| `app.json` | `extra.eas.projectId`, `owner`, `ios.config.usesNonExemptEncryption=false`(TestFlight 수출 규정 질문 생략) |
+| `eas.json` | 빌드 프로필. `base`(pnpm 버전·공통 env) 를 `preview`(내부 배포)·`production`(스토어, 빌드번호 자동 증가) 이 상속. 각 프로필의 `channel` 이 빌드에 박혀 OTA 를 받을 채널이 된다 |
+| `app.json` | `extra.eas.projectId`, `owner`, `ios.config.usesNonExemptEncryption=false`(TestFlight 수출 규정 질문 생략), `runtimeVersion`·`updates.url`(OTA) |
 | `package.json` `eas-build-pre-install` | 빌드 전에 `assert-no-master-token` 실행 — EAS 환경에 마스터 토큰이 있으면 빌드 중단 |
 
 ### 버전
