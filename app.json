@@ -189,7 +189,8 @@
           }
         }
       ],
-      "./plugins/withIosPodDeploymentTarget"
+      "./plugins/withIosPodDeploymentTarget",
+      "./plugins/withAndroidGradleJvmArgs"
     ],
     "experiments": {
       "typedRoutes": true,
