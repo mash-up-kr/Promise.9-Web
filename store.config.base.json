@@ -1,11 +1,11 @@
 {
   "configVersion": 0,
   "apple": {
-    "version": "1.3.0",
+    "version": "1.3.1",
     "copyright": "2026 Promise.9",
     "categories": ["PRODUCTIVITY", "UTILITIES"],
     "release": {
-      "automaticRelease": false
+      "automaticRelease": true
     },
     "review": {
       "firstName": "보경",
@@ -65,7 +65,7 @@
           "모아보기",
           "세이브"
         ],
-        "releaseNotes": "• 새 버전이 나오면 앱에서 바로 알려드려요.\n• 글꼴을 늦게 불러오는 환경에서도 빈 화면에 머물지 않고 바로 열려요.\n• 링크 상세 화면의 여백을 기기와 상관없이 고르게 다듬었어요.",
+        "releaseNotes": "• 홈 화면 맨 아래 콘텐츠가 하단 탭에 가려지던 문제를 고쳤어요.\n• 보관함·설정 화면 끝의 여백을 하단 탭 위로 고르게 맞췄어요.\n• 링크 상세·폴더 상세·검색·약관·고객지원·회원 탈퇴 화면의 아래쪽 여백을 기기와 상관없이 고르게 맞췄어요.\n• 링크 저장·공유 저장 시트에서 제목과 입력 영역 사이 간격을 넓혔어요.\n• 폴더 이동 시트의 제목이 스크롤해도 위에 고정되고, 좌우 여백과 폴더 목록 간격을 다듬었어요.",
         "supportUrl": "https://link-ding-dong.com/support",
         "privacyPolicyUrl": "https://link-ding-dong.com/settings/privacy",
         "screenshots": {
