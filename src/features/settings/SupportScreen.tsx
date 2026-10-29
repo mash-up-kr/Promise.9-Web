@@ -1,15 +1,14 @@
 import { Stack } from "expo-router";
 import { ScrollView, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { Markdown } from "@/components/ui/markdown/Markdown";
+import { useScreenBottomPadding } from "@/hooks/useScreenBottomPadding";
 
 import { SUPPORT_MD } from "./support.content";
 
 export function SupportScreen() {
-  const insets = useSafeAreaInsets();
+  const bottomPadding = useScreenBottomPadding();
 
   return (
     <View className="flex-1 bg-background-base">
@@ -17,10 +16,7 @@ export function SupportScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <Header title="고객지원" left={<HeaderBackButton />} />
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View
-          className="px-5 pt-5"
-          style={{ paddingBottom: insets.bottom + 24 }}
-        >
+        <View className="px-5 pt-5" style={{ paddingBottom: bottomPadding }}>
           <Markdown>{SUPPORT_MD}</Markdown>
         </View>
       </ScrollView>

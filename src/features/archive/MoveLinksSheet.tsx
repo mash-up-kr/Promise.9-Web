@@ -28,41 +28,73 @@ import { FolderSelectItem } from "./components/FolderSelectItem";
  */
 export function MoveLinksSheet() {
   const { closeSheet, navigateFromSheet } = useSheetRouteNavigation();
-
-  return (
-    <SheetScreen onClose={closeSheet}>
-      <MoveLinksSheetContent navigateFromSheet={navigateFromSheet} />
-    </SheetScreen>
-  );
-}
-
-interface MoveLinksSheetContentProps {
-  navigateFromSheet: (href: Href) => void;
-}
-
-// 취소·저장은 라우트를 바로 제거하지 않고 시트 닫힘 애니메이션을 거친다
-// (useSheetDismiss 는 시트 자손에서만 쓸 수 있어 본문을 분리).
-function MoveLinksSheetContent({
-  navigateFromSheet,
-}: MoveLinksSheetContentProps) {
-  const dismiss = useSheetDismiss();
   const router = useRouter();
-  const { show } = useSnackbar();
-  const { mutateAsync: moveLinks } = useMoveLinksToFolderMutation();
-
   const { ids, folderId, title } = useLocalSearchParams<{
     ids?: string;
     folderId?: string;
     title?: string;
   }>();
-  const linkIds = parseLinkIds(ids);
-  // 진입에 따라 타이틀이 다르다 — 링크 상세 "폴더선택"은 "폴더 선택", 그 외는 "폴더 이동".
-  const headerTitle = title ?? "폴더 이동";
 
   // 목적지 폴더(보관함 라우트 id). 링크가 원래 있던 폴더를 미리 골라둔 채로 연다.
   const [targetFolderId, setTargetFolderId] = useState<string | null>(
     folderId ?? null,
   );
+
+  return (
+    <SheetScreen
+      onClose={closeSheet}
+      header={
+        <MoveLinksSheetHeader
+          // 진입에 따라 타이틀이 다르다 — 링크 상세 "폴더선택"은 "폴더 선택", 그 외는 "폴더 이동".
+          title={title ?? "폴더 이동"}
+          linkIds={parseLinkIds(ids)}
+          targetFolderId={targetFolderId}
+          navigateFromSheet={navigateFromSheet}
+        />
+      }
+    >
+      <AsyncBoundary
+        pending={
+          <PickerPlaceholder>
+            <Spinner size="medium" />
+          </PickerPlaceholder>
+        }
+        fallback={
+          <PickerPlaceholder>
+            <Text variant="body-2-normal" className="text-text-alternative">
+              폴더를 불러오지 못했어요.
+            </Text>
+          </PickerPlaceholder>
+        }
+      >
+        <FolderPicker
+          selectedFolderId={targetFolderId}
+          onSelect={setTargetFolderId}
+          onAddFolder={() => router.push("/create-folder")}
+        />
+      </AsyncBoundary>
+    </SheetScreen>
+  );
+}
+
+interface MoveLinksSheetHeaderProps {
+  title: string;
+  linkIds: number[];
+  targetFolderId: string | null;
+  navigateFromSheet: (href: Href) => void;
+}
+
+// 취소·저장은 라우트를 바로 제거하지 않고 시트 닫힘 애니메이션을 거친다
+// (useSheetDismiss 는 시트 자손에서만 쓸 수 있어 헤더를 분리).
+function MoveLinksSheetHeader({
+  title,
+  linkIds,
+  targetFolderId,
+  navigateFromSheet,
+}: MoveLinksSheetHeaderProps) {
+  const dismiss = useSheetDismiss();
+  const { show } = useSnackbar();
+  const { mutateAsync: moveLinks } = useMoveLinksToFolderMutation();
   const [isMoving, setIsMoving] = useState(false);
 
   // 옮길 링크가 없으면(ids 파라미터가 없거나 망가진 경우) 저장은 아무것도 하지 않는다 —
@@ -96,10 +128,10 @@ function MoveLinksSheetContent({
     }
   };
 
-  // 폴더 목록을 기다리는 동안에도 취소는 눌려야 하므로 저장만 잠근 헤더를 함께 보여준다.
+  // 폴더 목록을 기다리는 동안에도 취소는 눌려야 하므로 저장만 잠근 헤더를 보여준다.
   const placeholderHeader = (
     <BottomSheetHeader
-      title={headerTitle}
+      title={title}
       onCancel={dismiss}
       onConfirm={() => {}}
       isConfirmDisabled
@@ -107,57 +139,57 @@ function MoveLinksSheetContent({
   );
 
   return (
-    <AsyncBoundary
-      pending={
-        <>
-          {placeholderHeader}
-          <PickerPlaceholder>
-            <Spinner size="medium" />
-          </PickerPlaceholder>
-        </>
-      }
-      fallback={
-        <>
-          {placeholderHeader}
-          <PickerPlaceholder>
-            <Text variant="body-2-normal" className="text-text-alternative">
-              폴더를 불러오지 못했어요.
-            </Text>
-          </PickerPlaceholder>
-        </>
-      }
-    >
-      <FolderPicker
-        title={headerTitle}
-        selectedFolderId={targetFolderId}
-        isSaveDisabled={isSaveDisabled}
-        onSelect={setTargetFolderId}
-        onCancel={dismiss}
-        onSave={handleSave}
-        onAddFolder={() => router.push("/create-folder")}
-      />
-    </AsyncBoundary>
+    // 시안 folder-move 는 헤더→본문 24(다른 시트는 20) — 본문 pt-5 에 4 를 더한다.
+    <View className="bg-gray-900 pb-1">
+      <AsyncBoundary pending={placeholderHeader} fallback={placeholderHeader}>
+        <ReadyHeader
+          title={title}
+          isConfirmDisabled={targetFolderId === null || isSaveDisabled}
+          onCancel={dismiss}
+          onSave={handleSave}
+        />
+      </AsyncBoundary>
+    </View>
+  );
+}
+
+interface ReadyHeaderProps {
+  title: string;
+  isConfirmDisabled: boolean;
+  onCancel: () => void;
+  onSave: (folders: ArchiveFolder[]) => void;
+}
+
+function ReadyHeader({
+  title,
+  isConfirmDisabled,
+  onCancel,
+  onSave,
+}: ReadyHeaderProps) {
+  const { data } = useSuspenseQuery({
+    ...folderQueries.list(),
+    select: toArchiveFolderData,
+  });
+
+  return (
+    <BottomSheetHeader
+      title={title}
+      onCancel={onCancel}
+      onConfirm={() => onSave(data.myFolders)}
+      isConfirmDisabled={isConfirmDisabled}
+    />
   );
 }
 
 interface FolderPickerProps {
-  title: string;
   selectedFolderId: string | null;
-  /** 이동 중이거나 옮길 링크가 없으면 폴더를 골랐어도 저장할 수 없다. */
-  isSaveDisabled: boolean;
   onSelect: (folderId: string) => void;
-  onCancel: () => void;
-  onSave: (folders: ArchiveFolder[]) => void;
   onAddFolder: () => void;
 }
 
 function FolderPicker({
-  title,
   selectedFolderId,
-  isSaveDisabled,
   onSelect,
-  onCancel,
-  onSave,
   onAddFolder,
 }: FolderPickerProps) {
   const { data } = useSuspenseQuery({
@@ -166,13 +198,7 @@ function FolderPicker({
   });
 
   return (
-    <>
-      <BottomSheetHeader
-        title={title}
-        onCancel={onCancel}
-        onConfirm={() => onSave(data.myFolders)}
-        isConfirmDisabled={selectedFolderId === null || isSaveDisabled}
-      />
+    <View className="gap-12">
       {/* 시트가 이미 가로 여백을 가져 섹션은 여백 없이 붙인다. */}
       <ListSection title="기본 폴더" inset={false}>
         <ListGroup>
@@ -200,7 +226,7 @@ function FolderPicker({
           ))}
         </ListGroup>
       </ListSection>
-    </>
+    </View>
   );
 }
 

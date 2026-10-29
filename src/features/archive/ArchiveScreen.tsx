@@ -18,7 +18,6 @@ import Animated, {
   useScrollOffset,
   useSharedValue,
 } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AlertDialog,
   AlertDialogButton,
@@ -27,6 +26,7 @@ import { Header, useHeaderHeight } from "@/components/ui/header/Header";
 import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { IconButton } from "@/components/ui/icon-button/IconButton";
 import { useSnackbar } from "@/components/ui/snackbar/SnackbarProvider";
+import { useTabScreenBottomPadding } from "@/components/ui/tab-bar/useTabScreenBottomPadding";
 import { SYSTEM_FOLDERS } from "./archive.constants";
 import type { ArchiveFolder, SystemFolderKey } from "./archive.types";
 import { applyFolderOrder, toArchiveFolderData } from "./archive.utils";
@@ -42,9 +42,7 @@ type OpenFolderHandler = (id: string, name: string) => void;
 
 export function ArchiveScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  // 하단 플로팅 탭바(pill 높이 60 + safe-area 여백)에 가리지 않도록 스크롤 하단 여백을 준다.
-  const listBottomPadding = Math.max(insets.bottom, 20) + 60 + 16;
+  const listBottomPadding = useTabScreenBottomPadding();
 
   const { show } = useSnackbar();
   const { mutate: saveOrder } = useReorderFoldersMutation();

@@ -3,7 +3,6 @@ import { Text } from "@promise9/ui/text/Text";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AlertDialog,
   AlertDialogButton,
@@ -12,6 +11,7 @@ import { Header } from "@/components/ui/header/Header";
 import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { ROUTES } from "@/constants/routes.constants";
 import { useAuthGate } from "@/features/auth/hooks/useAuthGate";
+import { useScreenBottomPadding } from "@/hooks/useScreenBottomPadding";
 
 import { WithdrawGraphic } from "./components/WithdrawGraphic";
 import { useWithdraw } from "./hooks/useWithdraw";
@@ -21,7 +21,7 @@ export function WithdrawScreen() {
   const { withdraw, isPending } = useWithdraw();
   const [isConfirmOpen, setConfirmOpen] = useState(false);
   const closeConfirm = () => setConfirmOpen(false);
-  const insets = useSafeAreaInsets();
+  const bottomPadding = useScreenBottomPadding();
   const router = useRouter();
   // 스토어 정책상 앱 없이도 삭제를 요청할 수 있는 웹페이지가 필요하다 — 웹에서 이 주소로
   // 직접 들어온 비로그인 방문자에게는 탈퇴 버튼 대신 절차를 안내한다.
@@ -52,7 +52,7 @@ export function WithdrawScreen() {
         </View>
       )}
 
-      <View className="px-5 pt-5" style={{ paddingBottom: insets.bottom + 20 }}>
+      <View className="px-5 pt-5" style={{ paddingBottom: bottomPadding }}>
         {isSignedOut ? (
           <ActionButton
             className="w-full"

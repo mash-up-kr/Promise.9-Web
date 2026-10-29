@@ -36,6 +36,7 @@ import {
   moveLinksHref,
   ROUTES,
 } from "@/constants/routes.constants";
+import { useScreenBottomPadding } from "@/hooks/useScreenBottomPadding";
 import { formatCalendarDate } from "@/utils/format";
 import { openExternalUrl } from "@/utils/openExternalUrl";
 import { shareUrl } from "@/utils/share";
@@ -114,6 +115,7 @@ export function LinkDetailScreen() {
 
 function LinkDetailContent() {
   const insets = useSafeAreaInsets();
+  const bottomPadding = useScreenBottomPadding();
   const headerHeight = insets.top + HEADER_BAR_HEIGHT;
   const { id } = useLocalSearchParams<"/link/[id]">();
   // 저장 직후엔 제목·요약이 비어 온다 — 처리 중인 동안만 다시 조회하고, 확정되면 멈춘다.
@@ -323,7 +325,7 @@ function LinkDetailContent() {
           contentContainerStyle={{
             paddingTop: headerHeight + 16,
             gap: 24,
-            paddingBottom: insets.bottom + 32,
+            paddingBottom: bottomPadding,
           }}
           showsVerticalScrollIndicator={false}
         >

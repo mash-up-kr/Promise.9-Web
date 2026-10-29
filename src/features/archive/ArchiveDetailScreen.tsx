@@ -40,6 +40,7 @@ import {
   moveLinksHref,
   ROUTES,
 } from "@/constants/routes.constants";
+import { useScreenBottomPadding } from "@/hooks/useScreenBottomPadding";
 import { shareUrl } from "@/utils/share";
 import { SYSTEM_FOLDERS, TRASH_FOLDER } from "./archive.constants";
 import type { LinkSortOption } from "./archive.types";
@@ -370,6 +371,7 @@ function ArchiveDetailLinkList({
 }: ArchiveDetailLinkListProps) {
   const scrollHandler = useHeaderAwareScrollHandler("archive-detail");
   const headerHeight = useHeaderHeight();
+  const bottomPadding = useScreenBottomPadding();
   const {
     data: links,
     fetchNextPage,
@@ -423,7 +425,11 @@ function ArchiveDetailLinkList({
       contentContainerStyle={[
         styles.linkGridContent,
         // 헤더가 투명 오버레이라 콘텐츠가 그 아래에서 시작한다.
-        { paddingTop: headerHeight + GRID_TOP_PADDING },
+        // 마지막 줄에도 줄 간격(marginBottom)이 붙어 있어 그만큼 빼야 끝 여백이 시안과 같다.
+        {
+          paddingTop: headerHeight + GRID_TOP_PADDING,
+          paddingBottom: bottomPadding - LINK_GRID_ROW_GAP,
+        },
         // 선택 모드에서는 하단 액션 바가 마지막 줄을 가리지 않도록 여백을 더 준다.
         selectedIds !== null && styles.linkGridContentSelecting,
       ]}
@@ -441,7 +447,6 @@ const styles = StyleSheet.create({
   },
   linkGridContent: {
     paddingHorizontal: GRID_HORIZONTAL_PADDING,
-    paddingBottom: 4,
   },
   linkGridContentSelecting: {
     paddingBottom: 130,

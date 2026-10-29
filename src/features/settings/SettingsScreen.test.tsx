@@ -80,6 +80,13 @@ describe("SettingsScreen", () => {
     expect(screen.getByText("버전 정보")).toBeOnTheScreen();
   });
 
+  test("스크롤 끝은 플로팅 탭바(safe-area 34 + 바 60) 위로 36 을 남긴다", async () => {
+    await renderScreen();
+    expect(screen.getByTestId("settings-scroll-content")).toHaveStyle({
+      paddingBottom: 130,
+    });
+  });
+
   test("이메일을 조회해 표시한다", async () => {
     await renderScreen();
     expect(await screen.findByText("master@promise.local")).toBeOnTheScreen();

@@ -24,6 +24,7 @@ import { HeaderBackButton } from "@/components/ui/header/HeaderBackButton";
 import { useHeaderAwareScrollHandler } from "@/components/ui/header/useHeaderAwareScrollHandler";
 import { Illustration } from "@/components/ui/illustration/Illustration";
 import { SearchBar } from "@/features/search/components/SearchBar";
+import { useScreenBottomPadding } from "@/hooks/useScreenBottomPadding";
 
 import { LinkGrid } from "./components/LinkGrid";
 import { RecentLinksSection } from "./components/RecentLinksSection";
@@ -193,6 +194,7 @@ function SearchDefaultContent({
   onPressKeyword,
   onClearKeywords,
 }: SearchDefaultContentProps) {
+  const bottomPadding = useScreenBottomPadding();
   // exiting 은 언마운트 원인을 구분하지 못해 상시 부여하면 검색 커밋 크로스페이드에서도
   // 발화한다(웹에서 사라짐이 두 번 보임) — "모두 지우기" 커밋에만 붙이고, 페인트 전
   // layout effect 에서 곧바로 삭제 커밋을 이어 중간 프레임·레이스 창 없이 제거한다.
@@ -206,7 +208,10 @@ function SearchDefaultContent({
   }, [isClearing, onClearKeywords]);
 
   return (
-    <VStack className="gap-12 px-5 pt-6 pb-8">
+    <VStack
+      className="gap-12 px-5 pt-6"
+      style={{ paddingBottom: bottomPadding }}
+    >
       {/* 빈 래퍼가 남으면 gap-12 슬롯이 위 여백으로 남는다 — 검색어가 없으면 래퍼째 뺀다. */}
       {keywords.length > 0 && (
         <Animated.View exiting={isClearing ? clearRecentExiting : undefined}>
@@ -259,6 +264,7 @@ function SearchResults({ query }: SearchResultsProps) {
 }
 
 function ResultsGrid({ query }: SearchResultsProps) {
+  const bottomPadding = useScreenBottomPadding();
   const { data: links } = useSuspenseQuery(linkQueries.list({ q: query }));
 
   if (links.length === 0) {
@@ -276,7 +282,7 @@ function ResultsGrid({ query }: SearchResultsProps) {
   return (
     // 시안: 로딩이 걷히면 결과 그리드가 짧게 페이드인한다.
     <Animated.View entering={FadeIn.duration(RESULT_FADE_IN_MS)}>
-      <VStack className="px-5 pt-3.5 pb-8">
+      <VStack className="px-5 pt-3.5" style={{ paddingBottom: bottomPadding }}>
         <LinkGrid links={links} />
       </VStack>
     </Animated.View>
