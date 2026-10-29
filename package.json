@@ -94,6 +94,7 @@
     "assert-required-public-env": "node scripts/assert-required-public-env.mjs",
     "build:web": "pnpm assert-no-master-token && pnpm assert-required-public-env && pnpm expo export -p web",
     "deploy": "pnpm build:web && wrangler deploy",
+    "ota:production": "pnpm install --frozen-lockfile && eas update --channel production --environment production --clear-cache",
     "preview": "pnpm build:web && wrangler dev",
     "eas-build-pre-install": "pnpm assert-no-master-token"
   },
