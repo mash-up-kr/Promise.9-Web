@@ -235,6 +235,13 @@ describe("CreateLinkSheet", () => {
         ),
       }),
     );
+    expect(mockTrackEvent).toHaveBeenCalledWith(
+      {
+        event_name: "link_saved",
+        custom_data: { link_id: 1, entry_point: "create_link_sheet" },
+      },
+      { flushSoon: true },
+    );
     expect(await screen.findByText("링크를 저장했어요")).toBeTruthy();
     await waitFor(() => expect(mockDispatch).toHaveBeenCalled());
   });

@@ -12,6 +12,12 @@ export const ANALYTICS_EVENTS = {
   COMPONENT_CLICKED: "component_clicked",
   /** 추적 대상이 노출 기준을 충족했을 때 기록한다. 반복 관찰 제어는 각 수집 훅이 맡는다. */
   COMPONENT_IMPRESSION: "component_impression",
+  /** 링크 생성 성공 시 link_id와 선택적 entry_point를 기록한다. */
+  LINK_SAVED: "link_saved",
+  /** 소셜 인증과 토큰 저장이 완료되면 provider를 기록한다. */
+  LOGIN_COMPLETED: "login_completed",
+  /** 로그인 완료 시 신규 회원(isNewUser)이면 provider를 추가로 기록한다. */
+  SIGNUP_COMPLETED: "signup_completed",
 } as const;
 
 export type ComponentCustomData = NonNullable<
@@ -38,6 +44,9 @@ interface EventData {
   };
   [ANALYTICS_EVENTS.COMPONENT_CLICKED]: ComponentData;
   [ANALYTICS_EVENTS.COMPONENT_IMPRESSION]: ComponentData;
+  [ANALYTICS_EVENTS.LINK_SAVED]: { link_id: number; entry_point?: string };
+  [ANALYTICS_EVENTS.LOGIN_COMPLETED]: { provider: string };
+  [ANALYTICS_EVENTS.SIGNUP_COMPLETED]: { provider: string };
 }
 export type AnalyticsEventName = keyof EventData;
 export type AnalyticsInput = {
