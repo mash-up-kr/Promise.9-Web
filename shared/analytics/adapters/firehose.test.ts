@@ -49,8 +49,14 @@ describe("브라우저 종료 전 전송", () => {
       configurable: true,
       value: class {},
     });
-    const requestInit = getRequestInit();
-    expect(requestInit({ body: "{}" })).toEqual({ keepalive: false });
+    createFirehoseSender({
+      region: "ap-northeast-2",
+      identityPoolId: "pool",
+      streamName: "stream",
+    });
+    expect(
+      jest.mocked(FirehoseClient).mock.calls.at(-1)?.[0]?.requestHandler,
+    ).toBeUndefined();
   });
 
   function getRequestInit() {
@@ -123,4 +129,25 @@ test("요청 전체 실패는 호출자에게 전달한다", async () => {
   await expect(
     transport([new Uint8Array([1])], new AbortController().signal),
   ).rejects.toBe(error);
+});
+
+test("React Native에서는 keepalive 지원 여부와 무관하게 SDK 기본 핸들러를 유지한다", () => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  Object.defineProperty(globalThis, "navigator", {
+    configurable: true,
+    value: { product: "ReactNative" },
+  });
+  try {
+    createFirehoseSender({
+      region: "ap-northeast-2",
+      identityPoolId: "pool",
+      streamName: "stream",
+    });
+    expect(
+      jest.mocked(FirehoseClient).mock.calls.at(-1)?.[0],
+    ).not.toHaveProperty("requestHandler");
+  } finally {
+    if (previous) Object.defineProperty(globalThis, "navigator", previous);
+    else Reflect.deleteProperty(globalThis, "navigator");
+  }
 });
