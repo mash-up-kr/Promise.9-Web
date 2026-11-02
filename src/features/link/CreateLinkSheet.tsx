@@ -210,6 +210,7 @@ function CreateLinkSheetHeader({
     >
       <BottomSheetHeader
         title="링크 저장"
+        confirmTracking={{ label: "link.save" }}
         onCancel={dismiss}
         onConfirm={() => onSave(dismiss)}
         isConfirmDisabled={isConfirmDisabled}

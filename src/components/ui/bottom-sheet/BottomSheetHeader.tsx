@@ -1,6 +1,11 @@
 import { Spinner } from "@promise9/ui/spinner/Spinner";
 import { Text } from "@promise9/ui/text/Text";
+import type { Ref } from "react";
 import { Pressable, View } from "react-native";
+import {
+  type TrackingProps,
+  withTracking,
+} from "@/components/analytics/withTracking";
 import { tv } from "@/lib/tv";
 
 // Figma Bottom Sheet Header: 취소(Assistive)·타이틀/설명·저장(Primary).
@@ -40,6 +45,7 @@ const buttonLabelStyles = tv({
 });
 
 interface HeaderButtonProps {
+  ref?: Ref<View>;
   variant: "assistive" | "primary";
   label: string;
   onPress: () => void;
@@ -48,6 +54,7 @@ interface HeaderButtonProps {
 }
 
 function HeaderButton({
+  ref,
   variant,
   label,
   onPress,
@@ -56,6 +63,7 @@ function HeaderButton({
 }: HeaderButtonProps) {
   return (
     <Pressable
+      ref={ref}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: isDisabled || isPending }}
@@ -74,6 +82,8 @@ function HeaderButton({
   );
 }
 
+const TrackedHeaderButton = withTracking(HeaderButton);
+
 export interface BottomSheetHeaderProps {
   title: string;
   description?: string;
@@ -83,6 +93,8 @@ export interface BottomSheetHeaderProps {
   onConfirm: () => void;
   isConfirmDisabled?: boolean;
   isConfirmPending?: boolean;
+  /** 지정한 확인 버튼만 클릭·노출을 수집한다. */
+  confirmTracking?: TrackingProps["tracking"];
 }
 
 export function BottomSheetHeader({
@@ -94,7 +106,9 @@ export function BottomSheetHeader({
   onConfirm,
   isConfirmDisabled = false,
   isConfirmPending = false,
+  confirmTracking,
 }: BottomSheetHeaderProps) {
+  const ConfirmButton = confirmTracking ? TrackedHeaderButton : HeaderButton;
   return (
     <View className="h-15 flex-row items-center justify-between px-5">
       <HeaderButton
@@ -112,12 +126,20 @@ export function BottomSheetHeader({
           </Text>
         ) : null}
       </View>
-      <HeaderButton
+      <ConfirmButton
         variant="primary"
         label={confirmLabel}
         onPress={onConfirm}
         isDisabled={isConfirmDisabled}
         isPending={isConfirmPending}
+        {...(confirmTracking && {
+          tracking: {
+            ...confirmTracking,
+            disabled: Boolean(
+              confirmTracking.disabled || isConfirmDisabled || isConfirmPending,
+            ),
+          },
+        })}
       />
     </View>
   );

@@ -21,7 +21,7 @@ import {
 import { AgreementText } from "./components/AgreementText";
 import { ExtensionConnect } from "./components/ExtensionConnect";
 import { LoginGraphic } from "./components/LoginGraphic";
-import { SocialLoginButton } from "./components/SocialLoginButton";
+import { TrackedSocialLoginButton } from "./components/TrackedSocialLoginButton";
 import { canConnectExtension, isExtensionReturn } from "./extensionHandoff";
 import { useSocialAuth } from "./hooks/useSocialAuth";
 
@@ -155,8 +155,12 @@ export function LoginScreen() {
           .map(([key, config]) => {
             const provider = key as SocialProvider;
             return (
-              <SocialLoginButton
+              <TrackedSocialLoginButton
                 key={provider}
+                tracking={{
+                  label: `login.${provider}`,
+                  disabled: pendingProvider !== null,
+                }}
                 provider={provider}
                 label={config.label}
                 onPress={handleSocialLogin}
