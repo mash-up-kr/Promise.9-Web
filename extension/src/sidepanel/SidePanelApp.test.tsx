@@ -1,6 +1,14 @@
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { createAnalytics } from "@shared/analytics/analytics.runtime";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ExtensionAnalyticsProvider } from "@/analytics/AnalyticsContext";
 import { installTokenPersistence } from "@/lib/auth/session";
 import { MESSAGE_TYPE } from "@/lib/messages";
 import type { SaveRecord } from "@/lib/storage";
@@ -416,4 +424,63 @@ describe("SidePanelApp", () => {
       screen.queryByText("링크 저장을 완료했어요"),
     ).not.toBeInTheDocument();
   });
+});
+
+it("패널 닫기는 마지막 페이지뷰 전송을 시도한 뒤 기다리지 않고 한 번만 닫는다", async () => {
+  installChromeMock({ tab: { url: "chrome://extensions", title: "확장" } });
+  let finishSend = () => {};
+  const pendingSend = new Promise<void>((resolve) => {
+    finishSend = resolve;
+  });
+  let id = 0;
+  const runtime = createAnalytics({
+    source: "extension",
+    environment: "development",
+    aws: { region: "region", identityPoolId: "pool", streamName: "stream" },
+    storage: { get: async () => null, set: async () => {} },
+    newId: () => `id-${++id}`,
+    send: () => pendingSend,
+  });
+  await runtime.ready;
+  const trackEvent = vi.spyOn(runtime.client, "trackEvent");
+  const flush = vi.spyOn(runtime.client, "flush");
+  vi.useFakeTimers();
+  try {
+    await act(async () => {
+      renderPanel(
+        <ExtensionAnalyticsProvider value={runtime}>
+          <SidePanelApp />
+        </ExtensionAnalyticsProvider>,
+      );
+    });
+    const button = screen.getByRole("button", { name: "닫기" });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(window.close).toHaveBeenCalledTimes(1);
+    expect(flush).toHaveBeenCalledTimes(1);
+    expect(trackEvent.mock.calls.map(([event]) => event.event_name)).toEqual([
+      "page_view",
+    ]);
+    expect(trackEvent.mock.calls[0]?.[0].custom_data).toMatchObject({
+      screen_name: "restricted",
+      path: "/restricted",
+      duration_ms: expect.any(Number),
+    });
+    const firstFlushOrder = flush.mock.invocationCallOrder[0];
+    const firstCloseOrder = vi.mocked(window.close).mock.invocationCallOrder[0];
+    if (firstFlushOrder === undefined || firstCloseOrder === undefined)
+      throw new Error("전송과 패널 닫기가 모두 호출되어야 합니다.");
+    expect(trackEvent.mock.invocationCallOrder[0]).toBeLessThan(
+      firstFlushOrder,
+    );
+    expect(firstFlushOrder).toBeLessThan(firstCloseOrder);
+    finishSend();
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(window.close).toHaveBeenCalledTimes(1);
+  } finally {
+    cleanup();
+    runtime.client.dispose();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  }
 });
