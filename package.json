@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "packageManager": "pnpm@11.7.0",
   "dependencies": {
+    "@aws-sdk/client-firehose": "3.1151.0",
+    "@aws-sdk/credential-provider-cognito-identity": "3.972.73",
     "@expo/html-elements": "^56.0.1",
     "@expo/ui": "~56.0.17",
     "@gorhom/bottom-sheet": "^5.2.14",

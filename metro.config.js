@@ -22,6 +22,26 @@ pluginConfig.resolver.resolveRequest = (context, moduleName, platform) => {
   ) {
     return context.resolveRequest(context, moduleName, platform);
   }
+  // 현재 Firehose SDK의 react-native/browser 설정은 dist-es/runtimeConfig에 연결돼 있다.
+  // Metro가 앱·웹용 설정을 선택하도록 AWS·Smithy 패키지는 module(ESM)을
+  // main(CJS)보다 먼저 확인한다. 다른 패키지의 진입점 선택 순서는 유지한다.
+  // https://metrobundler.dev/docs/resolution/#resolve_module
+  if (moduleName.startsWith("@aws-sdk/") || moduleName.startsWith("@smithy/")) {
+    return pluginResolveRequest(
+      {
+        ...context,
+        mainFields: [
+          ...new Set(
+            context.mainFields.flatMap((field) =>
+              field === "main" ? ["module", "main"] : [field],
+            ),
+          ),
+        ],
+      },
+      moduleName,
+      platform,
+    );
+  }
   return pluginResolveRequest(context, moduleName, platform);
 };
 
