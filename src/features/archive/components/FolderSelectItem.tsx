@@ -7,7 +7,7 @@ import { FolderToneIcon } from "./FolderToneIcon";
 
 // Figma "Folder Item"(폴더 이동 시트): 52px 행 · 선택 시 배경 list-selected.
 const itemStyles = tv({
-  base: "h-[52px] flex-row items-center justify-between px-4 py-3",
+  base: "h-[52px] flex-row items-center justify-between py-3 pr-5 pl-4",
   variants: {
     isSelected: {
       true: "bg-background-list-selected",
