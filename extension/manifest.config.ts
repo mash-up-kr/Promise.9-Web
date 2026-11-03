@@ -52,7 +52,11 @@ export default defineManifest({
     type: "module",
   },
   permissions: ["tabs", "storage", "sidePanel", "contextMenus"],
-  host_permissions: ["https://api.link-ding-dong.com/*"],
+  host_permissions: [
+    "https://api.link-ding-dong.com/*",
+    "https://cognito-identity.ap-northeast-2.amazonaws.com/*",
+    "https://firehose.ap-northeast-2.amazonaws.com/*",
+  ],
   // 웹앱 페이지만 이 익스텐션에 메시지를 보낼 수 있다(로그인 인계). 도메인 단위 허용이라
   // background 가 origin 과 메시지 모양을 한 번 더 검사한다(lib/auth/handoff).
   // 배포 도메인만 둔다 — 로컬 웹앱(pnpm web)에서는 인계를 테스트할 수 없다. 스토어 심사에

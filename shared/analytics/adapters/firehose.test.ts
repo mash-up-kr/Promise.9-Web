@@ -8,6 +8,48 @@ jest.mock("@aws-sdk/client-firehose", () => ({
 jest.mock("@aws-sdk/credential-provider-cognito-identity", () => ({
   fromCognitoIdentityPool: jest.fn(() => "credentials"),
 }));
+
+describe("호출부에서 지정한 keepalive 정책", () => {
+  test.each([
+    [new Uint8Array(65536), true],
+    [new Uint8Array(65537), false],
+    ["a".repeat(65536), true],
+    ["a".repeat(65537), false],
+    ["가".repeat(22000), false],
+  ])("최종 본문의 바이트 크기로 keepalive를 제한한다", (body, expected) => {
+    createFirehoseSender({
+      region: "region",
+      identityPoolId: "pool",
+      streamName: "stream",
+      keepalive: true,
+    });
+    const handler = jest
+      .mocked(FirehoseClient)
+      .mock.calls.at(-1)?.[0]?.requestHandler;
+    if (
+      !handler ||
+      !("requestInit" in handler) ||
+      typeof handler.requestInit !== "function"
+    )
+      throw new Error("keepalive handler missing");
+    expect(handler.requestInit({ body })).toEqual({ keepalive: expected });
+  });
+  test.each([
+    undefined,
+    false,
+  ])("keepalive=%s이면 SDK 기본 핸들러를 유지한다", (keepalive) => {
+    createFirehoseSender({
+      region: "region",
+      identityPoolId: "pool",
+      streamName: "stream",
+      keepalive,
+    });
+    expect(
+      jest.mocked(FirehoseClient).mock.calls.at(-1)?.[0],
+    ).not.toHaveProperty("requestHandler");
+  });
+});
+
 test("AWS 성공 응답의 부분 실패·응답 누락은 무시한다", async () => {
   const send = jest.fn().mockResolvedValue({
     RequestResponses: [
