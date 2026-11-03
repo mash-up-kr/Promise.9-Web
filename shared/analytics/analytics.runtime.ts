@@ -3,7 +3,7 @@ import { captureUtm } from "@shared/analytics/identity/utm";
 import {
   type MarketingTouch,
   marketingTouchSchema,
-} from "@shared/entities/user/user.attribution";
+} from "@shared/entities/user/user.attribution.contracts";
 import { AnalyticsClient } from "./analytics.client";
 import type { AnalyticsContext, AnalyticsUtm } from "./analytics.schema";
 

@@ -71,3 +71,6 @@ export function getAnalyticsEnvironment() {
     clientVersion: process.env.EXPO_PUBLIC_WEB_VERSION || null,
   };
 }
+
+export const supportsAnalyticsKeepalive = (): boolean =>
+  typeof Request !== "undefined" && "keepalive" in Request.prototype;

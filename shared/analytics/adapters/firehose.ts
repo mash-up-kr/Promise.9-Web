@@ -12,6 +12,8 @@ export interface AnalyticsAwsConfig {
   region: string;
   identityPoolId: string;
   streamName: string;
+  /** 호출 표면에서 지원을 확인한 경우에만 활성화한다. 기본값은 SDK 기본 핸들러다. */
+  keepalive?: boolean;
 }
 /**
  * Cognito 임시 자격 증명으로 Firehose에 배치를 전송한다.
@@ -23,30 +25,20 @@ export function createFirehoseSender(
 ): (records: Uint8Array[], signal: AbortSignal) => Promise<void> {
   const client = new FirehoseClient({
     region: config.region,
-    ...(typeof navigator !== "undefined" && navigator.product === "ReactNative"
-      ? {}
-      : {
-          requestHandler:
-            typeof Request !== "undefined" && "keepalive" in Request.prototype
-              ? {
-                  // Base64·JSON 외피를 포함한 최종 본문으로 판정한다. 큰 배치는 일반 전송을 유지한다.
-                  // keepalive는 페이지 종료 뒤에도 전송을 이어 가지만, 진행 중인 요청 본문 합계가 64KiB로 제한된다.
-                  requestInit: ({ body }) => {
-                    let bodyByteLength = Number.POSITIVE_INFINITY;
-                    if (body instanceof Uint8Array)
-                      bodyByteLength = body.byteLength;
-                    else if (typeof body === "string")
-                      bodyByteLength = fromUtf8(body).byteLength;
-                    return {
-                      keepalive:
-                        typeof Request !== "undefined" &&
-                        "keepalive" in Request.prototype &&
-                        bodyByteLength <= KEEPALIVE_MAX_BYTES,
-                    };
-                  },
-                }
-              : undefined,
-        }),
+    ...(config.keepalive
+      ? {
+          requestHandler: {
+            // Base64·JSON 외피를 포함한 최종 본문이 64KiB 이내일 때만 종료 후 전송을 유지한다.
+            requestInit: ({ body }) => {
+              let bodyByteLength = Number.POSITIVE_INFINITY;
+              if (body instanceof Uint8Array) bodyByteLength = body.byteLength;
+              else if (typeof body === "string")
+                bodyByteLength = fromUtf8(body).byteLength;
+              return { keepalive: bodyByteLength <= KEEPALIVE_MAX_BYTES };
+            },
+          },
+        }
+      : {}),
     credentials: fromCognitoIdentityPool({
       identityPoolId: config.identityPoolId,
       clientConfig: { region: config.region },

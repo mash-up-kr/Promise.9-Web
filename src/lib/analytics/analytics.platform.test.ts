@@ -1,7 +1,10 @@
 import { act } from "@testing-library/react-native";
 import * as Linking from "expo-linking";
 import { AppState, type AppStateStatus } from "react-native";
-import { bindPlatformAnalytics } from "./analytics.platform";
+import {
+  bindPlatformAnalytics,
+  supportsAnalyticsKeepalive,
+} from "./analytics.platform";
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(),
@@ -101,4 +104,8 @@ test("초기 딥링크 조회 중에도 구독을 해제하고 늦은 응답은 
   expect(capture).not.toHaveBeenCalled();
   expect(removeLink).toHaveBeenCalledTimes(1);
   expect(removeAppState).toHaveBeenCalledTimes(1);
+});
+
+test("네이티브는 SDK 기본 전송 핸들러를 사용한다", () => {
+  expect(supportsAnalyticsKeepalive()).toBe(false);
 });

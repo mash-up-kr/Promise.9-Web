@@ -3,7 +3,7 @@ import {
   type MarketingTouch,
   type UserAttribution,
   userAttributionSchema,
-} from "./user.attribution";
+} from "./user.attribution.contracts";
 export async function fetchUserAttribution(
   signal: AbortSignal,
 ): Promise<UserAttribution> {
