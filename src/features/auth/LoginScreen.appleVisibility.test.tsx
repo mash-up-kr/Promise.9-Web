@@ -24,6 +24,7 @@ jest.mock("@shared/api", () => {
 });
 
 jest.mock("expo-router", () => ({
+  useIsFocused: () => true,
   useRouter: () => ({ replace: jest.fn() }),
   useLocalSearchParams: () => ({}),
 }));
