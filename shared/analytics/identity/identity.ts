@@ -2,7 +2,7 @@ import type { AnalyticsRuntime } from "@shared/analytics/analytics.runtime";
 import type {
   MarketingTouch,
   UserAttribution,
-} from "@shared/entities/user/user.attribution";
+} from "@shared/entities/user/user.attribution.contracts";
 
 interface IdentitySource {
   getToken: () => Promise<string | null>;

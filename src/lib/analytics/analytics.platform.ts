@@ -83,3 +83,5 @@ export function getAnalyticsEnvironment() {
       Constants.nativeAppVersion ?? Constants.expoConfig?.version ?? null,
   };
 }
+
+export const supportsAnalyticsKeepalive = (): boolean => false;

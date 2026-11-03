@@ -1,5 +1,8 @@
 /** @jest-environment jsdom */
-import { isReloadNavigation } from "./analytics.platform.web";
+import {
+  isReloadNavigation,
+  supportsAnalyticsKeepalive,
+} from "./analytics.platform.web";
 
 jest.mock("@shared/api/token", () => ({ subscribeTokens: () => () => {} }));
 
@@ -34,4 +37,24 @@ test("navigation API가 없으면 새로고침으로 추측하지 않는다", ()
     value: undefined,
   });
   expect(isReloadNavigation()).toBe(false);
+});
+
+test.each([
+  true,
+  false,
+])("브라우저 Request keepalive 지원 여부 %s를 전달한다", (supported) => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, "Request");
+  const RequestStub = class {};
+  if (supported)
+    Object.defineProperty(RequestStub.prototype, "keepalive", { value: false });
+  Object.defineProperty(globalThis, "Request", {
+    configurable: true,
+    value: RequestStub,
+  });
+  try {
+    expect(supportsAnalyticsKeepalive()).toBe(supported);
+  } finally {
+    if (original) Object.defineProperty(globalThis, "Request", original);
+    else Reflect.deleteProperty(globalThis, "Request");
+  }
 });

@@ -1,7 +1,7 @@
 import {
   type MarketingTouch,
   marketingTouchSchema,
-} from "@shared/entities/user/user.attribution";
+} from "@shared/entities/user/user.attribution.contracts";
 
 const UTM_FIELDS = [
   "utm_source",

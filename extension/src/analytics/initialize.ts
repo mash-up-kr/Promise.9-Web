@@ -29,7 +29,13 @@ export function initializeExtensionAnalytics(): AnalyticsRuntime | null {
         import.meta.env.VITE_ANALYTICS_ENVIRONMENT === "production"
           ? "production"
           : "development",
-      aws: { region, identityPoolId, streamName },
+      aws: {
+        region,
+        identityPoolId,
+        streamName,
+        keepalive:
+          typeof Request !== "undefined" && "keepalive" in Request.prototype,
+      },
       newId: () => crypto.randomUUID(),
       storage: {
         get: async (key) => {
