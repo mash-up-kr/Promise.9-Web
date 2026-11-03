@@ -29,7 +29,12 @@ export function initializeAnalytics(): InitializedAnalytics | null {
         process.env.EXPO_PUBLIC_ANALYTICS_ENVIRONMENT === "production"
           ? "production"
           : "development",
-      aws: { identityPoolId, streamName, region },
+      aws: {
+        identityPoolId,
+        streamName,
+        region,
+        keepalive: platform.supportsAnalyticsKeepalive(),
+      },
       storage: platform.analyticsStorage,
       newId: platform.newAnalyticsId,
       ...platform.getAnalyticsEnvironment(),

@@ -16,6 +16,7 @@ let mockResolve: (value: string | null) => void = () => {};
 let mockRead: Promise<string | null>;
 jest.mock("@/lib/analytics/analytics.platform", () => ({
   prepareAnalyticsPlatform: () => {},
+  supportsAnalyticsKeepalive: () => false,
   newAnalyticsId: () => `id-${Math.random()}`,
   isAnalyticsActive: () => mockIsInitiallyActive,
   analyticsStorage: { get: () => mockRead, set: async () => {} },

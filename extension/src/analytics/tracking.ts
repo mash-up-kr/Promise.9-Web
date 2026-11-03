@@ -1,7 +1,6 @@
-import {
-  IMPRESSION_DURATION_MS,
-  IMPRESSION_RATIO,
-} from "@shared/analytics/analytics.constants";
+import { IMPRESSION_RATIO } from "@shared/analytics/analytics.constants";
+
+import { createImpressionTracker } from "@shared/analytics/analytics.impression";
 
 interface TrackingCallbacks {
   click: () => void;
@@ -9,6 +8,7 @@ interface TrackingCallbacks {
   isImpressionEnabled?: boolean;
 }
 interface Registration {
+  tracker: ReturnType<typeof createImpressionTracker>;
   callbacks: TrackingCallbacks;
   ratio: number;
   hasRecorded: boolean;
@@ -24,18 +24,22 @@ function update(element: HTMLElement, registration: Registration): void {
     registration.callbacks.isImpressionEnabled === false
   )
     return;
-  if (
-    registration.ratio >= IMPRESSION_RATIO &&
-    document.visibilityState === "visible"
-  ) {
-    registration.timer = setTimeout(() => {
-      if (registrations.get(element) !== registration) return;
-      if (registration.callbacks.impression() === true) {
-        registration.hasRecorded = true;
-        observer?.unobserve(element);
-      }
-    }, IMPRESSION_DURATION_MS);
+  if (document.visibilityState !== "visible") {
+    registration.tracker.reset();
+    return;
   }
+  const delay = registration.tracker.remainingMs(
+    registration.ratio,
+    performance.now(),
+  );
+  if (delay === null) return;
+  registration.timer = setTimeout(() => {
+    if (registrations.get(element) !== registration) return;
+    if (registration.callbacks.impression() === true) {
+      registration.hasRecorded = true;
+      observer?.unobserve(element);
+    }
+  }, delay);
 }
 function visibilityChanged(): void {
   for (const [element, registration] of registrations)
@@ -84,6 +88,7 @@ export function observeTrackedElement(
   }
   const registration: Registration = {
     callbacks,
+    tracker: createImpressionTracker(),
     ratio: 0,
     hasRecorded: false,
   };

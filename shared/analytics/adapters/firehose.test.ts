@@ -9,73 +9,45 @@ jest.mock("@aws-sdk/credential-provider-cognito-identity", () => ({
   fromCognitoIdentityPool: jest.fn(() => "credentials"),
 }));
 
-describe("브라우저 종료 전 전송", () => {
-  const originalRequest = Object.getOwnPropertyDescriptor(
-    globalThis,
-    "Request",
-  );
-
-  afterEach(() => {
-    if (originalRequest) {
-      Object.defineProperty(globalThis, "Request", originalRequest);
-    } else {
-      Reflect.deleteProperty(globalThis, "Request");
-    }
-  });
-
+describe("호출부에서 지정한 keepalive 정책", () => {
   test.each([
-    ["SDK 바이트 본문 64KiB 경계", new Uint8Array(65536), true],
-    ["SDK 바이트 본문 64KiB 초과", new Uint8Array(65537), false],
-    ["64KiB 경계", "a".repeat(65536), true],
-    ["64KiB 초과", "a".repeat(65537), false],
-    ["문자 수는 작아도 UTF-8 바이트가 초과", "가".repeat(22000), false],
-  ])("%s인 최종 요청 본문에 keepalive를 선택한다", (_name, body, expected) => {
-    Object.defineProperty(globalThis, "Request", {
-      configurable: true,
-      value: class {
-        get keepalive() {
-          return false;
-        }
-      },
-    });
-    const requestInit = getRequestInit();
-    expect(requestInit({ body })).toEqual({
-      keepalive: expected,
-    });
-  });
-
-  test("keepalive를 지원하지 않는 앱에서는 일반 요청을 유지한다", () => {
-    Object.defineProperty(globalThis, "Request", {
-      configurable: true,
-      value: class {},
-    });
+    [new Uint8Array(65536), true],
+    [new Uint8Array(65537), false],
+    ["a".repeat(65536), true],
+    ["a".repeat(65537), false],
+    ["가".repeat(22000), false],
+  ])("최종 본문의 바이트 크기로 keepalive를 제한한다", (body, expected) => {
     createFirehoseSender({
-      region: "ap-northeast-2",
+      region: "region",
       identityPoolId: "pool",
       streamName: "stream",
+      keepalive: true,
     });
-    expect(
-      jest.mocked(FirehoseClient).mock.calls.at(-1)?.[0]?.requestHandler,
-    ).toBeUndefined();
-  });
-
-  function getRequestInit() {
-    createFirehoseSender({
-      region: "ap-northeast-2",
-      identityPoolId: "pool",
-      streamName: "stream",
-    });
-    const config = jest.mocked(FirehoseClient).mock.calls.at(-1)?.[0];
-    const handler = config?.requestHandler;
+    const handler = jest
+      .mocked(FirehoseClient)
+      .mock.calls.at(-1)?.[0]?.requestHandler;
     if (
       !handler ||
       !("requestInit" in handler) ||
       typeof handler.requestInit !== "function"
-    ) {
-      throw new Error("Firehose 요청에 keepalive 선택 로직이 없습니다.");
-    }
-    return handler.requestInit;
-  }
+    )
+      throw new Error("keepalive handler missing");
+    expect(handler.requestInit({ body })).toEqual({ keepalive: expected });
+  });
+  test.each([
+    undefined,
+    false,
+  ])("keepalive=%s이면 SDK 기본 핸들러를 유지한다", (keepalive) => {
+    createFirehoseSender({
+      region: "region",
+      identityPoolId: "pool",
+      streamName: "stream",
+      keepalive,
+    });
+    expect(
+      jest.mocked(FirehoseClient).mock.calls.at(-1)?.[0],
+    ).not.toHaveProperty("requestHandler");
+  });
 });
 
 test("AWS 성공 응답의 부분 실패·응답 누락은 무시한다", async () => {
@@ -129,25 +101,4 @@ test("요청 전체 실패는 호출자에게 전달한다", async () => {
   await expect(
     transport([new Uint8Array([1])], new AbortController().signal),
   ).rejects.toBe(error);
-});
-
-test("React Native에서는 keepalive 지원 여부와 무관하게 SDK 기본 핸들러를 유지한다", () => {
-  const previous = Object.getOwnPropertyDescriptor(globalThis, "navigator");
-  Object.defineProperty(globalThis, "navigator", {
-    configurable: true,
-    value: { product: "ReactNative" },
-  });
-  try {
-    createFirehoseSender({
-      region: "ap-northeast-2",
-      identityPoolId: "pool",
-      streamName: "stream",
-    });
-    expect(
-      jest.mocked(FirehoseClient).mock.calls.at(-1)?.[0],
-    ).not.toHaveProperty("requestHandler");
-  } finally {
-    if (previous) Object.defineProperty(globalThis, "navigator", previous);
-    else Reflect.deleteProperty(globalThis, "navigator");
-  }
 });
