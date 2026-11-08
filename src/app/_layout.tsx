@@ -127,6 +127,10 @@ export default function RootLayout() {
                             name="move-links"
                             options={sheetScreenOptions}
                           />
+                          <Stack.Screen
+                            name="app-install"
+                            options={sheetScreenOptions}
+                          />
                           <Stack.Screen name="link/[id]" />
                           <Stack.Screen name="archive/[id]" />
                           <Stack.Screen name="search" />
@@ -140,6 +144,11 @@ export default function RootLayout() {
                         {/* 약관·개인정보처리방침은 로그인 화면에서도 연다. */}
                         <Stack.Screen name="settings/terms" />
                         <Stack.Screen name="settings/privacy" />
+                        {/* QR·짧은 주소로 들어오는 앱 설치 주소 — 아직 계정이 없는 사람도 연다. */}
+                        <Stack.Screen
+                          name="app"
+                          options={{ headerShown: false }}
+                        />
                         {/* 저장 시트는 로그인 안 된 딥링크에서 공유 URL 을 next 로 들고 로그인으로 가야 해서
                             보호 밖에서 라우트가 직접 가른다(create-link.tsx). */}
                         <Stack.Screen
