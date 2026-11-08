@@ -107,7 +107,11 @@ export function BottomSheetHeader({
           {title}
         </Text>
         {description ? (
-          <Text variant="caption-1" className="text-center text-gray-500">
+          // 시안 Caption-1-regular 는 자간 0 — caption-1 토큰(0.03em)과 자간만 다르다.
+          <Text
+            variant="caption-1"
+            className="text-center text-text-alternative tracking-[0px]"
+          >
             {description}
           </Text>
         ) : null}
