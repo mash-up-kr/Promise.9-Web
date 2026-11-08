@@ -1,4 +1,5 @@
 import { ActionButton } from "@promise9/ui/action-button/ActionButton";
+import { AppInstallQr } from "@promise9/ui/app-install/AppInstallQr";
 import { Radio, RadioGroup, RadioLabel } from "@promise9/ui/radio/Radio";
 import { Text } from "@promise9/ui/text/Text";
 import { Toggle } from "@promise9/ui/toggle/Toggle";
@@ -107,5 +108,14 @@ describe("@promise9/ui 를 익스텐션(react-native-web)에서", () => {
     render(<Text variant="heading-2">제목</Text>);
 
     expect(screen.getByText("제목").className).toContain("text-heading-2");
+  });
+
+  it("AppInstallQr 는 QR 이미지와 짧은 주소를 그린다", () => {
+    render(<AppInstallQr />);
+
+    expect(
+      screen.getByRole("img", { name: "앱 설치 QR 코드" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("link-ding-dong.com/app")).toBeInTheDocument();
   });
 });

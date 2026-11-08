@@ -1,0 +1,8 @@
+// https://link-ding-dong.com/app 을 담은 QR — 런타임 생성 없이 고정 path 로 둔다.
+// 주소가 바뀌면 다시 만든다: pnpm dlx qrcode@1.5.4 -t svg -q 0 -o qr.svg "<주소>" → stroke path 의 viewBox·d 를 옮긴다.
+export const APP_INSTALL_QR_VIEW_BOX = "0 0 29 29";
+
+export const APP_INSTALL_QR_PATH =
+  "M0 0.5h7m1 0h3m2 0h3m1 0h3m2 0h7M0 1.5h1m5 0h1m1 0h3m2 0h1m2 0h1m1 0h1m3 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m2 0h1m6 0h1m3 0h1m1 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m1 0h5m1 0h2m1 0h1m4 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m3 0h1m1 0h1m1 0h1m1 0h2m1 0h1m2 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m2 0h2m1 0h2m1 0h3m1 0h1m2 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M8 7.5h4m3 0h5M0 8.5h1m1 0h2m1 0h3m2 0h4m1 0h1m1 0h2m3 0h1m2 0h1m1 0h2M1 9.5h1m1 0h1m5 0h3m1 0h3m1 0h6m1 0h1m3 0h1M1 10.5h1m2 0h3m3 0h4m2 0h1m1 0h1m2 0h2m1 0h1m1 0h2M1 11.5h2m2 0h1m1 0h1m1 0h1m2 0h1m3 0h1m1 0h1m1 0h3m1 0h1m3 0h1M6 12.5h4m4 0h2m1 0h1m1 0h1m5 0h2M0 13.5h4m1 0h1m1 0h3m1 0h2m1 0h1m1 0h1m2 0h1m2 0h1m3 0h3M1 14.5h1m1 0h5m2 0h4m1 0h2m1 0h2m1 0h2m1 0h1m1 0h3M0 15.5h4m1 0h1m1 0h1m1 0h1m4 0h1m1 0h1m3 0h2m1 0h1m3 0h1M0 16.5h1m2 0h2m1 0h2m6 0h3m3 0h2m1 0h3m1 0h1M3 17.5h1m1 0h1m2 0h2m2 0h1m1 0h1m1 0h2m2 0h1m2 0h1m1 0h3M0 18.5h1m2 0h1m1 0h2m4 0h7m2 0h5m1 0h1M2 19.5h1m4 0h1m4 0h3m2 0h2m2 0h1m1 0h2m1 0h1M1 20.5h3m2 0h5m2 0h2m1 0h3m1 0h7M8 21.5h1m1 0h3m2 0h2m1 0h1m1 0h1m3 0h5M0 22.5h7m1 0h1m1 0h3m1 0h2m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1M0 23.5h1m5 0h1m1 0h2m2 0h4m2 0h3m3 0h2M0 24.5h1m1 0h3m1 0h1m3 0h1m6 0h1m2 0h5m1 0h1m1 0h1M0 25.5h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h1m4 0h3m1 0h1m1 0h3m1 0h1M0 26.5h1m1 0h3m1 0h1m1 0h2m1 0h3m2 0h1m6 0h1m2 0h1m1 0h1M0 27.5h1m5 0h1m3 0h1m2 0h1m1 0h1m2 0h1m1 0h1m1 0h1m1 0h2m1 0h1M0 28.5h7m1 0h1m1 0h3m1 0h1m1 0h1m1 0h3m1 0h1m1 0h1m2 0h1";
+
+export const APP_INSTALL_SHORT_URL = "link-ding-dong.com/app";
