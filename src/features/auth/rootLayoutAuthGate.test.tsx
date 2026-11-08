@@ -43,8 +43,13 @@ jest.mock("@/features/app-notice/AppNoticeGate", () => {
 });
 
 import { userEvent } from "@testing-library/react-native";
+import {
+  type NotificationResponse,
+  useLastNotificationResponse,
+} from "expo-notifications";
 import { Slot } from "expo-router";
 import { renderRouter, screen } from "expo-router/testing-library";
+import { useEffect, useState } from "react";
 import { Text } from "react-native";
 import RootLayout from "@/app/_layout";
 import NotFoundRoute from "@/app/+not-found";
@@ -207,5 +212,64 @@ describe("RootLayout — 업데이트 안내", () => {
     mockUseAuthGate.mockReturnValue("authenticated");
     await renderRouter(routes, { initialUrl: "/" });
     expect(await screen.findByText("app-notice-gate")).toBeOnTheScreen();
+  });
+});
+
+// 종료 상태에서 알림을 눌러 앱을 열면 인증 확인이 끝나 내비게이터가 뜬 직후 이동해야 한다.
+describe("RootLayout — 리마인드 알림 탭", () => {
+  const reminderTap = {
+    actionIdentifier: "expo.modules.notifications.actions.DEFAULT",
+    notification: {
+      request: {
+        identifier: "n1",
+        content: { data: { type: "LINK_REMINDER", linkId: 7 } },
+      },
+    },
+  } as unknown as NotificationResponse;
+
+  afterEach(() => {
+    jest.mocked(useLastNotificationResponse).mockReturnValue(null);
+    mockUseFonts.mockReturnValue([true, null]);
+  });
+
+  test("로그인된 상태면 홈 위로 링크 상세가 열린다", async () => {
+    mockUseAuthGate.mockReturnValue("authenticated");
+    jest.mocked(useLastNotificationResponse).mockReturnValue(reminderTap);
+
+    const result = renderRouter(routes, { initialUrl: "/" });
+    await result;
+
+    expect(await screen.findByText("link")).toBeOnTheScreen();
+    expect(result.getPathname()).toBe("/link/7");
+  });
+
+  // 내비게이터는 폰트까지 준비돼야 뜬다 — 그 전에 이동하면 마운트 전 이동 오류가 난다.
+  test("폰트가 늦게 준비돼도 내비게이터가 뜬 뒤에 열린다", async () => {
+    mockUseAuthGate.mockReturnValue("authenticated");
+    jest.mocked(useLastNotificationResponse).mockReturnValue(reminderTap);
+    mockUseFonts.mockImplementation(() => {
+      const [isLoaded, setIsLoaded] = useState(false);
+      useEffect(() => {
+        const timer = setTimeout(() => setIsLoaded(true), 50);
+        return () => clearTimeout(timer);
+      }, []);
+      return [isLoaded, null];
+    });
+
+    const result = renderRouter(routes, { initialUrl: "/" });
+    await result;
+
+    expect(await screen.findByText("link")).toBeOnTheScreen();
+    expect(result.getPathname()).toBe("/link/7");
+  });
+
+  test("로그인 안 된 상태면 로그인 화면에 머문다", async () => {
+    mockUseAuthGate.mockReturnValue("unauthenticated");
+    jest.mocked(useLastNotificationResponse).mockReturnValue(reminderTap);
+
+    await renderRouter(routes, { initialUrl: "/" });
+
+    expect(await screen.findByText("login")).toBeOnTheScreen();
+    expect(screen.queryByText("link")).not.toBeOnTheScreen();
   });
 });
