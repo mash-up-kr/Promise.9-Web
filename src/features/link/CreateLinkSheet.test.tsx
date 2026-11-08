@@ -38,11 +38,15 @@ jest.mock("@shared/api", () => ({
 jest.mock("@/features/app-notice/reviewPrompt", () => ({
   requestReviewAfterSave: jest.fn().mockResolvedValue(false),
 }));
+jest.mock("@/lib/notifications", () => ({
+  requestNotificationPermissionOnce: jest.fn(),
+}));
 
 import { apiClient } from "@shared/api";
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
 import { encodeSharedUrl } from "@/constants/routes.constants";
 import { requestReviewAfterSave } from "@/features/app-notice/reviewPrompt";
+import { requestNotificationPermissionOnce } from "@/lib/notifications";
 
 import { CreateLinkSheet } from "./CreateLinkSheet";
 
@@ -218,6 +222,30 @@ describe("CreateLinkSheet", () => {
     await pressSave();
 
     await waitFor(() => expect(requestReviewAfterSave).toHaveBeenCalled());
+  });
+
+  test("리마인드를 켜고 저장하면 기기 알림 권한을 묻는다", async () => {
+    jest.mocked(requestNotificationPermissionOnce).mockClear();
+    await renderSheet();
+    await fillValidUrl();
+    const user = userEvent.setup();
+    await user.press(screen.getByRole("switch"));
+
+    await pressSave();
+
+    await waitFor(() => expect(mockPost).toHaveBeenCalled());
+    expect(requestNotificationPermissionOnce).toHaveBeenCalledTimes(1);
+  });
+
+  test("리마인드 없이 저장하면 기기 알림 권한을 묻지 않는다", async () => {
+    jest.mocked(requestNotificationPermissionOnce).mockClear();
+    await renderSheet();
+    await fillValidUrl();
+
+    await pressSave();
+
+    await waitFor(() => expect(mockPost).toHaveBeenCalled());
+    expect(requestNotificationPermissionOnce).not.toHaveBeenCalled();
   });
 
   test("'폴더 추가'를 누르면 폴더 생성 화면으로 이동한다", async () => {

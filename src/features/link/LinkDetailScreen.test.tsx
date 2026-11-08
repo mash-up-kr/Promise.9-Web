@@ -9,6 +9,7 @@ import { StyleSheet } from "react-native";
 import { type Metrics, SafeAreaProvider } from "react-native-safe-area-context";
 
 import { SnackbarProvider } from "@/components/ui/snackbar/SnackbarProvider";
+import { requestNotificationPermissionOnce } from "@/lib/notifications";
 import { openExternalUrl } from "@/utils/openExternalUrl";
 import * as share from "@/utils/share";
 
@@ -53,6 +54,9 @@ jest.mock("expo-router", () => ({
 }));
 
 jest.mock("@/utils/share", () => ({ shareUrl: jest.fn() }));
+jest.mock("@/lib/notifications", () => ({
+  requestNotificationPermissionOnce: jest.fn(),
+}));
 jest.mock("@/utils/openExternalUrl", () => ({ openExternalUrl: jest.fn() }));
 // useSuspenseQuery 목이 인자를 무시하므로 linkQueries.detail 은 호출만 되면 되는 스텁이면 충분.
 jest.mock("@shared/entities/link/link.queries", () => ({
@@ -465,6 +469,30 @@ describe("LinkDetailScreen", () => {
       }),
       expect.objectContaining({ onError: expect.any(Function) }),
     );
+  });
+
+  test("리마인드를 켜면 기기 알림 권한을 묻는다", async () => {
+    jest.mocked(requestNotificationPermissionOnce).mockClear();
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("리마인드"));
+
+    expect(requestNotificationPermissionOnce).toHaveBeenCalledTimes(1);
+  });
+
+  test("리마인드를 끄면 기기 알림 권한을 묻지 않는다", async () => {
+    jest.mocked(requestNotificationPermissionOnce).mockClear();
+    mockDetailData.current = {
+      ...mockLinkDetail,
+      reminderAt: "2027-01-01T09:00:00+09:00",
+    };
+    const user = userEvent.setup();
+    await renderScreen();
+
+    await user.press(screen.getByLabelText("리마인드"));
+
+    expect(requestNotificationPermissionOnce).not.toHaveBeenCalled();
   });
 
   test("링크 공유 → shareUrl 을 호출하고, 복사면 토스트를 띄운다", async () => {
