@@ -24,6 +24,19 @@ const knobStyles = tv({
   },
 });
 
+export interface ToggleTrackProps {
+  isOn: boolean;
+}
+
+// 누르기 동작 없는 그림만 — 행 전체가 스위치인 ListRow 처럼 바깥 Pressable 이 동작을 갖는 곳에서 쓴다.
+export function ToggleTrack({ isOn }: ToggleTrackProps) {
+  return (
+    <View className={trackStyles({ isOn })}>
+      <View className={knobStyles({ isOn })} />
+    </View>
+  );
+}
+
 export interface ToggleProps {
   value: boolean;
   onChange: (value: boolean) => void;
