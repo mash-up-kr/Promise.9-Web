@@ -79,8 +79,10 @@ export interface BottomSheetHeaderProps {
   description?: string;
   cancelLabel?: string;
   confirmLabel?: string;
-  onCancel: () => void;
-  onConfirm: () => void;
+  /** 생략하면 취소 버튼을 그리지 않는다. */
+  onCancel?: () => void;
+  /** 생략하면 저장 버튼을 그리지 않는다. */
+  onConfirm?: () => void;
   isConfirmDisabled?: boolean;
   isConfirmPending?: boolean;
 }
@@ -97,11 +99,13 @@ export function BottomSheetHeader({
 }: BottomSheetHeaderProps) {
   return (
     <View className="h-15 flex-row items-center justify-between px-5">
-      <HeaderButton
-        variant="assistive"
-        label={cancelLabel}
-        onPress={onCancel}
-      />
+      {onCancel && (
+        <HeaderButton
+          variant="assistive"
+          label={cancelLabel}
+          onPress={onCancel}
+        />
+      )}
       <View className="flex-1 items-center justify-center gap-0.5 px-2">
         <Text variant="heading-2" className="text-center text-text-strong">
           {title}
@@ -112,13 +116,15 @@ export function BottomSheetHeader({
           </Text>
         ) : null}
       </View>
-      <HeaderButton
-        variant="primary"
-        label={confirmLabel}
-        onPress={onConfirm}
-        isDisabled={isConfirmDisabled}
-        isPending={isConfirmPending}
-      />
+      {onConfirm && (
+        <HeaderButton
+          variant="primary"
+          label={confirmLabel}
+          onPress={onConfirm}
+          isDisabled={isConfirmDisabled}
+          isPending={isConfirmPending}
+        />
+      )}
     </View>
   );
 }
