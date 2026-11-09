@@ -4,6 +4,8 @@ import {
 } from "@aws-sdk/client-firehose";
 import { fromCognitoIdentityPool } from "@aws-sdk/credential-provider-cognito-identity";
 import { fromUtf8 } from "@smithy/util-utf8";
+import { withTimeout } from "es-toolkit";
+import { REQUEST_TIMEOUT_MS } from "../analytics.constants";
 
 const KEEPALIVE_MAX_BYTES = 64 * 1024;
 
@@ -18,11 +20,15 @@ export interface AnalyticsAwsConfig {
 /**
  * Cognito 임시 자격 증명으로 Firehose에 배치를 전송한다.
  * 성공 응답의 부분 실패는 허용한다. 개별 레코드 결과를 검사하지 않는다.
- * 요청 자체가 실패하면 예외를 전달해 코어가 배치 전체를 재시도하게 한다.
+ * 요청 자체가 실패하거나 레코드가 모두 실패하면 예외를 전달해 코어가 배치 전체를 재시도하게 한다.
  */
 export function createFirehoseSender(
   config: AnalyticsAwsConfig,
 ): (records: Uint8Array[], signal: AbortSignal) => Promise<void> {
+  const getCredentials = fromCognitoIdentityPool({
+    identityPoolId: config.identityPoolId,
+    clientConfig: { region: config.region },
+  });
   const client = new FirehoseClient({
     region: config.region,
     ...(config.keepalive
@@ -39,18 +45,19 @@ export function createFirehoseSender(
           },
         }
       : {}),
-    credentials: fromCognitoIdentityPool({
-      identityPoolId: config.identityPoolId,
-      clientConfig: { region: config.region },
-    }),
+    // SDK가 진행 중인 자격 증명 요청을 공유하므로, 멈춘 요청이 이후 전송까지 막지 않게 끊는다.
+    credentials: (properties) =>
+      withTimeout(() => getCredentials(properties), REQUEST_TIMEOUT_MS),
   });
   return async (records, signal) => {
-    await client.send(
+    const { FailedPutCount } = await client.send(
       new PutRecordBatchCommand({
         DeliveryStreamName: config.streamName,
         Records: records.map((Data) => ({ Data })),
       }),
       { abortSignal: signal },
     );
+    if (FailedPutCount && FailedPutCount === records.length)
+      throw new Error("all_records_failed");
   };
 }

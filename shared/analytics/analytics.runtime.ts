@@ -18,9 +18,7 @@ export interface AnalyticsRuntime {
   ready: Promise<void>;
   /** 이후 이벤트에 회원 ID를 적용한다. 로그아웃·계정 전환 시 익명 ID와 유입 정보를 초기화한다. */
   identify(userId: string | null): void;
-  suspendIdentity(): void;
-  /** 인증 확인 중 유지할 UTM을 구분하기 위해 현재 기기·회원 정보 중 어디서 왔는지 기억한다. */
-  setUtm(utm: AnalyticsUtm | null, source?: "local" | "account"): void;
+  setUtm(utm: AnalyticsUtm | null): void;
   capture: (values: Record<string, unknown>) => void;
   readonly pendingTouch: MarketingTouch | null;
   acknowledgeTouch: (touchId: string) => void;
@@ -61,7 +59,6 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
   let lastCampaignKey = "";
   let pendingTouch: MarketingTouch | null = null;
   let identifiedUserId: string | null = null;
-  let utmSource: "local" | "account" = "local";
   const touchListeners = new Set<() => void>();
   let firehoseSender:
     | ReturnType<
@@ -79,10 +76,7 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
         return firehoseSender(records, signal);
       }),
   });
-  const setUtm: AnalyticsRuntime["setUtm"] = (utm, source = "local") => {
-    client.setUtm(utm);
-    utmSource = source;
-  };
+  const setUtm: AnalyticsRuntime["setUtm"] = (utm) => client.setUtm(utm);
   let readyPromise: Promise<void> | undefined;
   const restoreFromStorage = () =>
     (readyPromise ??= (async () => {
@@ -133,11 +127,6 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
       }
       client.setIdentity(userId, anonymousId);
     },
-    suspendIdentity() {
-      // 회원 정보 확인 중에는 계정의 사용자 ID·UTM을 빼고 현재 기기의 유입 정보는 유지한다.
-      client.setIdentity(null);
-      if (utmSource === "account") client.setUtm(null);
-    },
     setUtm,
     get pendingTouch() {
       return pendingTouch;
@@ -178,7 +167,7 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
       if (campaignKey === lastCampaignKey) return;
       lastCampaignKey = campaignKey;
       pendingTouch = touch;
-      setUtm(touch, "local");
+      setUtm(touch);
       writeStorage(UTM_KEY, JSON.stringify(touch));
       for (const listener of touchListeners) listener();
     },

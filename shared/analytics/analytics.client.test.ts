@@ -1,6 +1,11 @@
 import { toUtf8 } from "@smithy/util-utf8";
 import { AnalyticsClient } from "./analytics.client";
-import { BATCH_MAX_BYTES, RECORD_MAX_BYTES } from "./analytics.constants";
+import {
+  BATCH_MAX_BYTES,
+  RECORD_MAX_BYTES,
+  REQUEST_TIMEOUT_MS,
+  RETRY_MAX_INTERVAL_MS,
+} from "./analytics.constants";
 
 function setup() {
   let id = 0;
@@ -199,6 +204,51 @@ test("큐에 넣은 뒤 custom_data와 UTM 원본을 수정해도 발생 당시 
     utm: { utm_source: "newsletter" },
     custom_data: JSON.stringify({ nested: { label: "저장" } }),
   });
+  client.dispose();
+});
+
+test("전송 실패가 이어지면 재시도 간격을 늘리고 상한에서 멈춘 뒤 성공하면 되돌린다", async () => {
+  const { client, send } = setup();
+  send.mockRejectedValue(new Error("offline"));
+  client.trackEvent({ event_name: "test_requested" });
+  for (const interval of [
+    5000,
+    5000,
+    10000,
+    20000,
+    40000,
+    RETRY_MAX_INTERVAL_MS,
+    RETRY_MAX_INTERVAL_MS,
+  ]) {
+    const callCount = send.mock.calls.length;
+    await jest.advanceTimersByTimeAsync(interval - 1);
+    expect(send).toHaveBeenCalledTimes(callCount);
+    await jest.advanceTimersByTimeAsync(1);
+    expect(send).toHaveBeenCalledTimes(callCount + 1);
+  }
+  send.mockResolvedValue(undefined);
+  await jest.advanceTimersByTimeAsync(RETRY_MAX_INTERVAL_MS);
+  client.trackEvent({ event_name: "test_requested" });
+  await jest.advanceTimersByTimeAsync(5000);
+  expect(send).toHaveBeenCalledTimes(9);
+  expect(send.mock.lastCall?.[0]).toHaveLength(1);
+  client.dispose();
+});
+test("시간 초과된 묶음은 절반으로 줄여 다시 보내고 성공할 때마다 두 배로 되돌린다", async () => {
+  const { client, send } = setup();
+  send.mockImplementationOnce(() => new Promise(() => {}));
+  for (let i = 0; i < 8; i++)
+    client.trackEvent({ event_name: "test_requested" });
+  const pending = client.flush();
+  await jest.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
+  await pending;
+  for (let i = 0; i < 12; i++)
+    client.trackEvent({ event_name: "test_requested" });
+  await client.flush();
+  expect(send.mock.calls.map(([records]) => records.length)).toEqual([
+    8, 4, 8, 8,
+  ]);
+  expect(send.mock.calls[1][0]).toEqual(send.mock.calls[0][0].slice(0, 4));
   client.dispose();
 });
 

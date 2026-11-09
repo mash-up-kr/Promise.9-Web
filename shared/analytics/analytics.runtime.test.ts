@@ -70,50 +70,6 @@ test("재실행 후 다른 계정이면 이전 계정의 익명 ID와 대기 접
   next.client.dispose();
 });
 
-test.each([
-  "local",
-  "account",
-] as const)("인증 재확인 중 %s UTM을 출처에 맞게 처리하고 같은 계정의 익명 ID를 유지한다", async (source) => {
-  let id = 0;
-  const runtime = createAnalytics({
-    send,
-    source: "web",
-    environment: "production",
-    aws: { region: "r", identityPoolId: "p", streamName: "s" },
-    storage: { get: async () => null, set: async () => {} },
-    newId: () => `id-${++id}`,
-  });
-  await runtime.ready;
-  runtime.identify("123");
-  const utm = {
-    utm_source: "newsletter",
-    utm_medium: null,
-    utm_campaign: null,
-    utm_content: null,
-    utm_term: null,
-  };
-  runtime.setUtm(utm, source);
-  runtime.client.trackEvent({ event_name: "before_auth_check" });
-  runtime.suspendIdentity();
-  runtime.client.trackEvent({ event_name: "during_auth_check" });
-  runtime.identify("123");
-  runtime.client.trackEvent({ event_name: "after_auth_check" });
-  await runtime.client.flush();
-  const events = send.mock.calls[0][0].map((record) =>
-    JSON.parse(toUtf8(record)),
-  );
-  expect(events[1]).toMatchObject({
-    user_id: null,
-    anonymous_id: events[0].anonymous_id,
-    utm: source === "local" ? utm : null,
-  });
-  expect(events[2]).toMatchObject({
-    user_id: "123",
-    anonymous_id: events[0].anonymous_id,
-  });
-  runtime.client.dispose();
-});
-
 test("저장소 준비 중에도 이벤트를 받아 발생 시각을 유지하고 복구한 ID만 보완한다", async () => {
   let release: (value: string | null) => void = () => {};
   const stored = new Promise<string | null>((resolve) => {

@@ -312,4 +312,13 @@ describe("ArchiveScreen 헤더 오버레이", () => {
       paddingTop: 127,
     });
   });
+
+  test("스크롤 끝은 플로팅 탭바(safe-area 34 + 바 60) 위로 36 을 남긴다", async () => {
+    await renderScreen();
+    await screen.findByText("내 폴더");
+
+    expect(screen.getByTestId("archive-scroll-content")).toHaveStyle({
+      paddingBottom: 130,
+    });
+  });
 });
