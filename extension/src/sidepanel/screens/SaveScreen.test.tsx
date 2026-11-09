@@ -56,6 +56,24 @@ afterEach(() => {
 });
 
 describe("SaveScreen", () => {
+  it("Enter도 버튼 클릭을 한 번 발생시키고 저장 중에는 실행하지 않는다", async () => {
+    get.mockRejectedValue(new NetworkError("네트워크 오류"));
+    const onSave = vi.fn();
+    const user = userEvent.setup();
+    const view = renderSaveScreen({ onSave });
+    const button = screen.getByRole("button", { name: "저장" });
+    const click = vi.fn();
+    button.addEventListener("click", click);
+    button.focus();
+    await user.keyboard("{Enter}");
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledTimes(1);
+    view.unmount();
+    renderSaveScreen({ onSave, isSaving: true });
+    await user.keyboard("{Enter}");
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
+
   it("폴더를 못 불러와도 저장 화면은 살아 있고 다시 시도할 수 있다", async () => {
     // 폴더 조회가 실패해도 미분류로는 저장할 수 있어야 한다 — 팝업 전체가 죽으면 안 된다.
     get.mockRejectedValue(new NetworkError("네트워크 오류"));

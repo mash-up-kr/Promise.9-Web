@@ -1,3 +1,4 @@
+import type { AnalyticsInput } from "@shared/analytics/analytics.events";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
@@ -14,12 +15,18 @@ const mockDispatch = jest.fn();
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
 const mockCanGoBack = jest.fn(() => true);
+const mockTrackEvent = jest.fn((_input: AnalyticsInput) => true);
+jest.mock("@/components/analytics/AnalyticsContext", () => ({
+  useAnalytics: () => ({ trackEvent: mockTrackEvent }),
+  useAnalyticsContext: () => ({ screen: null, screenKey: "" }),
+}));
 // mock 접두사라 jest.mock 팩토리에서 참조 가능 — 재할당은 current 로만 한다(바깥 let 재할당은
 // 이 babel/jest-hoist 조합에서 read-only 에러가 난다. LinkDetailScreen.test.tsx 와 동일 패턴).
 const mockSearchParams: { current: Record<string, string | undefined> } = {
   current: {},
 };
 jest.mock("expo-router", () => ({
+  useIsFocused: () => true,
   useRouter: () => ({ replace: mockReplace, push: mockPush }),
   useNavigation: () => ({ dispatch: mockDispatch, canGoBack: mockCanGoBack }),
   useRoute: () => ({ key: "create-link" }),
@@ -148,6 +155,7 @@ async function pressSave() {
 
 describe("CreateLinkSheet", () => {
   beforeEach(() => {
+    mockTrackEvent.mockClear();
     mockDispatch.mockClear();
     mockReplace.mockClear();
     mockPush.mockClear();
@@ -187,6 +195,26 @@ describe("CreateLinkSheet", () => {
     );
   });
 
+  test("저장 버튼 클릭은 link.save로 한 번 수집하고 저장 요청을 실행한다", async () => {
+    await renderSheet();
+    await fireEvent.press(screen.getByLabelText("저장"));
+    expect(mockTrackEvent).not.toHaveBeenCalled();
+    await fillValidUrl();
+    await pressSave();
+    await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1));
+    const clicks = mockTrackEvent.mock.calls.filter(
+      ([event]) => event.event_name === "component_clicked",
+    );
+    expect(clicks).toEqual([
+      [
+        {
+          event_name: "component_clicked",
+          custom_data: expect.objectContaining({ label: "link.save" }),
+        },
+      ],
+    ]);
+  });
+
   test("저장 성공 → payload 에 folderId·reminderAt 포함, 성공 스낵바 + 닫힘", async () => {
     await renderSheet();
     await fillValidUrl();
@@ -206,6 +234,13 @@ describe("CreateLinkSheet", () => {
           /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00[+-]\d{2}:\d{2}$/,
         ),
       }),
+    );
+    expect(mockTrackEvent).toHaveBeenCalledWith(
+      {
+        event_name: "link_saved",
+        custom_data: { link_id: 1, entry_point: "create_link_sheet" },
+      },
+      { flushSoon: true },
     );
     expect(await screen.findByText("링크를 저장했어요")).toBeTruthy();
     await waitFor(() => expect(mockDispatch).toHaveBeenCalled());

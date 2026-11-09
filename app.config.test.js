@@ -67,6 +67,11 @@ test("iOS 공유 익스텐션에서 expo-updates 의존 모듈을 뺀다", () =>
   );
 });
 
+// 분석 수집은 앱 루트에서만 쓴다 — 공유 익스텐션에 네이티브 난수 모듈을 싣지 않는다.
+test("iOS 공유 익스텐션에서 분석용 네이티브 모듈을 뺀다", () => {
+  expect(shareExtensionOptions().excludedPackages).toContain("expo-crypto");
+});
+
 // 로컬 Android Release 빌드가 expo-updates KSP 단계에서 Metaspace 부족으로 죽지 않게 한다.
 test("Gradle Metaspace 플러그인이 등록돼 있다", () => {
   expect(appConfig.expo.plugins).toContain(
