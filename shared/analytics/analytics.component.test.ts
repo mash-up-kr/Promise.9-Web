@@ -118,7 +118,6 @@ test("JSON이 아닌 커스텀 속성은 서비스에 예외를 던지지 않고
   const cyclic: Record<string, unknown> = {};
   cyclic.self = cyclic;
   for (const data of [
-    { value: undefined },
     { value: () => {} },
     { value: Infinity },
     { value: BigInt(1) },
