@@ -36,11 +36,15 @@ describe("AppDownloadScreen", () => {
     });
   });
 
-  test("iPhone 이면 App Store 로 바로 보낸다", async () => {
+  // 인앱 브라우저가 이동을 막거나 스토어에서 돌아와도 누를 곳이 남아야 한다.
+  test("iPhone 이면 App Store 로 바로 보내고, 안내도 함께 그린다", async () => {
     setBrowser(IPHONE_UA);
     await render(<AppDownloadScreen />);
 
     expect(mockReplace).toHaveBeenCalledWith(APP_STORE_URL);
+    expect(
+      screen.getByRole("link", { name: "App Store에서 다운로드하기" }),
+    ).toBeOnTheScreen();
   });
 
   test("기기를 판별할 수 없으면 스토어 안내를 보여준다", async () => {
