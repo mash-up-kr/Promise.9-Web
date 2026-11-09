@@ -4,6 +4,8 @@ import {
 } from "@aws-sdk/client-firehose";
 import { fromCognitoIdentityPool } from "@aws-sdk/credential-provider-cognito-identity";
 import { fromUtf8 } from "@smithy/util-utf8";
+import { withTimeout } from "es-toolkit";
+import { REQUEST_TIMEOUT_MS } from "../analytics.constants";
 
 const KEEPALIVE_MAX_BYTES = 64 * 1024;
 
@@ -23,6 +25,10 @@ export interface AnalyticsAwsConfig {
 export function createFirehoseSender(
   config: AnalyticsAwsConfig,
 ): (records: Uint8Array[], signal: AbortSignal) => Promise<void> {
+  const getCredentials = fromCognitoIdentityPool({
+    identityPoolId: config.identityPoolId,
+    clientConfig: { region: config.region },
+  });
   const client = new FirehoseClient({
     region: config.region,
     ...(config.keepalive
@@ -39,10 +45,9 @@ export function createFirehoseSender(
           },
         }
       : {}),
-    credentials: fromCognitoIdentityPool({
-      identityPoolId: config.identityPoolId,
-      clientConfig: { region: config.region },
-    }),
+    // SDK가 진행 중인 자격 증명 요청을 공유하므로, 멈춘 요청이 이후 전송까지 막지 않게 끊는다.
+    credentials: (properties) =>
+      withTimeout(() => getCredentials(properties), REQUEST_TIMEOUT_MS),
   });
   return async (records, signal) => {
     const { FailedPutCount } = await client.send(

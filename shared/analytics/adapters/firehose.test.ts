@@ -1,4 +1,6 @@
 import { FirehoseClient } from "@aws-sdk/client-firehose";
+import { fromCognitoIdentityPool } from "@aws-sdk/credential-provider-cognito-identity";
+import { REQUEST_TIMEOUT_MS } from "../analytics.constants";
 import { createFirehoseSender } from "./firehose";
 
 jest.mock("@aws-sdk/client-firehose", () => ({
@@ -126,4 +128,28 @@ test("레코드가 모두 실패하면 배치 전체를 다시 보내도록 예�
       new AbortController().signal,
     ),
   ).rejects.toThrow();
+});
+
+test("자격 증명 요청이 제한 시간을 넘으면 실패로 끝낸다", async () => {
+  jest.useFakeTimers();
+  const getCredentials = jest.fn(
+    (_properties?: unknown) => new Promise<never>(() => {}),
+  );
+  jest.mocked(fromCognitoIdentityPool).mockReturnValue(getCredentials);
+  createFirehoseSender({
+    region: "ap-northeast-2",
+    identityPoolId: "pool",
+    streamName: "stream",
+  });
+  const credentials = jest
+    .mocked(FirehoseClient)
+    .mock.calls.at(-1)?.[0]?.credentials;
+  if (typeof credentials !== "function")
+    throw new Error("credentials provider missing");
+  const properties = { callerClientConfig: {} };
+  const result = expect(credentials(properties)).rejects.toThrow();
+  await jest.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
+  await result;
+  expect(getCredentials).toHaveBeenCalledWith(properties);
+  jest.useRealTimers();
 });
