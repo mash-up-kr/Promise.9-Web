@@ -1,10 +1,13 @@
 import { fromUtf8 } from "@smithy/util-utf8";
+import { TimeoutError } from "es-toolkit";
 import {
   BATCH_MAX_BYTES,
+  BATCH_MAX_RECORDS,
   FLUSH_INTERVAL_MS,
   FLUSH_THRESHOLD,
   RECORD_MAX_BYTES,
   REQUEST_TIMEOUT_MS,
+  RETRY_MAX_INTERVAL_MS,
 } from "./analytics.constants";
 import { AnalyticsQueue } from "./analytics.queue";
 import {
@@ -43,6 +46,8 @@ export class AnalyticsClient {
   private requestAbortController?: AbortController;
   private isClientDisposed = false;
   private isClientActive = true;
+  private failureCount = 0;
+  private batchRecordLimit = BATCH_MAX_RECORDS;
 
   get isActive(): boolean {
     return this.isClientActive;
@@ -153,11 +158,12 @@ export class AnalyticsClient {
 
   private async sendQueuedEvents(): Promise<void> {
     while (this.queue.size && !this.isDisposed) {
+      const records: Uint8Array[] = [];
       try {
-        const records: Uint8Array[] = [];
         let processedEventCount = 0;
         let batchByteLength = 0;
         for (const event of this.queue.peekBatch()) {
+          if (records.length === this.batchRecordLimit) break;
           // Firehose에 넘길 바이트로 변환한다. 줄바꿈은 S3에서 이벤트를 한 줄씩 구분하기 위해 붙인다.
           const data = fromUtf8(`${JSON.stringify(event)}\n`);
           if (data.byteLength > RECORD_MAX_BYTES) {
@@ -173,8 +179,17 @@ export class AnalyticsClient {
         }
         if (records.length) await this.send(records);
         this.queue.acknowledge(processedEventCount);
-      } catch {
+        this.failureCount = 0;
+        this.batchRecordLimit = Math.min(
+          this.batchRecordLimit * 2,
+          BATCH_MAX_RECORDS,
+        );
+      } catch (error) {
         // 실패한 배치는 큐에 남겨 다음 주기 전송이나 flush() 호출에서 다시 보낸다.
+        this.failureCount++;
+        // 느린 망에서 같은 크기의 배치가 계속 시간 초과되지 않게 다음 배치를 줄인다.
+        if (error instanceof TimeoutError)
+          this.batchRecordLimit = Math.ceil(records.length / 2);
         console.warn("[analytics] batch_retry");
         return;
       }
@@ -185,12 +200,16 @@ export class AnalyticsClient {
     const controller = new AbortController();
     this.requestAbortController = controller;
     let rejectAbort: () => void = () => {};
+    let abortError = new Error("request_aborted");
     // 전송 함수가 중단 신호에 반응하지 않아도 시간 초과·dispose() 시 전송 대기를 끝낸다.
     const aborted = new Promise<never>((_, reject) => {
-      rejectAbort = () => reject(new Error("request_aborted"));
+      rejectAbort = () => reject(abortError);
       controller.signal.addEventListener("abort", rejectAbort, { once: true });
     });
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timeout = setTimeout(() => {
+      abortError = new TimeoutError();
+      controller.abort();
+    }, REQUEST_TIMEOUT_MS);
     try {
       return await Promise.race([
         this.options.send(records, controller.signal),
@@ -213,10 +232,15 @@ export class AnalyticsClient {
       !this.queue.size
     )
       return;
+    // 첫 재시도는 평소 주기로 하고, 실패가 이어지면 간격을 두 배씩 늘린다.
+    const delay = Math.min(
+      FLUSH_INTERVAL_MS * 2 ** Math.max(0, this.failureCount - 1),
+      RETRY_MAX_INTERVAL_MS,
+    );
     this.flushTimer = setTimeout(() => {
       this.flushTimer = undefined;
       void this.flush();
-    }, FLUSH_INTERVAL_MS);
+    }, delay);
   }
 
   /**

@@ -2,6 +2,8 @@
 export const FLUSH_INTERVAL_MS = 5000;
 export const FLUSH_THRESHOLD = 100;
 export const REQUEST_TIMEOUT_MS = 5000;
+// 전송 실패가 이어질 때 늘어나는 재시도 간격의 상한.
+export const RETRY_MAX_INTERVAL_MS = 60000;
 // 전송 지연 시 큐가 무한히 쌓이지 않도록 최대 1,000건만 보관한다.
 export const QUEUE_MAX_RECORDS = 1000;
 // Firehose 단일 레코드 제한: Base64 인코딩 전 최대 1,000 KiB.
