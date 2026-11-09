@@ -246,3 +246,26 @@ test("새 UTM PATCH 가 재발급 뒤에도 401 이면 다시 묻지 않고 다�
   stop();
   runtime.client.dispose();
 });
+test("새 UTM 저장을 기다리는 동안 들어온 다른 캠페인을 이전 저장 응답으로 덮지 않는다", async () => {
+  const { runtime, source, events } = await setup();
+  runtime.capture({ utm_source: "first" });
+  let resolve = (_value: typeof attribution) => {};
+  source.saveTouch.mockImplementationOnce(
+    () =>
+      new Promise((r) => {
+        resolve = r;
+      }),
+  );
+  const stop = bindAnalyticsIdentity(runtime, source);
+  await tick();
+  const firstTouch = source.saveTouch.mock.calls[0][0];
+  source.loadAttribution.mockImplementation(() => new Promise(() => {}));
+  runtime.capture({ utm_source: "second" });
+  await tick();
+  resolve({ userId: 123, utm: firstTouch });
+  await tick();
+  runtime.client.trackEvent({ event_name: "test_event" });
+  expect((await events()).at(-1).utm.utm_source).toBe("second");
+  stop();
+  runtime.client.dispose();
+});

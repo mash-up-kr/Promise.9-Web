@@ -65,6 +65,8 @@ export function bindAnalyticsIdentity(
       const updated = await source.saveTouch(touch, controller.signal);
       if (controller.signal.aborted || updated.userId !== attribution.userId)
         return;
+      // 응답을 기다리는 동안 새 접점이 들어왔으면 그 접점을 이전 응답으로 덮지 않는다.
+      if (runtime.pendingTouch?.touch_id !== touch.touch_id) return;
       runtime.setUtm(updated.utm);
       runtime.acknowledgeTouch(touch.touch_id);
     } catch {
