@@ -53,6 +53,8 @@ export function Toggle({ value, onChange, accessibilityLabel }: ToggleProps) {
       aria-checked={value}
       hitSlop={8}
       onPress={() => onChange(!value)}
+      // 웹 포커스 테두리가 트랙 모양(알약)을 따르게 한다.
+      className="rounded-full"
     >
       <ToggleTrack isOn={value} />
     </Pressable>
