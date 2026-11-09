@@ -1,4 +1,6 @@
 import { FirehoseClient } from "@aws-sdk/client-firehose";
+import { fromCognitoIdentityPool } from "@aws-sdk/credential-provider-cognito-identity";
+import { REQUEST_TIMEOUT_MS } from "../analytics.constants";
 import { createFirehoseSender } from "./firehose";
 
 jest.mock("@aws-sdk/client-firehose", () => ({
@@ -8,8 +10,51 @@ jest.mock("@aws-sdk/client-firehose", () => ({
 jest.mock("@aws-sdk/credential-provider-cognito-identity", () => ({
   fromCognitoIdentityPool: jest.fn(() => "credentials"),
 }));
+
+describe("호출부에서 지정한 keepalive 정책", () => {
+  test.each([
+    [new Uint8Array(65536), true],
+    [new Uint8Array(65537), false],
+    ["a".repeat(65536), true],
+    ["a".repeat(65537), false],
+    ["가".repeat(22000), false],
+  ])("최종 본문의 바이트 크기로 keepalive를 제한한다", (body, expected) => {
+    createFirehoseSender({
+      region: "region",
+      identityPoolId: "pool",
+      streamName: "stream",
+      keepalive: true,
+    });
+    const handler = jest
+      .mocked(FirehoseClient)
+      .mock.calls.at(-1)?.[0]?.requestHandler;
+    if (
+      !handler ||
+      !("requestInit" in handler) ||
+      typeof handler.requestInit !== "function"
+    )
+      throw new Error("keepalive handler missing");
+    expect(handler.requestInit({ body })).toEqual({ keepalive: expected });
+  });
+  test.each([
+    undefined,
+    false,
+  ])("keepalive=%s이면 SDK 기본 핸들러를 유지한다", (keepalive) => {
+    createFirehoseSender({
+      region: "region",
+      identityPoolId: "pool",
+      streamName: "stream",
+      keepalive,
+    });
+    expect(
+      jest.mocked(FirehoseClient).mock.calls.at(-1)?.[0],
+    ).not.toHaveProperty("requestHandler");
+  });
+});
+
 test("AWS 성공 응답의 부분 실패·응답 누락은 무시한다", async () => {
   const send = jest.fn().mockResolvedValue({
+    FailedPutCount: 1,
     RequestResponses: [
       { RecordId: "ok" },
       { ErrorCode: "ServiceUnavailableException" },
@@ -59,4 +104,52 @@ test("요청 전체 실패는 호출자에게 전달한다", async () => {
   await expect(
     transport([new Uint8Array([1])], new AbortController().signal),
   ).rejects.toBe(error);
+});
+
+test("레코드가 모두 실패하면 배치 전체를 다시 보내도록 예외를 던진다", async () => {
+  const send = jest.fn().mockResolvedValue({
+    FailedPutCount: 2,
+    RequestResponses: [
+      { ErrorCode: "ServiceUnavailableException" },
+      { ErrorCode: "ServiceUnavailableException" },
+    ],
+  });
+  jest
+    .mocked(FirehoseClient)
+    .mockImplementation(() => ({ send }) as unknown as FirehoseClient);
+  const transport = createFirehoseSender({
+    region: "ap-northeast-2",
+    identityPoolId: "pool",
+    streamName: "stream",
+  });
+  await expect(
+    transport(
+      [new Uint8Array([1]), new Uint8Array([2])],
+      new AbortController().signal,
+    ),
+  ).rejects.toThrow();
+});
+
+test("자격 증명 요청이 제한 시간을 넘으면 실패로 끝낸다", async () => {
+  jest.useFakeTimers();
+  const getCredentials = jest.fn(
+    (_properties?: unknown) => new Promise<never>(() => {}),
+  );
+  jest.mocked(fromCognitoIdentityPool).mockReturnValue(getCredentials);
+  createFirehoseSender({
+    region: "ap-northeast-2",
+    identityPoolId: "pool",
+    streamName: "stream",
+  });
+  const credentials = jest
+    .mocked(FirehoseClient)
+    .mock.calls.at(-1)?.[0]?.credentials;
+  if (typeof credentials !== "function")
+    throw new Error("credentials provider missing");
+  const properties = { callerClientConfig: {} };
+  const result = expect(credentials(properties)).rejects.toThrow();
+  await jest.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
+  await result;
+  expect(getCredentials).toHaveBeenCalledWith(properties);
+  jest.useRealTimers();
 });

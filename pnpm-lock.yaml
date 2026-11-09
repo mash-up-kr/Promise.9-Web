@@ -88,6 +88,9 @@ importers:
       expo-constants:
         specifier: ~56.0.27
         version: 56.0.27(expo@56.0.23)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
+      expo-crypto:
+        specifier: ~56.0.5
+        version: 56.0.5(expo@56.0.23)
       expo-device:
         specifier: ~56.0.4
         version: 56.0.4(expo@56.0.23)
@@ -3286,6 +3289,11 @@ packages:
     peerDependencies:
       expo: '*'
       react-native: '*'
+
+  expo-crypto@56.0.5:
+    resolution: {integrity: sha512-H2gPvzWX+gt0BhWH7FaNHqO1RZ8fmbJP96d6z0/wHzEIiL5y+NV2i00qczZRW0Hu+Nu2LpNeBpArqzsRM8aWFA==}
+    peerDependencies:
+      expo: '*'
 
   expo-device@56.0.4:
     resolution: {integrity: sha512-ucVcGPkvBrl2QHuy7XcYex2Y6BETvJ6TREutZrwLGUDnlvbpKS8KfQoNZOpvkyo5Nmm9RrasYQ0CrXmBHho2mg==}
@@ -9239,6 +9247,10 @@ snapshots:
       react-native: 0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
     transitivePeerDependencies:
       - supports-color
+
+  expo-crypto@56.0.5(expo@56.0.23):
+    dependencies:
+      expo: 56.0.23(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(@expo/metro-runtime@56.0.15)(expo-router@56.2.11)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-worklets@0.8.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
 
   expo-device@56.0.4(expo@56.0.23):
     dependencies:

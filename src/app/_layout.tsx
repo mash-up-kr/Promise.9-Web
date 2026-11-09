@@ -7,6 +7,7 @@ import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { HeaderScrollProvider } from "@/components/ui/header/HeaderScrollProvider";
 import {
   SnackbarOutlet,
@@ -88,80 +89,84 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView className="flex-1 bg-background-base">
-        <SafeAreaProvider>
-          <KeyboardProvider>
-            {/* 웹에서 앱 폭을 제한하고 중앙 정렬한다. 네이티브는 화면보다 넓어 영향 없음.
+      <AnalyticsProvider>
+        <GestureHandlerRootView className="flex-1 bg-background-base">
+          <SafeAreaProvider>
+            <KeyboardProvider>
+              {/* 웹에서 앱 폭을 제한하고 중앙 정렬한다. 네이티브는 화면보다 넓어 영향 없음.
                 Modal 위치 보정(Popover)이 같은 상수를 참조하므로 리터럴 대신 상수를 쓴다. */}
-            <View
-              className="mx-auto w-full flex-1"
-              style={{ maxWidth: CONTENT_MAX_WIDTH }}
-            >
-              <SnackbarProvider>
-                <HeaderScrollProvider>
-                  <ThemeProvider value={transparentBackgroundTheme}>
-                    <AuthGateProvider status={authStatus}>
-                      <Stack
-                        screenOptions={{
-                          contentStyle: { backgroundColor: "transparent" },
-                        }}
-                        screenLayout={renderScreenLayout}
-                      >
-                        {/* 앱 스킴으로는 (tabs) 밖 라우트도 바로 열린다 — 로그인 안 된 상태면 보호 라우트가
+              <View
+                className="mx-auto w-full flex-1"
+                style={{ maxWidth: CONTENT_MAX_WIDTH }}
+              >
+                <SnackbarProvider>
+                  <HeaderScrollProvider>
+                    <ThemeProvider value={transparentBackgroundTheme}>
+                      <AuthGateProvider status={authStatus}>
+                        <Stack
+                          screenOptions={{
+                            contentStyle: { backgroundColor: "transparent" },
+                          }}
+                          screenLayout={renderScreenLayout}
+                        >
+                          {/* 앱 스킴으로는 (tabs) 밖 라우트도 바로 열린다 — 로그인 안 된 상태면 보호 라우트가
                             내비게이터에서 빠져 (auth) 가 첫 화면이 되고, 화면 위에서 세션이 끊겨도
                             (refresh 실패 → clearTokens) 같은 길로 나간다. */}
-                        <Stack.Protected guard={authStatus === "authenticated"}>
+                          <Stack.Protected
+                            guard={authStatus === "authenticated"}
+                          >
+                            <Stack.Screen
+                              name="(tabs)"
+                              options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                              name="create-folder"
+                              options={sheetScreenOptions}
+                            />
+                            <Stack.Screen
+                              name="edit-folder"
+                              options={sheetScreenOptions}
+                            />
+                            <Stack.Screen
+                              name="move-links"
+                              options={sheetScreenOptions}
+                            />
+                            <Stack.Screen name="link/[id]" />
+                            <Stack.Screen name="archive/[id]" />
+                            <Stack.Screen name="search" />
+                            <Stack.Screen name="settings/withdraw" />
+                            <Stack.Screen name="support" />
+                          </Stack.Protected>
                           <Stack.Screen
-                            name="(tabs)"
+                            name="(auth)"
                             options={{ headerShown: false }}
                           />
-                          <Stack.Screen
-                            name="create-folder"
-                            options={sheetScreenOptions}
-                          />
-                          <Stack.Screen
-                            name="edit-folder"
-                            options={sheetScreenOptions}
-                          />
-                          <Stack.Screen
-                            name="move-links"
-                            options={sheetScreenOptions}
-                          />
-                          <Stack.Screen name="link/[id]" />
-                          <Stack.Screen name="archive/[id]" />
-                          <Stack.Screen name="search" />
-                          <Stack.Screen name="settings/withdraw" />
-                          <Stack.Screen name="support" />
-                        </Stack.Protected>
-                        <Stack.Screen
-                          name="(auth)"
-                          options={{ headerShown: false }}
-                        />
-                        {/* 약관·개인정보처리방침은 로그인 화면에서도 연다. */}
-                        <Stack.Screen name="settings/terms" />
-                        <Stack.Screen name="settings/privacy" />
-                        {/* 저장 시트는 로그인 안 된 딥링크에서 공유 URL 을 next 로 들고 로그인으로 가야 해서
+                          {/* 약관·개인정보처리방침은 로그인 화면에서도 연다. */}
+                          <Stack.Screen name="settings/terms" />
+                          <Stack.Screen name="settings/privacy" />
+                          {/* 저장 시트는 로그인 안 된 딥링크에서 공유 URL 을 next 로 들고 로그인으로 가야 해서
                             보호 밖에서 라우트가 직접 가른다(create-link.tsx). */}
-                        <Stack.Screen
-                          name="create-link"
-                          options={sheetScreenOptions}
-                        />
-                      </Stack>
-                    </AuthGateProvider>
-                  </ThemeProvider>
-                </HeaderScrollProvider>
-              </SnackbarProvider>
-            </View>
-            {/* 업데이트 안내 — 스토어가 있는 네이티브에서만, 로그인 여부와 무관하게 띄운다.
+                          <Stack.Screen
+                            name="create-link"
+                            options={sheetScreenOptions}
+                          />
+                        </Stack>
+                      </AuthGateProvider>
+                    </ThemeProvider>
+                  </HeaderScrollProvider>
+                </SnackbarProvider>
+              </View>
+              {/* 업데이트 안내 — 스토어가 있는 네이티브에서만, 로그인 여부와 무관하게 띄운다.
                 자체 Modal 로 그려 화면 폭 제한(위 View) 밖에 두며, 스플래시 오버레이보다 위에
                 뜨므로 스플래시가 걷힌 뒤에 보인다(기준 조회는 그 전에 시작한다). */}
-            {!isWeb && <AppNoticeGate isVisible={splashPhase === "hidden"} />}
-          </KeyboardProvider>
-        </SafeAreaProvider>
-        {isSplashEnabled && splashPhase !== "hidden" && (
-          <SplashOverlay isFadingOut={splashPhase === "fading"} />
-        )}
-      </GestureHandlerRootView>
+              {!isWeb && <AppNoticeGate isVisible={splashPhase === "hidden"} />}
+            </KeyboardProvider>
+          </SafeAreaProvider>
+          {isSplashEnabled && splashPhase !== "hidden" && (
+            <SplashOverlay isFadingOut={splashPhase === "fading"} />
+          )}
+        </GestureHandlerRootView>
+      </AnalyticsProvider>
     </QueryClientProvider>
   );
 }
