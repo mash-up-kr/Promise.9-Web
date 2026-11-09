@@ -23,8 +23,11 @@ export function bindAnalyticsIdentity(
   let requestAbortController: AbortController | undefined;
   let syncedToken: string | null | undefined;
   let hasPendingSync = false;
+  const failedRequests = new WeakSet<AbortController>();
   const syncAttribution = async () => {
     if (isStopped) return;
+    // 알림이 온 시점의 확인. 토큰을 읽는 사이 그 확인이 실패로 끝났어도 다시 묻지 않기 위해 기억한다.
+    const requestAtNotify = requestAbortController;
     const token = await source.getToken();
     if (isStopped) return;
     if (!token) {
@@ -40,11 +43,11 @@ export function bindAnalyticsIdentity(
       hasPendingSync = true;
       return;
     }
+    if (requestAtNotify && failedRequests.has(requestAtNotify)) return;
     // 같은 로그인의 앱 복귀·탭 전환에는 다시 묻지 않는다.
     if (token === syncedToken && !runtime.pendingTouch) return;
     const controller = new AbortController();
     requestAbortController = controller;
-    let hasFailed = false;
     try {
       const attribution = await source.loadAttribution(controller.signal);
       if (controller.signal.aborted) return;
@@ -70,7 +73,7 @@ export function bindAnalyticsIdentity(
       runtime.setUtm(updated.utm);
       runtime.acknowledgeTouch(touch.touch_id);
     } catch {
-      hasFailed = true;
+      failedRequests.add(controller);
       if (!controller.signal.aborted)
         console.warn("[analytics] identity_sync_failed");
       // 미동기화 접점은 저장소에 남겨 다음 로그인·새 접점·재실행 때 다시 시도한다.
@@ -78,7 +81,8 @@ export function bindAnalyticsIdentity(
       if (requestAbortController === controller) {
         requestAbortController = undefined;
         // 실패했으면 다음 알림까지 기다린다. 확인 중 들어온 재발급에 다시 묻지 않기 위해서다.
-        if (hasPendingSync && !hasFailed) void syncAttribution();
+        if (hasPendingSync && !failedRequests.has(controller))
+          void syncAttribution();
         hasPendingSync = false;
       }
     }

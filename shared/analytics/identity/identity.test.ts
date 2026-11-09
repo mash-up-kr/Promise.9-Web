@@ -269,3 +269,22 @@ test("새 UTM 저장을 기다리는 동안 들어온 다른 캠페인을 이전
   stop();
   runtime.client.dispose();
 });
+test("확인이 실패로 끝난 뒤에 토큰 읽기가 끝난 재발급 알림도 다시 묻지 않는다", async () => {
+  const { runtime, source, changeToken } = await setup();
+  const readToken = source.getToken;
+  source.getToken = async () => {
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+    return readToken();
+  };
+  source.loadAttribution.mockImplementation(async () => {
+    // 고치기 전 코드가 무한 반복해도 테스트가 끝나도록 20번에서 멈춘다.
+    if (source.loadAttribution.mock.calls.length < 20)
+      changeToken(`rotated-${source.loadAttribution.mock.calls.length}`);
+    throw new Error("401");
+  });
+  const stop = bindAnalyticsIdentity(runtime, source);
+  for (let i = 0; i < 40; i++) await tick();
+  expect(source.loadAttribution).toHaveBeenCalledTimes(1);
+  stop();
+  runtime.client.dispose();
+});
