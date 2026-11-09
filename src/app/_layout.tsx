@@ -82,9 +82,10 @@ export default function RootLayout() {
   const isSplashEnabled = !isWeb;
   const authStatus = useAuthGate();
   // 아래 Stack 이 뜬 뒤에만 이동할 수 있다(폰트·인증 확인 전엔 스플래시만 그린다).
-  useNotificationResponseNavigation(
-    isFontsReady && authStatus === "authenticated",
-  );
+  useNotificationResponseNavigation({
+    isReady: isFontsReady && authStatus === "authenticated",
+    isSignedOut: authStatus === "unauthenticated",
+  });
   const splashPhase = useSplashPhase(isFontsReady && authStatus !== "checking");
 
   if (!isFontsReady || authStatus === "checking") {

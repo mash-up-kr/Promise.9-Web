@@ -291,22 +291,40 @@ describe("useNotificationResponseNavigation", () => {
       .mocked(useLastNotificationResponse)
       .mockReturnValue(response({ type: "LINK_REMINDER", linkId: 7 }));
 
-    await renderHook(() => useNotificationResponseNavigation(true));
+    await renderHook(() =>
+      useNotificationResponseNavigation({ isReady: true, isSignedOut: false }),
+    );
 
     expect(router.push).toHaveBeenCalledWith(linkDetailHref("7"));
     expect(clearLastNotificationResponse).toHaveBeenCalledTimes(1);
   });
 
-  // 실행 직후(인증 확인 중)·로그아웃 상태에선 보호 라우트가 내비게이터에 없다 — 로그인 뒤에 처리한다.
-  test("로그인 전에는 이동하지 않고 응답을 남겨 둔다", async () => {
+  // 알림으로 앱을 켠 직후(인증 확인 중)엔 보호 라우트가 내비게이터에 없다 — 확인이 끝난 뒤 처리한다.
+  test("인증 확인 중에는 이동하지 않고 응답을 남겨 둔다", async () => {
     jest
       .mocked(useLastNotificationResponse)
       .mockReturnValue(response({ type: "LINK_REMINDER", linkId: 7 }));
 
-    await renderHook(() => useNotificationResponseNavigation(false));
+    await renderHook(() =>
+      useNotificationResponseNavigation({ isReady: false, isSignedOut: false }),
+    );
 
     expect(router.push).not.toHaveBeenCalled();
     expect(clearLastNotificationResponse).not.toHaveBeenCalled();
+  });
+
+  // 다음 로그인이 다른 계정일 수 있어 남겨 두지 않는다.
+  test("로그아웃 상태면 이동하지 않고 응답을 버린다", async () => {
+    jest
+      .mocked(useLastNotificationResponse)
+      .mockReturnValue(response({ type: "LINK_REMINDER", linkId: 7 }));
+
+    await renderHook(() =>
+      useNotificationResponseNavigation({ isReady: false, isSignedOut: true }),
+    );
+
+    expect(router.push).not.toHaveBeenCalled();
+    expect(clearLastNotificationResponse).toHaveBeenCalledTimes(1);
   });
 
   test("형식이 다른 알림은 이동 없이 소비한다", async () => {
@@ -314,7 +332,9 @@ describe("useNotificationResponseNavigation", () => {
       .mocked(useLastNotificationResponse)
       .mockReturnValue(response({ linkId: "x" }));
 
-    await renderHook(() => useNotificationResponseNavigation(true));
+    await renderHook(() =>
+      useNotificationResponseNavigation({ isReady: true, isSignedOut: false }),
+    );
 
     expect(router.push).not.toHaveBeenCalled();
     expect(clearLastNotificationResponse).toHaveBeenCalledTimes(1);

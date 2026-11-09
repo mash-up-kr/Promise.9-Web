@@ -44,6 +44,7 @@ jest.mock("@/features/app-notice/AppNoticeGate", () => {
 
 import { userEvent } from "@testing-library/react-native";
 import {
+  clearLastNotificationResponse,
   type NotificationResponse,
   useLastNotificationResponse,
 } from "expo-notifications";
@@ -263,13 +264,15 @@ describe("RootLayout — 리마인드 알림 탭", () => {
     expect(result.getPathname()).toBe("/link/7");
   });
 
-  test("로그인 안 된 상태면 로그인 화면에 머문다", async () => {
+  test("로그인 안 된 상태면 로그인 화면에 머물고 알림은 버린다", async () => {
     mockUseAuthGate.mockReturnValue("unauthenticated");
     jest.mocked(useLastNotificationResponse).mockReturnValue(reminderTap);
+    jest.mocked(clearLastNotificationResponse).mockClear();
 
     await renderRouter(routes, { initialUrl: "/" });
 
     expect(await screen.findByText("login")).toBeOnTheScreen();
     expect(screen.queryByText("link")).not.toBeOnTheScreen();
+    expect(clearLastNotificationResponse).toHaveBeenCalled();
   });
 });

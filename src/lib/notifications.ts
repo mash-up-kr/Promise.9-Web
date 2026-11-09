@@ -140,18 +140,29 @@ export function getReminderLinkHref(data: unknown) {
   return parsed.success ? linkDetailHref(String(parsed.data.linkId)) : null;
 }
 
+export interface NotificationTapGate {
+  /** 내비게이터가 뜨고 로그인됨 */
+  isReady: boolean;
+  /** 로그아웃 상태로 확정됨 */
+  isSignedOut: boolean;
+}
+
 /**
  * 알림 탭(실행 중·백그라운드·종료 상태 모두)을 링크 상세로 잇는다.
- * `isReady`(내비게이터가 뜨고 로그인됨) 전의 탭은 남겨 뒀다가 그 뒤에 처리한다.
+ * 인증 확인 중의 탭은 남겨 뒀다가 준비되면 처리하고, 로그아웃 상태의 탭은 버린다(다음 로그인이 다른 계정일 수 있다).
  */
-export function useNotificationResponseNavigation(isReady: boolean): void {
+export function useNotificationResponseNavigation({
+  isReady,
+  isSignedOut,
+}: NotificationTapGate): void {
   const response = useLastNotificationResponse();
   useEffect(() => {
-    if (!response || !isReady) return;
+    if (!response || !(isReady || isSignedOut)) return;
     clearLastNotificationResponse();
+    if (isSignedOut) return;
     const href = getReminderLinkHref(
       response.notification.request.content.data,
     );
     if (href) router.push(href);
-  }, [response, isReady]);
+  }, [response, isReady, isSignedOut]);
 }
