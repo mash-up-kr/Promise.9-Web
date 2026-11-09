@@ -116,7 +116,6 @@ describe("클릭·노출 수집", () => {
       client,
       ready: Promise.resolve(),
       identify: () => {},
-      suspendIdentity: () => {},
       setUtm: () => {},
       capture: vi.fn(),
       pendingTouch: null,
