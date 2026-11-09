@@ -187,3 +187,47 @@ test("PATCH를 기다리는 동안에도 더 최근에 수집한 UTM을 현재 �
   stop();
   runtime.client.dispose();
 });
+test("같은 로그인으로 앱 복귀·탭 전환 알림이 와도 회원 정보를 다시 묻지 않는다", async () => {
+  const { runtime, source, changeToken } = await setup();
+  const stop = bindAnalyticsIdentity(runtime, source);
+  await tick();
+  changeToken("token");
+  await tick();
+  expect(source.loadAttribution).toHaveBeenCalledTimes(1);
+  stop();
+  runtime.client.dispose();
+});
+test("회원 재확인이 실패해도 확인 중·실패 뒤 이벤트에 이전 회원 ID를 유지한다", async () => {
+  const { runtime, source, changeToken, events } = await setup();
+  const stop = bindAnalyticsIdentity(runtime, source);
+  await tick();
+  let reject = (_error: Error) => {};
+  source.loadAttribution.mockImplementationOnce(
+    () =>
+      new Promise((_, r) => {
+        reject = r;
+      }),
+  );
+  changeToken("rotated");
+  await tick();
+  runtime.client.trackEvent({ event_name: "during_check" });
+  reject(new Error("offline"));
+  await tick();
+  runtime.client.trackEvent({ event_name: "after_failure" });
+  const data = await events();
+  expect(data.map((event) => event.user_id)).toEqual(["123", "123"]);
+  stop();
+  runtime.client.dispose();
+});
+test("확인 중 토큰이 재발급돼도 요청을 다시 시작하지 않고, 실패하면 다음 알림까지 묻지 않는다", async () => {
+  const { runtime, source, changeToken } = await setup();
+  source.loadAttribution.mockImplementation(async () => {
+    changeToken(`rotated-${source.loadAttribution.mock.calls.length}`);
+    throw new Error("401");
+  });
+  const stop = bindAnalyticsIdentity(runtime, source);
+  for (let i = 0; i < 10; i++) await tick();
+  expect(source.loadAttribution).toHaveBeenCalledTimes(1);
+  stop();
+  runtime.client.dispose();
+});

@@ -21,21 +21,35 @@ export function bindAnalyticsIdentity(
 ): () => void {
   let isStopped = false;
   let requestAbortController: AbortController | undefined;
+  let syncedToken: string | null | undefined;
+  let hasPendingSync = false;
   const syncAttribution = async () => {
     if (isStopped) return;
-    requestAbortController?.abort();
+    const token = await source.getToken();
+    if (isStopped) return;
+    if (!token) {
+      requestAbortController?.abort();
+      requestAbortController = undefined;
+      hasPendingSync = false;
+      syncedToken = null;
+      runtime.identify(null);
+      return;
+    }
+    // 확인 중 재발급(401 재시도 포함)마다 다시 시작하면 끝없이 반복될 수 있어 끝난 뒤 한 번만 다시 본다.
+    if (requestAbortController) {
+      hasPendingSync = true;
+      return;
+    }
+    // 같은 로그인의 앱 복귀·탭 전환에는 다시 묻지 않는다.
+    if (token === syncedToken && !runtime.pendingTouch) return;
     const controller = new AbortController();
     requestAbortController = controller;
+    let isLoaded = false;
     try {
-      const token = await source.getToken();
-      if (controller.signal.aborted) return;
-      if (!token) {
-        runtime.identify(null);
-        return;
-      }
-      runtime.suspendIdentity();
       const attribution = await source.loadAttribution(controller.signal);
       if (controller.signal.aborted) return;
+      isLoaded = true;
+      syncedToken = token;
       runtime.identify(String(attribution.userId));
       // identify가 계정 전환 시 이전 계정의 미전송 접점을 비운 뒤 읽는다.
       const touch = runtime.pendingTouch;
@@ -46,18 +60,25 @@ export function bindAnalyticsIdentity(
         (!accountTouch ||
           Date.parse(touch.captured_at) > Date.parse(accountTouch.captured_at))
       ) {
-        runtime.setUtm(touch, "local");
-      } else runtime.setUtm(accountTouch, "account");
+        runtime.setUtm(touch);
+      } else runtime.setUtm(accountTouch);
       if (!touch) return;
       const updated = await source.saveTouch(touch, controller.signal);
       if (controller.signal.aborted || updated.userId !== attribution.userId)
         return;
-      runtime.setUtm(updated.utm, "account");
+      runtime.setUtm(updated.utm);
       runtime.acknowledgeTouch(touch.touch_id);
     } catch {
       if (!controller.signal.aborted)
         console.warn("[analytics] identity_sync_failed");
       // 미동기화 접점은 저장소에 남겨 다음 로그인·새 접점·재실행 때 다시 시도한다.
+    } finally {
+      if (requestAbortController === controller) {
+        requestAbortController = undefined;
+        // 실패했으면 다음 알림까지 기다린다. 확인 중 들어온 재발급에 다시 묻지 않기 위해서다.
+        if (hasPendingSync && isLoaded) void syncAttribution();
+        hasPendingSync = false;
+      }
     }
   };
   const notify = () => {
