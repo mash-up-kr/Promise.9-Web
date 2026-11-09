@@ -65,19 +65,16 @@ export function useTrackImpression(
           return;
         }
         visibleSince ??= Date.now();
-        if (
-          Date.now() - visibleSince >= IMPRESSION_DURATION_MS &&
-          trackComponentEvent(
-            trackEvent,
-            screen,
-            ANALYTICS_EVENTS.COMPONENT_IMPRESSION,
-            label,
-            latestData.current,
-          )
-        ) {
-          hasRecorded.current = true;
-          stop();
-        }
+        if (Date.now() - visibleSince < IMPRESSION_DURATION_MS) return;
+        // 거절돼도 같은 화면에서 반복하지 않고 다음 포커스·화면 진입 때 다시 본다.
+        hasRecorded.current = trackComponentEvent(
+          trackEvent,
+          screen,
+          ANALYTICS_EVENTS.COMPONENT_IMPRESSION,
+          label,
+          latestData.current,
+        );
+        stop();
       });
     }, 250);
     const stop = () => {
