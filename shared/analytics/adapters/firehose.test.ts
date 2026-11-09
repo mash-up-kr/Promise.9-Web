@@ -52,6 +52,7 @@ describe("호출부에서 지정한 keepalive 정책", () => {
 
 test("AWS 성공 응답의 부분 실패·응답 누락은 무시한다", async () => {
   const send = jest.fn().mockResolvedValue({
+    FailedPutCount: 1,
     RequestResponses: [
       { RecordId: "ok" },
       { ErrorCode: "ServiceUnavailableException" },
@@ -101,4 +102,28 @@ test("요청 전체 실패는 호출자에게 전달한다", async () => {
   await expect(
     transport([new Uint8Array([1])], new AbortController().signal),
   ).rejects.toBe(error);
+});
+
+test("레코드가 모두 실패하면 배치 전체를 다시 보내도록 예외를 던진다", async () => {
+  const send = jest.fn().mockResolvedValue({
+    FailedPutCount: 2,
+    RequestResponses: [
+      { ErrorCode: "ServiceUnavailableException" },
+      { ErrorCode: "ServiceUnavailableException" },
+    ],
+  });
+  jest
+    .mocked(FirehoseClient)
+    .mockImplementation(() => ({ send }) as unknown as FirehoseClient);
+  const transport = createFirehoseSender({
+    region: "ap-northeast-2",
+    identityPoolId: "pool",
+    streamName: "stream",
+  });
+  await expect(
+    transport(
+      [new Uint8Array([1]), new Uint8Array([2])],
+      new AbortController().signal,
+    ),
+  ).rejects.toThrow();
 });

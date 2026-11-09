@@ -18,7 +18,7 @@ export interface AnalyticsAwsConfig {
 /**
  * Cognito 임시 자격 증명으로 Firehose에 배치를 전송한다.
  * 성공 응답의 부분 실패는 허용한다. 개별 레코드 결과를 검사하지 않는다.
- * 요청 자체가 실패하면 예외를 전달해 코어가 배치 전체를 재시도하게 한다.
+ * 요청 자체가 실패하거나 레코드가 모두 실패하면 예외를 전달해 코어가 배치 전체를 재시도하게 한다.
  */
 export function createFirehoseSender(
   config: AnalyticsAwsConfig,
@@ -45,12 +45,14 @@ export function createFirehoseSender(
     }),
   });
   return async (records, signal) => {
-    await client.send(
+    const { FailedPutCount } = await client.send(
       new PutRecordBatchCommand({
         DeliveryStreamName: config.streamName,
         Records: records.map((Data) => ({ Data })),
       }),
       { abortSignal: signal },
     );
+    if (FailedPutCount && FailedPutCount === records.length)
+      throw new Error("all_records_failed");
   };
 }
