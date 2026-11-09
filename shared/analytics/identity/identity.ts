@@ -44,11 +44,10 @@ export function bindAnalyticsIdentity(
     if (token === syncedToken && !runtime.pendingTouch) return;
     const controller = new AbortController();
     requestAbortController = controller;
-    let isLoaded = false;
+    let hasFailed = false;
     try {
       const attribution = await source.loadAttribution(controller.signal);
       if (controller.signal.aborted) return;
-      isLoaded = true;
       syncedToken = token;
       runtime.identify(String(attribution.userId));
       // identify가 계정 전환 시 이전 계정의 미전송 접점을 비운 뒤 읽는다.
@@ -69,6 +68,7 @@ export function bindAnalyticsIdentity(
       runtime.setUtm(updated.utm);
       runtime.acknowledgeTouch(touch.touch_id);
     } catch {
+      hasFailed = true;
       if (!controller.signal.aborted)
         console.warn("[analytics] identity_sync_failed");
       // 미동기화 접점은 저장소에 남겨 다음 로그인·새 접점·재실행 때 다시 시도한다.
@@ -76,7 +76,7 @@ export function bindAnalyticsIdentity(
       if (requestAbortController === controller) {
         requestAbortController = undefined;
         // 실패했으면 다음 알림까지 기다린다. 확인 중 들어온 재발급에 다시 묻지 않기 위해서다.
-        if (hasPendingSync && isLoaded) void syncAttribution();
+        if (hasPendingSync && !hasFailed) void syncAttribution();
         hasPendingSync = false;
       }
     }

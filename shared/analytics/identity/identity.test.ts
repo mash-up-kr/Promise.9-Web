@@ -231,3 +231,18 @@ test("확인 중 토큰이 재발급돼도 요청을 다시 시작하지 않고,
   stop();
   runtime.client.dispose();
 });
+test("새 UTM PATCH 가 재발급 뒤에도 401 이면 다시 묻지 않고 다음 알림을 기다린다", async () => {
+  const { runtime, source, changeToken } = await setup();
+  runtime.capture({ utm_source: "local" });
+  source.saveTouch.mockImplementation(async () => {
+    // 고치기 전 코드가 무한 반복해도 테스트가 끝나도록 20번에서 멈춘다.
+    if (source.saveTouch.mock.calls.length < 20)
+      changeToken(`rotated-${source.saveTouch.mock.calls.length}`);
+    throw new Error("401");
+  });
+  const stop = bindAnalyticsIdentity(runtime, source);
+  for (let i = 0; i < 10; i++) await tick();
+  expect(source.saveTouch).toHaveBeenCalledTimes(1);
+  stop();
+  runtime.client.dispose();
+});
