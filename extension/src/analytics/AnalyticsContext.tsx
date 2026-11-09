@@ -1,14 +1,20 @@
+import type {
+  AnalyticsInput,
+  TrackOptions,
+} from "@shared/analytics/analytics.events";
 import type { AnalyticsRuntime } from "@shared/analytics/analytics.runtime";
 import type { ScreenTracking } from "@shared/analytics/analytics.screen";
 import {
   createContext,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useLayoutEffect,
   useRef,
 } from "react";
 import { bindBrowserLifecycle } from "./lifecycle";
+import { useDomTrack } from "./useDomTrack";
 import { useScreenTracking } from "./useScreenTracking";
 
 interface AnalyticsScreenContextValue {
@@ -68,4 +74,13 @@ export function AnalyticsScreen({ name, children }: AnalyticsScreenProps) {
     screen?.view(name, `/${name}`);
   }, [screen, name]);
   return children;
+}
+export function useTrack(label: string, options: TrackOptions = {}) {
+  const runtime = useAnalytics();
+  const { screen, screenKey } = useAnalyticsScreen();
+  const trackEvent = useCallback(
+    (input: AnalyticsInput) => runtime?.client.trackEvent(input) ?? false,
+    [runtime],
+  );
+  return useDomTrack(screen, trackEvent, label, screenKey, options);
 }

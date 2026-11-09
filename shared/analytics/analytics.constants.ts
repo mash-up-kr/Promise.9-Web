@@ -12,3 +12,7 @@ export const RECORD_MAX_BYTES = 1000 * 1024;
 export const BATCH_MAX_RECORDS = 500;
 // Base64 증가분과 JSON 외피를 포함해 Firehose 요청 4 MiB 한도 안에 둔다.
 export const BATCH_MAX_BYTES = 3 * 1024 * 1024 - 64 * 1024;
+
+// 대상 면적의 40% 이상이 1초간 연속 노출되면 기록한다.
+export const IMPRESSION_RATIO = 0.4;
+export const IMPRESSION_DURATION_MS = 1000;
