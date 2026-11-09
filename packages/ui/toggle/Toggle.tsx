@@ -53,9 +53,8 @@ export function Toggle({ value, onChange, accessibilityLabel }: ToggleProps) {
       aria-checked={value}
       hitSlop={8}
       onPress={() => onChange(!value)}
-      className={trackStyles({ isOn: value })}
     >
-      <View className={knobStyles({ isOn: value })} />
+      <ToggleTrack isOn={value} />
     </Pressable>
   );
 }

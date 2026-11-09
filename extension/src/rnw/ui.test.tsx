@@ -30,20 +30,18 @@ describe("@promise9/ui 를 익스텐션(react-native-web)에서", () => {
     expect(screen.getByRole("progressbar")).toBeInTheDocument();
   });
 
-  it("Toggle 의 클래스가 값에 따라 바뀐다", () => {
+  it("Toggle 트랙의 클래스가 값에 따라 바뀐다", () => {
+    const track = () =>
+      screen.getByRole("switch", { name: "알림" }).firstElementChild;
     const { rerender } = render(
       <Toggle value onChange={() => {}} accessibilityLabel="알림" />,
     );
-    expect(screen.getByRole("switch", { name: "알림" }).className).toContain(
-      "bg-gray-50",
-    );
+    expect(track()?.className).toContain("bg-gray-50");
 
     rerender(
       <Toggle value={false} onChange={() => {}} accessibilityLabel="알림" />,
     );
-    expect(screen.getByRole("switch", { name: "알림" }).className).toContain(
-      "bg-gray-400",
-    );
+    expect(track()?.className).toContain("bg-gray-400");
   });
 
   it("Toggle 은 켜짐 상태를 aria-checked 로 노출한다", () => {
