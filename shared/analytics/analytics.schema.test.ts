@@ -91,3 +91,14 @@ test("이벤트 생성은 내부 필드·무한값을 거절한다", () => {
     expect(() => createAnalyticsEvent(input, context, metadata)).toThrow();
   }
 });
+test("값이 undefined인 custom_data 키는 JSON처럼 빼고 기록한다", () => {
+  const event = createAnalyticsEvent(
+    {
+      event_name: "test_requested",
+      custom_data: { link_id: 1, folder_id: undefined },
+    },
+    context,
+    metadata,
+  );
+  expect(event.custom_data).toBe('{"link_id":1}');
+});
