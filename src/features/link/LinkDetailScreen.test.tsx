@@ -521,7 +521,7 @@ describe("LinkDetailScreen — 스크롤 영역", () => {
     ).toMatchObject({
       paddingTop: 47 + 60 + 16,
       gap: 24,
-      paddingBottom: 34 + 32,
+      paddingBottom: 34 + 22,
     });
   });
 

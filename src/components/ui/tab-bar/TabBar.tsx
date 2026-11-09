@@ -23,6 +23,7 @@ import {
   type TabGlyphProps,
   TabHomeGlyph,
 } from "./TabBarGlyphs";
+import { getTabBarBottom } from "./useTabScreenBottomPadding";
 
 // Figma Tab Bar: 화면 하단 중앙 gray-700 솔리드 pill(h60·px16·gap12).
 export const tabBarStyles = tv({
@@ -91,7 +92,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
     <View
       pointerEvents="box-none"
       className="absolute inset-x-0 bottom-0 items-center"
-      style={{ paddingBottom: Math.max(insets.bottom, 20) }}
+      style={{ paddingBottom: getTabBarBottom(insets.bottom) }}
     >
       <LinearGradient
         testID="tab-bar-dim"

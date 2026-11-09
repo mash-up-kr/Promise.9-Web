@@ -187,3 +187,104 @@ test("PATCH를 기다리는 동안에도 더 최근에 수집한 UTM을 현재 �
   stop();
   runtime.client.dispose();
 });
+test("같은 로그인으로 앱 복귀·탭 전환 알림이 와도 회원 정보를 다시 묻지 않는다", async () => {
+  const { runtime, source, changeToken } = await setup();
+  const stop = bindAnalyticsIdentity(runtime, source);
+  await tick();
+  changeToken("token");
+  await tick();
+  expect(source.loadAttribution).toHaveBeenCalledTimes(1);
+  stop();
+  runtime.client.dispose();
+});
+test("회원 재확인이 실패해도 확인 중·실패 뒤 이벤트에 이전 회원 ID를 유지한다", async () => {
+  const { runtime, source, changeToken, events } = await setup();
+  const stop = bindAnalyticsIdentity(runtime, source);
+  await tick();
+  let reject = (_error: Error) => {};
+  source.loadAttribution.mockImplementationOnce(
+    () =>
+      new Promise((_, r) => {
+        reject = r;
+      }),
+  );
+  changeToken("rotated");
+  await tick();
+  runtime.client.trackEvent({ event_name: "during_check" });
+  reject(new Error("offline"));
+  await tick();
+  runtime.client.trackEvent({ event_name: "after_failure" });
+  const data = await events();
+  expect(data.map((event) => event.user_id)).toEqual(["123", "123"]);
+  stop();
+  runtime.client.dispose();
+});
+test("확인 중 토큰이 재발급돼도 요청을 다시 시작하지 않고, 실패하면 다음 알림까지 묻지 않는다", async () => {
+  const { runtime, source, changeToken } = await setup();
+  source.loadAttribution.mockImplementation(async () => {
+    changeToken(`rotated-${source.loadAttribution.mock.calls.length}`);
+    throw new Error("401");
+  });
+  const stop = bindAnalyticsIdentity(runtime, source);
+  for (let i = 0; i < 10; i++) await tick();
+  expect(source.loadAttribution).toHaveBeenCalledTimes(1);
+  stop();
+  runtime.client.dispose();
+});
+test("새 UTM PATCH 가 재발급 뒤에도 401 이면 다시 묻지 않고 다음 알림을 기다린다", async () => {
+  const { runtime, source, changeToken } = await setup();
+  runtime.capture({ utm_source: "local" });
+  source.saveTouch.mockImplementation(async () => {
+    // 고치기 전 코드가 무한 반복해도 테스트가 끝나도록 20번에서 멈춘다.
+    if (source.saveTouch.mock.calls.length < 20)
+      changeToken(`rotated-${source.saveTouch.mock.calls.length}`);
+    throw new Error("401");
+  });
+  const stop = bindAnalyticsIdentity(runtime, source);
+  for (let i = 0; i < 10; i++) await tick();
+  expect(source.saveTouch).toHaveBeenCalledTimes(1);
+  stop();
+  runtime.client.dispose();
+});
+test("새 UTM 저장을 기다리는 동안 들어온 다른 캠페인을 이전 저장 응답으로 덮지 않는다", async () => {
+  const { runtime, source, events } = await setup();
+  runtime.capture({ utm_source: "first" });
+  let resolve = (_value: typeof attribution) => {};
+  source.saveTouch.mockImplementationOnce(
+    () =>
+      new Promise((r) => {
+        resolve = r;
+      }),
+  );
+  const stop = bindAnalyticsIdentity(runtime, source);
+  await tick();
+  const firstTouch = source.saveTouch.mock.calls[0][0];
+  source.loadAttribution.mockImplementation(() => new Promise(() => {}));
+  runtime.capture({ utm_source: "second" });
+  await tick();
+  resolve({ userId: 123, utm: firstTouch });
+  await tick();
+  runtime.client.trackEvent({ event_name: "test_event" });
+  expect((await events()).at(-1).utm.utm_source).toBe("second");
+  stop();
+  runtime.client.dispose();
+});
+test("확인이 실패로 끝난 뒤에 토큰 읽기가 끝난 재발급 알림도 다시 묻지 않는다", async () => {
+  const { runtime, source, changeToken } = await setup();
+  const readToken = source.getToken;
+  source.getToken = async () => {
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+    return readToken();
+  };
+  source.loadAttribution.mockImplementation(async () => {
+    // 고치기 전 코드가 무한 반복해도 테스트가 끝나도록 20번에서 멈춘다.
+    if (source.loadAttribution.mock.calls.length < 20)
+      changeToken(`rotated-${source.loadAttribution.mock.calls.length}`);
+    throw new Error("401");
+  });
+  const stop = bindAnalyticsIdentity(runtime, source);
+  for (let i = 0; i < 40; i++) await tick();
+  expect(source.loadAttribution).toHaveBeenCalledTimes(1);
+  stop();
+  runtime.client.dispose();
+});

@@ -165,3 +165,19 @@ test("커스텀 데이터가 바뀌어도 노출 시간을 유지하고 기록 �
     undefined,
   );
 });
+test("노출 기록이 거절되면 같은 화면에서 반복해서 다시 시도하지 않는다", async () => {
+  const impression = jest.spyOn(client, "trackEvent").mockReturnValue(false);
+  const { result } = await renderHook(
+    () => useTrackImpression("login.google"),
+    {
+      wrapper: Wrapper,
+    },
+  );
+  result.current.current = {
+    measureInWindow: (
+      callback: (x: number, y: number, w: number, h: number) => void,
+    ) => callback(0, 0, 100, 100),
+  } as View;
+  await act(() => jest.advanceTimersByTime(5000));
+  expect(impression).toHaveBeenCalledTimes(1);
+});

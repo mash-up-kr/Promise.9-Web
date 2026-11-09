@@ -3,7 +3,8 @@ import { z } from "zod";
 /** 공통 입력 계약. 이벤트별 이름·속성은 수집 계층의 타입으로 관리한다. */
 export const analyticsEventInputSchema = z.strictObject({
   event_name: z.string().min(1),
-  custom_data: z.record(z.string(), z.json()).default({}),
+  // 선택 속성의 undefined 값은 JSON 직렬화처럼 키를 빼고 받는다.
+  custom_data: z.record(z.string(), z.json().optional()).default({}),
 });
 export type AnalyticsEventInput = z.input<typeof analyticsEventInputSchema>;
 

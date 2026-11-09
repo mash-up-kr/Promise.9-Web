@@ -34,6 +34,7 @@ import { decodeSharedUrl, linkDetailHref } from "@/constants/routes.constants";
 import { requestReviewAfterSave } from "@/features/app-notice/reviewPrompt";
 import { FolderChipList } from "@/features/link/components/FolderChipList";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
+import { LinkSaveHeaderButton } from "@/features/link/components/LinkSaveHeaderButton";
 import { MemoField } from "@/features/link/components/MemoField";
 import { ReminderSection } from "@/features/link/components/ReminderSection";
 import {
@@ -226,7 +227,7 @@ function CreateLinkSheetHeader({
     >
       <BottomSheetHeader
         title="링크 저장"
-        confirmTracking={{ label: "link.save" }}
+        ConfirmButton={LinkSaveHeaderButton}
         onCancel={dismiss}
         onConfirm={() => onSave(dismiss)}
         isConfirmDisabled={isConfirmDisabled}

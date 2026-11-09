@@ -1,7 +1,7 @@
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { VStack } from "@promise9/ui/vstack/VStack";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useScreenBottomPadding } from "@/hooks/useScreenBottomPadding";
 import { SheetShell } from "./SheetShell";
 import type { SheetScreenProps } from "./sheet-screen.types";
 
@@ -15,7 +15,7 @@ export function SheetScreen({
   isLocked,
 }: SheetScreenProps) {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const bottomPadding = useScreenBottomPadding();
   const close = onClose ?? (() => router.back());
 
   return (
@@ -30,10 +30,10 @@ export function SheetScreen({
       <BottomSheetScrollView
         keyboardShouldPersistTaps="handled"
         stickyHeaderIndices={header ? [0] : undefined}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
         {header}
-        <VStack space="2xl" className="px-5 pt-1">
+        <VStack space="2xl" className="px-5 pt-5">
           {children}
         </VStack>
       </BottomSheetScrollView>

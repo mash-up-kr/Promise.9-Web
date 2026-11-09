@@ -1,11 +1,7 @@
 import { Spinner } from "@promise9/ui/spinner/Spinner";
 import { Text } from "@promise9/ui/text/Text";
-import type { Ref } from "react";
+import type { ComponentType, Ref } from "react";
 import { Pressable, View } from "react-native";
-import {
-  type TrackingProps,
-  withTracking,
-} from "@/components/analytics/withTracking";
 import { tv } from "@/lib/tv";
 
 // Figma Bottom Sheet Header: 취소(Assistive)·타이틀/설명·저장(Primary).
@@ -44,7 +40,7 @@ const buttonLabelStyles = tv({
   ],
 });
 
-interface HeaderButtonProps {
+export interface HeaderButtonProps {
   ref?: Ref<View>;
   variant: "assistive" | "primary";
   label: string;
@@ -53,7 +49,7 @@ interface HeaderButtonProps {
   isPending?: boolean;
 }
 
-function HeaderButton({
+export function HeaderButton({
   ref,
   variant,
   label,
@@ -82,8 +78,6 @@ function HeaderButton({
   );
 }
 
-const TrackedHeaderButton = withTracking(HeaderButton);
-
 export interface BottomSheetHeaderProps {
   title: string;
   description?: string;
@@ -93,8 +87,8 @@ export interface BottomSheetHeaderProps {
   onConfirm: () => void;
   isConfirmDisabled?: boolean;
   isConfirmPending?: boolean;
-  /** 지정한 확인 버튼만 클릭·노출을 수집한다. */
-  confirmTracking?: TrackingProps["tracking"];
+  /** 확인 버튼을 바꿔 끼운다. 공유 익스텐션도 쓰는 헤더라 집계 버튼은 호출부에서 만든다. */
+  ConfirmButton?: ComponentType<HeaderButtonProps>;
 }
 
 export function BottomSheetHeader({
@@ -106,9 +100,8 @@ export function BottomSheetHeader({
   onConfirm,
   isConfirmDisabled = false,
   isConfirmPending = false,
-  confirmTracking,
+  ConfirmButton = HeaderButton,
 }: BottomSheetHeaderProps) {
-  const ConfirmButton = confirmTracking ? TrackedHeaderButton : HeaderButton;
   return (
     <View className="h-15 flex-row items-center justify-between px-5">
       <HeaderButton
@@ -132,14 +125,6 @@ export function BottomSheetHeader({
         onPress={onConfirm}
         isDisabled={isConfirmDisabled}
         isPending={isConfirmPending}
-        {...(confirmTracking && {
-          tracking: {
-            ...confirmTracking,
-            disabled: Boolean(
-              confirmTracking.disabled || isConfirmDisabled || isConfirmPending,
-            ),
-          },
-        })}
       />
     </View>
   );
