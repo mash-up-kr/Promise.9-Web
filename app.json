@@ -140,7 +140,8 @@
             "expo-json-utils",
             "expo-structured-headers",
             "expo-updates-interface",
-            "expo-notifications"
+            "expo-notifications",
+            "expo-application"
           ]
         }
       ],
