@@ -83,8 +83,10 @@ export interface BottomSheetHeaderProps {
   description?: string;
   cancelLabel?: string;
   confirmLabel?: string;
-  onCancel: () => void;
-  onConfirm: () => void;
+  /** 생략하면 취소 버튼을 그리지 않는다. */
+  onCancel?: () => void;
+  /** 생략하면 저장 버튼을 그리지 않는다. */
+  onConfirm?: () => void;
   isConfirmDisabled?: boolean;
   isConfirmPending?: boolean;
   /** 확인 버튼을 바꿔 끼운다. 공유 익스텐션도 쓰는 헤더라 집계 버튼은 호출부에서 만든다. */
@@ -104,11 +106,13 @@ export function BottomSheetHeader({
 }: BottomSheetHeaderProps) {
   return (
     <View className="h-15 flex-row items-center justify-between px-5">
-      <HeaderButton
-        variant="assistive"
-        label={cancelLabel}
-        onPress={onCancel}
-      />
+      {onCancel && (
+        <HeaderButton
+          variant="assistive"
+          label={cancelLabel}
+          onPress={onCancel}
+        />
+      )}
       <View className="flex-1 items-center justify-center gap-0.5 px-2">
         <Text variant="heading-2" className="text-center text-text-strong">
           {title}
@@ -123,13 +127,15 @@ export function BottomSheetHeader({
           </Text>
         ) : null}
       </View>
-      <ConfirmButton
-        variant="primary"
-        label={confirmLabel}
-        onPress={onConfirm}
-        isDisabled={isConfirmDisabled}
-        isPending={isConfirmPending}
-      />
+      {onConfirm && (
+        <ConfirmButton
+          variant="primary"
+          label={confirmLabel}
+          onPress={onConfirm}
+          isDisabled={isConfirmDisabled}
+          isPending={isConfirmPending}
+        />
+      )}
     </View>
   );
 }

@@ -69,6 +69,8 @@ const routes = {
   "(auth)/_layout": AuthLayout,
   "(auth)/login": label("login"),
   "create-link": label("create-link"),
+  app: label("app"),
+  "app-install": label("app-install"),
   "create-folder": label("create-folder"),
   "edit-folder": label("edit-folder"),
   "move-links": label("move-links"),
@@ -127,6 +129,20 @@ describe("RootLayout — 보호 라우트", () => {
     mockUseAuthGate.mockReturnValue("unauthenticated");
     await renderRouter(routes, { initialUrl: "/settings/terms" });
     expect(await screen.findByText("terms")).toBeOnTheScreen();
+  });
+
+  // QR·짧은 주소로 들어오는 앱 설치 주소 — 아직 계정이 없는 사람도 연다.
+  test("앱 설치 주소(/app)는 로그인 안 된 상태에서도 열린다", async () => {
+    mockUseAuthGate.mockReturnValue("unauthenticated");
+    await renderRouter(routes, { initialUrl: "/app" });
+    expect(await screen.findByText("app")).toBeOnTheScreen();
+  });
+
+  test("앱 설치 시트는 로그인한 사용자에게만 열린다", async () => {
+    mockUseAuthGate.mockReturnValue("unauthenticated");
+    await renderRouter(routes, { initialUrl: "/app-install" });
+    expect(await screen.findByText("login")).toBeOnTheScreen();
+    expect(screen.queryByText("app-install")).not.toBeOnTheScreen();
   });
 
   // 공유 익스텐션 딥링크는 공유 URL 을 next 로 들고 로그인으로 가야 해서 보호 밖에 두고 라우트가 직접 가른다(create-link.tsx).

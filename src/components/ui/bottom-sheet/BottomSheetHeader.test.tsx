@@ -33,6 +33,14 @@ describe("BottomSheetHeader", () => {
     expect(screen.queryByText("폴더 이름을 입력해 주세요")).toBeNull();
   });
 
+  test("콜백을 주지 않은 버튼은 그리지 않는다", async () => {
+    await render(<BottomSheetHeader title="앱에서 푸시 알림을 받아보세요!" />);
+    expect(
+      screen.getByText("앱에서 푸시 알림을 받아보세요!"),
+    ).toBeOnTheScreen();
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
   test("취소·저장을 누르면 각 콜백을 호출한다", async () => {
     const onCancel = jest.fn();
     const onConfirm = jest.fn();

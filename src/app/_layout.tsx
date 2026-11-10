@@ -40,8 +40,8 @@ const transparentBackgroundTheme = {
   colors: { ...DefaultTheme.colors, background: "transparent" },
 };
 
-// 오버레이 라우트(create-link · create-folder · edit-folder · move-links) 공통 옵션 —
-// 전 OS 투명 모달로 연다. 그 위에 무엇을 그릴지는 화면이 정한다: create-link·move-links 는
+// 오버레이 라우트(create-link · create-folder · edit-folder · move-links · app-install) 공통 옵션 —
+// 전 OS 투명 모달로 연다. 그 위에 무엇을 그릴지는 화면이 정한다: create-link·move-links·app-install 은
 // gorhom 바텀시트(backdrop·그래버·detent·키보드까지 그린다), 폴더 생성·편집은 화면 중앙 카드.
 const sheetScreenOptions = {
   presentation: "transparentModal" as const,
@@ -131,6 +131,10 @@ export default function RootLayout() {
                               name="move-links"
                               options={sheetScreenOptions}
                             />
+                            <Stack.Screen
+                              name="app-install"
+                              options={sheetScreenOptions}
+                            />
                             <Stack.Screen name="link/[id]" />
                             <Stack.Screen name="archive/[id]" />
                             <Stack.Screen name="search" />
@@ -144,6 +148,11 @@ export default function RootLayout() {
                           {/* 약관·개인정보처리방침은 로그인 화면에서도 연다. */}
                           <Stack.Screen name="settings/terms" />
                           <Stack.Screen name="settings/privacy" />
+                          {/* QR·짧은 주소로 들어오는 앱 설치 주소 — 아직 계정이 없는 사람도 연다. */}
+                          <Stack.Screen
+                            name="app"
+                            options={{ headerShown: false }}
+                          />
                           {/* 저장 시트는 로그인 안 된 딥링크에서 공유 URL 을 next 로 들고 로그인으로 가야 해서
                             보호 밖에서 라우트가 직접 가른다(create-link.tsx). */}
                           <Stack.Screen
