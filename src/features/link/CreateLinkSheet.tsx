@@ -46,6 +46,7 @@ import {
   isPastReminder,
   toReminderAtIso,
 } from "@/features/link/reminder.utils";
+import { requestNotificationPermissionOnce } from "@/lib/notifications";
 
 // 시안: 저장 완료·중복 스낵바는 자동 dismiss 를 4초 뒤로 늦춘다(Snackbar 기본 2.5초와 다르다).
 const SAVE_SNACKBAR_DURATION = 4000;
@@ -108,6 +109,9 @@ export function CreateLinkSheet() {
           message: "선택한 시간이 이미 지났어요. 날짜나 시간을 변경해 주세요",
         });
         return;
+      }
+      if (values.reminder) {
+        requestNotificationPermissionOnce();
       }
       createLinkMutation.mutate(
         {

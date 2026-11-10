@@ -46,5 +46,7 @@ module.exports = {
       "<rootDir>/src/__mocks__/expo-apple-authentication.js",
     // 인앱 리뷰도 네이티브 모듈이라 jest 환경에서 동작할 수 없다 — jest.fn() stub 으로 대체.
     "^expo-store-review$": "<rootDir>/src/__mocks__/expo-store-review.js",
+    // 알림도 네이티브 모듈이라 jest 환경에서 동작할 수 없다 — jest.fn() stub 으로 대체.
+    "^expo-notifications$": "<rootDir>/src/__mocks__/expo-notifications.js",
   },
 };

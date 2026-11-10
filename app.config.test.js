@@ -78,3 +78,11 @@ test("Gradle Metaspace 플러그인이 등록돼 있다", () => {
     "./plugins/withAndroidGradleJvmArgs",
   );
 });
+
+// 푸시 수신은 앱 프로세스만 한다 — 메모리 한도가 빡빡한 iOS 공유 익스텐션에는 그 의존 모듈까지 싣지 않는다.
+test("알림 플러그인을 등록하고 iOS 공유 익스텐션에서는 그 의존 모듈과 함께 뺀다", () => {
+  expect(appConfig.expo.plugins).toContain("expo-notifications");
+  expect(shareExtensionOptions().excludedPackages).toEqual(
+    expect.arrayContaining(["expo-notifications", "expo-application"]),
+  );
+});

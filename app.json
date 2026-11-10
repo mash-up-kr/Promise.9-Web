@@ -140,7 +140,9 @@
             "expo-manifests",
             "expo-json-utils",
             "expo-structured-headers",
-            "expo-updates-interface"
+            "expo-updates-interface",
+            "expo-notifications",
+            "expo-application"
           ]
         }
       ],
@@ -195,6 +197,7 @@
           }
         }
       ],
+      "expo-notifications",
       "./plugins/withIosPodDeploymentTarget",
       "./plugins/withAndroidGradleJvmArgs"
     ],
