@@ -1,5 +1,6 @@
 import { Spinner } from "@promise9/ui/spinner/Spinner";
 import { Text } from "@promise9/ui/text/Text";
+import type { ComponentType, Ref } from "react";
 import { Pressable, View } from "react-native";
 import { tv } from "@/lib/tv";
 
@@ -39,7 +40,8 @@ const buttonLabelStyles = tv({
   ],
 });
 
-interface HeaderButtonProps {
+export interface HeaderButtonProps {
+  ref?: Ref<View>;
   variant: "assistive" | "primary";
   label: string;
   onPress: () => void;
@@ -47,7 +49,8 @@ interface HeaderButtonProps {
   isPending?: boolean;
 }
 
-function HeaderButton({
+export function HeaderButton({
+  ref,
   variant,
   label,
   onPress,
@@ -56,6 +59,7 @@ function HeaderButton({
 }: HeaderButtonProps) {
   return (
     <Pressable
+      ref={ref}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: isDisabled || isPending }}
@@ -85,6 +89,8 @@ export interface BottomSheetHeaderProps {
   onConfirm?: () => void;
   isConfirmDisabled?: boolean;
   isConfirmPending?: boolean;
+  /** 확인 버튼을 바꿔 끼운다. 공유 익스텐션도 쓰는 헤더라 집계 버튼은 호출부에서 만든다. */
+  ConfirmButton?: ComponentType<HeaderButtonProps>;
 }
 
 export function BottomSheetHeader({
@@ -96,6 +102,7 @@ export function BottomSheetHeader({
   onConfirm,
   isConfirmDisabled = false,
   isConfirmPending = false,
+  ConfirmButton = HeaderButton,
 }: BottomSheetHeaderProps) {
   return (
     <View className="h-15 flex-row items-center justify-between px-5">
@@ -111,13 +118,17 @@ export function BottomSheetHeader({
           {title}
         </Text>
         {description ? (
-          <Text variant="caption-1" className="text-center text-gray-500">
+          // 시안 Caption-1-regular 는 자간 0 — caption-1 토큰(0.03em)과 자간만 다르다.
+          <Text
+            variant="caption-1"
+            className="text-center text-text-alternative tracking-[0px]"
+          >
             {description}
           </Text>
         ) : null}
       </View>
       {onConfirm && (
-        <HeaderButton
+        <ConfirmButton
           variant="primary"
           label={confirmLabel}
           onPress={onConfirm}

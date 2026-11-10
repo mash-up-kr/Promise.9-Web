@@ -1,5 +1,10 @@
 import { LINK_URL_ERROR_MESSAGES } from "@shared/link/link.constants";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  AnalyticsScreen,
+  useAnalytics,
+  useAnalyticsScreen,
+} from "@/analytics/AnalyticsContext";
 import { isLoggedIn, subscribeLoggedIn } from "@/lib/auth/session";
 import { MESSAGE_TYPE, type SaveLinkPayload } from "@/lib/messages";
 import { addDaysAtDefaultHour } from "@/lib/remind";
@@ -63,6 +68,9 @@ const closeOverlay = (previous: Draft): Draft => ({
 });
 
 export function SidePanelApp() {
+  const analytics = useAnalytics();
+  const { screen: analyticsScreen } = useAnalyticsScreen();
+  const isClosing = useRef(false);
   const tab = useActiveTab();
   // 저장소에서 아직 못 읽었으면 undefined — 그동안은 아무것도 그리지 않는다.
   const [loggedIn, setLoggedIn] = useState<boolean>();
@@ -113,12 +121,23 @@ export function SidePanelApp() {
   }
 
   // 사이드패널에서 window.close() 는 패널 자체를 닫는다(시안의 '닫기' 라벨과 같은 동작).
-  const closePanel = useCallback(() => window.close(), []);
-
-  const openWebApp = useCallback((path: string) => {
-    void chrome.tabs.create({ url: webAppUrl(path) });
+  const closePanel = useCallback(() => {
+    if (isClosing.current) return;
+    isClosing.current = true;
+    analyticsScreen?.endScreenView();
+    // 종료 직전 전송은 시도하되, 일부 유실을 허용하고 패널 닫기를 지연시키지 않는다.
+    void analytics?.client.flush();
     window.close();
-  }, []);
+  }, [analytics, analyticsScreen]);
+
+  const openWebApp = useCallback(
+    (path: string) => {
+      if (isClosing.current) return;
+      void chrome.tabs.create({ url: webAppUrl(path) });
+      closePanel();
+    },
+    [closePanel],
+  );
 
   const startSave = useCallback((payload: SaveLinkPayload) => {
     void chrome.runtime.sendMessage({ type: MESSAGE_TYPE.saveLink, payload });
@@ -130,58 +149,70 @@ export function SidePanelApp() {
   const savable = getSavableUrl(url);
   if (!savable.ok) {
     return (
-      <ResultScreen
-        kind="restricted"
-        description={
-          savable.reason ? LINK_URL_ERROR_MESSAGES[savable.reason] : undefined
-        }
-        onAction={closePanel}
-      />
+      <AnalyticsScreen name="restricted">
+        <ResultScreen
+          kind="restricted"
+          description={
+            savable.reason ? LINK_URL_ERROR_MESSAGES[savable.reason] : undefined
+          }
+          onAction={closePanel}
+        />
+      </AnalyticsScreen>
     );
   }
 
   if (!loggedIn) {
-    return <LoginScreen />;
+    return (
+      <AnalyticsScreen name="login">
+        <LoginScreen />
+      </AnalyticsScreen>
+    );
   }
 
   if (current.overlay === "new-folder") {
     return (
-      <NewFolderScreen
-        onCancel={() => setDraft(closeOverlay)}
-        onCreated={(createdFolderId) => {
-          // 새로 만든 폴더를 그대로 선택 상태로 되돌려준다(시안 정책).
-          setDraft((previous) => ({
-            ...closeOverlay(previous),
-            folderId: createdFolderId,
-          }));
-        }}
-      />
+      <AnalyticsScreen name="folder.create">
+        <NewFolderScreen
+          onCancel={() => setDraft(closeOverlay)}
+          onCreated={(createdFolderId) => {
+            // 새로 만든 폴더를 그대로 선택 상태로 되돌려준다(시안 정책).
+            setDraft((previous) => ({
+              ...closeOverlay(previous),
+              folderId: createdFolderId,
+            }));
+          }}
+        />
+      </AnalyticsScreen>
     );
   }
 
   // 날짜·시간 화면은 리마인드가 켜져 있을 때만 열리므로 값이 항상 있다.
   if (current.overlay === "date" && current.reminderAt) {
     return (
-      <DatePickerScreen
-        value={current.reminderAt}
-        today={new Date()}
-        onCancel={() => setDraft(closeOverlay)}
-        onConfirm={(reminderAt) =>
-          setDraft((previous) => ({ ...closeOverlay(previous), reminderAt }))
-        }
-      />
+      <AnalyticsScreen name="reminder.date">
+        <DatePickerScreen
+          value={current.reminderAt}
+          today={new Date()}
+          onCancel={() => setDraft(closeOverlay)}
+          onConfirm={(reminderAt) =>
+            setDraft((previous) => ({ ...closeOverlay(previous), reminderAt }))
+          }
+        />
+      </AnalyticsScreen>
     );
   }
 
   if (current.overlay === "time" && current.reminderAt) {
     return (
-      <TimePickerScreen
-        value={current.reminderAt}
-        onCancel={() => setDraft(closeOverlay)}
-        onConfirm={(reminderAt) =>
-          setDraft((previous) => ({ ...closeOverlay(previous), reminderAt }))
-        }
-      />
+      <AnalyticsScreen name="reminder.time">
+        <TimePickerScreen
+          value={current.reminderAt}
+          onCancel={() => setDraft(closeOverlay)}
+          onConfirm={(reminderAt) =>
+            setDraft((previous) => ({ ...closeOverlay(previous), reminderAt }))
+          }
+        />
+      </AnalyticsScreen>
     );
   }
 
@@ -191,66 +222,70 @@ export function SidePanelApp() {
 
   if (record && resultKind) {
     return (
-      <ResultScreen
-        kind={resultKind}
-        onAction={() => {
-          switch (resultKind) {
-            case "success":
-              openWebApp(
-                record.session.linkId === null
-                  ? WEB_APP_PATH.home
-                  : WEB_APP_PATH.linkDetail(record.session.linkId),
-              );
-              return;
-            case "duplicate":
-              // 서버가 중복 응답에 기존 linkId 를 주지 않아 그 링크로 바로 못 간다 → 웹앱 홈.
-              openWebApp(WEB_APP_PATH.home);
-              return;
-            case "failed":
-              void chrome.runtime.sendMessage({
-                type: MESSAGE_TYPE.retrySave,
-              });
-              return;
-            default:
-              void clearSaveRecord();
-              closePanel();
-          }
-        }}
-      />
+      <AnalyticsScreen name={`result.${resultKind}`}>
+        <ResultScreen
+          kind={resultKind}
+          onAction={() => {
+            switch (resultKind) {
+              case "success":
+                openWebApp(
+                  record.session.linkId === null
+                    ? WEB_APP_PATH.home
+                    : WEB_APP_PATH.linkDetail(record.session.linkId),
+                );
+                return;
+              case "duplicate":
+                // 서버가 중복 응답에 기존 linkId 를 주지 않아 그 링크로 바로 못 간다 → 웹앱 홈.
+                openWebApp(WEB_APP_PATH.home);
+                return;
+              case "failed":
+                void chrome.runtime.sendMessage({
+                  type: MESSAGE_TYPE.retrySave,
+                });
+                return;
+              default:
+                void clearSaveRecord();
+                closePanel();
+            }
+          }}
+        />
+      </AnalyticsScreen>
     );
   }
 
   return (
-    <SaveScreen
-      tab={tab}
-      url={savable.url}
-      folderId={current.folderId}
-      onFolderChange={(folderId) =>
-        setDraft((previous) => ({ ...previous, folderId }))
-      }
-      memo={current.memo}
-      onMemoChange={(memo) => setDraft((previous) => ({ ...previous, memo }))}
-      reminderAt={current.reminderAt}
-      onReminderChange={(reminderAt) =>
-        setDraft((previous) => ({ ...previous, reminderAt }))
-      }
-      onPickDate={() =>
-        setDraft((previous) => ({
-          ...previous,
-          // 꺼진 상태에서 날짜부터 고르면 리마인드를 켜는 것으로 본다.
-          reminderAt:
-            previous.reminderAt ?? addDaysAtDefaultHour(1, new Date()),
-          overlay: "date",
-        }))
-      }
-      onPickTime={() =>
-        setDraft((previous) => ({ ...previous, overlay: "time" }))
-      }
-      isSaving={record?.session.phase === "saving"}
-      onSave={startSave}
-      onCreateFolder={() =>
-        setDraft((previous) => ({ ...previous, overlay: "new-folder" }))
-      }
-    />
+    <AnalyticsScreen name="link.save">
+      <SaveScreen
+        tab={tab}
+        url={savable.url}
+        folderId={current.folderId}
+        onFolderChange={(folderId) =>
+          setDraft((previous) => ({ ...previous, folderId }))
+        }
+        memo={current.memo}
+        onMemoChange={(memo) => setDraft((previous) => ({ ...previous, memo }))}
+        reminderAt={current.reminderAt}
+        onReminderChange={(reminderAt) =>
+          setDraft((previous) => ({ ...previous, reminderAt }))
+        }
+        onPickDate={() =>
+          setDraft((previous) => ({
+            ...previous,
+            // 꺼진 상태에서 날짜부터 고르면 리마인드를 켜는 것으로 본다.
+            reminderAt:
+              previous.reminderAt ?? addDaysAtDefaultHour(1, new Date()),
+            overlay: "date",
+          }))
+        }
+        onPickTime={() =>
+          setDraft((previous) => ({ ...previous, overlay: "time" }))
+        }
+        isSaving={record?.session.phase === "saving"}
+        onSave={startSave}
+        onCreateFolder={() =>
+          setDraft((previous) => ({ ...previous, overlay: "new-folder" }))
+        }
+      />
+    </AnalyticsScreen>
   );
 }

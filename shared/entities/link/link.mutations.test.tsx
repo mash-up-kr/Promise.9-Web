@@ -32,13 +32,13 @@ async function renderMutation<T>(useMutationHook: () => T) {
     defaultOptions: { mutations: { retry: false, gcTime: 0 } },
   });
   const invalidate = jest.spyOn(queryClient, "invalidateQueries");
-  const { result } = await renderHook(useMutationHook, {
+  const { result, unmount } = await renderHook(useMutationHook, {
     wrapper: ({ children }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     ),
   });
 
-  return { result, invalidate };
+  return { result, invalidate, unmount };
 }
 
 // 링크가 다른 폴더로 가거나 삭제되면 링크 목록·폴더 카운트·홈 키워드(폴더·태그별 링크 수)가 함께 낡는다.
@@ -233,4 +233,50 @@ describe("useCreateLinkMutation", () => {
 
     await expectFolderCachesInvalidated(invalidate);
   });
+});
+
+test("저장 중 화면이 해제돼도 성공 콜백과 캐시 갱신을 실행한다", async () => {
+  let completeRequest!: (response: {
+    data: { data: { linkId: number } };
+  }) => void;
+  mockPost.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        completeRequest = resolve;
+      }),
+  );
+  const onSuccess = jest.fn();
+  const { result, invalidate, unmount } = await renderMutation(() =>
+    useCreateLinkMutation({ onSuccess }),
+  );
+  const pending = result.current.mutateAsync({
+    url: "https://example.com",
+    folderId: null,
+    memo: null,
+    reminderAt: null,
+  });
+  await waitFor(() => expect(completeRequest).toBeDefined());
+  await unmount();
+  completeRequest({ data: { data: { linkId: 42 } } });
+  await pending;
+  expect(onSuccess).toHaveBeenCalledTimes(1);
+  expect(onSuccess).toHaveBeenCalledWith({ linkId: 42 });
+  await expectFolderCachesInvalidated(invalidate);
+});
+
+test("저장 API 실패 시 성공 콜백을 실행하지 않는다", async () => {
+  mockPost.mockRejectedValueOnce(new Error("offline"));
+  const onSuccess = jest.fn();
+  const { result } = await renderMutation(() =>
+    useCreateLinkMutation({ onSuccess }),
+  );
+  await expect(
+    result.current.mutateAsync({
+      url: "https://example.com",
+      folderId: null,
+      memo: null,
+      reminderAt: null,
+    }),
+  ).rejects.toThrow("offline");
+  expect(onSuccess).not.toHaveBeenCalled();
 });

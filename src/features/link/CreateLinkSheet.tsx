@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AsyncBoundary } from "@promise9/ui/async-boundary/AsyncBoundary";
 import { Input, InputField, InputSlot } from "@promise9/ui/input/Input";
 import { Text } from "@promise9/ui/text/Text";
+import { ANALYTICS_EVENTS } from "@shared/analytics/analytics.events";
 import {
   getDuplicateLinkId,
   isAlreadySavedLinkError,
@@ -18,6 +19,7 @@ import {
   useWatch,
 } from "react-hook-form";
 import { Keyboard, View } from "react-native";
+import { useAnalytics } from "@/components/analytics/AnalyticsContext";
 import { BottomSheetHeader } from "@/components/ui/bottom-sheet/BottomSheetHeader";
 import { useSheetDismiss } from "@/components/ui/bottom-sheet/useSheetDismiss";
 import { SheetScreen } from "@/components/ui/sheet-screen/SheetScreen";
@@ -32,6 +34,7 @@ import { decodeSharedUrl, linkDetailHref } from "@/constants/routes.constants";
 import { requestReviewAfterSave } from "@/features/app-notice/reviewPrompt";
 import { FolderChipList } from "@/features/link/components/FolderChipList";
 import { LinkPreviewCard } from "@/features/link/components/LinkPreviewCard";
+import { LinkSaveHeaderButton } from "@/features/link/components/LinkSaveHeaderButton";
 import { MemoField } from "@/features/link/components/MemoField";
 import { ReminderSection } from "@/features/link/components/ReminderSection";
 import {
@@ -48,6 +51,7 @@ import {
 const SAVE_SNACKBAR_DURATION = 4000;
 
 export function CreateLinkSheet() {
+  const analytics = useAnalytics();
   const router = useRouter();
   const { closeSheet, navigateFromSheet } = useSheetRouteNavigation();
   const { show } = useSnackbar();
@@ -71,7 +75,20 @@ export function CreateLinkSheet() {
       previewUrl: parsedInitialUrl.success ? parsedInitialUrl.data : "",
     },
   });
-  const createLinkMutation = useCreateLinkMutation();
+  const createLinkMutation = useCreateLinkMutation({
+    onSuccess: (createdLink) => {
+      analytics.trackEvent(
+        {
+          event_name: ANALYTICS_EVENTS.LINK_SAVED,
+          custom_data: {
+            link_id: createdLink.linkId,
+            entry_point: "create_link_sheet",
+          },
+        },
+        { flushSoon: true },
+      );
+    },
+  });
   // watch() 는 안정 참조 prop 경유 시 React Compiler 메모이제이션에 갱신이 막힌다 —
   // useWatch 는 구독 컴포넌트 자체 상태로 리렌더를 트리거해 컴파일러와 안전하다.
   const url = useWatch({ control, name: "url" });
@@ -210,6 +227,7 @@ function CreateLinkSheetHeader({
     >
       <BottomSheetHeader
         title="링크 저장"
+        ConfirmButton={LinkSaveHeaderButton}
         onCancel={dismiss}
         onConfirm={() => onSave(dismiss)}
         isConfirmDisabled={isConfirmDisabled}

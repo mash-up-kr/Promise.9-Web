@@ -1,4 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import {
+  fireEvent,
+  render,
+  screen,
+  userEvent,
+} from "@testing-library/react-native";
 import { Text } from "react-native";
 
 import { ListRow } from "./ListRow";
@@ -54,5 +59,57 @@ describe("ListRow", () => {
     // 이메일·버전 정보처럼 동작 없는 행은 스크린리더가 버튼으로 읽지 않아야 한다.
     await render(<ListRow label="버전 정보" trailing={<Text>v1.0.0</Text>} />);
     expect(screen.queryByRole("button")).not.toBeOnTheScreen();
+  });
+
+  describe("toggle (스위치 행)", () => {
+    test("행 전체가 스위치 하나로 노출되고 켜짐 상태를 반영한다", async () => {
+      await render(
+        <ListRow
+          label="앱 푸시 알림"
+          toggle={{ value: true, onChange: jest.fn() }}
+        />,
+      );
+      // 토글 그림이 별도 Pressable 이면 스위치가 둘이 된다(iOS VoiceOver 흡수·웹 중첩 버튼 문제).
+      expect(screen.getAllByRole("switch")).toHaveLength(1);
+      expect(
+        screen.getByRole("switch", { name: "앱 푸시 알림", checked: true }),
+      ).toBeOnTheScreen();
+    });
+
+    test("꺼진 상태를 반영한다", async () => {
+      await render(
+        <ListRow
+          label="앱 푸시 알림"
+          toggle={{ value: false, onChange: jest.fn() }}
+        />,
+      );
+      expect(
+        screen.getByRole("switch", { name: "앱 푸시 알림", checked: false }),
+      ).toBeOnTheScreen();
+    });
+
+    test("행을 누르면 반전된 값으로 onChange 를 부른다", async () => {
+      const user = userEvent.setup();
+      const onChange = jest.fn();
+      await render(
+        <ListRow label="이메일 알림" toggle={{ value: false, onChange }} />,
+      );
+      await user.press(screen.getByText("이메일 알림"));
+      expect(onChange).toHaveBeenCalledWith(true);
+    });
+
+    test("disabled 면 onChange 가 호출되지 않는다", async () => {
+      const user = userEvent.setup();
+      const onChange = jest.fn();
+      await render(
+        <ListRow
+          label="이메일 알림"
+          toggle={{ value: false, onChange }}
+          disabled
+        />,
+      );
+      await user.press(screen.getByText("이메일 알림"));
+      expect(onChange).not.toHaveBeenCalled();
+    });
   });
 });

@@ -280,16 +280,22 @@ export async function createLink(
   return data.data;
 }
 
-export function useCreateLinkMutation() {
+interface CreateLinkMutationOptions {
+  onSuccess?: (createdLink: CreatedLink) => void;
+}
+
+export function useCreateLinkMutation(options?: CreateLinkMutationOptions) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createLink,
-    onSuccess: () => {
+    onSuccess: (createdLink) => {
       queryClient.invalidateQueries({ queryKey: linkKeys.root() });
       // 폴더 칩·목록의 linkCount 도 저장 직후 갱신돼야 한다.
       queryClient.invalidateQueries({ queryKey: folderKeys.root() });
       // 홈 키워드(폴더·태그별 링크 수)도 낡는다.
       queryClient.invalidateQueries({ queryKey: recommendationKeys.root() });
+      // mutate 호출부의 콜백과 달리 화면이 해제된 뒤에도 실행된다.
+      options?.onSuccess?.(createdLink);
     },
   });
 }
