@@ -1,4 +1,5 @@
 import { ActionButton } from "@promise9/ui/action-button/ActionButton";
+import { ListRow } from "@promise9/ui/list-row/ListRow";
 import { Radio, RadioGroup, RadioLabel } from "@promise9/ui/radio/Radio";
 import { Text } from "@promise9/ui/text/Text";
 import { Toggle } from "@promise9/ui/toggle/Toggle";
@@ -29,20 +30,18 @@ describe("@promise9/ui 를 익스텐션(react-native-web)에서", () => {
     expect(screen.getByRole("progressbar")).toBeInTheDocument();
   });
 
-  it("Toggle 의 클래스가 값에 따라 바뀐다", () => {
+  it("Toggle 트랙의 클래스가 값에 따라 바뀐다", () => {
+    const track = () =>
+      screen.getByRole("switch", { name: "알림" }).firstElementChild;
     const { rerender } = render(
       <Toggle value onChange={() => {}} accessibilityLabel="알림" />,
     );
-    expect(screen.getByRole("switch", { name: "알림" }).className).toContain(
-      "bg-gray-50",
-    );
+    expect(track()?.className).toContain("bg-gray-50");
 
     rerender(
       <Toggle value={false} onChange={() => {}} accessibilityLabel="알림" />,
     );
-    expect(screen.getByRole("switch", { name: "알림" }).className).toContain(
-      "bg-gray-400",
-    );
+    expect(track()?.className).toContain("bg-gray-400");
   });
 
   it("Toggle 은 켜짐 상태를 aria-checked 로 노출한다", () => {
@@ -61,6 +60,18 @@ describe("@promise9/ui 를 익스텐션(react-native-web)에서", () => {
       "aria-checked",
       "false",
     );
+  });
+
+  it("스위치 ListRow 는 행 하나가 스위치로 노출되고 누르면 값이 바뀐다", async () => {
+    const onChange = vi.fn();
+    render(<ListRow label="앱 푸시 알림" toggle={{ value: true, onChange }} />);
+
+    const row = screen.getByRole("switch", { name: "앱 푸시 알림" });
+    expect(screen.getAllByRole("switch")).toHaveLength(1);
+    expect(row).toHaveAttribute("aria-checked", "true");
+
+    await userEvent.click(row);
+    expect(onChange).toHaveBeenCalledWith(false);
   });
 
   it("Radio 는 선택 여부를 aria-checked 로 노출한다", () => {
