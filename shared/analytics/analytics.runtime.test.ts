@@ -199,6 +199,43 @@ describe("수집 끄기 저장", () => {
     expect(send).not.toHaveBeenCalled();
     next.client.dispose();
   });
+  test("끄면 대기 중인 유입 접점을 지우고, 꺼진 동안 들어온 UTM은 저장·동기화하지 않는다", async () => {
+    const { values, storage } = memoryStorage();
+    const runtime = create(storage);
+    await runtime.ready;
+    const listener = jest.fn();
+    runtime.subscribeTouch(listener);
+    runtime.capture({ utm_source: "before" });
+    runtime.setCollecting(false);
+    expect(runtime.pendingTouch).toBeNull();
+    listener.mockClear();
+    runtime.capture({ utm_source: "while_off" });
+    expect(runtime.pendingTouch).toBeNull();
+    expect(listener).not.toHaveBeenCalled();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(values.get("promise9_analytics_attribution")).toBe("null");
+    runtime.client.dispose();
+  });
+  test("꺼진 채 다시 실행하면 준비 전에 받은 UTM과 저장된 접점을 되살리지 않는다", async () => {
+    const touch = {
+      touch_id: "stored",
+      captured_at: "2026-11-01T00:00:00.000Z",
+      utm_source: "stored",
+      utm_medium: null,
+      utm_campaign: null,
+      utm_content: null,
+      utm_term: null,
+    };
+    const { storage } = memoryStorage({
+      promise9_analytics_collecting: "false",
+      promise9_analytics_attribution: JSON.stringify(touch),
+    });
+    const runtime = create(storage);
+    runtime.capture({ utm_source: "before_ready" });
+    await runtime.ready;
+    expect(runtime.pendingTouch).toBeNull();
+    runtime.client.dispose();
+  });
   test("저장값을 읽기 전에 바꾼 설정은 나중에 읽은 저장값으로 덮지 않는다", async () => {
     const { storage } = memoryStorage({
       promise9_analytics_collecting: "false",

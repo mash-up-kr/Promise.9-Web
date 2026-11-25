@@ -81,6 +81,13 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
       }),
   });
   const setUtm: AnalyticsRuntime["setUtm"] = (utm) => client.setUtm(utm);
+  // 수집을 끄면 유입 접점도 기기에 남기거나 계정에 동기화하지 않는다(처리방침 제9조).
+  const dropTouch = () => {
+    pendingTouch = null;
+    lastCampaignKey = "";
+    client.setUtm(null);
+    writeStorage(UTM_KEY, "null");
+  };
   let readyPromise: Promise<void> | undefined;
   const restoreFromStorage = () =>
     (readyPromise ??= (async () => {
@@ -96,11 +103,13 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
         readStorage(COLLECTING_KEY),
       ]);
       // 준비 전에 받은 이벤트까지 버리도록 초기화보다 먼저 적용한다.
-      if (!hasCollectingChanged && storedCollecting === "false")
+      if (!hasCollectingChanged && storedCollecting === "false") {
         client.setCollecting(false);
+        dropTouch();
+      }
       const anonymousId = storedAnonymousId || options.newId();
       writeStorage(ID_KEY, anonymousId);
-      if (storedTouchJson && !pendingTouch) {
+      if (storedTouchJson && !pendingTouch && client.isCollecting) {
         try {
           const parsed = marketingTouchSchema.safeParse(
             JSON.parse(storedTouchJson),
@@ -143,6 +152,7 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
     setCollecting(isCollecting) {
       hasCollectingChanged = true;
       client.setCollecting(isCollecting);
+      if (!isCollecting) dropTouch();
       writeStorage(COLLECTING_KEY, String(isCollecting));
     },
     get pendingTouch() {
@@ -162,6 +172,7 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
       };
     },
     capture(values) {
+      if (!client.isCollecting) return;
       let touch: MarketingTouch | null;
       try {
         touch = captureUtm(values, options.newId(), new Date().toISOString());
