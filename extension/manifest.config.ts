@@ -13,7 +13,7 @@ import pkg from "./package.json" with { type: "json" };
  *   아이콘 클릭 시점에만 부여되는 `activeTab` 으로는 탭 전환을 따라갈 수 없다.
  * - `storage`: 저장 진행/결과를 background 와 주고받는다.
  * - `sidePanel`: 패널 열기·동작 설정.
- * - `contextMenus`: 아이콘 우클릭 메뉴에 "보관함 열기" 를 더한다(설치 경고 없는 권한).
+ * - `contextMenus`: 아이콘 우클릭 메뉴에 "보관함 열기"·"설정" 을 더한다(설치 경고 없는 권한).
  *
  * 로그인은 익스텐션이 직접 하지 않는다 — 웹앱을 새 탭으로 열고, 웹앱이 결과(idToken)를
  * `externally_connectable` 로 허용된 경로로 넘겨준다. 그래서 `identity` 권한이 필요 없다.

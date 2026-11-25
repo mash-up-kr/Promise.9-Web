@@ -40,3 +40,9 @@ export function subscribeSaveRecord(
 ): () => void {
   return saveRecord.subscribe(onChange);
 }
+
+/** 아이콘 우클릭 메뉴 "설정" 요청. 값은 요청 시각 — 같은 값이면 변경 이벤트가 안 떠서 매번 다르게 쓴다. */
+export const openSettingsRequest = createStorageEntry<number>(
+  "session",
+  "openSettings",
+);

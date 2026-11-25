@@ -12,6 +12,7 @@ import { getSavableUrl } from "@/lib/savableUrl";
 import type { SavePhase } from "@/lib/saveSession";
 import {
   clearSaveRecord,
+  openSettingsRequest,
   readSaveRecord,
   type SaveRecord,
   subscribeSaveRecord,
@@ -111,6 +112,19 @@ export function SidePanelApp() {
       unsubscribeSave();
       unsubscribeLogin();
     };
+  }, []);
+
+  // 아이콘 우클릭 메뉴 "설정" — 패널이 이미 열려 있으면 변경으로, 이제 열리는 중이면 읽기로 받는다.
+  useEffect(() => {
+    const open = (requestedAt: number | null) => {
+      if (requestedAt === null) return;
+      setIsSettingsOpen(true);
+      void openSettingsRequest.clear();
+    };
+    const unsubscribe = openSettingsRequest.subscribe(open);
+    void openSettingsRequest.read().then(open);
+
+    return unsubscribe;
   }, []);
 
   // 탭이 바뀌면 다른 링크를 저장하는 것이므로 이전 링크의 초안(폴더·메모·새 폴더 화면)은 버린다.

@@ -21,6 +21,7 @@ export interface ChromeMock {
   queryTabs: ReturnType<typeof vi.fn>;
   createTab: ReturnType<typeof vi.fn>;
   createContextMenu: ReturnType<typeof vi.fn>;
+  openSidePanel: ReturnType<typeof vi.fn>;
   /** storage.onChanged 를 흉내 내 background 가 결과를 쓴 상황을 만든다. */
   emitSessionChange: (key: string, newValue: unknown) => void;
   /** 이후 tabs.query 가 돌려줄 활성 탭을 바꾼다. */
@@ -47,7 +48,10 @@ export interface ChromeMock {
   /** 익스텐션이 설치·업데이트된 상황(runtime.onInstalled). */
   emitInstalled: () => void;
   /** 아이콘 우클릭 메뉴 항목을 누른 상황(contextMenus.onClicked). */
-  emitContextMenuClick: (menuItemId: string) => void;
+  emitContextMenuClick: (
+    menuItemId: string,
+    tab?: Partial<chrome.tabs.Tab>,
+  ) => void;
 }
 
 type StorageListener = (
@@ -69,7 +73,10 @@ type ExternalMessageListener = (
   sendResponse: (response: unknown) => void,
 ) => boolean;
 
-type MenuClickListener = (info: chrome.contextMenus.OnClickData) => void;
+type MenuClickListener = (
+  info: chrome.contextMenus.OnClickData,
+  tab?: chrome.tabs.Tab,
+) => void;
 
 /** addListener/removeListener 를 실제로 배열에 반영하는 이벤트 스텁. */
 function createEvent<T>() {
@@ -125,6 +132,7 @@ export function installChromeMock(options: ChromeMockOptions = {}): ChromeMock {
   const sendMessage = vi.fn(async () => undefined);
   const createTab = vi.fn(async () => undefined);
   const createContextMenu = vi.fn();
+  const openSidePanel = vi.fn(async () => undefined);
   const queryTabs = vi.fn(async () => [activeTab]);
 
   vi.stubGlobal("chrome", {
@@ -146,7 +154,10 @@ export function installChromeMock(options: ChromeMockOptions = {}): ChromeMock {
       onMessageExternal: externalMessage.event,
       onInstalled: installed.event,
     },
-    sidePanel: { setPanelBehavior: vi.fn(async () => undefined) },
+    sidePanel: {
+      setPanelBehavior: vi.fn(async () => undefined),
+      open: openSidePanel,
+    },
     contextMenus: {
       create: createContextMenu,
       removeAll: vi.fn(async () => undefined),
@@ -159,6 +170,7 @@ export function installChromeMock(options: ChromeMockOptions = {}): ChromeMock {
     queryTabs,
     createTab,
     createContextMenu,
+    openSidePanel,
     emitSessionChange: (key, newValue) => {
       session.set(key, newValue);
       for (const listener of [...storageChange.listeners]) {
@@ -198,9 +210,9 @@ export function installChromeMock(options: ChromeMockOptions = {}): ChromeMock {
     emitInstalled: () => {
       for (const listener of [...installed.listeners]) listener();
     },
-    emitContextMenuClick: (menuItemId) => {
+    emitContextMenuClick: (menuItemId, tab) => {
       for (const listener of [...menuClick.listeners]) {
-        listener({ menuItemId, editable: false });
+        listener({ menuItemId, editable: false }, tab as chrome.tabs.Tab);
       }
     },
   };

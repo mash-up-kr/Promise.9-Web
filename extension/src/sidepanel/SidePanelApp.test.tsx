@@ -412,6 +412,39 @@ describe("SidePanelApp", () => {
     expect(screen.queryByRole("button", { name: "설정" })).toBeNull();
   });
 
+  it("아이콘 우클릭 메뉴로 설정을 요청해 둔 채 열리면 설정 화면부터 보여주고 요청을 지운다", async () => {
+    installChromeMock({
+      tab: SAVABLE_TAB,
+      local: { refreshToken: "stored-refresh-token" },
+      session: { openSettings: 1 },
+    });
+
+    renderPanel(<SidePanelApp />);
+
+    expect(
+      await screen.findByRole("heading", { name: "설정" }),
+    ).toBeInTheDocument();
+    await waitFor(async () =>
+      expect(await chrome.storage.session.get("openSettings")).toEqual({}),
+    );
+  });
+
+  it("패널이 열려 있을 때 우클릭 메뉴로 설정을 요청하면 설정 화면으로 바뀐다", async () => {
+    const chromeMock = installChromeMock({
+      tab: SAVABLE_TAB,
+      local: { refreshToken: "stored-refresh-token" },
+    });
+
+    renderPanel(<SidePanelApp />);
+    await screen.findByText(SAVABLE_TAB.title);
+
+    act(() => chromeMock.emitSessionChange("openSettings", 2));
+
+    expect(
+      await screen.findByRole("heading", { name: "설정" }),
+    ).toBeInTheDocument();
+  });
+
   it("저장할 수 없는 탭으로 옮기면 안내로 바뀐다", async () => {
     const chromeMock = installChromeMock({
       tab: SAVABLE_TAB,
