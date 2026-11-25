@@ -29,6 +29,12 @@ beforeEach(() => {
   jest.spyOn(console, "warn").mockImplementation();
 });
 
+// 뒤에서 도는 flush 와 바꾼 mock 구현이 다음 테스트로 새지 않게 한다.
+afterEach(async () => {
+  await flushPendingLogout();
+  jest.mocked(logoutRequest).mockReset().mockResolvedValue(undefined);
+});
+
 test("이 기기의 푸시 토큰과 함께 로그아웃을 보내고 기록을 남기지 않는다", async () => {
   await sendLogout(request);
 
@@ -135,6 +141,4 @@ test("로그아웃은 이번 요청만 기다리고, 남은 기록은 뒤에서 
 
   expect(result).toBe("done");
   pendingFirst.resolve();
-  await flushPendingLogout();
-  jest.mocked(logoutRequest).mockReset().mockResolvedValue(undefined);
 });
