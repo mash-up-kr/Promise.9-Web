@@ -10,7 +10,7 @@
 | --- | --- | --- | --- |
 | `in` | 앱·웹·익스텐션 | 앱 런타임·웹 문서·익스텐션 패널의 최초 진입. 웹 새로고침 제외 | `{}` |
 | `reload` | 웹 | 새로고침으로 문서가 시작될 때 `in` 대신 기록 | `{}` |
-| `page_view` | 앱·웹·익스텐션 | 다른 화면으로 이동하거나 탭·앱이 숨겨질 때, 그동안 머문 시간을 기록 | `screen_name`, `screen_view_id`, `path`(라우트 템플릿. 예: `/links/[id]`), `duration_ms` |
+| `page_view` | 앱·웹·익스텐션 | 다른 화면으로 이동하거나 탭·앱이 숨겨질 때, 그동안 머문 시간을 기록 | `screen_name`, `screen_view_id`, `path`(라우트 템플릿. 예: `/link/[id]`), `duration_ms` |
 | `component_clicked` | 앱·웹·익스텐션 | 추적을 연결한 활성 버튼의 클릭·탭 | `label`, `screen_name`, `screen_view_id`, 호출부 추가 속성 |
 | `component_impression` | 앱·웹·익스텐션 | 사용자가 보고 있는 화면에서 대상 면적의 40% 이상이 연속 1초 보일 때 | `label`, `screen_name`, `screen_view_id`, 호출부 추가 속성 |
 | `link_saved` | 앱·웹 | 링크 저장 시트의 링크 생성 API 성공 후 | `entry_point: "create_link_sheet"` |
@@ -165,7 +165,7 @@ const TrackedPressable = withTracking(Pressable);
 앱·웹은 `EXPO_PUBLIC_ANALYTICS_*`, 익스텐션은 `VITE_ANALYTICS_*` 환경변수를 사용한다.
 
 - `ENABLED=true`일 때 수집한다. 기본값은 비활성이다. 익스텐션은 수집하지 않는다(처리방침 제9조) — `VITE_ANALYTICS_ENABLED` 를 켜지 않는다.
-- 이용자는 앱·웹 설정 > 서비스 > 이용 통계 수집으로 끌 수 있다(기기 단위, `promise9_analytics_collecting`). 끄면 대기 중인 이벤트와 진행 중인 요청을 버리고, 다음 실행에서는 첫 이벤트 전에 복구한다. 수집이 꺼진 빌드에서는 토글을 보여 주지 않는다.
+- 이용자는 앱·웹 설정 > 서비스 > 이용 통계 수집으로 끌 수 있다(기기 단위, `promise9_analytics_collecting`). 끄면 대기 중인 이벤트와 진행 중인 요청을 버리고, 광고 링크의 유입 정보도 기기에 남기거나 계정에 보내지 않으며, 다음 실행에서는 첫 이벤트 전에 복구한다. 수집이 꺼진 빌드에서는 토글을 보여 주지 않는다.
 - `custom_data` 에 링크 ID·URL·검색어처럼 회원을 특정할 수 있는 값을 넣지 않는다.
 - 운영에서 켜기 전에 S3 수명 주기(현재 버전·이전 버전 24개월), Firehose 오류 경로·Athena 결과 버킷 보관기간, 리전(서울)을 맞추고 App Privacy·Play 데이터 보안을 갱신한다.
 - `ENVIRONMENT`, `REGION`, `IDENTITY_POOL_ID`, `STREAM_NAME`을 설정한다.

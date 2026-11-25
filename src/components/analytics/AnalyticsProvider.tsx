@@ -104,7 +104,7 @@ function AnalyticsNavigation() {
     });
   }, [runtime, utmSource, utmMedium, utmCampaign, utmContent, utmTerm]);
   useTrackServiceEntry();
-  // 실제 경로 대신 템플릿(/links/[id])을 남긴다 — 링크 ID로 회원을 특정할 수 있다.
+  // 실제 경로 대신 템플릿(/link/[id])을 남긴다 — 링크 ID로 회원을 특정할 수 있다.
   useTrackScreen(screenName, `/${route === "index" ? "" : route}`);
   return null;
 }

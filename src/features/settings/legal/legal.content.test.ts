@@ -40,6 +40,9 @@ describe("LEGAL_CONTENT", () => {
     const privacy = LEGAL_CONTENT.privacy.markdown;
     expect(privacy).not.toContain("분석 도구(SDK 등)를 사용하지 않습니다");
     expect(privacy).toContain("수집일로부터 24개월");
+    expect(privacy).toContain(
+      "회원 계정에 저장한 유입 경로는 제1호를 따릅니다",
+    );
     expect(privacy).toContain("회원 식별값을 담지 않습니다");
     // 거부 방법은 설정 화면 토글 이름과 같아야 사용자가 찾을 수 있다.
     expect(privacy).toContain("설정 > 서비스 > 이용 통계 수집");
