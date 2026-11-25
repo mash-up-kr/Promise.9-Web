@@ -48,6 +48,7 @@ const WEB_CAPTION =
   "웹에서는 이메일로 알려드려요. 앱에서는 푸시 알림도 받을 수 있어요.";
 const PUSH_LABEL = "앱 푸시 알림";
 const EMAIL_LABEL = "이메일 알림";
+const SAVE_FAILED = "설정을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.";
 
 export function NotificationSection() {
   return (
@@ -94,12 +95,17 @@ function AppNotificationSettings() {
   const [isDeniedAlertOpen, setDeniedAlertOpen] = useState(false);
   const isAwaitingGrant = useRef(false);
 
-  useRefocusEffect(() => {
-    for (const { queryKey } of [
-      notificationQueries.permission(),
-      notificationSettingsQueries.detail(),
-    ]) {
-      queryClient.refetchQueries({ queryKey }, { cancelRefetch: false });
+  useRefocusEffect(async () => {
+    const permissionKey = notificationQueries.permission().queryKey;
+    await Promise.all(
+      [permissionKey, notificationSettingsQueries.detail().queryKey].map(
+        (queryKey) =>
+          queryClient.refetchQueries({ queryKey }, { cancelRefetch: false }),
+      ),
+    );
+    // 허용하지 않고 돌아왔으면 기다리지 않는다 — 나중에 다른 경로로 허용돼도 뒤늦게 켜지 않게.
+    if (queryClient.getQueryData(permissionKey) !== "granted") {
+      isAwaitingGrant.current = false;
     }
   });
 
@@ -110,23 +116,31 @@ function AppNotificationSettings() {
     if (settings.push) notify();
     else save({ push: true }, notify);
   });
+  // 다른 저장이 끝난 뒤에 켜야 무시되지 않는다.
   useEffect(() => {
-    if (permission === "granted") handleGranted();
-  }, [permission, handleGranted]);
+    if (permission === "granted" && !isSaving) handleGranted();
+  }, [permission, isSaving, handleGranted]);
 
   const openSettingsForGrant = () => {
     isAwaitingGrant.current = true;
     setDeniedAlertOpen(false);
-    openNotificationSettings();
+    openDeviceSettings();
   };
 
   const changePush = async (isOn: boolean) => {
     if (isSaving) return;
     if (!isOn) return save({ push: false });
     if (permission === "denied") return setDeniedAlertOpen(true);
-    const isGranted =
-      permission === "granted" ||
-      (await requestNotificationPermission()) === "granted";
+    let isGranted = permission === "granted";
+    if (!isGranted) {
+      try {
+        isGranted = (await requestNotificationPermission()) === "granted";
+      } catch (error) {
+        console.error("[notifications] 알림 권한 요청 실패", error);
+        show(snackbarPresets.failed(SAVE_FAILED));
+        return;
+      }
+    }
     if (isGranted && !settings.push) save({ push: true });
   };
 
@@ -206,9 +220,7 @@ function useSaveNotificationSettings() {
         show(
           error instanceof NetworkError
             ? snackbarPresets.offline("인터넷 연결을 확인해 주세요.")
-            : snackbarPresets.failed(
-                "설정을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.",
-              ),
+            : snackbarPresets.failed(SAVE_FAILED),
         ),
     });
   };
@@ -236,13 +248,15 @@ function NotificationPlaceholder({
   );
 }
 
+function openDeviceSettings() {
+  openNotificationSettings().catch((error) => {
+    console.error("[notifications] 기기 알림 설정을 열지 못함", error);
+  });
+}
+
 function DeviceSettingsRow() {
   return (
-    <ListRow
-      label="기기 알림 설정"
-      chevron
-      onPress={openNotificationSettings}
-    />
+    <ListRow label="기기 알림 설정" chevron onPress={openDeviceSettings} />
   );
 }
 

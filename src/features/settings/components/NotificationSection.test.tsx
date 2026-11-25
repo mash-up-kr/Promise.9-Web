@@ -105,9 +105,9 @@ const renderSection = () => {
 };
 
 // 서스펜스 쿼리는 최소 1초간 신선하다 — OS 설정에 다녀온 시간만큼 흐른 것으로 두고 앱 복귀를 알린다.
-const returnToApp = async () => {
+const returnToApp = async (elapsed = 2000) => {
   const now = Date.now();
-  const dateNow = jest.spyOn(Date, "now").mockReturnValue(now + 2000);
+  const dateNow = jest.spyOn(Date, "now").mockReturnValue(now + elapsed);
   await act(async () => {
     focusManager.setFocused(false);
     focusManager.setFocused(true);
@@ -115,11 +115,14 @@ const returnToApp = async () => {
   return () => dateNow.mockRestore();
 };
 
+// 재조회 결과가 화면에 반영될 때까지 기다린다 — 바뀌는 게 없어야 하는 단언 앞에 쓴다.
+const settle = () => act(() => new Promise((r) => setTimeout(r, 50)));
+
 beforeEach(() => {
   mockIsWeb = false;
   mockGetPermission.mockReset().mockResolvedValue("granted");
   mockRequestPermission.mockReset();
-  mockOpenSettings.mockClear();
+  mockOpenSettings.mockReset().mockResolvedValue(undefined);
   mockPush.mockClear();
   mockGet.mockReset();
   givenSettings({ email: true, push: true });
@@ -282,6 +285,72 @@ describe("앱", () => {
     expect(mockPatch).not.toHaveBeenCalled();
     expect(screen.queryByText(PUSH_ENABLED)).not.toBeOnTheScreen();
     restore();
+
+    // 나중에 다른 경로로 허용돼도 뒤늦게 켜지 않는다.
+    mockGetPermission.mockResolvedValue("granted");
+    const restoreLater = await returnToApp(4000);
+    await settle();
+    expect(mockPatch).not.toHaveBeenCalled();
+    expect(screen.queryByText(PUSH_ENABLED)).not.toBeOnTheScreen();
+    restoreLater();
+  });
+
+  test("이메일 저장 중에 허용하고 돌아오면, 저장이 끝난 뒤 앱 푸시를 켠다", async () => {
+    mockGetPermission.mockResolvedValue("denied");
+    givenSettings({ email: true, push: false });
+    let resolveEmail: (value: unknown) => void = () => {};
+    mockPatch.mockReturnValueOnce(new Promise((r) => (resolveEmail = r)));
+    savesAs({ email: false, push: true });
+    await renderSection();
+
+    await userEvent.press(await pushSwitch());
+    await userEvent.press(screen.getByRole("button", { name: "설정 열기" }));
+    await userEvent.press(await emailSwitch());
+
+    mockGetPermission.mockResolvedValue("granted");
+    const restore = await returnToApp();
+    await settle();
+    expect(mockPatch).toHaveBeenCalledTimes(1);
+
+    await act(async () =>
+      resolveEmail(settingsResponse({ email: false, push: false })),
+    );
+    await waitFor(() =>
+      expect(mockPatch).toHaveBeenLastCalledWith(PATH, { push: true }),
+    );
+    expect(await screen.findByText(PUSH_ENABLED)).toBeOnTheScreen();
+    restore();
+  });
+
+  test("권한 요청이 실패하면 꺼진 채로 두고 알린다", async () => {
+    mockGetPermission.mockResolvedValue("undetermined");
+    givenSettings({ email: true, push: false });
+    mockRequestPermission.mockRejectedValue(new Error("native"));
+    const consoleError = jest.spyOn(console, "error").mockImplementation();
+    await renderSection();
+
+    await userEvent.press(await pushSwitch());
+    expect(await screen.findByText(SAVE_FAILED)).toBeOnTheScreen();
+    expect(await pushSwitch()).not.toBeChecked();
+    expect(mockPatch).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  test.each([
+    ["기기 알림 설정 행", "기기 알림 설정"],
+    ["거부 안내", "설정 열기"],
+  ])("%s에서 기기 설정을 열지 못해도 예외를 흘리지 않는다", async (_case, label) => {
+    mockGetPermission.mockResolvedValue("denied");
+    const error = new Error("open");
+    mockOpenSettings.mockRejectedValue(error);
+    const consoleError = jest.spyOn(console, "error").mockImplementation();
+    await renderSection();
+
+    await userEvent.press(await screen.findByText(label));
+    await waitFor(() =>
+      expect(consoleError).toHaveBeenCalledWith(expect.any(String), error),
+    );
+    consoleError.mockRestore();
   });
 
   test("안내의 설정 열기로 허용하고 돌아오면 안내를 숨기고 켰다고 알린다", async () => {
