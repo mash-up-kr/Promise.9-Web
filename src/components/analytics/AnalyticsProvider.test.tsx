@@ -12,6 +12,8 @@ const mockIsReloadNavigation = jest.fn(() => false);
 let mockPath = "/login";
 let mockIsInitiallyActive = true;
 let mockActivityChange = (_isActive: boolean) => {};
+let mockApplyCollecting = (_isCollecting: boolean) => {};
+const mockStorageSet = jest.fn(async () => {});
 let mockResolve: (value: string | null) => void = () => {};
 let mockRead: Promise<string | null>;
 jest.mock("@/lib/analytics/analytics.platform", () => ({
@@ -19,7 +21,7 @@ jest.mock("@/lib/analytics/analytics.platform", () => ({
   supportsAnalyticsKeepalive: () => false,
   newAnalyticsId: () => `id-${Math.random()}`,
   isAnalyticsActive: () => mockIsInitiallyActive,
-  analyticsStorage: { get: () => mockRead, set: async () => {} },
+  analyticsStorage: { get: () => mockRead, set: mockStorageSet },
   bindPlatformAnalytics: (
     _capture: unknown,
     activityChanged: (active: boolean) => void,
@@ -31,6 +33,12 @@ jest.mock("@/lib/analytics/analytics.platform", () => ({
     };
   },
   subscribeIdentityChanges: () => () => {},
+  subscribeCollectingChanges: (apply: (isCollecting: boolean) => void) => {
+    mockApplyCollecting = apply;
+    return () => {
+      mockApplyCollecting = () => {};
+    };
+  },
   isReloadNavigation: () => mockIsReloadNavigation(),
   getAnalyticsEnvironment: () => ({
     os: "ios",
@@ -56,6 +64,8 @@ jest.mock("expo-router", () => ({
     ({
       "/login": ["(auth)", "login"],
       "/link/123": ["link", "[id]"],
+      "/link/1": ["link", "[id]"],
+      "/link/2": ["link", "[id]"],
     })[mockPath] ?? ["(tabs)", "index"],
   useGlobalSearchParams: () => ({ utm_source: "newsletter" }),
 }));
@@ -140,6 +150,50 @@ test("페이지뷰 경로에는 링크 ID 대신 라우트 템플릿을 기록�
     screen_name: "link_detail",
     path: "/link/[id]",
   });
+});
+test("같은 라우트 템플릿의 다른 주소로 이동하면 페이지뷰를 나눠 기록한다", async () => {
+  mockPath = "/link/1";
+  const view = await render(<AnalyticsProvider>{null}</AnalyticsProvider>);
+  await act(async () => {
+    mockResolve(null);
+  });
+  mockPath = "/link/2";
+  await view.rerender(<AnalyticsProvider>{null}</AnalyticsProvider>);
+  await view.unmount();
+  const pageViews = mockSend.mock.calls
+    .flatMap(([records]) => records.map((record) => JSON.parse(toUtf8(record))))
+    .filter((event) => event.event_name === "page_view")
+    .map((event) => JSON.parse(event.custom_data));
+  expect(pageViews).toHaveLength(2);
+  expect(pageViews.map((data) => data.path)).toEqual([
+    "/link/[id]",
+    "/link/[id]",
+  ]);
+  expect(pageViews[0].screen_view_id).not.toBe(pageViews[1].screen_view_id);
+});
+test("다른 탭에서 끈 설정을 따르고, 그 값을 저장소에 다시 쓰지 않는다", async () => {
+  const view = await render(
+    <AnalyticsProvider>
+      <Action />
+    </AnalyticsProvider>,
+  );
+  await act(async () => {
+    mockResolve(null);
+  });
+  mockStorageSet.mockClear();
+  await act(() => mockApplyCollecting(false));
+  await fireEvent.press(screen.getByText("save"));
+  await view.unmount();
+  const events = mockSend.mock.calls.flatMap(([records]) =>
+    records.map((record) => JSON.parse(toUtf8(record))),
+  );
+  expect(events.some((event) => event.custom_data.includes("manual"))).toBe(
+    false,
+  );
+  expect(mockStorageSet).not.toHaveBeenCalledWith(
+    "promise9_analytics_collecting",
+    expect.anything(),
+  );
 });
 test("비활성 상태에서는 저장소 준비 없이 화면을 표시한다", async () => {
   process.env.EXPO_PUBLIC_ANALYTICS_ENABLED = "false";

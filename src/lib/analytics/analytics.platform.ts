@@ -75,6 +75,11 @@ export function subscribeIdentityChanges(listener: () => void): () => void {
   };
 }
 
+/** 앱은 한 프로세스라 다른 화면과 맞출 수집 설정 변경이 없다. */
+export const subscribeCollectingChanges =
+  (_apply: (isCollecting: boolean) => void): (() => void) =>
+  () => {};
+
 export function getAnalyticsEnvironment() {
   return {
     os: Platform.OS,

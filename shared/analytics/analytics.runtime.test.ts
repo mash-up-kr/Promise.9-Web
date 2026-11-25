@@ -236,6 +236,61 @@ describe("수집 끄기 저장", () => {
     expect(runtime.pendingTouch).toBeNull();
     runtime.client.dispose();
   });
+  test("끄기 설정을 읽지 못하면 그 실행에서는 수집하지 않는다", async () => {
+    const runtime = create({
+      get: async (key: string) => {
+        if (key === "promise9_analytics_collecting") throw new Error("denied");
+        return null;
+      },
+      set: async () => {},
+    });
+    runtime.client.trackEvent({ event_name: "in" });
+    await runtime.ready;
+    expect(runtime.client.isCollecting).toBe(false);
+    await runtime.client.flush();
+    expect(send).not.toHaveBeenCalled();
+    runtime.client.dispose();
+  });
+  test("다른 탭에서 받은 설정은 저장소에 다시 쓰지 않고 구독자에게 알린다", async () => {
+    const { values, storage } = memoryStorage();
+    const runtime = create(storage);
+    await runtime.ready;
+    const listener = jest.fn();
+    runtime.subscribeCollecting(listener);
+    runtime.setCollecting(false, { persist: false });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(runtime.client.isCollecting).toBe(false);
+    expect(values.has("promise9_analytics_collecting")).toBe(false);
+    expect(values.get("promise9_analytics_attribution")).toBeUndefined();
+    expect(listener).toHaveBeenCalledTimes(1);
+    runtime.client.dispose();
+  });
+  test("끄기 설정을 읽지 못해 이번 실행만 멈출 때 저장된 유입 정보는 남긴다", async () => {
+    const stored = JSON.stringify({
+      touch_id: "stored",
+      captured_at: "2026-11-01T00:00:00.000Z",
+      utm_source: "stored",
+      utm_medium: null,
+      utm_campaign: null,
+      utm_content: null,
+      utm_term: null,
+    });
+    const values = new Map([["promise9_analytics_attribution", stored]]);
+    const runtime = create({
+      get: async (key: string) => {
+        if (key === "promise9_analytics_collecting") throw new Error("denied");
+        return values.get(key) ?? null;
+      },
+      set: async (key: string, value: string) => {
+        values.set(key, value);
+      },
+    });
+    await runtime.ready;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(runtime.pendingTouch).toBeNull();
+    expect(values.get("promise9_analytics_attribution")).toBe(stored);
+    runtime.client.dispose();
+  });
   test("저장값을 읽기 전에 바꾼 설정은 나중에 읽은 저장값으로 덮지 않는다", async () => {
     const { storage } = memoryStorage({
       promise9_analytics_collecting: "false",
