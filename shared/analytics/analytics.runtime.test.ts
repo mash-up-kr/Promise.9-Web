@@ -265,6 +265,32 @@ describe("수집 끄기 저장", () => {
     expect(listener).toHaveBeenCalledTimes(1);
     runtime.client.dispose();
   });
+  test("끄기 설정을 읽지 못해 이번 실행만 멈출 때 저장된 유입 정보는 남긴다", async () => {
+    const stored = JSON.stringify({
+      touch_id: "stored",
+      captured_at: "2026-11-01T00:00:00.000Z",
+      utm_source: "stored",
+      utm_medium: null,
+      utm_campaign: null,
+      utm_content: null,
+      utm_term: null,
+    });
+    const values = new Map([["promise9_analytics_attribution", stored]]);
+    const runtime = create({
+      get: async (key: string) => {
+        if (key === "promise9_analytics_collecting") throw new Error("denied");
+        return values.get(key) ?? null;
+      },
+      set: async (key: string, value: string) => {
+        values.set(key, value);
+      },
+    });
+    await runtime.ready;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(runtime.pendingTouch).toBeNull();
+    expect(values.get("promise9_analytics_attribution")).toBe(stored);
+    runtime.client.dispose();
+  });
   test("저장값을 읽기 전에 바꾼 설정은 나중에 읽은 저장값으로 덮지 않는다", async () => {
     const { storage } = memoryStorage({
       promise9_analytics_collecting: "false",

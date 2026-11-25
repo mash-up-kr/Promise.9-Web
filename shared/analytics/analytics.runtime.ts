@@ -102,16 +102,19 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
         readStorage(ID_KEY),
         readStorage(UTM_KEY),
         readStorage(USER_KEY),
-        // 끄기 설정을 읽지 못하면 그 실행에서는 끈 것으로 본다.
         options.storage.get(ANALYTICS_COLLECTING_KEY).catch(() => {
           console.warn("[analytics] storage_read_failed");
-          return "false";
+          return undefined;
         }),
       ]);
       // 준비 전에 받은 이벤트까지 버리도록 초기화보다 먼저 적용한다.
-      if (!hasCollectingChanged && storedCollecting === "false") {
+      // 끄기 설정을 읽지 못하면 그 실행만 끈 것으로 보고, 기기에 남은 유입 정보는 지우지 않는다.
+      if (
+        !hasCollectingChanged &&
+        (storedCollecting === "false" || storedCollecting === undefined)
+      ) {
         client.setCollecting(false);
-        dropTouch();
+        dropTouch(storedCollecting === "false");
       }
       const anonymousId = storedAnonymousId || options.newId();
       writeStorage(ID_KEY, anonymousId);
