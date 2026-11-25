@@ -9,7 +9,11 @@ jest.mock("@shared/api", () => {
 });
 
 import { apiClient, NetworkError } from "@shared/api";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  onlineManager,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { createElement, type ReactNode } from "react";
 
@@ -114,5 +118,21 @@ describe("useUpdateNotificationSettingsMutation", () => {
     });
 
     expect(cached()).toEqual({ email: true, push: true });
+  });
+
+  it("오프라인이어도 멈춰 기다리지 않고 요청해, 실패하면 바로 되돌린다", async () => {
+    onlineManager.setOnline(false);
+    patch.mockRejectedValue(new NetworkError());
+    const { wrapper, cached } = setup();
+    const { result } = await renderHook(
+      () => useUpdateNotificationSettingsMutation(),
+      { wrapper },
+    );
+
+    await act(async () => result.current.mutate({ email: false }));
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(cached()).toEqual({ email: true, push: true });
+    onlineManager.setOnline(true);
   });
 });

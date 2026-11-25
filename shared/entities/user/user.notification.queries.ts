@@ -52,6 +52,8 @@ export function useUpdateNotificationSettingsMutation() {
 
       return notificationSettingsSchema.parse(data.data);
     },
+    // 오프라인이면 멈춰 기다리지 않고 바로 실패해 토글을 되돌린다.
+    networkMode: "always",
     onMutate: async (change) => {
       // 진행 중인 조회가 끝나며 낙관적 값을 덮어쓰지 않게 한다.
       await queryClient.cancelQueries({ queryKey });
