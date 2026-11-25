@@ -3,7 +3,7 @@
 네이티브 앱(iOS · Android)은 **EAS Build** 로 클라우드에서 빌드하고 **EAS Submit** 으로 스토어에 올린다.
 웹은 별도 트랙이다 — Cloudflare Workers Builds 가 빌드한다(`main` → 프로덕션, 그 외 브랜치 → preview). 크롬 익스텐션은 `extension/README.md` 를 본다.
 
-> **웹 빌드 설정 (Cloudflare 대시보드).** 빌드 명령은 `pnpm build:web` 이다 — `EXPO_PUBLIC_*` 누락이나 마스터 토큰 포함을 먼저 검사해 빌드를 실패시킨다. `EXPO_PUBLIC_*` 는 번들에 인라인되므로 런타임 "Variables and Secrets" 가 아니라 **빌드 변수**로 넣고, preview 빌드에도 같은 값이 있어야 한다: `EXPO_PUBLIC_API_BASE_URL` · `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` · `EXPO_PUBLIC_KAKAO_REST_API_KEY` · `EXPO_PUBLIC_APPLE_SERVICES_ID` · `EXPO_PUBLIC_EXTENSION_ID`.
+> **웹 빌드 설정 (Cloudflare 대시보드).** 빌드 명령은 `pnpm build:web` 이다 — `EXPO_PUBLIC_*` 누락이나 마스터 토큰 포함을 먼저 검사해 빌드를 실패시킨다. `EXPO_PUBLIC_*` 는 번들에 인라인되므로 런타임 "Variables and Secrets" 가 아니라 **빌드 변수**로 넣고, preview 빌드에도 같은 값이 있어야 한다: `EXPO_PUBLIC_API_BASE_URL` · `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` · `EXPO_PUBLIC_KAKAO_REST_API_KEY` · `EXPO_PUBLIC_APPLE_SERVICES_ID` · `EXPO_PUBLIC_EXTENSION_ID`. 이용 통계 수집을 켤 때는 `EXPO_PUBLIC_ANALYTICS_*` 도 넣는다(아래 「이용 통계 수집 켜기」).
 
 > 로컬 시뮬레이터 실행 세팅은 `docs/ios-local-setup.md`. 이 문서는 **스토어에 올라가는 빌드**만 다룬다.
 
@@ -248,8 +248,36 @@ eas env:set production --name KEY --value V   # 추가·수정 (preview 도 같�
 ```
 
 - 카카오 REST 키 · 익스텐션 ID 는 웹 전용 코드에서만 읽으므로 네이티브 빌드엔 넣지 않는다.
+- 이용 통계 수집 변수(`EXPO_PUBLIC_ANALYTICS_*`)는 아래 「이용 통계 수집 켜기」를 따른다.
 - **`EXPO_PUBLIC_API_MASTER_TOKEN` 은 절대 올리지 않는다.** 올리면 pre-install 훅이 빌드를 중단시킨다.
 - 프로필별 환경은 자동 매핑된다: `distribution: store` → `production`, 그 외 → `preview`.
+
+### 이용 통계 수집 켜기
+
+수집은 `EXPO_PUBLIC_ANALYTICS_ENABLED=true` 로 빌드했을 때만 켜진다(꺼진 빌드는 수집 코드와 설정 토글이 모두 빠진다). 동작·필드는 `docs/analytics.md`, 고지 내용은 처리방침 제1조 3호·제3조·제6조·제9조.
+
+| 변수 | `production` | `preview` |
+| --- | --- | --- |
+| `EXPO_PUBLIC_ANALYTICS_ENABLED` | `true` | `true` |
+| `EXPO_PUBLIC_ANALYTICS_ENVIRONMENT` | `production` | `development` (운영 지표에서 빠진다) |
+| `EXPO_PUBLIC_ANALYTICS_REGION` · `_IDENTITY_POOL_ID` · `_STREAM_NAME` | AWS 값 | AWS 값 |
+
+- 앱은 EAS 환경변수, 웹은 Cloudflare 빌드 변수(프로덕션 · preview)에 같은 표대로 넣는다.
+- **익스텐션은 수집하지 않는다**(처리방침 제9조) — `VITE_ANALYTICS_ENABLED` 를 켜지 않는다.
+- 값은 번들에 인라인되므로 앱은 **새 빌드 또는 OTA** 로, 웹은 다음 배포로 반영된다. 처리방침 시행일 전에 운영에서 켜지 않는다.
+
+켜기 전에 스토어 신고를 먼저 고친다(심사·정책 위반 방지). iOS 매니페스트(`app.json` `ios.privacyManifests`)에는 이미 반영돼 있으니 App Privacy 를 그대로 맞춘다.
+
+| 스토어 | 항목 | 답 |
+| --- | --- | --- |
+| App Store Connect → 앱 개인정보 보호 | Usage Data → Product Interaction | 목적에 **Analytics** 추가(연결됨 유지) |
+| | Identifiers → Device ID | **신규** · 사용자에게 연결 안 됨 · 목적 Analytics · 추적 아니오 |
+| | Usage Data → Other Usage Data (UTM 유입 경로) | **신규** · 연결됨(로그인 시 계정에 저장) · 목적 Analytics · 추적 아니오 |
+| Play Console → 데이터 보안 | 앱 활동 → 앱 상호작용 | 수집 · 공유 안 함 · **선택사항**(설정에서 끌 수 있음) · 목적 분석 |
+| | 기기 또는 기타 ID | 수집 · 공유 안 함 · 선택사항 · 목적 분석 |
+
+- 두 곳 모두 콘솔에서 직접 고친다(`eas metadata` 범위 밖). Play 는 작업자 계정에서 한다.
+- 추적(ATT) 대상이 아니다 — 광고 식별자를 쓰지 않고 제3자 데이터와 결합하지 않는다.
 
 ---
 
