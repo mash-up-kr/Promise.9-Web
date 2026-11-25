@@ -136,7 +136,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
   // sidePanel.open 은 사용자 동작 안에서만 허용돼 await 앞에서 부른다.
   void chrome.sidePanel.open({ windowId: tab.windowId });
-  void openSettingsRequest.write(Date.now());
+  void openSettingsRequest.write({
+    windowId: tab.windowId,
+    requestedAt: Date.now(),
+  });
 });
 
 /**

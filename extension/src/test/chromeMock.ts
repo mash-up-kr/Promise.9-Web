@@ -13,6 +13,8 @@ export interface ChromeMockOptions {
   local?: Record<string, unknown>;
   /** chrome.storage.session 초기값 — 저장 기록. */
   session?: Record<string, unknown>;
+  /** 패널이 열린 창의 id. 기본 1. */
+  windowId?: number;
 }
 
 export interface ChromeMock {
@@ -153,6 +155,9 @@ export function installChromeMock(options: ChromeMockOptions = {}): ChromeMock {
       onMessage: message.event,
       onMessageExternal: externalMessage.event,
       onInstalled: installed.event,
+    },
+    windows: {
+      getCurrent: vi.fn(async () => ({ id: options.windowId ?? 1 })),
     },
     sidePanel: {
       setPanelBehavior: vi.fn(async () => undefined),

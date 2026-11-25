@@ -12,6 +12,7 @@ import { getSavableUrl } from "@/lib/savableUrl";
 import type { SavePhase } from "@/lib/saveSession";
 import {
   clearSaveRecord,
+  type OpenSettingsRequest,
   openSettingsRequest,
   readSaveRecord,
   type SaveRecord,
@@ -115,14 +116,25 @@ export function SidePanelApp() {
   }, []);
 
   // 아이콘 우클릭 메뉴 "설정" — 패널이 이미 열려 있으면 변경으로, 이제 열리는 중이면 읽기로 받는다.
+  // 다른 창에서 누른 요청은 그 창의 패널 몫이라 건드리지 않는다.
   useEffect(() => {
-    const open = (requestedAt: number | null) => {
-      if (requestedAt === null) return;
-      setIsSettingsOpen(true);
+    let windowId: number | undefined;
+    const open = (request: OpenSettingsRequest | null) => {
+      if (!request || request.windowId !== windowId) return;
       void openSettingsRequest.clear();
+      // 로그인 전이면 요청만 버린다 — 남겨 두면 로그인하자마자 설정이 뜬다.
+      void isLoggedIn().then((value) => {
+        if (value) setIsSettingsOpen(true);
+      });
     };
     const unsubscribe = openSettingsRequest.subscribe(open);
-    void openSettingsRequest.read().then(open);
+    void chrome.windows
+      .getCurrent()
+      .then((current) => {
+        windowId = current.id;
+        return openSettingsRequest.read();
+      })
+      .then(open);
 
     return unsubscribe;
   }, []);

@@ -62,9 +62,16 @@ test.describe("사이드패널 설정", () => {
     await signIn(page);
     await expect(page.getByText(ARTICLE_TAB.title)).toBeVisible();
 
+    const windowId = await page.evaluate(
+      async () => (await chrome.windows.getCurrent()).id,
+    );
     const [worker] = context.serviceWorkers();
-    await worker?.evaluate(() =>
-      chrome.storage.session.set({ openSettings: Date.now() }),
+    await worker?.evaluate(
+      (id) =>
+        chrome.storage.session.set({
+          openSettings: { windowId: id, requestedAt: Date.now() },
+        }),
+      windowId,
     );
 
     await expect(page.getByRole("heading", { name: "설정" })).toBeVisible();

@@ -416,7 +416,7 @@ describe("SidePanelApp", () => {
     installChromeMock({
       tab: SAVABLE_TAB,
       local: { refreshToken: "stored-refresh-token" },
-      session: { openSettings: 1 },
+      session: { openSettings: { windowId: 1, requestedAt: 1 } },
     });
 
     renderPanel(<SidePanelApp />);
@@ -438,11 +438,56 @@ describe("SidePanelApp", () => {
     renderPanel(<SidePanelApp />);
     await screen.findByText(SAVABLE_TAB.title);
 
-    act(() => chromeMock.emitSessionChange("openSettings", 2));
+    act(() =>
+      chromeMock.emitSessionChange("openSettings", {
+        windowId: 1,
+        requestedAt: 2,
+      }),
+    );
 
     expect(
       await screen.findByRole("heading", { name: "설정" }),
     ).toBeInTheDocument();
+  });
+
+  it("다른 창에서 누른 설정 요청은 무시하고 지우지도 않는다", async () => {
+    const request = { windowId: 2, requestedAt: 3 };
+    const chromeMock = installChromeMock({
+      tab: SAVABLE_TAB,
+      local: { refreshToken: "stored-refresh-token" },
+      session: { openSettings: request },
+      windowId: 1,
+    });
+
+    renderPanel(<SidePanelApp />);
+    await screen.findByText(SAVABLE_TAB.title);
+    act(() => chromeMock.emitSessionChange("openSettings", request));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(screen.queryByRole("heading", { name: "설정" })).toBeNull();
+    expect(await chrome.storage.session.get("openSettings")).toEqual({
+      openSettings: request,
+    });
+  });
+
+  it("로그아웃 상태에서 받은 설정 요청은 지우기만 하고, 로그인한 뒤 설정 화면을 띄우지 않는다", async () => {
+    const chromeMock = installChromeMock({
+      tab: SAVABLE_TAB,
+      session: { openSettings: { windowId: 1, requestedAt: 1 } },
+    });
+
+    renderPanel(<SidePanelApp />);
+    await screen.findByRole("button", { name: /로그인/ });
+    await waitFor(async () =>
+      expect(await chrome.storage.session.get("openSettings")).toEqual({}),
+    );
+
+    act(() =>
+      chromeMock.emitLocalChange("refreshToken", "stored-refresh-token"),
+    );
+
+    expect(await screen.findByText(SAVABLE_TAB.title)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "설정" })).toBeNull();
   });
 
   it("저장할 수 없는 탭으로 옮기면 안내로 바뀐다", async () => {

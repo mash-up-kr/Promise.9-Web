@@ -108,7 +108,7 @@ describe("background 툴바 메뉴", () => {
 
     expect(chromeMock.openSidePanel).toHaveBeenCalledWith({ windowId: 7 });
     expect(await chrome.storage.session.get("openSettings")).toEqual({
-      openSettings: expect.any(Number),
+      openSettings: { windowId: 7, requestedAt: expect.any(Number) },
     });
     expect(chromeMock.createTab).not.toHaveBeenCalled();
   });
