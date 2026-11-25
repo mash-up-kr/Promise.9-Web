@@ -95,3 +95,46 @@ test("동시에 불러도 같은 기록을 한 번만 보낸다", async () => {
 
   expect(logoutRequest).toHaveBeenCalledTimes(2);
 });
+
+function deferred() {
+  let resolve: () => void = () => {};
+  const promise = new Promise<void>((r) => {
+    resolve = r;
+  });
+  return { promise, resolve };
+}
+
+test("남은 기록을 보내는 중에 새로 로그아웃해도 이번에 함께 보낸다", async () => {
+  jest.mocked(logoutRequest).mockRejectedValueOnce(new NetworkError("offline"));
+  await sendLogout(request);
+  const pendingFirst = deferred();
+  jest.mocked(logoutRequest).mockReturnValueOnce(pendingFirst.promise);
+
+  const flushing = flushPendingLogout();
+  const sending = sendLogout({ refreshToken: "rtk-2", pushToken: null });
+  pendingFirst.resolve();
+  await Promise.all([flushing, sending]);
+
+  expect(logoutRequest).toHaveBeenCalledWith("rtk-2", undefined);
+});
+
+test("로그아웃은 이번 요청만 기다리고, 남은 기록은 뒤에서 보낸다", async () => {
+  jest.mocked(logoutRequest).mockRejectedValueOnce(new NetworkError("offline"));
+  await sendLogout(request);
+  const pendingFirst = deferred();
+  jest
+    .mocked(logoutRequest)
+    .mockImplementation((refreshToken) =>
+      refreshToken === "rtk-1" ? pendingFirst.promise : Promise.resolve(),
+    );
+
+  const result = await Promise.race([
+    sendLogout({ refreshToken: "rtk-2", pushToken: null }).then(() => "done"),
+    new Promise((resolve) => setTimeout(() => resolve("waiting"), 50)),
+  ]);
+
+  expect(result).toBe("done");
+  pendingFirst.resolve();
+  await flushPendingLogout();
+  jest.mocked(logoutRequest).mockReset().mockResolvedValue(undefined);
+});
