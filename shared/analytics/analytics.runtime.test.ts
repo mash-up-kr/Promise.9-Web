@@ -236,6 +236,21 @@ describe("수집 끄기 저장", () => {
     expect(runtime.pendingTouch).toBeNull();
     runtime.client.dispose();
   });
+  test("끄기 설정을 읽지 못하면 그 실행에서는 수집하지 않는다", async () => {
+    const runtime = create({
+      get: async (key: string) => {
+        if (key === "promise9_analytics_collecting") throw new Error("denied");
+        return null;
+      },
+      set: async () => {},
+    });
+    runtime.client.trackEvent({ event_name: "in" });
+    await runtime.ready;
+    expect(runtime.client.isCollecting).toBe(false);
+    await runtime.client.flush();
+    expect(send).not.toHaveBeenCalled();
+    runtime.client.dispose();
+  });
   test("저장값을 읽기 전에 바꾼 설정은 나중에 읽은 저장값으로 덮지 않는다", async () => {
     const { storage } = memoryStorage({
       promise9_analytics_collecting: "false",
