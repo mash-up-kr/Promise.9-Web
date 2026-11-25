@@ -32,6 +32,27 @@ test.describe("사이드패널 설정", () => {
     await expect(page.getByLabel("메모")).toHaveValue("적던 메모");
   });
 
+  test("이메일 알림을 끄면 서버에 저장하고 리마인드를 받을 수 없다고 알린다", async ({
+    openPanel,
+    mockApi,
+  }) => {
+    const page = await openPanel();
+    await signIn(page);
+    await page.getByRole("button", { name: "설정" }).click();
+
+    const email = page.getByRole("switch", { name: "이메일 알림" });
+    await expect(email).toHaveAttribute("aria-checked", "true");
+    await email.click();
+
+    await expect(email).toHaveAttribute("aria-checked", "false");
+    await expect(
+      page.getByText("알림이 모두 꺼져 있어서 리마인드를 알려드릴 수 없어요."),
+    ).toBeVisible();
+    await expect
+      .poll(() => mockApi.requests("PATCH /users/me/notification-settings"))
+      .toEqual([expect.objectContaining({ body: { email: false } })]);
+  });
+
   // 우클릭 메뉴 클릭 자체는 Playwright 로 누를 수 없다 — background 가 남기는 요청부터 확인한다.
   test("background 가 설정 요청을 남기면 열려 있는 패널이 설정 화면으로 바뀐다", async ({
     openPanel,
