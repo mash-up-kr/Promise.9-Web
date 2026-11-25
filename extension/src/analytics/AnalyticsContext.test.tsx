@@ -121,6 +121,7 @@ describe("클릭·노출 수집", () => {
       pendingTouch: null,
       acknowledgeTouch: vi.fn(),
       subscribeTouch: () => () => {},
+      setCollecting: () => {},
     };
     let currentViewId: string | null = null;
     function Button() {

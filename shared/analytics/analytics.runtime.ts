@@ -16,9 +16,11 @@ export interface AnalyticsRuntime {
   client: AnalyticsClient;
   /** 최초 접근 시 복구를 시작한다. 이벤트 수집은 기다리지 않아도 되지만 전송은 준비 후 시작한다. */
   ready: Promise<void>;
-  /** 이후 이벤트에 회원 ID를 적용한다. 로그아웃·계정 전환 시 익명 ID와 유입 정보를 초기화한다. */
+  /** 회원 전환을 기록한다. 회원 ID는 이벤트에 넣지 않고, 로그아웃·계정 전환 시 익명 ID와 유입 정보를 초기화한다. */
   identify(userId: string | null): void;
   setUtm(utm: AnalyticsUtm | null): void;
+  /** 수집 끄기 설정을 적용하고 기기에 저장한다. 다음 실행에서는 첫 이벤트 전송 전에 복구한다. */
+  setCollecting(isCollecting: boolean): void;
   capture: (values: Record<string, unknown>) => void;
   readonly pendingTouch: MarketingTouch | null;
   acknowledgeTouch: (touchId: string) => void;
@@ -38,6 +40,7 @@ export interface RuntimeOptions {
 const ID_KEY = "promise9_analytics_anonymous_id";
 const UTM_KEY = "promise9_analytics_attribution";
 const USER_KEY = "promise9_analytics_user_id";
+const COLLECTING_KEY = "promise9_analytics_collecting";
 
 /** 화면은 즉시 이 런타임을 사용한다. SDK와 저장소 준비는 렌더를 막지 않는다. */
 export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
@@ -59,6 +62,7 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
   let lastCampaignKey = "";
   let pendingTouch: MarketingTouch | null = null;
   let identifiedUserId: string | null = null;
+  let hasCollectingChanged = false;
   const touchListeners = new Set<() => void>();
   let firehoseSender:
     | ReturnType<
@@ -77,18 +81,35 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
       }),
   });
   const setUtm: AnalyticsRuntime["setUtm"] = (utm) => client.setUtm(utm);
+  // 수집을 끄면 유입 접점도 기기에 남기거나 계정에 동기화하지 않는다(처리방침 제9조).
+  const dropTouch = () => {
+    pendingTouch = null;
+    lastCampaignKey = "";
+    client.setUtm(null);
+    writeStorage(UTM_KEY, "null");
+  };
   let readyPromise: Promise<void> | undefined;
   const restoreFromStorage = () =>
     (readyPromise ??= (async () => {
-      const [storedAnonymousId, storedTouchJson, storedUserId] =
-        await Promise.all([
-          readStorage(ID_KEY),
-          readStorage(UTM_KEY),
-          readStorage(USER_KEY),
-        ]);
+      const [
+        storedAnonymousId,
+        storedTouchJson,
+        storedUserId,
+        storedCollecting,
+      ] = await Promise.all([
+        readStorage(ID_KEY),
+        readStorage(UTM_KEY),
+        readStorage(USER_KEY),
+        readStorage(COLLECTING_KEY),
+      ]);
+      // 준비 전에 받은 이벤트까지 버리도록 초기화보다 먼저 적용한다.
+      if (!hasCollectingChanged && storedCollecting === "false") {
+        client.setCollecting(false);
+        dropTouch();
+      }
       const anonymousId = storedAnonymousId || options.newId();
       writeStorage(ID_KEY, anonymousId);
-      if (storedTouchJson && !pendingTouch) {
+      if (storedTouchJson && !pendingTouch && client.isCollecting) {
         try {
           const parsed = marketingTouchSchema.safeParse(
             JSON.parse(storedTouchJson),
@@ -125,9 +146,15 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
         identifiedUserId = userId;
         writeStorage(USER_KEY, userId ?? "");
       }
-      client.setIdentity(userId, anonymousId);
+      if (anonymousId) client.setAnonymousId(anonymousId);
     },
     setUtm,
+    setCollecting(isCollecting) {
+      hasCollectingChanged = true;
+      client.setCollecting(isCollecting);
+      if (!isCollecting) dropTouch();
+      writeStorage(COLLECTING_KEY, String(isCollecting));
+    },
     get pendingTouch() {
       return pendingTouch;
     },
@@ -145,6 +172,7 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
       };
     },
     capture(values) {
+      if (!client.isCollecting) return;
       let touch: MarketingTouch | null;
       try {
         touch = captureUtm(values, options.newId(), new Date().toISOString());

@@ -76,14 +76,11 @@ export function CreateLinkSheet() {
     },
   });
   const createLinkMutation = useCreateLinkMutation({
-    onSuccess: (createdLink) => {
+    onSuccess: () => {
       analytics.trackEvent(
         {
           event_name: ANALYTICS_EVENTS.LINK_SAVED,
-          custom_data: {
-            link_id: createdLink.linkId,
-            entry_point: "create_link_sheet",
-          },
+          custom_data: { entry_point: "create_link_sheet" },
         },
         { flushSoon: true },
       );

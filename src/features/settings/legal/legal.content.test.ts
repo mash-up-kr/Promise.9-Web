@@ -36,6 +36,20 @@ describe("LEGAL_CONTENT", () => {
     expect(privacy).not.toContain("(예:");
   });
 
+  test("처리방침은 실제 분석 수집과 맞게 보관기간·회원 식별값 미포함·거부 방법을 적는다", () => {
+    const privacy = LEGAL_CONTENT.privacy.markdown;
+    expect(privacy).not.toContain("분석 도구(SDK 등)를 사용하지 않습니다");
+    expect(privacy).toContain("수집일로부터 24개월");
+    expect(privacy).toContain(
+      "회원 계정에 저장한 유입 경로는 제1호를 따릅니다",
+    );
+    expect(privacy).toContain("회원 식별값을 담지 않습니다");
+    // 거부 방법은 설정 화면 토글 이름과 같아야 사용자가 찾을 수 있다.
+    expect(privacy).toContain("설정 > 서비스 > 이용 통계 수집");
+    expect(privacy).toContain("제15조 제1항 제6호");
+    expect(privacy).toContain("크롬 익스텐션에서는 수집하지 않습니다");
+  });
+
   test("약관 면책 조항은 고의·중대한 과실을 면책에서 제외한다", () => {
     // 약관규제법 §7: 고의·중과실 면책은 불공정약관으로 무효
     expect(LEGAL_CONTENT.terms.markdown).toContain("고의 또는 중대한 과실");

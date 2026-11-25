@@ -69,6 +69,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
     pendingTouch: null,
     acknowledgeTouch: () => {},
     subscribeTouch: () => () => {},
+    setCollecting: () => {},
   };
   return (
     <AnalyticsContext

@@ -11,15 +11,18 @@ jest.mock("expo-constants", () => ({
   default: { expoConfig: { version: "1.0.0" } },
 }));
 
+import type { AnalyticsRuntime } from "@shared/analytics/analytics.runtime";
 import { apiClient } from "@shared/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
   render,
   screen,
+  userEvent,
   waitFor,
 } from "@testing-library/react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { AnalyticsContext } from "@/components/analytics/AnalyticsContext";
 
 import { SettingsScreen } from "./SettingsScreen";
 
@@ -42,7 +45,7 @@ const profileResponse = {
   },
 };
 
-const renderScreen = () => {
+const renderScreen = (runtime: AnalyticsRuntime | null = null) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -54,7 +57,9 @@ const renderScreen = () => {
           insets: { top: 47, left: 0, right: 0, bottom: 34 },
         }}
       >
-        <SettingsScreen />
+        <AnalyticsContext value={{ runtime, screen: null, screenKey: "" }}>
+          <SettingsScreen />
+        </AnalyticsContext>
       </SafeAreaProvider>
     </QueryClientProvider>,
   );
@@ -158,5 +163,37 @@ describe("SettingsScreen", () => {
     await waitFor(() =>
       expect(mockReplace).toHaveBeenCalledWith("/(auth)/login"),
     );
+  });
+
+  describe("이용 통계 수집 토글", () => {
+    const fakeRuntime = (isCollecting: boolean) => {
+      const client = { isCollecting };
+      const setCollecting = jest.fn((value: boolean) => {
+        client.isCollecting = value;
+      });
+      const runtime = {
+        ready: Promise.resolve(),
+        client,
+        setCollecting,
+      } as unknown as AnalyticsRuntime;
+      return { runtime, setCollecting };
+    };
+
+    test("수집이 꺼진 빌드에서는 토글을 보여 주지 않는다", async () => {
+      await renderScreen(null);
+      expect(screen.queryByText("이용 통계 수집")).toBeNull();
+    });
+
+    test("저장된 상태를 보여 주고, 누르면 수집을 끈다", async () => {
+      const { runtime, setCollecting } = fakeRuntime(true);
+      await renderScreen(runtime);
+      const toggle = await screen.findByRole("switch", {
+        name: "이용 통계 수집",
+      });
+      expect(toggle).toBeChecked();
+      await userEvent.setup().press(toggle);
+      expect(setCollecting).toHaveBeenCalledWith(false);
+      expect(toggle).not.toBeChecked();
+    });
   });
 });

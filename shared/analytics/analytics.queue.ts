@@ -23,6 +23,10 @@ export class AnalyticsQueue {
     }
   }
 
+  clear(): void {
+    this.events.length = 0;
+  }
+
   peekBatch(): AnalyticsEvent[] {
     return this.events.slice(0, BATCH_MAX_RECORDS);
   }
