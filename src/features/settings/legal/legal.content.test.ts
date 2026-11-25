@@ -28,8 +28,6 @@ describe("LEGAL_CONTENT", () => {
 
   test("처리방침은 실제 운영과 맞게 미정 문구 없이 리마인드 이메일 발송을 명시한다", () => {
     const privacy = LEGAL_CONTENT.privacy.markdown;
-    // 앱은 푸시 알림을 보내지 않는다 — 리마인드는 서버가 이메일로 발송한다.
-    expect(privacy).not.toContain("푸시 알림");
     expect(privacy).toContain("이메일 발송");
     // 스토어 심사는 플레이스홀더 문구를 미완성으로 본다.
     expect(privacy).not.toContain("확정되는 대로");
@@ -48,6 +46,19 @@ describe("LEGAL_CONTENT", () => {
     expect(privacy).toContain("설정 > 서비스 > 이용 통계 수집");
     expect(privacy).toContain("제15조 제1항 제6호");
     expect(privacy).toContain("크롬 익스텐션에서는 수집하지 않습니다");
+  });
+
+  test("처리방침은 앱 푸시 알림의 토큰 수집·목적·삭제 시점과 Expo 국외 이전을 적는다", () => {
+    const privacy = LEGAL_CONTENT.privacy.markdown;
+    expect(privacy).toContain("리마인드 푸시 알림");
+    expect(privacy).toContain("푸시 토큰과 운영체제 종류");
+    expect(privacy).toContain(
+      "웹과 크롬 익스텐션에서는 푸시 토큰을 수집하지 않습니다",
+    );
+    // 서버는 세션 만료·로그아웃·회원 탈퇴 때 그 토큰을 지운다 — 탈퇴 후 30일 보관의 예외.
+    expect(privacy).toContain("회원 탈퇴 시 즉시 삭제");
+    expect(privacy).toContain("650 Industries, Inc.");
+    expect(privacy).toContain("Apple(APNs)·Google(FCM)");
   });
 
   test("약관 면책 조항은 고의·중대한 과실을 면책에서 제외한다", () => {
