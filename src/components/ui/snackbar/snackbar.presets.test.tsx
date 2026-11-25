@@ -68,4 +68,10 @@ describe("snackbarPresets", () => {
     options.action?.onPress();
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
+
+  test("offline 에 onRetry 를 넘기지 않으면 액션이 없다", () => {
+    const options = snackbarPresets.offline("인터넷 연결을 확인해 주세요.");
+    expect((options.icon as React.ReactElement).type).toBe(WifiOffIcon);
+    expect(options.action).toBeUndefined();
+  });
 });
