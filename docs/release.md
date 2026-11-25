@@ -279,6 +279,26 @@ eas env:set production --name KEY --value V   # 추가·수정 (preview 도 같�
 - 두 곳 모두 콘솔에서 직접 고친다(`eas metadata` 범위 밖). Play 는 작업자 계정에서 한다.
 - 추적(ATT) 대상이 아니다 — 광고 식별자를 쓰지 않고 제3자 데이터와 결합하지 않는다.
 
+### 푸시 알림 신고
+
+앱은 알림을 허용한 로그인 기기의 푸시 토큰과 플랫폼(ios·android)을 서버에 등록하고, 서버가 리마인드 시각에 Expo 로 보낸다(Expo 가 APNs·FCM 으로 전달). 웹·익스텐션은 쓰지 않는다. 고지 내용은 처리방침 제1조 4호·제2조·제3조 5호·제6조·제7조 3호.
+
+토큰 등록이 든 스토어 빌드를 제출하기 전에, 그리고 처리방침의 해당 판이 시행된 뒤에 아래를 고친다. App Privacy 는 `app.json` `ios.privacyManifests` 와 같아야 하므로 매니페스트도 같은 빌드에서 고친다.
+
+| 스토어 | 항목 | 답 |
+| --- | --- | --- |
+| App Store Connect → 앱 개인정보 보호 | Identifiers → Device ID | 목적에 **App Functionality** 추가 · **사용자에게 연결됨**으로 변경 · 추적 아니오 |
+| | User Content → Other User Content | 그대로(알림 내용인 링크 제목은 이미 신고한 저장 링크 정보) |
+| `app.json` `ios.privacyManifests` | `NSPrivacyCollectedDataTypeDeviceID` | `Linked` → `true`, 목적에 `AppFunctionality` 추가 |
+| Play Console → 데이터 보안 | 기기 또는 기타 ID | 목적에 **앱 기능** 추가 · 공유 안 함 · **필수**로 변경 |
+| 심사 노트 | `store.config.base.json` `notes` 5번 | "No push notifications…" 문장을 푸시 사용 설명으로 바꾸고 `eas metadata:push` |
+
+- **푸시 토큰을 기기 식별값으로 분류한 근거:** Apple 은 Device ID 를 "광고 식별자 또는 그 밖의 기기 수준 ID", Play 는 기기 또는 기타 ID 를 "개별 기기·브라우저·앱과 관련된 식별자(예: Firebase 설치 ID)"로 정의한다. 푸시 토큰은 앱 설치마다 발급되는 식별값이라 둘 다에 해당한다. 리마인드는 핵심 기능이라 Apple 의 선택적 공개 예외(주 기능이 아닌 드문 수집)에도 해당하지 않는다.
+- **연결됨:** 서버가 토큰을 회원 ID 와 함께 저장한다. App Store Connect 는 연결 여부를 데이터 유형마다 하나로 답하므로, 연결하지 않는 분석용 기기 식별값과 합쳐 연결됨으로 답한다.
+- **공유 아님:** Expo · Apple · Google 은 발송을 대신하는 서비스 제공업체다. Play 는 서비스 제공업체로의 전송을 공유로 보지 않는다.
+- **필수:** Android 12 이하는 알림 권한이 설치 때부터 허용돼 있어, 로그인만으로 토큰이 등록된다. 사용자가 수집 여부를 미리 고를 수 없으므로 선택사항으로 답하지 않는다.
+- 추적(ATT) 대상이 아니다 — 토큰은 알림 발송에만 쓴다.
+
 ---
 
 ## 2. 빌드
