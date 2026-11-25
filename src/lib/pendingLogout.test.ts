@@ -138,9 +138,9 @@ test("로그아웃은 이번 요청만 기다리고, 남은 기록은 뒤에서 
     sendLogout({ refreshToken: "rtk-2", pushToken: null }).then(() => "done"),
     new Promise((resolve) => setTimeout(() => resolve("waiting"), 50)),
   ]);
+  pendingFirst.resolve();
 
   expect(result).toBe("done");
-  pendingFirst.resolve();
 });
 
 test("같은 세션이라도 푸시 토큰이 다른 요청은 합치지 않고 따로 보낸다", async () => {
