@@ -14,15 +14,12 @@ jest.mock("expo-constants", () => ({
   default: { expoConfig: { version: "1.0.0" } },
 }));
 
-jest.mock("@/lib/notifications", () => ({
-  notificationQueries: {
-    permission: () => ({
-      queryKey: ["notification", "permission"],
-      queryFn: () => Promise.resolve("granted"),
-    }),
-  },
-  openNotificationSettings: jest.fn(),
-}));
+// 알림 섹션은 자체 테스트가 있다 — 여기선 자리(순서)만 본다.
+jest.mock("./components/NotificationSection", () => {
+  const { createElement } = require("react");
+  const { Text } = require("react-native");
+  return { NotificationSection: () => createElement(Text, null, "알림") };
+});
 
 import type { AnalyticsRuntime } from "@shared/analytics/analytics.runtime";
 import { apiClient } from "@shared/api";
