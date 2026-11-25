@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTrack } from "@/analytics/AnalyticsContext";
 
 import type { ActiveTab } from "@/lib/activeTab";
 import type { SaveLinkPayload } from "@/lib/messages";
@@ -49,6 +50,15 @@ export function SaveScreen({
   onSave,
   onCreateFolder,
 }: SaveScreenProps) {
+  const { ref: trackingRef } = useTrack("link.save", { disabled: isSaving });
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const setButtonRef = useCallback(
+    (node: HTMLButtonElement | null) => {
+      buttonRef.current = node;
+      trackingRef(node);
+    },
+    [trackingRef],
+  );
   const [showsPastWarning, setShowsPastWarning] = useState(false);
 
   const save = () => {
@@ -70,7 +80,7 @@ export function SaveScreen({
     });
   };
 
-  useEnterShortcut(save, !isSaving);
+  useEnterShortcut(() => buttonRef.current?.click(), !isSaving);
 
   return (
     // 패널 높이를 꽉 채우고, 넘치는 본문만 스크롤한다 — Footer 는 항상 바닥에 붙어 있다.
@@ -106,7 +116,7 @@ export function SaveScreen({
       ) : null}
 
       <footer className="border-border-divider border-t p-4">
-        <ActionButton onClick={save} disabled={isSaving}>
+        <ActionButton ref={setButtonRef} onClick={save} disabled={isSaving}>
           {isSaving ? "저장 중…" : "저장"}
         </ActionButton>
         <EnterHint />

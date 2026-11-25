@@ -1,5 +1,6 @@
 import { Spinner } from "@promise9/ui/spinner/Spinner";
 import { Text } from "@promise9/ui/text/Text";
+import type { Ref } from "react";
 import type { PressableProps } from "react-native";
 import { Pressable, View } from "react-native";
 import { useDelayedLoading } from "@/hooks/useDelayedLoading";
@@ -25,6 +26,7 @@ const buttonStyles = tv({
 
 export interface SocialLoginButtonProps
   extends Omit<PressableProps, "children" | "onPress" | "disabled"> {
+  ref?: Ref<View>;
   provider: SocialProvider;
   label: string;
   onPress: (provider: SocialProvider) => void;

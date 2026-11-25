@@ -5,9 +5,10 @@ import { Pressable, View } from "react-native";
 import { Icon } from "../icon/Icon";
 import { tv } from "../lib/tv";
 import { Text } from "../text/Text";
+import { type ToggleProps, ToggleTrack } from "../toggle/Toggle";
 
-// Figma "List Row" — 좌: leading(선택) + 라벨, 우: trailing(값/개수) + chevron(선택).
-// 보관함 폴더 목록·설정 목록이 공유하는 행 프리미티브.
+// Figma "List Row" — 좌: leading(선택) + 라벨, 우: trailing(값/개수) + chevron(선택) 또는 스위치.
+// 설정 목록의 행 프리미티브(보관함 폴더 행은 FolderItem 으로 따로 구현돼 있다).
 const rowStyles = tv({
   base: "h-[52px] flex-row items-center justify-between px-4 py-3",
   variants: {
@@ -36,6 +37,8 @@ export interface ListRowProps {
   trailing?: ReactNode;
   /** 우측 끝 이동 표식(>). */
   chevron?: boolean;
+  /** 주면 행 전체가 스위치가 된다(누르면 반전). 시안상 trailing·chevron 과 함께 쓰지 않는다. */
+  toggle?: Pick<ToggleProps, "value" | "onChange">;
   /** 라벨 색. destructive = 회원 탈퇴 등. */
   tone?: "normal" | "destructive";
   onPress?: () => void;
@@ -49,6 +52,7 @@ export function ListRow({
   leading,
   trailing,
   chevron = false,
+  toggle,
   tone = "normal",
   onPress,
   disabled = false,
@@ -58,15 +62,21 @@ export function ListRow({
 
   // 동작(onPress) 없는 행(이메일·버전 정보 등)은 눌러도 반응이 없으므로
   // 스크린리더에 버튼으로 읽히지 않게 하고 press 하이라이트도 걸지 않는다.
-  const isInteractive = onPress != null;
+  const isInteractive = onPress != null || toggle != null;
 
   return (
     <Pressable
-      accessibilityRole={isInteractive ? "button" : undefined}
+      accessibilityRole={
+        toggle ? "switch" : isInteractive ? "button" : undefined
+      }
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={isInteractive ? { disabled } : undefined}
+      accessibilityState={
+        isInteractive ? { disabled, checked: toggle?.value } : undefined
+      }
+      // react-native-web 은 accessibilityState 를 aria 속성으로 내보내지 않는다.
+      aria-checked={toggle?.value}
       disabled={disabled || !isInteractive}
-      onPress={onPress}
+      onPress={toggle ? () => toggle.onChange(!toggle.value) : onPress}
       onPressIn={isInteractive ? () => setIsPressed(true) : undefined}
       onPressOut={isInteractive ? () => setIsPressed(false) : undefined}
       className={rowStyles({ isPressed })}
@@ -88,6 +98,7 @@ export function ListRow({
             />
           </View>
         ) : null}
+        {toggle ? <ToggleTrack isOn={toggle.value} /> : null}
       </View>
     </Pressable>
   );

@@ -1,5 +1,6 @@
 import characterImage from "@assets/images/login-character.png";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useTrack } from "@/analytics/AnalyticsContext";
 
 import { openWebLogin } from "@/lib/auth/session";
 import { ActionButton } from "@/sidepanel/components/ActionButton";
@@ -14,6 +15,15 @@ import { useEnterShortcut } from "@/sidepanel/hooks/useEnterShortcut";
  * 그래서 이 화면은 "열었다" 는 상태만 갖고, 성공 콜백을 기다리지 않는다.
  */
 export function LoginScreen() {
+  const { ref: trackingRef } = useTrack("login.open_web");
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const setButtonRef = useCallback(
+    (node: HTMLButtonElement | null) => {
+      buttonRef.current = node;
+      trackingRef(node);
+    },
+    [trackingRef],
+  );
   const [hasOpened, setHasOpened] = useState(false);
 
   const start = () => {
@@ -21,7 +31,8 @@ export function LoginScreen() {
     void openWebLogin();
   };
 
-  useEnterShortcut(start);
+  // 단축키도 같은 클릭 경로를 거쳐 버튼 동작과 이벤트 수집을 함께 실행한다.
+  useEnterShortcut(() => buttonRef.current?.click());
 
   return (
     <div className="flex h-full flex-col justify-center px-8 py-6">
@@ -41,7 +52,7 @@ export function LoginScreen() {
             : "이 링크를 저장하려면 링띵동 로그인이 필요해요"}
         </p>
         <div className="mt-6">
-          <ActionButton onClick={start}>
+          <ActionButton ref={setButtonRef} onClick={start}>
             {hasOpened ? "로그인 탭 다시 열기" : "로그인"}
           </ActionButton>
           <EnterHint />

@@ -8,6 +8,7 @@ export const ROUTES = {
   SETTINGS: "/settings",
   SEARCH: "/search",
   CREATE_LINK: "/create-link",
+  APP_INSTALL: "/app-install",
 } as const satisfies Record<string, Href>;
 
 // name 을 넘기면 폴더 상세 헤더가 그 이름을 타이틀로 쓴다 — 홈·링크 상세처럼 이미 폴더명을

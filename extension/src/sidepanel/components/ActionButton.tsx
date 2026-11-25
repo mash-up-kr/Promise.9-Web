@@ -1,10 +1,9 @@
 import clsx from "clsx";
-import type { ButtonHTMLAttributes } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 type Variant = "primary" | "secondary";
 
-export interface ActionButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ActionButtonProps extends ComponentPropsWithRef<"button"> {
   variant?: Variant;
 }
 
