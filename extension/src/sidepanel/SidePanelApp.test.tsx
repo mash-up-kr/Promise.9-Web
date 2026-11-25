@@ -336,6 +336,82 @@ describe("SidePanelApp", () => {
     expect(screen.getByLabelText("메모")).toHaveValue("");
   });
 
+  it("저장 화면에서 설정으로 들어갔다가, 적던 메모 그대로 돌아온다", async () => {
+    installChromeMock({
+      tab: SAVABLE_TAB,
+      local: { refreshToken: "stored-refresh-token" },
+    });
+    const user = userEvent.setup();
+
+    renderPanel(<SidePanelApp />);
+    await screen.findByText(SAVABLE_TAB.title);
+    await user.type(screen.getByLabelText("메모"), "적던 메모");
+
+    await user.click(screen.getByRole("button", { name: "설정" }));
+    expect(screen.getByRole("heading", { name: "설정" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "뒤로 가기" }));
+    expect(screen.getByLabelText("메모")).toHaveValue("적던 메모");
+  });
+
+  it("저장 결과 화면에서도 설정으로 들어갔다가 결과 화면으로 돌아온다", async () => {
+    installChromeMock({
+      tab: SAVABLE_TAB,
+      local: { refreshToken: "stored-refresh-token" },
+      session: {
+        save: {
+          session: {
+            url: SAVABLE_TAB.url,
+            phase: "failed",
+            linkId: null,
+            failureCount: 1,
+          },
+          request: {
+            url: SAVABLE_TAB.url,
+            folderId: null,
+            memo: null,
+            reminderAt: null,
+          },
+        } satisfies SaveRecord,
+      },
+    });
+    const user = userEvent.setup();
+
+    renderPanel(<SidePanelApp />);
+    await screen.findByText("링크를 저장하지 못했어요");
+
+    await user.click(screen.getByRole("button", { name: "설정" }));
+    expect(screen.getByRole("heading", { name: "설정" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "뒤로 가기" }));
+    expect(screen.getByText("링크를 저장하지 못했어요")).toBeInTheDocument();
+  });
+
+  it("저장할 수 없는 페이지 안내에도 로그인 상태면 설정 버튼이 있다", async () => {
+    installChromeMock({
+      tab: { url: "chrome://extensions", title: "확장" },
+      local: { refreshToken: "stored-refresh-token" },
+    });
+
+    renderPanel(<SidePanelApp />);
+    await screen.findByText("이 페이지는 저장할 수 없어요");
+
+    expect(screen.getByRole("button", { name: "설정" })).toBeInTheDocument();
+  });
+
+  it("로그인 전에는 로그인 화면·저장 불가 안내 어디에도 설정 버튼이 없다", async () => {
+    const chromeMock = installChromeMock({ tab: SAVABLE_TAB });
+
+    renderPanel(<SidePanelApp />);
+    await screen.findByRole("button", { name: /로그인/ });
+    expect(screen.queryByRole("button", { name: "설정" })).toBeNull();
+
+    chromeMock.setActiveTab({ url: "chrome://extensions", title: "확장" });
+    act(() => chromeMock.emitTabActivated());
+    await screen.findByText("이 페이지는 저장할 수 없어요");
+    expect(screen.queryByRole("button", { name: "설정" })).toBeNull();
+  });
+
   it("저장할 수 없는 탭으로 옮기면 안내로 바뀐다", async () => {
     const chromeMock = installChromeMock({
       tab: SAVABLE_TAB,

@@ -26,6 +26,7 @@ import {
   ResultScreen,
 } from "@/sidepanel/screens/ResultScreen";
 import { SaveScreen } from "@/sidepanel/screens/SaveScreen";
+import { SettingsScreen } from "@/sidepanel/screens/SettingsScreen";
 import { TimePickerScreen } from "@/sidepanel/screens/TimePickerScreen";
 
 /** 저장 phase → 결과 화면. `saving` 은 결과가 아니라 저장 화면이 그대로 뜬 채 버튼만 잠긴다. */
@@ -76,6 +77,8 @@ export function SidePanelApp() {
   const [loggedIn, setLoggedIn] = useState<boolean>();
   const [saveRecord, setSaveRecord] = useState<SaveRecord | null>();
   const [draft, setDraft] = useState<Draft>(() => emptyDraft(undefined));
+  // 초안(링크별)과 따로 둔다 — 설정을 보는 중에 탭을 옮겨도 설정 화면이 유지되게.
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -146,6 +149,16 @@ export function SidePanelApp() {
   // 활성 탭·로그인 상태를 읽는 동안. chrome 로컬 조회라 사실상 한 프레임이다.
   if (!tab || loggedIn === undefined || saveRecord === undefined) return null;
 
+  const openSettings = () => setIsSettingsOpen(true);
+
+  if (loggedIn && isSettingsOpen) {
+    return (
+      <AnalyticsScreen name="settings">
+        <SettingsScreen onBack={() => setIsSettingsOpen(false)} />
+      </AnalyticsScreen>
+    );
+  }
+
   const savable = getSavableUrl(url);
   if (!savable.ok) {
     return (
@@ -156,6 +169,7 @@ export function SidePanelApp() {
             savable.reason ? LINK_URL_ERROR_MESSAGES[savable.reason] : undefined
           }
           onAction={closePanel}
+          onOpenSettings={loggedIn ? openSettings : undefined}
         />
       </AnalyticsScreen>
     );
@@ -225,6 +239,7 @@ export function SidePanelApp() {
       <AnalyticsScreen name={`result.${resultKind}`}>
         <ResultScreen
           kind={resultKind}
+          onOpenSettings={openSettings}
           onAction={() => {
             switch (resultKind) {
               case "success":
@@ -285,6 +300,7 @@ export function SidePanelApp() {
         onCreateFolder={() =>
           setDraft((previous) => ({ ...previous, overlay: "new-folder" }))
         }
+        onOpenSettings={openSettings}
       />
     </AnalyticsScreen>
   );

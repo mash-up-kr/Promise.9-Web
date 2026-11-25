@@ -1,9 +1,11 @@
+import { Settings } from "lucide-react-native";
 import blockedIllustration from "@/assets/illustrations/save-blocked.png";
 import duplicateIllustration from "@/assets/illustrations/save-duplicate.png";
 import failedIllustration from "@/assets/illustrations/save-failed.png";
 import successIllustration from "@/assets/illustrations/save-success.png";
 import { ActionButton } from "@/sidepanel/components/ActionButton";
 import { EnterHint } from "@/sidepanel/components/EnterHint";
+import { IconButton } from "@/sidepanel/components/IconButton";
 import { useEnterShortcut } from "@/sidepanel/hooks/useEnterShortcut";
 
 /** 결과 화면 종류 — 시안 save-success / save-duplicate / save-failed / retry-limit / restricted-url. */
@@ -60,19 +62,23 @@ export interface ResultScreenProps {
   /** 기본 설명 대신 보여줄 문구 — 저장할 수 없는 이유가 따로 있을 때. */
   description?: string;
   onAction: () => void;
+  /** 없으면 설정 버튼을 두지 않는다(로그인 전). */
+  onOpenSettings?: () => void;
 }
 
 export function ResultScreen({
   kind,
   description,
   onAction,
+  onOpenSettings,
 }: ResultScreenProps) {
   const content = RESULT_CONTENT[kind];
 
   useEnterShortcut(onAction);
 
   return (
-    <div className="flex h-full flex-col justify-center px-8 py-6">
+    <div className="relative flex h-full flex-col justify-center px-8 py-6">
+      {onOpenSettings ? <SettingsButton onClick={onOpenSettings} /> : null}
       <div className="mx-auto w-full max-w-100">
         <img
           src={content.illustration}
@@ -92,6 +98,15 @@ export function ResultScreen({
           <EnterHint />
         </div>
       </div>
+    </div>
+  );
+}
+
+/** 시안 settings-entry — 오른쪽 위(위 12 · 오른쪽 20). */
+function SettingsButton({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="absolute top-3 right-5">
+      <IconButton iconNode={Settings} label="설정" onClick={onClick} />
     </div>
   );
 }

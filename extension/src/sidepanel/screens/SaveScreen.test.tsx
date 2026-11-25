@@ -41,6 +41,7 @@ const renderSaveScreen = (overrides: Partial<SaveScreenProps> = {}) =>
       isSaving={false}
       onSave={vi.fn()}
       onCreateFolder={vi.fn()}
+      onOpenSettings={vi.fn()}
       {...overrides}
     />,
   );
