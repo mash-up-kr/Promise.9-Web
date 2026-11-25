@@ -1,3 +1,6 @@
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 // client.ts 는 import 시 EXPO_PUBLIC_API_BASE_URL 를 요구하므로 @shared/api 를 mock 한다.
 jest.mock("@shared/api", () => ({
   apiClient: { get: jest.fn(), post: jest.fn() },
