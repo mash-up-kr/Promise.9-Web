@@ -305,3 +305,41 @@ test("종료하면 진행 중 전송과 재시도를 멈춘다", async () => {
   expect(client.trackEvent({ event_name: "test_requested" })).toBe(false);
   expect(jest.getTimerCount()).toBe(0);
 });
+
+describe("수집 끄기", () => {
+  test("끄면 대기 중인 이벤트를 버리고 이후 이벤트도 받지 않는다", async () => {
+    const { client, send } = setup();
+    client.trackEvent({ event_name: "before_opt_out" });
+    client.setCollecting(false);
+    expect(client.trackEvent({ event_name: "after_opt_out" })).toBe(false);
+    await client.flush();
+    await jest.advanceTimersByTimeAsync(60000);
+    expect(send).not.toHaveBeenCalled();
+    client.dispose();
+  });
+  test("전송 중에 끄면 요청을 중단하고 실패한 배치를 다시 보내지 않는다", async () => {
+    const { client, send } = setup();
+    send.mockImplementationOnce(() => new Promise(() => {}));
+    client.trackEvent({ event_name: "in_flight" });
+    const pending = client.flush();
+    client.setCollecting(false);
+    await pending;
+    expect(send.mock.calls[0][1].aborted).toBe(true);
+    await jest.advanceTimersByTimeAsync(60000);
+    expect(send).toHaveBeenCalledTimes(1);
+    client.dispose();
+  });
+  test("다시 켜면 켠 뒤의 이벤트부터 보낸다", async () => {
+    const { client, send } = setup();
+    client.setCollecting(false);
+    client.trackEvent({ event_name: "while_off" });
+    client.setCollecting(true);
+    client.trackEvent({ event_name: "after_on" });
+    await client.flush();
+    const events = send.mock.calls[0][0].map((data) =>
+      JSON.parse(toUtf8(data)),
+    );
+    expect(events.map((event) => event.event_name)).toEqual(["after_on"]);
+    client.dispose();
+  });
+});

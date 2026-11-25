@@ -46,6 +46,7 @@ export class AnalyticsClient {
   private requestAbortController?: AbortController;
   private isClientDisposed = false;
   private isClientActive = true;
+  private isClientCollecting = true;
   private failureCount = 0;
   private batchRecordLimit = BATCH_MAX_RECORDS;
 
@@ -55,6 +56,10 @@ export class AnalyticsClient {
 
   get isDisposed(): boolean {
     return this.isClientDisposed;
+  }
+
+  get isCollecting(): boolean {
+    return this.isClientCollecting;
   }
 
   constructor(private readonly options: ClientOptions) {
@@ -92,7 +97,7 @@ export class AnalyticsClient {
     input: AnalyticsEventInput,
     options?: TrackDeliveryOptions,
   ): boolean {
-    if (this.isDisposed) return false;
+    if (this.isDisposed || !this.isCollecting) return false;
     try {
       const event = createAnalyticsEvent(input, this.context, {
         eventId: this.options.newId(),
@@ -120,6 +125,16 @@ export class AnalyticsClient {
 
   setUtm(utm: AnalyticsUtm | null): void {
     this.context.utm = utm;
+  }
+
+  /** 수집 끄기 설정. 끄면 대기 중인 이벤트와 진행 중인 요청을 버리고 이후 이벤트를 받지 않는다. */
+  setCollecting(isCollecting: boolean): void {
+    this.isClientCollecting = isCollecting;
+    if (isCollecting) return;
+    clearTimeout(this.flushTimer);
+    this.flushTimer = undefined;
+    this.requestAbortController?.abort();
+    this.queue.clear();
   }
 
   /**
@@ -155,7 +170,7 @@ export class AnalyticsClient {
   }
 
   private async sendQueuedEvents(): Promise<void> {
-    while (this.queue.size && !this.isDisposed) {
+    while (this.queue.size && !this.isDisposed && this.isCollecting) {
       const records: Uint8Array[] = [];
       try {
         let processedEventCount = 0;

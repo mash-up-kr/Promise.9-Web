@@ -155,3 +155,58 @@ test("재실행 시 식별자·UTM만 복원하고 미전송 이벤트는 복원
   });
   next.client.dispose();
 });
+
+describe("수집 끄기 저장", () => {
+  function memoryStorage(initial: Record<string, string> = {}) {
+    const values = new Map(Object.entries(initial));
+    return {
+      values,
+      storage: {
+        get: async (key: string) => values.get(key) ?? null,
+        set: async (key: string, value: string) => {
+          values.set(key, value);
+        },
+      },
+    };
+  }
+  const create = (storage: ReturnType<typeof memoryStorage>["storage"]) => {
+    let id = 0;
+    return createAnalytics({
+      send,
+      source: "app",
+      environment: "production",
+      aws: { region: "r", identityPoolId: "p", streamName: "s" },
+      storage,
+      newId: () => `id-${++id}`,
+    });
+  };
+
+  test("끈 설정을 저장하고, 다시 실행하면 준비 전에 받은 첫 이벤트도 보내지 않는다", async () => {
+    const { values, storage } = memoryStorage();
+    const first = create(storage);
+    await first.ready;
+    first.setCollecting(false);
+    await first.client.flush();
+    first.client.dispose();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect([...values.values()]).toContain("false");
+
+    const next = create(storage);
+    next.client.trackEvent({ event_name: "in" });
+    await next.ready;
+    expect(next.client.isCollecting).toBe(false);
+    await next.client.flush();
+    expect(send).not.toHaveBeenCalled();
+    next.client.dispose();
+  });
+  test("저장값을 읽기 전에 바꾼 설정은 나중에 읽은 저장값으로 덮지 않는다", async () => {
+    const { storage } = memoryStorage({
+      promise9_analytics_collecting: "false",
+    });
+    const runtime = create(storage);
+    runtime.setCollecting(true);
+    await runtime.ready;
+    expect(runtime.client.isCollecting).toBe(true);
+    runtime.client.dispose();
+  });
+});

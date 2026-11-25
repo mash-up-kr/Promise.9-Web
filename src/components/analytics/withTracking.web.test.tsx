@@ -84,6 +84,7 @@ test("웹의 같은 label 컴포넌트는 각각 한 번 기록하고 옵션 변
     pendingTouch: null,
     acknowledgeTouch: () => {},
     subscribeTouch: () => () => {},
+    setCollecting: () => {},
   };
   const renderButtons = (disabled = false, version = 0, firstKey = "first") =>
     act(async () => {
@@ -234,6 +235,7 @@ test("웹 onPress와 DOM 관찰기가 함께 있어도 클릭은 한 번만 기�
     pendingTouch: null,
     acknowledgeTouch: () => {},
     subscribeTouch: () => () => {},
+    setCollecting: () => {},
   };
   try {
     await act(async () =>

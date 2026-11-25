@@ -19,6 +19,8 @@ export interface AnalyticsRuntime {
   /** 회원 전환을 기록한다. 회원 ID는 이벤트에 넣지 않고, 로그아웃·계정 전환 시 익명 ID와 유입 정보를 초기화한다. */
   identify(userId: string | null): void;
   setUtm(utm: AnalyticsUtm | null): void;
+  /** 수집 끄기 설정을 적용하고 기기에 저장한다. 다음 실행에서는 첫 이벤트 전송 전에 복구한다. */
+  setCollecting(isCollecting: boolean): void;
   capture: (values: Record<string, unknown>) => void;
   readonly pendingTouch: MarketingTouch | null;
   acknowledgeTouch: (touchId: string) => void;
@@ -38,6 +40,7 @@ export interface RuntimeOptions {
 const ID_KEY = "promise9_analytics_anonymous_id";
 const UTM_KEY = "promise9_analytics_attribution";
 const USER_KEY = "promise9_analytics_user_id";
+const COLLECTING_KEY = "promise9_analytics_collecting";
 
 /** 화면은 즉시 이 런타임을 사용한다. SDK와 저장소 준비는 렌더를 막지 않는다. */
 export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
@@ -59,6 +62,7 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
   let lastCampaignKey = "";
   let pendingTouch: MarketingTouch | null = null;
   let identifiedUserId: string | null = null;
+  let hasCollectingChanged = false;
   const touchListeners = new Set<() => void>();
   let firehoseSender:
     | ReturnType<
@@ -80,12 +84,20 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
   let readyPromise: Promise<void> | undefined;
   const restoreFromStorage = () =>
     (readyPromise ??= (async () => {
-      const [storedAnonymousId, storedTouchJson, storedUserId] =
-        await Promise.all([
-          readStorage(ID_KEY),
-          readStorage(UTM_KEY),
-          readStorage(USER_KEY),
-        ]);
+      const [
+        storedAnonymousId,
+        storedTouchJson,
+        storedUserId,
+        storedCollecting,
+      ] = await Promise.all([
+        readStorage(ID_KEY),
+        readStorage(UTM_KEY),
+        readStorage(USER_KEY),
+        readStorage(COLLECTING_KEY),
+      ]);
+      // 준비 전에 받은 이벤트까지 버리도록 초기화보다 먼저 적용한다.
+      if (!hasCollectingChanged && storedCollecting === "false")
+        client.setCollecting(false);
       const anonymousId = storedAnonymousId || options.newId();
       writeStorage(ID_KEY, anonymousId);
       if (storedTouchJson && !pendingTouch) {
@@ -128,6 +140,11 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
       if (anonymousId) client.setAnonymousId(anonymousId);
     },
     setUtm,
+    setCollecting(isCollecting) {
+      hasCollectingChanged = true;
+      client.setCollecting(isCollecting);
+      writeStorage(COLLECTING_KEY, String(isCollecting));
+    },
     get pendingTouch() {
       return pendingTouch;
     },

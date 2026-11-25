@@ -30,6 +30,7 @@ const runtime = {
   pendingTouch: null,
   acknowledgeTouch: jest.fn(),
   subscribeTouch: () => () => {},
+  setCollecting: () => {},
 };
 function Wrapper({ children }: { children: React.ReactNode }) {
   return (

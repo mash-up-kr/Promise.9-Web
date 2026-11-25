@@ -8,6 +8,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
+import { useAnalyticsCollection } from "@/components/analytics/AnalyticsContext";
 import {
   AlertDialog,
   AlertDialogButton,
@@ -38,6 +39,7 @@ export function SettingsScreen() {
   const router = useRouter();
   const bottomPadding = useTabScreenBottomPadding();
 
+  const analyticsCollection = useAnalyticsCollection();
   const { logout, isPending: isLoggingOut } = useLogout();
   const [isLogoutOpen, setLogoutOpen] = useState(false);
   const closeLogout = () => setLogoutOpen(false);
@@ -105,6 +107,15 @@ export function SettingsScreen() {
                 chevron
                 onPress={() => router.push("/settings/privacy")}
               />
+              {analyticsCollection && (
+                <ListRow
+                  label="이용 통계 수집"
+                  toggle={{
+                    value: analyticsCollection.isCollecting,
+                    onChange: analyticsCollection.setCollecting,
+                  }}
+                />
+              )}
               <ListRow
                 label="버전 정보"
                 trailing={<ValueText>{`v${APP_VERSION}`}</ValueText>}
