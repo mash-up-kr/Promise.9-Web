@@ -33,11 +33,15 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     let isStopped = false;
     let stopIdentity: (() => void) | undefined;
     let stopPlatform: (() => void) | undefined;
+    let stopCollecting: (() => void) | undefined;
     try {
       // 저장소 복구 중에도 앱·탭의 비활성 전환 시점을 놓치지 않는다.
       stopPlatform = platform.bindPlatformAnalytics(
         runtime.capture,
         screen.handleActivityChange,
+      );
+      stopCollecting = platform.subscribeCollectingChanges(
+        runtime.setCollecting,
       );
       void runtime.ready
         .then(() => {
@@ -59,6 +63,7 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
       isStopped = true;
       stopIdentity?.();
       stopPlatform?.();
+      stopCollecting?.();
       // StrictMode의 effect 재연결은 살아 있는 동일 수집기를 폐기하지 않는다.
       queueMicrotask(() => {
         if (lifecycleVersion.current !== currentLifecycleVersion) return;

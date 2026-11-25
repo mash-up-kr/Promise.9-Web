@@ -31,6 +31,7 @@ jest.mock("@/lib/analytics/analytics.platform", () => ({
     };
   },
   subscribeIdentityChanges: () => () => {},
+  subscribeCollectingChanges: () => () => {},
   isReloadNavigation: () => mockIsReloadNavigation(),
   getAnalyticsEnvironment: () => ({
     os: "ios",

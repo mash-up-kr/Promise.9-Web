@@ -40,7 +40,7 @@ export interface RuntimeOptions {
 const ID_KEY = "promise9_analytics_anonymous_id";
 const UTM_KEY = "promise9_analytics_attribution";
 const USER_KEY = "promise9_analytics_user_id";
-const COLLECTING_KEY = "promise9_analytics_collecting";
+export const ANALYTICS_COLLECTING_KEY = "promise9_analytics_collecting";
 
 /** 화면은 즉시 이 런타임을 사용한다. SDK와 저장소 준비는 렌더를 막지 않는다. */
 export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
@@ -101,7 +101,7 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
         readStorage(UTM_KEY),
         readStorage(USER_KEY),
         // 끄기 설정을 읽지 못하면 그 실행에서는 끈 것으로 본다.
-        options.storage.get(COLLECTING_KEY).catch(() => {
+        options.storage.get(ANALYTICS_COLLECTING_KEY).catch(() => {
           console.warn("[analytics] storage_read_failed");
           return "false";
         }),
@@ -157,7 +157,7 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
       hasCollectingChanged = true;
       client.setCollecting(isCollecting);
       if (!isCollecting) dropTouch();
-      writeStorage(COLLECTING_KEY, String(isCollecting));
+      writeStorage(ANALYTICS_COLLECTING_KEY, String(isCollecting));
     },
     get pendingTouch() {
       return pendingTouch;
