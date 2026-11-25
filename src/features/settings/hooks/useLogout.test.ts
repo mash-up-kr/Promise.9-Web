@@ -50,6 +50,7 @@ test("refreshToken 이 없으면 서버 호출을 건너뛰고 로그인으로 �
   (getRefreshToken as jest.Mock).mockResolvedValue(null);
   const { result } = await renderWithClient();
   await result.current.logout();
+  expect(takePushToken).not.toHaveBeenCalled();
   expect(sendLogout).not.toHaveBeenCalled();
   expect(clearTokens).toHaveBeenCalled();
   expect(clearCache).toHaveBeenCalled();
@@ -67,6 +68,19 @@ test("푸시 토큰을 꺼낸 뒤의 리프레시 토큰으로 서버 로그아�
   expect(sendLogout).toHaveBeenCalledWith({
     refreshToken: "rtk-2",
     pushToken: null,
+  });
+});
+
+test("푸시 토큰을 꺼내는 사이 세션이 거절돼도 처음 읽은 리프레시 토큰으로 푸시 토큰을 해제한다", async () => {
+  jest.mocked(takePushToken).mockImplementationOnce(async () => {
+    (getRefreshToken as jest.Mock).mockResolvedValue(null);
+    return "ExpoPushToken[a]";
+  });
+  const { result } = await renderWithClient();
+  await result.current.logout();
+  expect(sendLogout).toHaveBeenCalledWith({
+    refreshToken: "rtk-1",
+    pushToken: "ExpoPushToken[a]",
   });
 });
 

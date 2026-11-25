@@ -21,11 +21,14 @@ export function useLogout() {
     isRunning.current = true;
     setIsLoggingOut(true);
     try {
-      const pushToken = await takePushToken();
-      // 진행 중이던 등록이 액세스 토큰을 갱신하며 리프레시 토큰을 회전시킬 수 있어 그 뒤에 읽는다.
-      const refreshToken = await getRefreshToken();
-      // 실패해도 던지지 않고 기록해 두었다가 다음 실행 때 다시 보낸다.
-      if (refreshToken) await sendLogout({ refreshToken, pushToken });
+      const initialRefreshToken = await getRefreshToken();
+      if (initialRefreshToken) {
+        const pushToken = await takePushToken();
+        // 진행 중이던 등록이 리프레시 토큰을 회전시킬 수 있어 다시 읽는다. 그사이 세션이 거절돼 지워졌으면 처음 토큰으로 보낸다(서버는 만료된 토큰도 받는다).
+        const refreshToken = (await getRefreshToken()) ?? initialRefreshToken;
+        // 실패해도 던지지 않고 기록해 두었다가 다음 실행 때 다시 보낸다.
+        await sendLogout({ refreshToken, pushToken });
+      }
       await clearTokens();
       // 다음 로그인이 다른 계정일 수 있다 — 이전 계정의 화면 캐시를 남기지 않는다.
       queryClient.clear();
