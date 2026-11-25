@@ -21,6 +21,7 @@ export interface AnalyticsRuntime {
   setUtm(utm: AnalyticsUtm | null): void;
   /** 수집 끄기 설정을 적용하고 기기에 저장한다. 다음 실행에서는 첫 이벤트 전송 전에 복구한다. */
   setCollecting(isCollecting: boolean): void;
+  subscribeCollecting: (listener: () => void) => () => void;
   capture: (values: Record<string, unknown>) => void;
   readonly pendingTouch: MarketingTouch | null;
   acknowledgeTouch: (touchId: string) => void;
@@ -64,6 +65,7 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
   let identifiedUserId: string | null = null;
   let hasCollectingChanged = false;
   const touchListeners = new Set<() => void>();
+  const collectingListeners = new Set<() => void>();
   let firehoseSender:
     | ReturnType<
         typeof import("@shared/analytics/adapters/firehose").createFirehoseSender
@@ -158,6 +160,13 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
       client.setCollecting(isCollecting);
       if (!isCollecting) dropTouch();
       writeStorage(ANALYTICS_COLLECTING_KEY, String(isCollecting));
+      for (const listener of collectingListeners) listener();
+    },
+    subscribeCollecting(listener) {
+      collectingListeners.add(listener);
+      return () => {
+        collectingListeners.delete(listener);
+      };
     },
     get pendingTouch() {
       return pendingTouch;

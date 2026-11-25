@@ -37,13 +37,17 @@ export function useAnalyticsCollection(): {
   useEffect(() => {
     if (!runtime) return;
     let isMounted = true;
+    const sync = () => {
+      if (isMounted) setIsCollecting(runtime.client.isCollecting);
+    };
+    // 다른 탭에서 바뀐 설정도 표시에 반영한다.
+    const stop = runtime.subscribeCollecting(sync);
     void runtime.ready
-      .then(() => {
-        if (isMounted) setIsCollecting(runtime.client.isCollecting);
-      })
+      .then(sync)
       .catch(() => console.warn("[analytics] startup_failed"));
     return () => {
       isMounted = false;
+      stop();
     };
   }, [runtime]);
   if (!runtime || isCollecting === null) return null;

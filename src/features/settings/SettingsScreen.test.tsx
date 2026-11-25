@@ -15,6 +15,7 @@ import type { AnalyticsRuntime } from "@shared/analytics/analytics.runtime";
 import { apiClient } from "@shared/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -168,6 +169,7 @@ describe("SettingsScreen", () => {
   describe("이용 통계 수집 토글", () => {
     const fakeRuntime = (isCollecting: boolean) => {
       const client = { isCollecting };
+      const listeners = new Set<() => void>();
       const setCollecting = jest.fn((value: boolean) => {
         client.isCollecting = value;
       });
@@ -175,8 +177,16 @@ describe("SettingsScreen", () => {
         ready: Promise.resolve(),
         client,
         setCollecting,
+        subscribeCollecting: (listener: () => void) => {
+          listeners.add(listener);
+          return () => listeners.delete(listener);
+        },
       } as unknown as AnalyticsRuntime;
-      return { runtime, setCollecting };
+      const changeElsewhere = (value: boolean) => {
+        client.isCollecting = value;
+        for (const listener of listeners) listener();
+      };
+      return { runtime, setCollecting, changeElsewhere };
     };
 
     test("수집이 꺼진 빌드에서는 토글을 보여 주지 않는다", async () => {
@@ -194,6 +204,17 @@ describe("SettingsScreen", () => {
       await userEvent.setup().press(toggle);
       expect(setCollecting).toHaveBeenCalledWith(false);
       expect(toggle).not.toBeChecked();
+    });
+
+    test("다른 탭에서 설정이 바뀌면 토글 표시도 따라 바뀐다", async () => {
+      const { runtime, changeElsewhere } = fakeRuntime(false);
+      await renderScreen(runtime);
+      const toggle = await screen.findByRole("switch", {
+        name: "이용 통계 수집",
+      });
+      expect(toggle).not.toBeChecked();
+      await act(() => changeElsewhere(true));
+      expect(toggle).toBeChecked();
     });
   });
 });
