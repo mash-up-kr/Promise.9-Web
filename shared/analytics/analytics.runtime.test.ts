@@ -251,6 +251,20 @@ describe("수집 끄기 저장", () => {
     expect(send).not.toHaveBeenCalled();
     runtime.client.dispose();
   });
+  test("다른 탭에서 받은 설정은 저장소에 다시 쓰지 않고 구독자에게 알린다", async () => {
+    const { values, storage } = memoryStorage();
+    const runtime = create(storage);
+    await runtime.ready;
+    const listener = jest.fn();
+    runtime.subscribeCollecting(listener);
+    runtime.setCollecting(false, { persist: false });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(runtime.client.isCollecting).toBe(false);
+    expect(values.has("promise9_analytics_collecting")).toBe(false);
+    expect(values.get("promise9_analytics_attribution")).toBeUndefined();
+    expect(listener).toHaveBeenCalledTimes(1);
+    runtime.client.dispose();
+  });
   test("저장값을 읽기 전에 바꾼 설정은 나중에 읽은 저장값으로 덮지 않는다", async () => {
     const { storage } = memoryStorage({
       promise9_analytics_collecting: "false",

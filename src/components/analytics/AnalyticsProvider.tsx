@@ -40,8 +40,9 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
         runtime.capture,
         screen.handleActivityChange,
       );
-      stopCollecting = platform.subscribeCollectingChanges(
-        runtime.setCollecting,
+      // 다른 탭이 이미 저장한 값이라 다시 쓰지 않는다(다시 쓰면 탭끼리 이전 값으로 되돌릴 수 있다).
+      stopCollecting = platform.subscribeCollectingChanges((isCollecting) =>
+        runtime.setCollecting(isCollecting, { persist: false }),
       );
       void runtime.ready
         .then(() => {

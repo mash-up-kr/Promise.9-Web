@@ -19,8 +19,8 @@ export interface AnalyticsRuntime {
   /** 회원 전환을 기록한다. 회원 ID는 이벤트에 넣지 않고, 로그아웃·계정 전환 시 익명 ID와 유입 정보를 초기화한다. */
   identify(userId: string | null): void;
   setUtm(utm: AnalyticsUtm | null): void;
-  /** 수집 끄기 설정을 적용하고 기기에 저장한다. 다음 실행에서는 첫 이벤트 전송 전에 복구한다. */
-  setCollecting(isCollecting: boolean): void;
+  /** 수집 끄기 설정을 적용하고 기기에 저장한다. 다음 실행에서는 첫 이벤트 전송 전에 복구한다. 다른 탭에서 받은 값은 persist: false 로 적용만 한다. */
+  setCollecting(isCollecting: boolean, options?: { persist?: boolean }): void;
   subscribeCollecting: (listener: () => void) => () => void;
   capture: (values: Record<string, unknown>) => void;
   readonly pendingTouch: MarketingTouch | null;
@@ -84,11 +84,11 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
   });
   const setUtm: AnalyticsRuntime["setUtm"] = (utm) => client.setUtm(utm);
   // 수집을 끄면 유입 접점도 기기에 남기거나 계정에 동기화하지 않는다(처리방침 제9조).
-  const dropTouch = () => {
+  const dropTouch = (persist = true) => {
     pendingTouch = null;
     lastCampaignKey = "";
     client.setUtm(null);
-    writeStorage(UTM_KEY, "null");
+    if (persist) writeStorage(UTM_KEY, "null");
   };
   let readyPromise: Promise<void> | undefined;
   const restoreFromStorage = () =>
@@ -155,11 +155,11 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
       if (anonymousId) client.setAnonymousId(anonymousId);
     },
     setUtm,
-    setCollecting(isCollecting) {
+    setCollecting(isCollecting, { persist = true } = {}) {
       hasCollectingChanged = true;
       client.setCollecting(isCollecting);
-      if (!isCollecting) dropTouch();
-      writeStorage(ANALYTICS_COLLECTING_KEY, String(isCollecting));
+      if (!isCollecting) dropTouch(persist);
+      if (persist) writeStorage(ANALYTICS_COLLECTING_KEY, String(isCollecting));
       for (const listener of collectingListeners) listener();
     },
     subscribeCollecting(listener) {
