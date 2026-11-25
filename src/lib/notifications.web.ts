@@ -33,6 +33,8 @@ export function useNotificationResponseNavigation(
   _gate: NotificationTapGate,
 ): void {}
 
-export async function unregisterPushToken(): Promise<void> {}
+export async function takePushToken(): Promise<string | null> {
+  return null;
+}
 
 export function usePushTokenSync(_isSignedIn: boolean): void {}

@@ -1,8 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  deletePushToken,
-  putPushToken,
-} from "@shared/entities/user/user.pushToken.api";
+import { putPushToken } from "@shared/entities/user/user.pushToken.api";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { withTimeout } from "es-toolkit";
 import Constants from "expo-constants";
@@ -27,6 +24,7 @@ import { Linking } from "react-native";
 import { z } from "zod";
 import { isAndroid } from "@/constants/platform.constants";
 import { linkDetailHref } from "@/constants/routes.constants";
+import { flushPendingLogout } from "@/lib/pendingLogout";
 import { queryClient } from "@/lib/queryClient";
 
 // 서버 리마인드 발송과 맞춘 값.
@@ -34,7 +32,7 @@ const REMINDER_CHANNEL_ID = "reminder";
 
 // 마지막으로 서버에 등록한 토큰 — 앱을 다시 실행해도 로그아웃 때 해제할 수 있게 기기에 남긴다.
 export const PUSH_TOKEN_STORAGE_KEY = "push-token";
-const UNREGISTER_TIMEOUT_MS = 3000;
+const REGISTRATION_WAIT_MS = 3000;
 
 // 토큰 발급은 리마인드 채널 생성이 끝난 뒤에 한다.
 let deviceSetup: Promise<unknown> = Promise.resolve();
@@ -191,6 +189,8 @@ export function registerPushToken(): Promise<void> {
 async function registerPushTokenOnce(): Promise<void> {
   try {
     await deviceSetup;
+    // 같은 계정으로 다시 로그인했을 때 늦게 보낸 이전 로그아웃이 이번 등록을 지우지 않게 먼저 보낸다.
+    await flushPendingLogout();
     const { data: token } = await getExpoPushTokenAsync();
     await putPushToken({ token, platform: isAndroid ? "android" : "ios" });
     await AsyncStorage.setItem(PUSH_TOKEN_STORAGE_KEY, token);
@@ -200,29 +200,36 @@ async function registerPushTokenOnce(): Promise<void> {
 }
 
 /**
- * 로그아웃 요청이 세션을 폐기하기 전에 부른다. 진행 중인 등록이 끝난 뒤 해제하고, 실패·지연으로 로그아웃을 막지 않는다.
- * ponytail: 시간이 지나면 기다림만 멈추고 요청은 계속된다 — 서버 로그아웃이 푸시 해제까지 맡으면(서버 제안 (다)) 이 요청 자체를 없앤다.
+ * 로그아웃 요청에 실을 이 기기의 푸시 토큰을 꺼낸다(서버가 로그아웃과 함께 지운다). 진행 중인 등록은 잠깐만 기다린다.
+ * ponytail: 등록이 기다림보다 늦게 끝나면 그 토큰은 로그아웃에 실리지 않아 이전 계정에 남는다 — 다음 로그인의 등록(토큰 기준 upsert)이 새 계정으로 옮긴다.
  */
-export async function unregisterPushToken(): Promise<void> {
+export async function takePushToken(): Promise<string | null> {
+  await withTimeout(() => pendingRegistration, REGISTRATION_WAIT_MS).catch(() =>
+    console.warn("[notifications] 푸시 토큰 등록을 기다리지 않고 로그아웃"),
+  );
   try {
-    await withTimeout(async () => {
-      await pendingRegistration;
-      const token = await AsyncStorage.getItem(PUSH_TOKEN_STORAGE_KEY);
-      if (!token) return;
-      await AsyncStorage.removeItem(PUSH_TOKEN_STORAGE_KEY);
-      await deletePushToken(token);
-    }, UNREGISTER_TIMEOUT_MS);
+    const token = await AsyncStorage.getItem(PUSH_TOKEN_STORAGE_KEY);
+    if (token) await AsyncStorage.removeItem(PUSH_TOKEN_STORAGE_KEY);
+    return token;
   } catch (error) {
-    console.warn("[notifications] 푸시 토큰 해제 실패", error);
+    console.warn("[notifications] 푸시 토큰 읽기 실패", error);
+    return null;
   }
 }
 
-/** 로그인돼 있고 알림이 허용돼 있으면 서버에 토큰을 등록한다 — 로그인·앱 실행·권한 허용(팝업·OS 설정 후 포커스 재조회) 때. */
+/**
+ * 로그인돼 있고 알림이 허용돼 있으면 서버에 토큰을 등록한다 — 로그인·앱 실행·권한 허용(팝업·OS 설정 후 포커스 재조회) 때.
+ * 앱이 시작되면 지난번에 못 보낸 로그아웃(이 기기 토큰 삭제)도 보낸다.
+ */
 export function usePushTokenSync(isSignedIn: boolean): void {
   const { data: permission } = useQuery(
     { ...notificationQueries.permission(), enabled: isSignedIn },
     queryClient,
   );
+
+  useEffect(() => {
+    void flushPendingLogout();
+  }, []);
 
   useEffect(() => {
     if (isSignedIn && permission === "granted") registerPushToken();

@@ -1,10 +1,7 @@
 const mockPlatform = { isAndroid: false };
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  deletePushToken,
-  putPushToken,
-} from "@shared/entities/user/user.pushToken.api";
+import { putPushToken } from "@shared/entities/user/user.pushToken.api";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { PermissionStatus } from "expo";
 import { startActivityAsync } from "expo-intent-launcher";
@@ -26,6 +23,7 @@ import {
 import { router } from "expo-router";
 import { Linking } from "react-native";
 import { linkDetailHref } from "@/constants/routes.constants";
+import { flushPendingLogout } from "@/lib/pendingLogout";
 import { queryClient } from "@/lib/queryClient";
 
 import {
@@ -38,8 +36,8 @@ import {
   requestNotificationPermission,
   requestNotificationPermissionOnce,
   setupNotifications,
+  takePushToken,
   toDeviceNotificationPermission,
-  unregisterPushToken,
   useNotificationResponseNavigation,
   usePushTokenSync,
 } from "./notifications";
@@ -58,7 +56,9 @@ jest.mock("expo-constants", () => ({
 }));
 jest.mock("@shared/entities/user/user.pushToken.api", () => ({
   putPushToken: jest.fn().mockResolvedValue(undefined),
-  deletePushToken: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock("@/lib/pendingLogout", () => ({
+  flushPendingLogout: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock("expo-router", () => ({ router: { push: jest.fn() } }));
 jest.mock("expo-intent-launcher", () => ({
@@ -408,6 +408,15 @@ describe("registerPushToken", () => {
     });
   });
 
+  // 같은 계정으로 다시 로그인했을 때 늦게 보낸 이전 로그아웃이 새 등록을 지우지 않게 한다.
+  test("등록 전에 남은 로그아웃 요청부터 보낸다", async () => {
+    await registerPushToken();
+
+    expect(
+      jest.mocked(flushPendingLogout).mock.invocationCallOrder[0],
+    ).toBeLessThan(jest.mocked(putPushToken).mock.invocationCallOrder[0] ?? 0);
+  });
+
   // 다음 트리거(앱 실행·로그인·권한 허용)에서 다시 시도된다.
   test("실패해도 던지지 않는다", async () => {
     const consoleWarn = jest.spyOn(console, "warn").mockImplementation();
@@ -418,32 +427,27 @@ describe("registerPushToken", () => {
   });
 });
 
-describe("unregisterPushToken", () => {
+describe("takePushToken", () => {
   beforeEach(() => {
     jest
       .mocked(getExpoPushTokenAsync)
       .mockResolvedValue({ type: "expo", data: EXPO_TOKEN });
   });
 
-  test("이 기기에서 등록한 토큰을 서버에서 한 번만 해제한다", async () => {
+  test("이 기기에 등록한 토큰을 한 번만 꺼낸다", async () => {
     await registerPushToken();
 
-    await unregisterPushToken();
-    await unregisterPushToken();
-
-    expect(deletePushToken).toHaveBeenCalledTimes(1);
-    expect(deletePushToken).toHaveBeenCalledWith(EXPO_TOKEN);
+    await expect(takePushToken()).resolves.toBe(EXPO_TOKEN);
+    await expect(takePushToken()).resolves.toBeNull();
   });
 
-  test("이번 실행에 등록하지 않았어도 지난 실행에 등록한 토큰을 해제한다", async () => {
+  test("이번 실행에 등록하지 않았어도 지난 실행에 등록한 토큰을 꺼낸다", async () => {
     await AsyncStorage.setItem(PUSH_TOKEN_STORAGE_KEY, EXPO_TOKEN);
 
-    await unregisterPushToken();
-
-    expect(deletePushToken).toHaveBeenCalledWith(EXPO_TOKEN);
+    await expect(takePushToken()).resolves.toBe(EXPO_TOKEN);
   });
 
-  test("등록 중이면 등록이 끝난 뒤 그 토큰을 해제한다", async () => {
+  test("등록 중이면 등록이 끝난 뒤 그 토큰을 꺼낸다", async () => {
     const registration = deferred();
     jest
       .mocked(putPushToken)
@@ -451,35 +455,24 @@ describe("unregisterPushToken", () => {
     const registering = registerPushToken();
     await act(async () => {});
 
-    const unregistering = unregisterPushToken();
+    const taking = takePushToken();
     registration.resolve();
-    await Promise.all([registering, unregistering]);
+    await registering;
 
-    expect(deletePushToken).toHaveBeenCalledWith(EXPO_TOKEN);
+    await expect(taking).resolves.toBe(EXPO_TOKEN);
   });
 
-  // 로그아웃은 "빠져나가기"라 해제 실패·지연으로 붙잡지 않는다.
-  test("응답이 늦으면 기다리지 않는다", async () => {
-    const consoleWarn = jest.spyOn(console, "warn").mockImplementation();
-    await AsyncStorage.setItem(PUSH_TOKEN_STORAGE_KEY, EXPO_TOKEN);
-    jest.mocked(deletePushToken).mockReturnValueOnce(new Promise(() => {}));
+  // 로그아웃은 "빠져나가기"라 등록 지연으로 붙잡지 않는다.
+  test("등록이 3초 안에 끝나지 않으면 기다리지 않는다", async () => {
+    jest.mocked(putPushToken).mockReturnValueOnce(new Promise(() => {}));
     jest.useFakeTimers();
+    void registerPushToken();
 
-    const unregistering = unregisterPushToken();
+    const taking = takePushToken();
     await jest.advanceTimersByTimeAsync(3000);
 
-    await expect(unregistering).resolves.toBeUndefined();
+    await expect(taking).resolves.toBeNull();
     jest.useRealTimers();
-    consoleWarn.mockRestore();
-  });
-
-  test("실패해도 던지지 않는다", async () => {
-    const consoleWarn = jest.spyOn(console, "warn").mockImplementation();
-    await registerPushToken();
-    jest.mocked(deletePushToken).mockRejectedValueOnce(new Error("offline"));
-
-    await expect(unregisterPushToken()).resolves.toBeUndefined();
-    consoleWarn.mockRestore();
   });
 });
 
@@ -488,6 +481,13 @@ describe("usePushTokenSync", () => {
     jest
       .mocked(getExpoPushTokenAsync)
       .mockResolvedValue({ type: "expo", data: EXPO_TOKEN });
+  });
+
+  // 로그아웃한 채로 다시 켠 앱도 지난번에 못 보낸 로그아웃(푸시 토큰 삭제)을 마저 보낸다.
+  test("로그인하지 않았어도 앱이 시작되면 남은 로그아웃 요청을 보낸다", async () => {
+    await renderHook(() => usePushTokenSync(false));
+
+    expect(flushPendingLogout).toHaveBeenCalledTimes(1);
   });
 
   test("로그인 상태에서 알림이 허용돼 있으면 토큰을 등록한다", async () => {

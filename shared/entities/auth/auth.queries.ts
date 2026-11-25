@@ -21,10 +21,6 @@ export async function withdrawRequest(refreshToken: string): Promise<void> {
   await apiClient.delete("/auth/withdraw", { data: { refreshToken } });
 }
 
-export function useLogoutMutation() {
-  return useMutation({ mutationFn: logoutRequest });
-}
-
 export function useWithdrawMutation() {
   return useMutation({ mutationFn: withdrawRequest });
 }
