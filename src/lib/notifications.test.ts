@@ -1,6 +1,7 @@
 const mockPlatform = { isAndroid: false };
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setSessionRejectedHandler } from "@shared/api";
 import { putPushToken } from "@shared/entities/user/user.pushToken.api";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { PermissionStatus } from "expo";
@@ -23,7 +24,7 @@ import {
 import { router } from "expo-router";
 import { Linking } from "react-native";
 import { linkDetailHref } from "@/constants/routes.constants";
-import { flushPendingLogout } from "@/lib/pendingLogout";
+import { flushPendingLogout, sendLogout } from "@/lib/pendingLogout";
 import { queryClient } from "@/lib/queryClient";
 
 import {
@@ -59,7 +60,9 @@ jest.mock("@shared/entities/user/user.pushToken.api", () => ({
 }));
 jest.mock("@/lib/pendingLogout", () => ({
   flushPendingLogout: jest.fn().mockResolvedValue(undefined),
+  sendLogout: jest.fn().mockResolvedValue(undefined),
 }));
+jest.mock("@shared/api", () => ({ setSessionRejectedHandler: jest.fn() }));
 jest.mock("expo-router", () => ({ router: { push: jest.fn() } }));
 jest.mock("expo-intent-launcher", () => ({
   ActivityAction: {
@@ -191,6 +194,33 @@ describe("setupNotifications", () => {
     setupNotifications();
 
     expect(setNotificationChannelAsync).not.toHaveBeenCalled();
+  });
+
+  test("세션이 거절돼 로그아웃되면 거절된 토큰으로 이 기기의 푸시 토큰을 지운다", async () => {
+    await AsyncStorage.setItem(
+      PUSH_TOKEN_STORAGE_KEY,
+      "ExpoPushToken[device-1]",
+    );
+    setupNotifications();
+
+    jest.mocked(setSessionRejectedHandler).mock.calls[0]?.[0]?.("rtk-expired");
+
+    await waitFor(() =>
+      expect(sendLogout).toHaveBeenCalledWith({
+        refreshToken: "rtk-expired",
+        pushToken: "ExpoPushToken[device-1]",
+      }),
+    );
+  });
+
+  test("세션이 거절돼도 등록한 푸시 토큰이 없으면 로그아웃을 보내지 않는다", async () => {
+    setupNotifications();
+
+    jest.mocked(setSessionRejectedHandler).mock.calls[0]?.[0]?.("rtk-expired");
+
+    await waitFor(() => expect(AsyncStorage.getItem).toHaveBeenCalled());
+    await act(async () => {});
+    expect(sendLogout).not.toHaveBeenCalled();
   });
 });
 

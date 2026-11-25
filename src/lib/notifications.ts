@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setSessionRejectedHandler } from "@shared/api";
 import { putPushToken } from "@shared/entities/user/user.pushToken.api";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { withTimeout } from "es-toolkit";
@@ -24,7 +25,7 @@ import { Linking } from "react-native";
 import { z } from "zod";
 import { isAndroid } from "@/constants/platform.constants";
 import { linkDetailHref } from "@/constants/routes.constants";
-import { flushPendingLogout } from "@/lib/pendingLogout";
+import { flushPendingLogout, sendLogout } from "@/lib/pendingLogout";
 import { queryClient } from "@/lib/queryClient";
 
 // 서버 리마인드 발송과 맞춘 값.
@@ -62,6 +63,11 @@ export function setupNotifications(): void {
       console.error("[notifications] 리마인드 채널 생성 실패", error);
     });
   }
+  // 서버는 세션 만료만으로 푸시 토큰을 지우지 않는다 — 로그인이 끝난 기기로 알림이 가지 않게 직접 해제한다.
+  setSessionRejectedHandler(async (refreshToken) => {
+    const pushToken = await takePushToken();
+    if (pushToken) await sendLogout({ refreshToken, pushToken });
+  });
 }
 
 export function toDeviceNotificationPermission(
