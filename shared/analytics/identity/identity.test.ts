@@ -69,7 +69,7 @@ async function setup() {
     },
   };
 }
-test("로그인 전후 이벤트는 같은 세션을 유지하고 이후 이벤트에 회원·서버 UTM을 채운다", async () => {
+test("로그인 전후 이벤트는 같은 세션을 유지하고 이후 이벤트에 서버 UTM을 채운다", async () => {
   const { runtime, source, events } = await setup();
   runtime.capture({ utm_source: "local" });
   runtime.client.trackEvent({ event_name: "test_event" });
@@ -85,13 +85,12 @@ test("로그인 전후 이벤트는 같은 세션을 유지하고 이후 이벤�
   runtime.client.trackEvent({ event_name: "test_event" });
   const data = await events();
   expect(data).toHaveLength(2);
+  expect(data.some((event) => "user_id" in event)).toBe(false);
   expect(data[0]).toMatchObject({
-    user_id: null,
     session_id: expect.any(String),
     utm: { utm_source: "local" },
   });
   expect(data[1]).toMatchObject({
-    user_id: "123",
     session_id: data[0].session_id,
     utm: {
       utm_source: "newsletter",
@@ -135,10 +134,7 @@ test("로그아웃 뒤 늦게 도착한 회원·UTM 응답을 버린다", async 
   resolve(attribution);
   await tick();
   runtime.client.trackEvent({ event_name: "test_event" });
-  expect((await events()).at(-1)).toMatchObject({
-    user_id: null,
-    utm: null,
-  });
+  expect((await events()).at(-1)).toMatchObject({ utm: null });
   stop();
   runtime.client.dispose();
 });
@@ -163,10 +159,7 @@ test("계정 전환 후 이전 계정 PATCH 응답이 새 계정 UTM을 덮지 �
   resolve(attribution);
   await tick();
   runtime.client.trackEvent({ event_name: "test_event" });
-  expect((await events()).at(-1)).toMatchObject({
-    user_id: "456",
-    utm: null,
-  });
+  expect((await events()).at(-1)).toMatchObject({ utm: null });
   expect(source.saveTouch).toHaveBeenCalledTimes(1);
   stop();
   runtime.client.dispose();
@@ -181,7 +174,6 @@ test("PATCH를 기다리는 동안에도 더 최근에 수집한 UTM을 현재 �
   runtime.client.trackEvent({ event_name: "test_event" });
   const data = await events();
   expect(data.at(-1)).toMatchObject({
-    user_id: "123",
     utm: { utm_source: "new-campaign" },
   });
   stop();
@@ -197,7 +189,7 @@ test("같은 로그인으로 앱 복귀·탭 전환 알림이 와도 회원 정�
   stop();
   runtime.client.dispose();
 });
-test("회원 재확인이 실패해도 확인 중·실패 뒤 이벤트에 이전 회원 ID를 유지한다", async () => {
+test("회원 재확인이 실패해도 이전 회원으로 보고 익명 ID를 새로 만들지 않는다", async () => {
   const { runtime, source, changeToken, events } = await setup();
   const stop = bindAnalyticsIdentity(runtime, source);
   await tick();
@@ -215,7 +207,7 @@ test("회원 재확인이 실패해도 확인 중·실패 뒤 이벤트에 이�
   await tick();
   runtime.client.trackEvent({ event_name: "after_failure" });
   const data = await events();
-  expect(data.map((event) => event.user_id)).toEqual(["123", "123"]);
+  expect(new Set(data.map((event) => event.anonymous_id)).size).toBe(1);
   stop();
   runtime.client.dispose();
 });

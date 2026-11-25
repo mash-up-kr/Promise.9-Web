@@ -31,9 +31,9 @@ test("로그아웃 뒤 동일 UTM으로 재유입해도 새 익명 접점을 기
   );
   expect(events.at(-1).anonymous_id).not.toBe(events[0].anonymous_id);
   expect(events.at(-1)).toMatchObject({
-    user_id: null,
     utm: { utm_source: "newsletter" },
   });
+  expect(events.at(-1)).not.toHaveProperty("user_id");
   runtime.client.dispose();
 });
 
@@ -97,7 +97,8 @@ test("저장소 준비 중에도 이벤트를 받아 발생 시각을 유지하�
   runtime.identify("123");
   await runtime.client.flush();
   const event = JSON.parse(toUtf8(send.mock.calls[0][0][0]));
-  expect(event).toMatchObject({ anonymous_id: "restored-anon", user_id: null });
+  expect(event).toMatchObject({ anonymous_id: "restored-anon" });
+  expect(event).not.toHaveProperty("user_id");
   expect(Date.parse(event.occurred_at)).toBeGreaterThanOrEqual(before);
   runtime.client.dispose();
 });

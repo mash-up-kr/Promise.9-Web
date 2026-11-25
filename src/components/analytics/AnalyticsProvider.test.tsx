@@ -53,7 +53,10 @@ jest.mock("@shared/api", () => ({
 jest.mock("expo-router", () => ({
   usePathname: () => mockPath,
   useSegments: () =>
-    mockPath === "/login" ? ["(auth)", "login"] : ["(tabs)", "index"],
+    ({
+      "/login": ["(auth)", "login"],
+      "/links/123": ["(tabs)", "links", "[id]"],
+    })[mockPath] ?? ["(tabs)", "index"],
   useGlobalSearchParams: () => ({ utm_source: "newsletter" }),
 }));
 beforeEach(() => {
@@ -123,6 +126,21 @@ test("저장소 초기화가 끝나지 않아도 화면과 수집 API를 제공�
     ]),
   );
 });
+test("페이지뷰 경로에는 링크 ID 대신 라우트 템플릿을 기록한다", async () => {
+  mockPath = "/links/123";
+  const view = await render(<AnalyticsProvider>{null}</AnalyticsProvider>);
+  await act(async () => {
+    mockResolve(null);
+  });
+  await view.unmount();
+  const pageViews = mockSend.mock.calls
+    .flatMap(([records]) => records.map((record) => JSON.parse(toUtf8(record))))
+    .filter((event) => event.event_name === "page_view");
+  expect(JSON.parse(pageViews[0].custom_data)).toMatchObject({
+    screen_name: "links_detail",
+    path: "/links/[id]",
+  });
+});
 test("비활성 상태에서는 저장소 준비 없이 화면을 표시한다", async () => {
   process.env.EXPO_PUBLIC_ANALYTICS_ENABLED = "false";
   await render(
@@ -175,7 +193,6 @@ test.each([
     source: os === "web" ? "web" : "app",
     anonymous_id: expect.any(String),
     session_id: expect.any(String),
-    user_id: null,
     utm: { utm_source: "newsletter" },
     custom_data: "{}",
   });

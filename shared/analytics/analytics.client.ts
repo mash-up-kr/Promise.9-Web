@@ -62,7 +62,6 @@ export class AnalyticsClient {
       source: options.source,
       environment: options.environment,
       anonymous_id: null,
-      user_id: null,
       session_id: null,
       utm: null,
       os: options.os ?? "unknown",
@@ -78,7 +77,7 @@ export class AnalyticsClient {
 
   /**
    * 익명 ID와 세션 ID를 적용하고 전송을 시작할 수 있게 한다.
-   * 먼저 수집한 이벤트에는 비어 있는 두 ID만 채우고, 기록 당시의 시각·사용자·UTM은 유지한다.
+   * 먼저 수집한 이벤트에는 비어 있는 두 ID만 채우고, 기록 당시의 시각·UTM은 유지한다.
    */
   initialize(anonymousId: string, sessionId: string): void {
     this.context.anonymous_id = anonymousId;
@@ -114,10 +113,9 @@ export class AnalyticsClient {
     }
   }
 
-  /** 이후 이벤트에 사용할 식별자를 적용한다. 이미 큐에 들어간 이벤트는 바꾸지 않는다. */
-  setIdentity(userId: string | null, anonymousId?: string): void {
-    this.context.user_id = userId;
-    if (anonymousId !== undefined) this.context.anonymous_id = anonymousId;
+  /** 이후 이벤트에 사용할 익명 ID를 적용한다. 이미 큐에 들어간 이벤트는 바꾸지 않는다. */
+  setAnonymousId(anonymousId: string): void {
+    this.context.anonymous_id = anonymousId;
   }
 
   setUtm(utm: AnalyticsUtm | null): void {

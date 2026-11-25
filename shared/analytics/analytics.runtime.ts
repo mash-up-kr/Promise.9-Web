@@ -16,7 +16,7 @@ export interface AnalyticsRuntime {
   client: AnalyticsClient;
   /** 최초 접근 시 복구를 시작한다. 이벤트 수집은 기다리지 않아도 되지만 전송은 준비 후 시작한다. */
   ready: Promise<void>;
-  /** 이후 이벤트에 회원 ID를 적용한다. 로그아웃·계정 전환 시 익명 ID와 유입 정보를 초기화한다. */
+  /** 회원 전환을 기록한다. 회원 ID는 이벤트에 넣지 않고, 로그아웃·계정 전환 시 익명 ID와 유입 정보를 초기화한다. */
   identify(userId: string | null): void;
   setUtm(utm: AnalyticsUtm | null): void;
   capture: (values: Record<string, unknown>) => void;
@@ -125,7 +125,7 @@ export function createAnalytics(options: RuntimeOptions): AnalyticsRuntime {
         identifiedUserId = userId;
         writeStorage(USER_KEY, userId ?? "");
       }
-      client.setIdentity(userId, anonymousId);
+      if (anonymousId) client.setAnonymousId(anonymousId);
     },
     setUtm,
     get pendingTouch() {

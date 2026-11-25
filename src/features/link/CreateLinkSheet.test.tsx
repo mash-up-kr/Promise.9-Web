@@ -238,7 +238,7 @@ describe("CreateLinkSheet", () => {
     expect(mockTrackEvent).toHaveBeenCalledWith(
       {
         event_name: "link_saved",
-        custom_data: { link_id: 1, entry_point: "create_link_sheet" },
+        custom_data: { entry_point: "create_link_sheet" },
       },
       { flushSoon: true },
     );
