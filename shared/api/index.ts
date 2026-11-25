@@ -33,7 +33,11 @@ export {
   TimeoutError,
   UnauthorizedError,
 } from "./errors";
-export { getPendingRefresh, refreshAccessToken } from "./refresh";
+export {
+  getPendingRefresh,
+  refreshAccessToken,
+  setSessionRejectedHandler,
+} from "./refresh";
 export {
   clearTokens,
   getAccessToken,
