@@ -76,19 +76,14 @@ test("100건 전송이 실패해도 새 이벤트마다 요청하지 않고 다�
   expect(send.mock.calls[1][0].slice(0, 100)).toEqual(failedRecords);
   client.dispose();
 });
-test("식별자를 갱신해도 앞서 기록한 이벤트는 기존 사용자 정보를 유지한다", async () => {
+test("익명 ID를 갱신해도 앞서 기록한 이벤트는 기존 익명 ID를 유지한다", async () => {
   const { client, send } = setup();
   client.trackEvent({ event_name: "test_requested" });
-  client.setIdentity("123");
-  client.trackEvent({ event_name: "test_requested" });
   await client.flush();
-  const events = send.mock.calls[0][0].map((data) => JSON.parse(toUtf8(data)));
-  expect(events[0]).toMatchObject({ user_id: null, anonymous_id: "anon" });
-  expect(events.at(-1)).toMatchObject({
-    user_id: "123",
-    anonymous_id: "anon",
-  });
-  client.setIdentity(null, "next-anon");
+  const [event] = send.mock.calls[0][0].map((data) => JSON.parse(toUtf8(data)));
+  expect(event).toMatchObject({ anonymous_id: "anon" });
+  expect(event).not.toHaveProperty("user_id");
+  client.setAnonymousId("next-anon");
   client.trackEvent({ event_name: "test_requested" });
   await client.flush();
   expect(JSON.parse(toUtf8(send.mock.calls[1][0][0])).anonymous_id).toBe(
@@ -110,11 +105,11 @@ test("SDK가 중단 신호에 응답하지 않아도 5초에 대기를 끝내고
   client.dispose();
 });
 
-test("요청과 성공은 각각 trackEvent 호출 시점의 사용자 문맥을 사용한다", async () => {
+test("요청과 성공은 각각 trackEvent 호출 시점의 익명 ID를 사용한다", async () => {
   const { client, send } = setup();
-  client.setIdentity("123");
+  client.setAnonymousId("anon-1");
   client.trackEvent({ event_name: "test_requested" });
-  client.setIdentity("456");
+  client.setAnonymousId("anon-2");
   client.trackEvent({
     event_name: "test_completed",
     custom_data: { link_id: 1 },
@@ -123,7 +118,10 @@ test("요청과 성공은 각각 trackEvent 호출 시점의 사용자 문맥을
   const events = send.mock.calls.flatMap(([records]) =>
     records.map((data) => JSON.parse(toUtf8(data))),
   );
-  expect(events.map((event) => event.user_id)).toEqual(["123", "456"]);
+  expect(events.map((event) => event.anonymous_id)).toEqual([
+    "anon-1",
+    "anon-2",
+  ]);
   expect(events[0].event_id).not.toBe(events[1].event_id);
   expect(events[1]).not.toHaveProperty("operation_id");
   client.dispose();
@@ -172,14 +170,12 @@ test("initialize 전에는 큐에 보관하고 준비 후 식별자만 채워 �
   await jest.advanceTimersByTimeAsync(5000);
   expect(send).not.toHaveBeenCalled();
   client.initialize("restored-anon", "session");
-  client.setIdentity("123");
   await client.flush();
   expect(JSON.parse(toUtf8(send.mock.calls[0][0][0]))).toMatchObject({
     event_id: "event-1",
     occurred_at: occurredAt,
     anonymous_id: "restored-anon",
     session_id: "session",
-    user_id: null,
     custom_data: JSON.stringify({ label: "저장" }),
   });
   client.dispose();
@@ -308,4 +304,42 @@ test("종료하면 진행 중 전송과 재시도를 멈춘다", async () => {
   expect(send.mock.calls[0][1].aborted).toBe(true);
   expect(client.trackEvent({ event_name: "test_requested" })).toBe(false);
   expect(jest.getTimerCount()).toBe(0);
+});
+
+describe("수집 끄기", () => {
+  test("끄면 대기 중인 이벤트를 버리고 이후 이벤트도 받지 않는다", async () => {
+    const { client, send } = setup();
+    client.trackEvent({ event_name: "before_opt_out" });
+    client.setCollecting(false);
+    expect(client.trackEvent({ event_name: "after_opt_out" })).toBe(false);
+    await client.flush();
+    await jest.advanceTimersByTimeAsync(60000);
+    expect(send).not.toHaveBeenCalled();
+    client.dispose();
+  });
+  test("전송 중에 끄면 요청을 중단하고 실패한 배치를 다시 보내지 않는다", async () => {
+    const { client, send } = setup();
+    send.mockImplementationOnce(() => new Promise(() => {}));
+    client.trackEvent({ event_name: "in_flight" });
+    const pending = client.flush();
+    client.setCollecting(false);
+    await pending;
+    expect(send.mock.calls[0][1].aborted).toBe(true);
+    await jest.advanceTimersByTimeAsync(60000);
+    expect(send).toHaveBeenCalledTimes(1);
+    client.dispose();
+  });
+  test("다시 켜면 켠 뒤의 이벤트부터 보낸다", async () => {
+    const { client, send } = setup();
+    client.setCollecting(false);
+    client.trackEvent({ event_name: "while_off" });
+    client.setCollecting(true);
+    client.trackEvent({ event_name: "after_on" });
+    await client.flush();
+    const events = send.mock.calls[0][0].map((data) =>
+      JSON.parse(toUtf8(data)),
+    );
+    expect(events.map((event) => event.event_name)).toEqual(["after_on"]);
+    client.dispose();
+  });
 });

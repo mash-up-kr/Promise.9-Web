@@ -10,10 +10,10 @@
 | --- | --- | --- | --- |
 | `in` | 앱·웹·익스텐션 | 앱 런타임·웹 문서·익스텐션 패널의 최초 진입. 웹 새로고침 제외 | `{}` |
 | `reload` | 웹 | 새로고침으로 문서가 시작될 때 `in` 대신 기록 | `{}` |
-| `page_view` | 앱·웹·익스텐션 | 다른 화면으로 이동하거나 탭·앱이 숨겨질 때, 그동안 머문 시간을 기록 | `screen_name`, `screen_view_id`, `path`, `duration_ms` |
+| `page_view` | 앱·웹·익스텐션 | 다른 화면으로 이동하거나 탭·앱이 숨겨질 때, 그동안 머문 시간을 기록 | `screen_name`, `screen_view_id`, `path`(라우트 템플릿. 예: `/link/[id]`. 템플릿이 같아도 실제 주소가 바뀌면 새 구간이다), `duration_ms` |
 | `component_clicked` | 앱·웹·익스텐션 | 추적을 연결한 활성 버튼의 클릭·탭 | `label`, `screen_name`, `screen_view_id`, 호출부 추가 속성 |
 | `component_impression` | 앱·웹·익스텐션 | 사용자가 보고 있는 화면에서 대상 면적의 40% 이상이 연속 1초 보일 때 | `label`, `screen_name`, `screen_view_id`, 호출부 추가 속성 |
-| `link_saved` | 앱·웹 | 링크 저장 시트의 링크 생성 API 성공 후 | `link_id`, `entry_point: "create_link_sheet"` |
+| `link_saved` | 앱·웹 | 링크 저장 시트의 링크 생성 API 성공 후 | `entry_point: "create_link_sheet"` |
 | `login_completed` | 앱·웹 | 소셜 로그인 API 성공 및 토큰 저장 완료 후 | `provider` |
 | `signup_completed` | 앱·웹 | 로그인 완료 응답이 `isNewUser: true`일 때 추가 기록 | `provider` |
 
@@ -61,15 +61,16 @@
 
 ## 3. 공통 필드·식별자·UTM
 
-전송 이벤트에는 다음 14개 키가 포함된다.
+전송 이벤트에는 다음 13개 키가 포함된다(`schema_version: 2`).
 
-`schema_version`, `event_id`, `occurred_at`, `event_name`, `source`, `environment`, `anonymous_id`, `user_id`, `session_id`, `os`, `browser`, `client_version`, `utm`, `custom_data`
+`schema_version`, `event_id`, `occurred_at`, `event_name`, `source`, `environment`, `anonymous_id`, `session_id`, `os`, `browser`, `client_version`, `utm`, `custom_data`
 
 - `source`는 `app`·`web`·`extension`, `environment`는 `development`·`production`이다.
 - `custom_data`는 호출할 때 JSON 객체, 전송할 때 JSON 문자열이다. 생략하면 `"{}"`로 전송한다.
 - `anonymous_id`는 로컬 저장소에서 복구한다. 이전에 식별된 회원의 로그아웃·계정 전환 시 새 익명 ID로 분리한다. 회원이었던 기기를 토큰 없이 다시 실행해도 진입(`in`)을 기록한 직후 새 익명 ID로 바뀐다. 따라서 한 세션 안에서도 `anonymous_id`가 바뀔 수 있다.
 - `session_id`는 수집기 초기화 시 새로 만든다. 앱 재실행·웹 새로고침·익스텐션 패널 재실행 후에는 이전 세션 ID를 재사용하지 않는다. 일정 시간이 지났다는 이유만으로 세션을 바꾸지는 않는다.
-- 회원 확인이 끝나기 전의 이벤트는 `user_id`가 `null`이다. `in`은 회원 확인 전에 기록되므로 항상 `null`이고, 로그인·가입 완료 이벤트도 회원 조회보다 먼저 기록되어 `null`이다. 과거 이벤트에 회원 ID를 소급해서 채우지 않으므로 같은 세션의 이후 이벤트로 회원을 연결한다.
+- 회원 ID(`user_id`)와 링크 ID 는 보내지 않는다. 원본 이벤트를 회원과 연결하지 않아야 탈퇴 시 회원별 삭제 없이 처리방침의 보관기간(수집일로부터 24개월)만으로 파기할 수 있다(처리방침 제3조·제9조). `page_view` 의 `path` 도 실제 경로 대신 라우트 템플릿을 남긴다.
+- 회원 확인(`GET /users/me/attribution`)은 계정 전환을 알아채 익명 ID·유입 정보를 분리하고 계정 UTM 을 적용하는 데만 쓴다.
 - 초기화 전에 받은 이벤트는 큐에 보관하고 초기화 시 비어 있는 익명·세션 ID를 보완한다. 나머지 필드는 이벤트를 기록했을 때의 값을 유지한다.
 - `os`·`browser`·`client_version`은 플랫폼이 넘긴 값이다. 앱은 `Platform.OS`와 앱 버전을 넣고 `browser`는 `null`이다. 웹은 브라우저의 User-Agent에서 OS·브라우저를 구하고, `client_version`은 `EXPO_PUBLIC_WEB_VERSION`이다(설정하지 않으면 `null`). 익스텐션은 현재 이 값을 넘기지 않아 `os`·`browser`가 `"unknown"`, `client_version`이 `null`이다.
 
@@ -128,10 +129,7 @@ const { trackEvent } = useAnalytics();
 trackEvent(
   {
     event_name: ANALYTICS_EVENTS.LINK_SAVED,
-    custom_data: {
-      link_id: createdLink.linkId,
-      entry_point: "create_link_sheet",
-    },
+    custom_data: { entry_point: "create_link_sheet" },
   },
   { flushSoon: true },
 );
@@ -153,7 +151,7 @@ const TrackedPressable = withTracking(Pressable);
 <TrackedPressable
   tracking={{
     label: "home.save",
-    custom_data: { link_id: linkId },
+    custom_data: { position: index },
   }}
   disabled={isSaving}
   onPress={save}
@@ -166,7 +164,10 @@ const TrackedPressable = withTracking(Pressable);
 
 앱·웹은 `EXPO_PUBLIC_ANALYTICS_*`, 익스텐션은 `VITE_ANALYTICS_*` 환경변수를 사용한다.
 
-- `ENABLED=true`일 때 수집한다. 기본값은 비활성이다.
+- `ENABLED=true`일 때 수집한다. 기본값은 비활성이다. 익스텐션은 수집하지 않는다(처리방침 제9조) — `VITE_ANALYTICS_ENABLED` 를 켜지 않는다.
+- 이용자는 앱·웹 설정 > 서비스 > 이용 통계 수집으로 끌 수 있다(기기 단위, `promise9_analytics_collecting`). 끄면 대기 중인 이벤트와 진행 중인 요청을 버리고, 광고 링크의 유입 정보도 기기에 남기거나 계정에 보내지 않으며, 다음 실행에서는 첫 이벤트 전에 복구한다. 이 설정을 읽지 못하면 그 실행은 수집하지 않는다(기기에 남은 유입 정보는 지우지 않는다). 웹은 다른 탭에서 바꾼 설정도 새로고침 없이 따르고, 설정 화면 토글 표시도 함께 바뀐다. 수집이 꺼진 빌드에서는 토글을 보여 주지 않는다.
+- `custom_data` 에 링크 ID·URL·검색어처럼 회원을 특정할 수 있는 값을 넣지 않는다.
+- 운영에서 켜기 전에 S3 수명 주기(현재 버전·이전 버전 24개월), Firehose 오류 경로·Athena 결과 버킷 보관기간, 리전(서울)을 맞추고 App Privacy·Play 데이터 보안을 갱신한다.
 - `ENVIRONMENT`, `REGION`, `IDENTITY_POOL_ID`, `STREAM_NAME`을 설정한다.
 - 웹의 `client_version`은 `EXPO_PUBLIC_WEB_VERSION`에서 읽는다. 설정하지 않으면 `null`로 전송한다.
 - 앱에 고정 AWS 비밀 키를 넣지 않고 Cognito 임시 자격 증명을 사용한다.
@@ -208,8 +209,7 @@ const TrackedPressable = withTracking(Pressable);
 
 | 핵심 지표 | 집계 기준 |
 | --- | --- |
-| 회원 DAU | KST 하루 동안 활동한 고유 `user_id` 수. 플랫폼별·플랫폼 통합으로 확인 |
-| 익명 활동 | 회원 ID가 확인되지 않은 고유 `anonymous_id` 수. 회원 DAU와 별도 표시 |
+| 기기 DAU | KST 하루 동안 활동한 고유 `anonymous_id` 수. 로그아웃·계정 전환 때 바뀌므로 사람 수보다 많게 잡힐 수 있다. 회원 수는 서버 DB 로 확인 |
 | 단계별 전환율 | 다음 단계 도달 세션 / 이전 단계 도달 세션 |
 | 전체 전환율 | 저장까지 도달한 세션 / 진입 세션 |
 | 단계별 이탈 | 조회 기간이 끝날 때까지 다음 단계 이벤트가 기록되지 않은 세션 |

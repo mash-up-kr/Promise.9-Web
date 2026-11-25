@@ -33,11 +33,16 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     let isStopped = false;
     let stopIdentity: (() => void) | undefined;
     let stopPlatform: (() => void) | undefined;
+    let stopCollecting: (() => void) | undefined;
     try {
       // 저장소 복구 중에도 앱·탭의 비활성 전환 시점을 놓치지 않는다.
       stopPlatform = platform.bindPlatformAnalytics(
         runtime.capture,
         screen.handleActivityChange,
+      );
+      // 다른 탭이 이미 저장한 값이라 다시 쓰지 않는다(다시 쓰면 탭끼리 이전 값으로 되돌릴 수 있다).
+      stopCollecting = platform.subscribeCollectingChanges((isCollecting) =>
+        runtime.setCollecting(isCollecting, { persist: false }),
       );
       void runtime.ready
         .then(() => {
@@ -59,6 +64,7 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
       isStopped = true;
       stopIdentity?.();
       stopPlatform?.();
+      stopCollecting?.();
       // StrictMode의 effect 재연결은 살아 있는 동일 수집기를 폐기하지 않는다.
       queueMicrotask(() => {
         if (lifecycleVersion.current !== currentLifecycleVersion) return;
@@ -76,8 +82,8 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
 }
 function AnalyticsNavigation() {
   const { runtime } = useAnalyticsContext();
-  const path = usePathname();
   const segments = useSegments();
+  const pathname = usePathname();
   const {
     utm_source: utmSource,
     utm_medium: utmMedium,
@@ -105,6 +111,7 @@ function AnalyticsNavigation() {
     });
   }, [runtime, utmSource, utmMedium, utmCampaign, utmContent, utmTerm]);
   useTrackServiceEntry();
-  useTrackScreen(screenName, path);
+  // 실제 경로 대신 템플릿(/link/[id])을 남긴다 — 링크 ID로 회원을 특정할 수 있다. 구간은 실제 경로로 나눈다.
+  useTrackScreen(screenName, `/${route === "index" ? "" : route}`, pathname);
   return null;
 }

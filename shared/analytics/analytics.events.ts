@@ -12,7 +12,7 @@ export const ANALYTICS_EVENTS = {
   COMPONENT_CLICKED: "component_clicked",
   /** 추적 대상이 노출 기준을 충족했을 때 기록한다. 반복 관찰 제어는 각 수집 훅이 맡는다. */
   COMPONENT_IMPRESSION: "component_impression",
-  /** 링크 생성 성공 시 link_id와 선택적 entry_point를 기록한다. */
+  /** 링크 생성 성공 시 선택적 entry_point를 기록한다. link_id는 서버 DB와 맞춰 회원을 특정할 수 있어 넣지 않는다. */
   LINK_SAVED: "link_saved",
   /** 소셜 인증과 토큰 저장이 완료되면 provider를 기록한다. */
   LOGIN_COMPLETED: "login_completed",
@@ -44,7 +44,7 @@ interface EventData {
   };
   [ANALYTICS_EVENTS.COMPONENT_CLICKED]: ComponentData;
   [ANALYTICS_EVENTS.COMPONENT_IMPRESSION]: ComponentData;
-  [ANALYTICS_EVENTS.LINK_SAVED]: { link_id: number; entry_point?: string };
+  [ANALYTICS_EVENTS.LINK_SAVED]: { entry_point?: string };
   [ANALYTICS_EVENTS.LOGIN_COMPLETED]: { provider: string };
   [ANALYTICS_EVENTS.SIGNUP_COMPLETED]: { provider: string };
 }

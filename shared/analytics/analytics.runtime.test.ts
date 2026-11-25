@@ -31,9 +31,9 @@ test("로그아웃 뒤 동일 UTM으로 재유입해도 새 익명 접점을 기
   );
   expect(events.at(-1).anonymous_id).not.toBe(events[0].anonymous_id);
   expect(events.at(-1)).toMatchObject({
-    user_id: null,
     utm: { utm_source: "newsletter" },
   });
+  expect(events.at(-1)).not.toHaveProperty("user_id");
   runtime.client.dispose();
 });
 
@@ -97,7 +97,8 @@ test("저장소 준비 중에도 이벤트를 받아 발생 시각을 유지하�
   runtime.identify("123");
   await runtime.client.flush();
   const event = JSON.parse(toUtf8(send.mock.calls[0][0][0]));
-  expect(event).toMatchObject({ anonymous_id: "restored-anon", user_id: null });
+  expect(event).toMatchObject({ anonymous_id: "restored-anon" });
+  expect(event).not.toHaveProperty("user_id");
   expect(Date.parse(event.occurred_at)).toBeGreaterThanOrEqual(before);
   runtime.client.dispose();
 });
@@ -153,4 +154,151 @@ test("재실행 시 식별자·UTM만 복원하고 미전송 이벤트는 복원
     utm: { utm_source: "newsletter" },
   });
   next.client.dispose();
+});
+
+describe("수집 끄기 저장", () => {
+  function memoryStorage(initial: Record<string, string> = {}) {
+    const values = new Map(Object.entries(initial));
+    return {
+      values,
+      storage: {
+        get: async (key: string) => values.get(key) ?? null,
+        set: async (key: string, value: string) => {
+          values.set(key, value);
+        },
+      },
+    };
+  }
+  const create = (storage: ReturnType<typeof memoryStorage>["storage"]) => {
+    let id = 0;
+    return createAnalytics({
+      send,
+      source: "app",
+      environment: "production",
+      aws: { region: "r", identityPoolId: "p", streamName: "s" },
+      storage,
+      newId: () => `id-${++id}`,
+    });
+  };
+
+  test("끈 설정을 저장하고, 다시 실행하면 준비 전에 받은 첫 이벤트도 보내지 않는다", async () => {
+    const { values, storage } = memoryStorage();
+    const first = create(storage);
+    await first.ready;
+    first.setCollecting(false);
+    await first.client.flush();
+    first.client.dispose();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect([...values.values()]).toContain("false");
+
+    const next = create(storage);
+    next.client.trackEvent({ event_name: "in" });
+    await next.ready;
+    expect(next.client.isCollecting).toBe(false);
+    await next.client.flush();
+    expect(send).not.toHaveBeenCalled();
+    next.client.dispose();
+  });
+  test("끄면 대기 중인 유입 접점을 지우고, 꺼진 동안 들어온 UTM은 저장·동기화하지 않는다", async () => {
+    const { values, storage } = memoryStorage();
+    const runtime = create(storage);
+    await runtime.ready;
+    const listener = jest.fn();
+    runtime.subscribeTouch(listener);
+    runtime.capture({ utm_source: "before" });
+    runtime.setCollecting(false);
+    expect(runtime.pendingTouch).toBeNull();
+    listener.mockClear();
+    runtime.capture({ utm_source: "while_off" });
+    expect(runtime.pendingTouch).toBeNull();
+    expect(listener).not.toHaveBeenCalled();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(values.get("promise9_analytics_attribution")).toBe("null");
+    runtime.client.dispose();
+  });
+  test("꺼진 채 다시 실행하면 준비 전에 받은 UTM과 저장된 접점을 되살리지 않는다", async () => {
+    const touch = {
+      touch_id: "stored",
+      captured_at: "2026-11-01T00:00:00.000Z",
+      utm_source: "stored",
+      utm_medium: null,
+      utm_campaign: null,
+      utm_content: null,
+      utm_term: null,
+    };
+    const { storage } = memoryStorage({
+      promise9_analytics_collecting: "false",
+      promise9_analytics_attribution: JSON.stringify(touch),
+    });
+    const runtime = create(storage);
+    runtime.capture({ utm_source: "before_ready" });
+    await runtime.ready;
+    expect(runtime.pendingTouch).toBeNull();
+    runtime.client.dispose();
+  });
+  test("끄기 설정을 읽지 못하면 그 실행에서는 수집하지 않는다", async () => {
+    const runtime = create({
+      get: async (key: string) => {
+        if (key === "promise9_analytics_collecting") throw new Error("denied");
+        return null;
+      },
+      set: async () => {},
+    });
+    runtime.client.trackEvent({ event_name: "in" });
+    await runtime.ready;
+    expect(runtime.client.isCollecting).toBe(false);
+    await runtime.client.flush();
+    expect(send).not.toHaveBeenCalled();
+    runtime.client.dispose();
+  });
+  test("다른 탭에서 받은 설정은 저장소에 다시 쓰지 않고 구독자에게 알린다", async () => {
+    const { values, storage } = memoryStorage();
+    const runtime = create(storage);
+    await runtime.ready;
+    const listener = jest.fn();
+    runtime.subscribeCollecting(listener);
+    runtime.setCollecting(false, { persist: false });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(runtime.client.isCollecting).toBe(false);
+    expect(values.has("promise9_analytics_collecting")).toBe(false);
+    expect(values.get("promise9_analytics_attribution")).toBeUndefined();
+    expect(listener).toHaveBeenCalledTimes(1);
+    runtime.client.dispose();
+  });
+  test("끄기 설정을 읽지 못해 이번 실행만 멈출 때 저장된 유입 정보는 남긴다", async () => {
+    const stored = JSON.stringify({
+      touch_id: "stored",
+      captured_at: "2026-11-01T00:00:00.000Z",
+      utm_source: "stored",
+      utm_medium: null,
+      utm_campaign: null,
+      utm_content: null,
+      utm_term: null,
+    });
+    const values = new Map([["promise9_analytics_attribution", stored]]);
+    const runtime = create({
+      get: async (key: string) => {
+        if (key === "promise9_analytics_collecting") throw new Error("denied");
+        return values.get(key) ?? null;
+      },
+      set: async (key: string, value: string) => {
+        values.set(key, value);
+      },
+    });
+    await runtime.ready;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(runtime.pendingTouch).toBeNull();
+    expect(values.get("promise9_analytics_attribution")).toBe(stored);
+    runtime.client.dispose();
+  });
+  test("저장값을 읽기 전에 바꾼 설정은 나중에 읽은 저장값으로 덮지 않는다", async () => {
+    const { storage } = memoryStorage({
+      promise9_analytics_collecting: "false",
+    });
+    const runtime = create(storage);
+    runtime.setCollecting(true);
+    await runtime.ready;
+    expect(runtime.client.isCollecting).toBe(true);
+    runtime.client.dispose();
+  });
 });

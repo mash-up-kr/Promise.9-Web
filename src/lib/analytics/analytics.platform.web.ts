@@ -1,6 +1,7 @@
-import type {
-  AnalyticsRuntime,
-  AnalyticsStorage,
+import {
+  ANALYTICS_COLLECTING_KEY,
+  type AnalyticsRuntime,
+  type AnalyticsStorage,
 } from "@shared/analytics/analytics.runtime";
 import type { ScreenTracking } from "@shared/analytics/analytics.screen";
 import { subscribeTokens } from "@shared/api/token";
@@ -41,6 +42,18 @@ export function subscribeIdentityChanges(listener: () => void): () => void {
     stopTokens();
     stopActive();
   };
+}
+
+/** 다른 탭에서 바꾼 수집 끄기 설정을 받는다. 저장소를 비운 신호(newValue null)는 다음 실행부터 반영한다. */
+export function subscribeCollectingChanges(
+  apply: (isCollecting: boolean) => void,
+): () => void {
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === ANALYTICS_COLLECTING_KEY && event.newValue !== null)
+      apply(event.newValue !== "false");
+  };
+  window.addEventListener("storage", handleStorage);
+  return () => window.removeEventListener("storage", handleStorage);
 }
 
 export function getAnalyticsEnvironment() {

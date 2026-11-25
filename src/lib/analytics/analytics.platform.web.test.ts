@@ -1,6 +1,7 @@
 /** @jest-environment jsdom */
 import {
   isReloadNavigation,
+  subscribeCollectingChanges,
   supportsAnalyticsKeepalive,
 } from "./analytics.platform.web";
 
@@ -57,4 +58,19 @@ test.each([
     if (original) Object.defineProperty(globalThis, "Request", original);
     else Reflect.deleteProperty(globalThis, "Request");
   }
+});
+
+test("다른 탭에서 바꾼 수집 설정만 받아 적용하고, 저장소를 비운 신호는 무시한다", () => {
+  const apply = jest.fn();
+  const stop = subscribeCollectingChanges(apply);
+  const fire = (key: string | null, newValue: string | null) =>
+    window.dispatchEvent(new StorageEvent("storage", { key, newValue }));
+  fire("promise9_analytics_collecting", "false");
+  fire("promise9_analytics_collecting", "true");
+  fire("other_key", "false");
+  fire(null, null);
+  expect(apply.mock.calls).toEqual([[false], [true]]);
+  stop();
+  fire("promise9_analytics_collecting", "false");
+  expect(apply).toHaveBeenCalledTimes(2);
 });

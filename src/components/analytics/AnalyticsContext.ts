@@ -1,7 +1,7 @@
 import type { TrackEvent } from "@shared/analytics/analytics.events";
 import type { AnalyticsRuntime } from "@shared/analytics/analytics.runtime";
 import type { ScreenTracking } from "@shared/analytics/analytics.screen";
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 interface AnalyticsContextValue {
   runtime: AnalyticsRuntime | null;
@@ -25,4 +25,37 @@ export function useAnalytics(): { trackEvent: TrackEvent } {
       trackEvent,
     };
   }, [client]);
+}
+
+/** 설정 화면의 수집 끄기 토글. 수집이 꺼진 빌드이거나 저장값을 읽기 전이면 null 이다. */
+export function useAnalyticsCollection(): {
+  isCollecting: boolean;
+  setCollecting: (isCollecting: boolean) => void;
+} | null {
+  const { runtime } = useAnalyticsContext();
+  const [isCollecting, setIsCollecting] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!runtime) return;
+    let isMounted = true;
+    const sync = () => {
+      if (isMounted) setIsCollecting(runtime.client.isCollecting);
+    };
+    // 다른 탭에서 바뀐 설정도 표시에 반영한다.
+    const stop = runtime.subscribeCollecting(sync);
+    void runtime.ready
+      .then(sync)
+      .catch(() => console.warn("[analytics] startup_failed"));
+    return () => {
+      isMounted = false;
+      stop();
+    };
+  }, [runtime]);
+  if (!runtime || isCollecting === null) return null;
+  return {
+    isCollecting,
+    setCollecting: (value) => {
+      runtime.setCollecting(value);
+      setIsCollecting(value);
+    },
+  };
 }

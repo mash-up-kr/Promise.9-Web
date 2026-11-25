@@ -22,7 +22,6 @@ export interface AnalyticsContext {
   source: "web" | "app" | "extension";
   environment: "development" | "production";
   anonymous_id?: string | null;
-  user_id?: string | null;
   session_id?: string | null;
   os?: string;
   browser?: string | null;
@@ -37,7 +36,7 @@ export interface EventMetadata {
 
 /** 큐에 보관하는 이벤트. 공통 문맥과 custom_data는 발생 시점의 값이다. */
 export interface AnalyticsEvent extends Required<AnalyticsContext> {
-  schema_version: 1;
+  schema_version: 2;
   event_id: string;
   occurred_at: string;
   event_name: string;
@@ -45,7 +44,7 @@ export interface AnalyticsEvent extends Required<AnalyticsContext> {
 }
 
 /**
- * 발생 시점의 문맥을 최상위 14개 필드로 고정한다.
+ * 발생 시점의 문맥을 최상위 13개 필드로 고정한다. 회원 ID는 보내지 않는다(처리방침 제9조).
  * custom_data는 전송 계약에 맞는 JSON 문자열로 복사해 이후 원본 수정과 분리한다.
  */
 export function createAnalyticsEvent(
@@ -55,14 +54,13 @@ export function createAnalyticsEvent(
 ): AnalyticsEvent {
   const { custom_data, event_name } = analyticsEventInputSchema.parse(input);
   return {
-    schema_version: 1,
+    schema_version: 2,
     event_id: metadata.eventId,
     occurred_at: metadata.occurredAt,
     event_name,
     source: context.source,
     environment: context.environment,
     anonymous_id: context.anonymous_id ?? null,
-    user_id: context.user_id ?? null,
     session_id: context.session_id ?? null,
     os: context.os ?? "unknown",
     browser: context.browser ?? null,

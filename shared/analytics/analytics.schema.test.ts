@@ -4,7 +4,6 @@ const context = {
   source: "web" as const,
   environment: "production" as const,
   anonymous_id: "anon-1",
-  user_id: null,
   session_id: "session-1",
   os: "macos",
   browser: "chrome",
@@ -13,7 +12,7 @@ const context = {
 };
 const metadata = { eventId: "event-1", occurredAt: "2026-10-18T12:00:00.000Z" };
 
-test("최상위 14개 필드만 전송하고 빈 커스텀 데이터에 문맥을 강제하지 않는다", () => {
+test("최상위 13개 필드만 전송하고 회원 ID는 보내지 않으며 빈 커스텀 데이터에 문맥을 강제하지 않는다", () => {
   const event = createAnalyticsEvent(
     { event_name: "test_requested" },
     context,
@@ -28,7 +27,6 @@ test("최상위 14개 필드만 전송하고 빈 커스텀 데이터에 문맥�
       "source",
       "environment",
       "anonymous_id",
-      "user_id",
       "session_id",
       "os",
       "browser",
@@ -37,6 +35,7 @@ test("최상위 14개 필드만 전송하고 빈 커스텀 데이터에 문맥�
       "custom_data",
     ].sort(),
   );
+  expect(event.schema_version).toBe(2);
   expect(event.custom_data).toBe("{}");
   expect(event.utm).toBeNull();
 });
@@ -78,7 +77,6 @@ test("실행 환경 값을 생략하면 기본값을 채운다", () => {
     browser: null,
     client_version: null,
     anonymous_id: null,
-    user_id: null,
     session_id: null,
   });
 });
