@@ -17,5 +17,6 @@ overrides:
   "@types/react": 19.2.17
 
 patchedDependencies:
+  expo-notifications@56.0.26: patches/expo-notifications@56.0.26.patch
   expo-share-extension@5.0.6: patches/expo-share-extension@5.0.6.patch
   react-native-css: patches/react-native-css.patch
