@@ -32,8 +32,10 @@ const settings = (email: boolean) => ({
   data: { success: true, data: { email, push: true } },
 });
 
+const onSaveFailure = vi.fn();
+
 const render = (onBack: () => void = () => {}) =>
-  renderPanel(<SettingsScreen onBack={onBack} />);
+  renderPanel(<SettingsScreen onBack={onBack} onSaveFailure={onSaveFailure} />);
 
 const emailSwitch = () => screen.findByRole("switch", { name: "이메일 알림" });
 
@@ -153,29 +155,27 @@ describe("SettingsScreen", () => {
     expect(await emailSwitch()).toHaveAttribute("aria-checked", "false");
   });
 
-  it("저장에 실패하면 되돌리고 알린다", async () => {
+  it("저장에 실패하면 되돌리고 실패를 알린다", async () => {
     patch.mockRejectedValue(new Error("500"));
     render();
 
     await userEvent.click(await emailSwitch());
 
-    expect(
-      await screen.findByText(
-        "설정을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.",
-      ),
-    ).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(onSaveFailure).toHaveBeenCalledWith("failed"),
+    );
     expect(await emailSwitch()).toHaveAttribute("aria-checked", "true");
   });
 
-  it("오프라인이면 되돌리고 인터넷 연결을 확인하라고 알린다", async () => {
+  it("오프라인이면 되돌리고 오프라인 실패로 알린다", async () => {
     patch.mockRejectedValue(new NetworkError());
     render();
 
     await userEvent.click(await emailSwitch());
 
-    expect(
-      await screen.findByText("인터넷 연결을 확인해 주세요."),
-    ).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(onSaveFailure).toHaveBeenCalledWith("offline"),
+    );
     expect(await emailSwitch()).toHaveAttribute("aria-checked", "true");
   });
 
@@ -207,7 +207,9 @@ describe("SettingsScreen", () => {
     });
     const view = (isOpen: boolean) => (
       <QueryClientProvider client={client}>
-        {isOpen ? <SettingsScreen onBack={() => {}} /> : null}
+        {isOpen ? (
+          <SettingsScreen onBack={() => {}} onSaveFailure={onSaveFailure} />
+        ) : null}
       </QueryClientProvider>
     );
     const { rerender } = renderWithoutWrapper(view(true));

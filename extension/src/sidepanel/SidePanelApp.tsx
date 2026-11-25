@@ -28,7 +28,11 @@ import {
   ResultScreen,
 } from "@/sidepanel/screens/ResultScreen";
 import { SaveScreen } from "@/sidepanel/screens/SaveScreen";
-import { SettingsScreen } from "@/sidepanel/screens/SettingsScreen";
+import {
+  type SaveFailure,
+  SaveFailureSnackbar,
+  SettingsScreen,
+} from "@/sidepanel/screens/SettingsScreen";
 import { TimePickerScreen } from "@/sidepanel/screens/TimePickerScreen";
 
 /** 저장 phase → 결과 화면. `saving` 은 결과가 아니라 저장 화면이 그대로 뜬 채 버튼만 잠긴다. */
@@ -71,6 +75,37 @@ const closeOverlay = (previous: Draft): Draft => ({
 });
 
 export function SidePanelApp() {
+  // 설정 저장 실패는 설정 화면을 나간 뒤에 끝날 수도 있어 화면보다 위에서 알린다.
+  // 같은 실패가 다시 나도 2.5초를 새로 세도록 매번 새 key 로 띄운다.
+  const [saveFailure, setSaveFailure] = useState<{
+    id: number;
+    kind: SaveFailure;
+  } | null>(null);
+  const dismissSaveFailure = useCallback(() => setSaveFailure(null), []);
+
+  return (
+    <>
+      <PanelScreens
+        onSettingsSaveFailure={(kind) =>
+          setSaveFailure({ id: Date.now(), kind })
+        }
+      />
+      {saveFailure ? (
+        <SaveFailureSnackbar
+          key={saveFailure.id}
+          kind={saveFailure.kind}
+          onDismiss={dismissSaveFailure}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function PanelScreens({
+  onSettingsSaveFailure,
+}: {
+  onSettingsSaveFailure: (kind: SaveFailure) => void;
+}) {
   const analytics = useAnalytics();
   const { screen: analyticsScreen } = useAnalyticsScreen();
   const isClosing = useRef(false);
@@ -180,7 +215,10 @@ export function SidePanelApp() {
   if (loggedIn && isSettingsOpen) {
     return (
       <AnalyticsScreen name="settings">
-        <SettingsScreen onBack={() => setIsSettingsOpen(false)} />
+        <SettingsScreen
+          onBack={() => setIsSettingsOpen(false)}
+          onSaveFailure={onSettingsSaveFailure}
+        />
       </AnalyticsScreen>
     );
   }

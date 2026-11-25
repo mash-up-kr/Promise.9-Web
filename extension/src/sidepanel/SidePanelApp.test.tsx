@@ -44,10 +44,18 @@ const folderListResponse = {
   },
 };
 
+const patch = vi.fn();
+
 vi.mock("@shared/api/client", () => ({
   apiClient: {
-    get: vi.fn(async () => ({ data: folderListResponse })),
+    get: vi.fn(async (path: string) => ({
+      data:
+        path === "/users/me/notification-settings"
+          ? { success: true, data: { email: true, push: true } }
+          : folderListResponse,
+    })),
     post: vi.fn(async () => ({ data: { success: true, data: {} } })),
+    patch: (...args: unknown[]) => patch(...args),
   },
 }));
 
@@ -488,6 +496,37 @@ describe("SidePanelApp", () => {
 
     expect(await screen.findByText(SAVABLE_TAB.title)).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "설정" })).toBeNull();
+  });
+
+  it("이메일 변경이 끝나기 전에 설정을 나가도 실패하면 알린다", async () => {
+    let fail: (error: Error) => void = () => {};
+    patch.mockReturnValue(
+      new Promise((_resolve, reject) => {
+        fail = reject;
+      }),
+    );
+    installChromeMock({
+      tab: SAVABLE_TAB,
+      local: { refreshToken: "stored-refresh-token" },
+    });
+    const user = userEvent.setup();
+
+    renderPanel(<SidePanelApp />);
+    await screen.findByText(SAVABLE_TAB.title);
+    await user.click(screen.getByRole("button", { name: "설정" }));
+    await user.click(
+      await screen.findByRole("switch", { name: "이메일 알림" }),
+    );
+    await user.click(screen.getByRole("button", { name: "뒤로 가기" }));
+
+    act(() => fail(new Error("500")));
+
+    expect(
+      await screen.findByText(
+        "설정을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText(SAVABLE_TAB.title)).toBeInTheDocument();
   });
 
   it("저장할 수 없는 탭으로 옮기면 안내로 바뀐다", async () => {

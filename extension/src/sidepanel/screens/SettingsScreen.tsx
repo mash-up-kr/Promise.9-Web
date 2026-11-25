@@ -13,20 +13,13 @@ import {
 } from "@shared/entities/user/user.notification.queries";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { ChevronLeft, CircleAlert } from "lucide-react-native";
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 
 import { AsyncBoundary } from "@/sidepanel/components/AsyncBoundary";
 import { IconButton } from "@/sidepanel/components/IconButton";
 import { Snackbar } from "@/sidepanel/components/Snackbar";
 
-type SaveFailure = "offline" | "failed";
+export type SaveFailure = "offline" | "failed";
 
 const SAVE_FAILURE_SNACKBAR = {
   offline: { icon: <WifiOffIcon />, message: "인터넷 연결을 확인해 주세요." },
@@ -38,17 +31,12 @@ const SAVE_FAILURE_SNACKBAR = {
 
 export interface SettingsScreenProps {
   onBack: () => void;
+  onSaveFailure: (kind: SaveFailure) => void;
 }
 
 /** 시안 `setting / web / main` 의 알림 섹션. */
-export function SettingsScreen({ onBack }: SettingsScreenProps) {
+export function SettingsScreen({ onBack, onSaveFailure }: SettingsScreenProps) {
   const [isAppInstallOpen, setIsAppInstallOpen] = useState(false);
-  // 같은 실패가 다시 나도 2.5초를 새로 세도록 매번 새 key 로 띄운다.
-  const [saveFailure, setSaveFailure] = useState<{
-    id: number;
-    kind: SaveFailure;
-  } | null>(null);
-  const dismissSnackbar = useCallback(() => setSaveFailure(null), []);
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
@@ -65,11 +53,7 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
                 pending={<EmailRowPending />}
                 rejected={(retry) => <EmailRowRejected onRetry={retry} />}
               >
-                <EmailRow
-                  onSaveFailure={(kind) =>
-                    setSaveFailure({ id: Date.now(), kind })
-                  }
-                />
+                <EmailRow onSaveFailure={onSaveFailure} />
               </AsyncBoundary>
               <ListRow
                 label="앱 설치하고 푸시 알림 받기"
@@ -85,15 +69,19 @@ export function SettingsScreen({ onBack }: SettingsScreenProps) {
       {isAppInstallOpen ? (
         <AppInstallSheet onClose={() => setIsAppInstallOpen(false)} />
       ) : null}
-      {saveFailure ? (
-        <Snackbar
-          key={saveFailure.id}
-          {...SAVE_FAILURE_SNACKBAR[saveFailure.kind]}
-          onDismiss={dismissSnackbar}
-        />
-      ) : null}
     </div>
   );
+}
+
+/** 시안 save-failed · offline Snackbar. */
+export function SaveFailureSnackbar({
+  kind,
+  onDismiss,
+}: {
+  kind: SaveFailure;
+  onDismiss: () => void;
+}) {
+  return <Snackbar {...SAVE_FAILURE_SNACKBAR[kind]} onDismiss={onDismiss} />;
 }
 
 /** 누르는 즉시 반영하고, 실패하면 되돌린다(뮤테이션). 저장 중에 다시 누른 것은 무시한다. */
@@ -103,7 +91,7 @@ function EmailRow({
   onSaveFailure: (kind: SaveFailure) => void;
 }) {
   const { data } = useSuspenseQuery(notificationSettingsQueries.detail());
-  const { mutate, isPending } = useUpdateNotificationSettingsMutation();
+  const { mutateAsync, isPending } = useUpdateNotificationSettingsMutation();
 
   return (
     <ListRow
@@ -112,14 +100,9 @@ function EmailRow({
         value: data.email,
         onChange: (email) => {
           if (isPending) return;
-          mutate(
-            { email },
-            {
-              onError: (error) =>
-                onSaveFailure(
-                  error instanceof NetworkError ? "offline" : "failed",
-                ),
-            },
+          // mutate 의 콜백과 달리 promise 는 화면을 나간 뒤에도 결과가 온다.
+          mutateAsync({ email }).catch((error: unknown) =>
+            onSaveFailure(error instanceof NetworkError ? "offline" : "failed"),
           );
         },
       }}
