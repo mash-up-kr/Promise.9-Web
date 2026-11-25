@@ -4,7 +4,7 @@ import {
   fetchUserAttribution,
   saveMarketingTouch,
 } from "@shared/entities/user/user.attribution.api";
-import { useGlobalSearchParams, useSegments } from "expo-router";
+import { useGlobalSearchParams, usePathname, useSegments } from "expo-router";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useScreenTracking } from "@/hooks/useScreenTracking";
 import { useTrackScreen } from "@/hooks/useTrackScreen";
@@ -77,6 +77,7 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
 function AnalyticsNavigation() {
   const { runtime } = useAnalyticsContext();
   const segments = useSegments();
+  const pathname = usePathname();
   const {
     utm_source: utmSource,
     utm_medium: utmMedium,
@@ -104,7 +105,7 @@ function AnalyticsNavigation() {
     });
   }, [runtime, utmSource, utmMedium, utmCampaign, utmContent, utmTerm]);
   useTrackServiceEntry();
-  // 실제 경로 대신 템플릿(/link/[id])을 남긴다 — 링크 ID로 회원을 특정할 수 있다.
-  useTrackScreen(screenName, `/${route === "index" ? "" : route}`);
+  // 실제 경로 대신 템플릿(/link/[id])을 남긴다 — 링크 ID로 회원을 특정할 수 있다. 구간은 실제 경로로 나눈다.
+  useTrackScreen(screenName, `/${route === "index" ? "" : route}`, pathname);
   return null;
 }

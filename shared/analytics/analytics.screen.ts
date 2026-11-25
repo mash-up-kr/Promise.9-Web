@@ -2,7 +2,7 @@ import { ANALYTICS_EVENTS } from "@shared/analytics/analytics.events";
 import type { AnalyticsClient } from "./analytics.client";
 
 interface ScreenState {
-  route: { name: string; path: string } | null;
+  route: { name: string; path: string; key: string } | null;
   visit: { id: string; startedAt: number } | null;
 }
 
@@ -50,11 +50,11 @@ export function createScreenTracking(
     },
     screenProperties: properties,
     endScreenView,
-    view(name: string, path: string) {
+    view(name: string, path: string, key = path) {
       if (client.isDisposed) return;
-      if (current.route?.path !== path) {
+      if (current.route?.key !== key) {
         endScreenView();
-        current.route = { name, path };
+        current.route = { name, path, key };
       }
       if (client.isActive) enterScreen();
     },
@@ -76,6 +76,7 @@ export interface ScreenTracking {
     screen_view_id: string | null;
   };
   endScreenView(): void;
-  view(name: string, path: string): void;
+  /** key가 바뀌면 새 조회 구간이다. path는 기록할 값이라 key와 다를 수 있다(라우트 템플릿). */
+  view(name: string, path: string, key?: string): void;
   handleActivityChange(isActive: boolean): void;
 }
