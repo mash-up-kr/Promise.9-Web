@@ -32,11 +32,16 @@ function updatePending(
 }
 
 // 보내는 중인 요청 — 버튼과 flush 가 같은 기록을 겹쳐 보내지 않고, 등록 전 flush 가 이것까지 기다리게 한다.
-const sending = new Map<string, Promise<void>>();
+const sending = new Map<string, Promise<boolean>>();
 
-/** 한 기록을 보낸다. 성공하거나 다시 보내도 소용없는 4xx 면 기록을 지운다. 던지지 않는다. */
-function send(request: LogoutRequest): Promise<void> {
-  const inFlight = sending.get(request.refreshToken);
+const isSame = (a: LogoutRequest, b: LogoutRequest) =>
+  a.refreshToken === b.refreshToken && a.pushToken === b.pushToken;
+
+/** 한 기록을 보낸다. 성공하거나 다시 보내도 소용없는 4xx 면 기록을 지우고 true. 던지지 않는다. */
+function send(request: LogoutRequest): Promise<boolean> {
+  // 같은 세션이라도 푸시 토큰이 다르면 따로 보낸다 — 합치면 푸시 토큰이 서버에 가지 않는다.
+  const key = JSON.stringify([request.refreshToken, request.pushToken]);
+  const inFlight = sending.get(key);
   if (inFlight) return inFlight;
   const next = (async () => {
     try {
@@ -47,18 +52,19 @@ function send(request: LogoutRequest): Promise<void> {
           "[logout] 서버 로그아웃 실패 — 다음 실행에 다시 보낸다",
           error,
         );
-        return;
+        return false;
       }
     }
     try {
       await updatePending((list) =>
-        list.filter((item) => item.refreshToken !== request.refreshToken),
+        list.filter((item) => !isSame(item, request)),
       );
     } catch (error) {
       console.warn("[logout] 로그아웃 기록 삭제 실패", error);
     }
-  })().finally(() => sending.delete(request.refreshToken));
-  sending.set(request.refreshToken, next);
+    return true;
+  })().finally(() => sending.delete(key));
+  sending.set(key, next);
   return next;
 }
 
@@ -77,8 +83,8 @@ export async function sendLogout(request: LogoutRequest): Promise<void> {
     ).catch(() => console.warn("[logout] 서버 로그아웃 실패"));
     return;
   }
-  await send(request);
-  void flushPendingLogout();
+  // 보내지 못했으면(오프라인 등) 남은 기록도 지금 다시 보내 봐야 소용없다.
+  if (await send(request)) void flushPendingLogout();
 }
 
 /** 남은 로그아웃 요청을 보낸다. 던지지 않는다. */

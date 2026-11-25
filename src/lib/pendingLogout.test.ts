@@ -142,3 +142,23 @@ test("로그아웃은 이번 요청만 기다리고, 남은 기록은 뒤에서 
   expect(result).toBe("done");
   pendingFirst.resolve();
 });
+
+test("같은 세션이라도 푸시 토큰이 다른 요청은 합치지 않고 따로 보낸다", async () => {
+  const pendingFirst = deferred();
+  jest.mocked(logoutRequest).mockReturnValueOnce(pendingFirst.promise);
+
+  const withoutPush = sendLogout({ refreshToken: "rtk-1", pushToken: null });
+  const withPush = sendLogout(request);
+  pendingFirst.resolve();
+  await Promise.all([withoutPush, withPush]);
+
+  expect(logoutRequest).toHaveBeenCalledWith("rtk-1", "ExpoPushToken[a]");
+});
+
+test("보내지 못했으면 남은 기록을 곧바로 다시 보내지 않는다", async () => {
+  jest.mocked(logoutRequest).mockRejectedValueOnce(new NetworkError("offline"));
+  await sendLogout(request);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  expect(logoutRequest).toHaveBeenCalledTimes(1);
+});
