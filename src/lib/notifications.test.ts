@@ -1,11 +1,17 @@
 const mockPlatform = { isAndroid: false };
 
-import { renderHook } from "@testing-library/react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  deletePushToken,
+  putPushToken,
+} from "@shared/entities/user/user.pushToken.api";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { PermissionStatus } from "expo";
 import { startActivityAsync } from "expo-intent-launcher";
 import {
   AndroidImportance,
   clearLastNotificationResponse,
+  getExpoPushTokenAsync,
   getNotificationChannelAsync,
   getPermissionsAsync,
   IosAuthorizationStatus,
@@ -27,13 +33,20 @@ import {
   getReminderLinkHref,
   notificationQueries,
   openNotificationSettings,
+  PUSH_TOKEN_STORAGE_KEY,
+  registerPushToken,
   requestNotificationPermission,
   requestNotificationPermissionOnce,
   setupNotifications,
   toDeviceNotificationPermission,
+  unregisterPushToken,
   useNotificationResponseNavigation,
+  usePushTokenSync,
 } from "./notifications";
 
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 jest.mock("@/constants/platform.constants", () => ({
   get isAndroid() {
     return mockPlatform.isAndroid;
@@ -42,6 +55,10 @@ jest.mock("@/constants/platform.constants", () => ({
 jest.mock("expo-constants", () => ({
   __esModule: true,
   default: { expoConfig: { android: { package: "com.mashup.promise9" } } },
+}));
+jest.mock("@shared/entities/user/user.pushToken.api", () => ({
+  putPushToken: jest.fn().mockResolvedValue(undefined),
+  deletePushToken: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock("expo-router", () => ({ router: { push: jest.fn() } }));
 jest.mock("expo-intent-launcher", () => ({
@@ -81,11 +98,15 @@ function response(data: unknown, identifier = "n1") {
   } as NotificationResponse;
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
   mockPlatform.isAndroid = false;
   queryClient.clear();
+  await AsyncStorage.clear();
 });
+
+// 마지막 테스트의 쿼리 gc 타이머가 남아 jest 가 끝나지 않는다.
+afterAll(() => queryClient.clear());
 
 describe("toDeviceNotificationPermission", () => {
   test("허용·거부·미요청을 그대로 옮긴다", () => {
@@ -338,5 +359,175 @@ describe("useNotificationResponseNavigation", () => {
 
     expect(router.push).not.toHaveBeenCalled();
     expect(clearLastNotificationResponse).toHaveBeenCalledTimes(1);
+  });
+});
+
+const EXPO_TOKEN = "ExpoPushToken[device-1]";
+
+function deferred() {
+  let resolve: () => void = () => {};
+  const promise = new Promise<null>((done) => {
+    resolve = () => done(null);
+  });
+  return { promise, resolve };
+}
+
+describe("registerPushToken", () => {
+  beforeEach(() => {
+    jest
+      .mocked(getExpoPushTokenAsync)
+      .mockResolvedValue({ type: "expo", data: EXPO_TOKEN });
+  });
+
+  test("Expo 푸시 토큰을 발급받아 서버에 등록한다", async () => {
+    await registerPushToken();
+
+    expect(putPushToken).toHaveBeenCalledWith({
+      token: EXPO_TOKEN,
+      platform: "ios",
+    });
+  });
+
+  test("안드로이드는 리마인드 채널이 만들어진 뒤에 토큰을 발급받는다", async () => {
+    mockPlatform.isAndroid = true;
+    const channelCreation = deferred();
+    jest
+      .mocked(setNotificationChannelAsync)
+      .mockReturnValueOnce(channelCreation.promise);
+    setupNotifications();
+
+    const registering = registerPushToken();
+    await act(async () => {});
+    expect(getExpoPushTokenAsync).not.toHaveBeenCalled();
+
+    channelCreation.resolve();
+    await registering;
+    expect(putPushToken).toHaveBeenCalledWith({
+      token: EXPO_TOKEN,
+      platform: "android",
+    });
+  });
+
+  // 다음 트리거(앱 실행·로그인·권한 허용)에서 다시 시도된다.
+  test("실패해도 던지지 않는다", async () => {
+    const consoleWarn = jest.spyOn(console, "warn").mockImplementation();
+    jest.mocked(putPushToken).mockRejectedValueOnce(new Error("offline"));
+
+    await expect(registerPushToken()).resolves.toBeUndefined();
+    consoleWarn.mockRestore();
+  });
+});
+
+describe("unregisterPushToken", () => {
+  beforeEach(() => {
+    jest
+      .mocked(getExpoPushTokenAsync)
+      .mockResolvedValue({ type: "expo", data: EXPO_TOKEN });
+  });
+
+  test("이 기기에서 등록한 토큰을 서버에서 한 번만 해제한다", async () => {
+    await registerPushToken();
+
+    await unregisterPushToken();
+    await unregisterPushToken();
+
+    expect(deletePushToken).toHaveBeenCalledTimes(1);
+    expect(deletePushToken).toHaveBeenCalledWith(EXPO_TOKEN);
+  });
+
+  test("이번 실행에 등록하지 않았어도 지난 실행에 등록한 토큰을 해제한다", async () => {
+    await AsyncStorage.setItem(PUSH_TOKEN_STORAGE_KEY, EXPO_TOKEN);
+
+    await unregisterPushToken();
+
+    expect(deletePushToken).toHaveBeenCalledWith(EXPO_TOKEN);
+  });
+
+  test("등록 중이면 등록이 끝난 뒤 그 토큰을 해제한다", async () => {
+    const registration = deferred();
+    jest
+      .mocked(putPushToken)
+      .mockReturnValueOnce(registration.promise.then(() => undefined));
+    const registering = registerPushToken();
+    await act(async () => {});
+
+    const unregistering = unregisterPushToken();
+    registration.resolve();
+    await Promise.all([registering, unregistering]);
+
+    expect(deletePushToken).toHaveBeenCalledWith(EXPO_TOKEN);
+  });
+
+  // 로그아웃은 "빠져나가기"라 해제 실패·지연으로 붙잡지 않는다.
+  test("응답이 늦으면 기다리지 않는다", async () => {
+    const consoleWarn = jest.spyOn(console, "warn").mockImplementation();
+    await AsyncStorage.setItem(PUSH_TOKEN_STORAGE_KEY, EXPO_TOKEN);
+    jest.mocked(deletePushToken).mockReturnValueOnce(new Promise(() => {}));
+    jest.useFakeTimers();
+
+    const unregistering = unregisterPushToken();
+    await jest.advanceTimersByTimeAsync(3000);
+
+    await expect(unregistering).resolves.toBeUndefined();
+    jest.useRealTimers();
+    consoleWarn.mockRestore();
+  });
+
+  test("실패해도 던지지 않는다", async () => {
+    const consoleWarn = jest.spyOn(console, "warn").mockImplementation();
+    await registerPushToken();
+    jest.mocked(deletePushToken).mockRejectedValueOnce(new Error("offline"));
+
+    await expect(unregisterPushToken()).resolves.toBeUndefined();
+    consoleWarn.mockRestore();
+  });
+});
+
+describe("usePushTokenSync", () => {
+  beforeEach(() => {
+    jest
+      .mocked(getExpoPushTokenAsync)
+      .mockResolvedValue({ type: "expo", data: EXPO_TOKEN });
+  });
+
+  test("로그인 상태에서 알림이 허용돼 있으면 토큰을 등록한다", async () => {
+    jest.mocked(getPermissionsAsync).mockResolvedValue(GRANTED);
+
+    await renderHook(() => usePushTokenSync(true));
+
+    await waitFor(() => expect(putPushToken).toHaveBeenCalledTimes(1));
+  });
+
+  test("알림이 허용되지 않았으면 등록하지 않는다", async () => {
+    jest.mocked(getPermissionsAsync).mockResolvedValue(DENIED);
+
+    await renderHook(() => usePushTokenSync(true));
+
+    await waitFor(() => expect(getPermissionsAsync).toHaveBeenCalled());
+    await act(async () => {});
+    expect(getExpoPushTokenAsync).not.toHaveBeenCalled();
+  });
+
+  // 권한 팝업 결과(requestNotificationPermission)와 OS 설정에서 돌아온 뒤의 포커스 재조회가 모두 이 쿼리를 바꾼다.
+  test("권한이 허용으로 바뀌면 바로 등록한다", async () => {
+    jest.mocked(getPermissionsAsync).mockResolvedValue(DENIED);
+    await renderHook(() => usePushTokenSync(true));
+    await waitFor(() => expect(getPermissionsAsync).toHaveBeenCalled());
+
+    await act(async () => {
+      queryClient.setQueryData(
+        notificationQueries.permission().queryKey,
+        "granted",
+      );
+    });
+
+    await waitFor(() => expect(putPushToken).toHaveBeenCalledTimes(1));
+  });
+
+  test("로그인 상태가 아니면 아무것도 하지 않는다", async () => {
+    await renderHook(() => usePushTokenSync(false));
+
+    await act(async () => {});
+    expect(getPermissionsAsync).not.toHaveBeenCalled();
   });
 });

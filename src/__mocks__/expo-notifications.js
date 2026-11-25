@@ -22,6 +22,10 @@ module.exports = {
   getNotificationChannelAsync: jest.fn().mockResolvedValue(null),
   getPermissionsAsync: jest.fn().mockResolvedValue(undetermined),
   requestPermissionsAsync: jest.fn().mockResolvedValue(undetermined),
+  getExpoPushTokenAsync: jest.fn().mockResolvedValue({
+    type: "expo",
+    data: "ExpoPushToken[mock]",
+  }),
   useLastNotificationResponse: jest.fn().mockReturnValue(null),
   clearLastNotificationResponse: jest.fn(),
 };

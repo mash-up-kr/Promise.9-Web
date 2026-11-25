@@ -32,3 +32,7 @@ export async function openNotificationSettings(): Promise<void> {}
 export function useNotificationResponseNavigation(
   _gate: NotificationTapGate,
 ): void {}
+
+export async function unregisterPushToken(): Promise<void> {}
+
+export function usePushTokenSync(_isSignedIn: boolean): void {}
