@@ -42,6 +42,8 @@ beforeEach(() => {
   );
 });
 
+afterEach(() => setSessionRejectedHandler(null));
+
 test("refreshToken 으로 재발급하고 새 토큰을 저장한 뒤 accessToken 을 반환한다", async () => {
   mockPost.mockResolvedValue(okResponse);
   const token = await refreshAccessToken();
@@ -81,7 +83,6 @@ test("서버가 토큰을 거절하면 거절된 리프레시 토큰을 등록�
   mockPost.mockRejectedValue(axiosStatusError(401));
   await expect(refreshAccessToken()).rejects.toThrow();
   expect(handler).toHaveBeenCalledWith("rtk-old");
-  setSessionRejectedHandler(null);
 });
 
 test("일시 장애면 세션 거절 처리기를 부르지 않는다", async () => {
@@ -90,7 +91,6 @@ test("일시 장애면 세션 거절 처리기를 부르지 않는다", async ()
   mockPost.mockRejectedValue(axiosStatusError(503));
   await expect(refreshAccessToken()).rejects.toThrow();
   expect(handler).not.toHaveBeenCalled();
-  setSessionRejectedHandler(null);
 });
 
 test("네트워크 오류·타임아웃처럼 일시 장애면 토큰을 지우지 않고 throw 한다", async () => {
