@@ -60,7 +60,7 @@ export function SettingsScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View
           testID="settings-scroll-content"
-          className="gap-8 pt-5"
+          className="gap-12 pt-5"
           style={{ paddingBottom: bottomPadding }}
         >
           <NotificationSection />
