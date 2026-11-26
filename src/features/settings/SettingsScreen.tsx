@@ -19,6 +19,7 @@ import { useTabScreenBottomPadding } from "@/components/ui/tab-bar/useTabScreenB
 import { APP_VERSION } from "@/constants/app.constants";
 
 import { settingsQueries } from "./api/settings.queries";
+import { NotificationSection } from "./components/NotificationSection";
 import { useLogout } from "./hooks/useLogout";
 
 function ValueText({ children }: { children: string }) {
@@ -59,9 +60,11 @@ export function SettingsScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View
           testID="settings-scroll-content"
-          className="gap-8 pt-5"
+          className="gap-12 pt-5"
           style={{ paddingBottom: bottomPadding }}
         >
+          <NotificationSection />
+
           <ListSection title="계정">
             <ListGroup>
               <ListRow

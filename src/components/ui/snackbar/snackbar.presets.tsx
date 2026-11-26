@@ -26,9 +26,9 @@ export const snackbarPresets = {
     icon: <FrownIcon />,
     ...(onRetry && { action: { label: "다시 시도", onPress: onRetry } }),
   }),
-  offline: (message: string, onRetry: () => void): SnackbarOptions => ({
+  offline: (message: string, onRetry?: () => void): SnackbarOptions => ({
     message,
     icon: <WifiOffIcon />,
-    action: { label: "다시 시도", onPress: onRetry },
+    ...(onRetry && { action: { label: "다시 시도", onPress: onRetry } }),
   }),
 };

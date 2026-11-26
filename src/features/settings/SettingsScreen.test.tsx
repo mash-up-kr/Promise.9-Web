@@ -14,6 +14,13 @@ jest.mock("expo-constants", () => ({
   default: { expoConfig: { version: "1.0.0" } },
 }));
 
+// 알림 섹션은 자체 테스트가 있다 — 여기선 자리(순서)만 본다.
+jest.mock("./components/NotificationSection", () => {
+  const { createElement } = require("react");
+  const { Text } = require("react-native");
+  return { NotificationSection: () => createElement(Text, null, "알림") };
+});
+
 import type { AnalyticsRuntime } from "@shared/analytics/analytics.runtime";
 import { apiClient } from "@shared/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -87,6 +94,14 @@ describe("SettingsScreen", () => {
     expect(screen.getByText("서비스 이용약관")).toBeOnTheScreen();
     expect(screen.getByText("개인정보처리방침")).toBeOnTheScreen();
     expect(screen.getByText("버전 정보")).toBeOnTheScreen();
+  });
+
+  test("섹션은 알림 → 계정 → 서비스 순서다", async () => {
+    await renderScreen();
+    const titles = screen
+      .getAllByText(/^(알림|계정|서비스)$/)
+      .map((node) => node.props.children);
+    expect(titles).toEqual(["알림", "계정", "서비스"]);
   });
 
   test("스크롤 끝은 플로팅 탭바(safe-area 34 + 바 60) 위로 36 을 남긴다", async () => {
