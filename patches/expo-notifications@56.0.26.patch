@@ -1,0 +1,28 @@
+diff --git a/build/getDevicePushTokenAsync.js b/build/getDevicePushTokenAsync.js
+index f0875c5eaa84d45d646edd1ad5f21a962f68ab02..417bfd83cfc2b5d802f658e11baba9d13af02262 100644
+--- a/build/getDevicePushTokenAsync.js
++++ b/build/getDevicePushTokenAsync.js
+@@ -12,17 +12,13 @@ export async function getDevicePushTokenAsync() {
+         throw new UnavailabilityError('ExpoNotifications', 'getDevicePushTokenAsync');
+     }
+     warnOfExpoGoPushUsage();
+-    let devicePushToken;
+-    if (nativeTokenPromise) {
+-        // Reuse existing Promise
+-        devicePushToken = await nativeTokenPromise;
+-    }
+-    else {
+-        // Create a new Promise and clear it afterwards
+-        nativeTokenPromise = PushTokenManager.getDevicePushTokenAsync();
+-        devicePushToken = await nativeTokenPromise;
+-        nativeTokenPromise = null;
++    if (!nativeTokenPromise) {
++        // Share one in-flight native request; clear it once it settles so a rejection can be retried
++        nativeTokenPromise = PushTokenManager.getDevicePushTokenAsync().finally(() => {
++            nativeTokenPromise = null;
++        });
+     }
++    const devicePushToken = await nativeTokenPromise;
+     // @ts-ignore: TS thinks Platform.OS could be anything and can't decide what type is it
+     return { type: Platform.OS, data: devicePushToken };
+ }

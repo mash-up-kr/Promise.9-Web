@@ -25,6 +25,7 @@ import { setupFocusManager } from "@/lib/focus-manager";
 import {
   setupNotifications,
   useNotificationResponseNavigation,
+  usePushTokenSync,
 } from "@/lib/notifications";
 import { setupOnlineManager } from "@/lib/online-manager";
 import { queryClient } from "@/lib/queryClient";
@@ -87,6 +88,7 @@ export default function RootLayout() {
     isReady: isFontsReady && authStatus === "authenticated",
     isSignedOut: authStatus === "unauthenticated",
   });
+  usePushTokenSync(authStatus === "authenticated");
   const splashPhase = useSplashPhase(isFontsReady && authStatus !== "checking");
 
   if (!isFontsReady || authStatus === "checking") {

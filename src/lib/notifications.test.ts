@@ -1,11 +1,15 @@
 const mockPlatform = { isAndroid: false };
 
-import { renderHook } from "@testing-library/react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setSessionRejectedHandler } from "@shared/api";
+import { putPushToken } from "@shared/entities/user/user.pushToken.api";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { PermissionStatus } from "expo";
 import { startActivityAsync } from "expo-intent-launcher";
 import {
   AndroidImportance,
   clearLastNotificationResponse,
+  getExpoPushTokenAsync,
   getNotificationChannelAsync,
   getPermissionsAsync,
   IosAuthorizationStatus,
@@ -20,6 +24,7 @@ import {
 import { router } from "expo-router";
 import { Linking } from "react-native";
 import { linkDetailHref } from "@/constants/routes.constants";
+import { flushPendingLogout, sendLogout } from "@/lib/pendingLogout";
 import { queryClient } from "@/lib/queryClient";
 
 import {
@@ -27,13 +32,20 @@ import {
   getReminderLinkHref,
   notificationQueries,
   openNotificationSettings,
+  PUSH_TOKEN_STORAGE_KEY,
+  registerPushToken,
   requestNotificationPermission,
   requestNotificationPermissionOnce,
   setupNotifications,
+  takePushToken,
   toDeviceNotificationPermission,
   useNotificationResponseNavigation,
+  usePushTokenSync,
 } from "./notifications";
 
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 jest.mock("@/constants/platform.constants", () => ({
   get isAndroid() {
     return mockPlatform.isAndroid;
@@ -43,6 +55,14 @@ jest.mock("expo-constants", () => ({
   __esModule: true,
   default: { expoConfig: { android: { package: "com.mashup.promise9" } } },
 }));
+jest.mock("@shared/entities/user/user.pushToken.api", () => ({
+  putPushToken: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock("@/lib/pendingLogout", () => ({
+  flushPendingLogout: jest.fn().mockResolvedValue(undefined),
+  sendLogout: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock("@shared/api", () => ({ setSessionRejectedHandler: jest.fn() }));
 jest.mock("expo-router", () => ({ router: { push: jest.fn() } }));
 jest.mock("expo-intent-launcher", () => ({
   ActivityAction: {
@@ -81,11 +101,15 @@ function response(data: unknown, identifier = "n1") {
   } as NotificationResponse;
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
   mockPlatform.isAndroid = false;
   queryClient.clear();
+  await AsyncStorage.clear();
 });
+
+// 마지막 테스트의 쿼리 gc 타이머가 남아 jest 가 끝나지 않는다.
+afterAll(() => queryClient.clear());
 
 describe("toDeviceNotificationPermission", () => {
   test("허용·거부·미요청을 그대로 옮긴다", () => {
@@ -170,6 +194,33 @@ describe("setupNotifications", () => {
     setupNotifications();
 
     expect(setNotificationChannelAsync).not.toHaveBeenCalled();
+  });
+
+  test("세션이 거절돼 로그아웃되면 거절된 토큰으로 이 기기의 푸시 토큰을 지운다", async () => {
+    await AsyncStorage.setItem(
+      PUSH_TOKEN_STORAGE_KEY,
+      "ExpoPushToken[device-1]",
+    );
+    setupNotifications();
+
+    jest.mocked(setSessionRejectedHandler).mock.calls[0]?.[0]?.("rtk-expired");
+
+    await waitFor(() =>
+      expect(sendLogout).toHaveBeenCalledWith({
+        refreshToken: "rtk-expired",
+        pushToken: "ExpoPushToken[device-1]",
+      }),
+    );
+  });
+
+  test("세션이 거절돼도 등록한 푸시 토큰이 없으면 로그아웃을 보내지 않는다", async () => {
+    setupNotifications();
+
+    jest.mocked(setSessionRejectedHandler).mock.calls[0]?.[0]?.("rtk-expired");
+
+    await waitFor(() => expect(AsyncStorage.getItem).toHaveBeenCalled());
+    await act(async () => {});
+    expect(sendLogout).not.toHaveBeenCalled();
   });
 });
 
@@ -338,5 +389,175 @@ describe("useNotificationResponseNavigation", () => {
 
     expect(router.push).not.toHaveBeenCalled();
     expect(clearLastNotificationResponse).toHaveBeenCalledTimes(1);
+  });
+});
+
+const EXPO_TOKEN = "ExpoPushToken[device-1]";
+
+function deferred() {
+  let resolve: () => void = () => {};
+  const promise = new Promise<null>((done) => {
+    resolve = () => done(null);
+  });
+  return { promise, resolve };
+}
+
+describe("registerPushToken", () => {
+  beforeEach(() => {
+    jest
+      .mocked(getExpoPushTokenAsync)
+      .mockResolvedValue({ type: "expo", data: EXPO_TOKEN });
+  });
+
+  test("Expo 푸시 토큰을 발급받아 서버에 등록한다", async () => {
+    await registerPushToken();
+
+    expect(putPushToken).toHaveBeenCalledWith({
+      token: EXPO_TOKEN,
+      platform: "ios",
+    });
+  });
+
+  test("안드로이드는 리마인드 채널이 만들어진 뒤에 토큰을 발급받는다", async () => {
+    mockPlatform.isAndroid = true;
+    const channelCreation = deferred();
+    jest
+      .mocked(setNotificationChannelAsync)
+      .mockReturnValueOnce(channelCreation.promise);
+    setupNotifications();
+
+    const registering = registerPushToken();
+    await act(async () => {});
+    expect(getExpoPushTokenAsync).not.toHaveBeenCalled();
+
+    channelCreation.resolve();
+    await registering;
+    expect(putPushToken).toHaveBeenCalledWith({
+      token: EXPO_TOKEN,
+      platform: "android",
+    });
+  });
+
+  // 같은 계정으로 다시 로그인했을 때 늦게 보낸 이전 로그아웃이 새 등록을 지우지 않게 한다.
+  test("등록 전에 남은 로그아웃 요청부터 보낸다", async () => {
+    await registerPushToken();
+
+    expect(
+      jest.mocked(flushPendingLogout).mock.invocationCallOrder[0],
+    ).toBeLessThan(jest.mocked(putPushToken).mock.invocationCallOrder[0] ?? 0);
+  });
+
+  // 다음 트리거(앱 실행·로그인·권한 허용)에서 다시 시도된다.
+  test("실패해도 던지지 않는다", async () => {
+    const consoleWarn = jest.spyOn(console, "warn").mockImplementation();
+    jest.mocked(putPushToken).mockRejectedValueOnce(new Error("offline"));
+
+    await expect(registerPushToken()).resolves.toBeUndefined();
+    consoleWarn.mockRestore();
+  });
+});
+
+describe("takePushToken", () => {
+  beforeEach(() => {
+    jest
+      .mocked(getExpoPushTokenAsync)
+      .mockResolvedValue({ type: "expo", data: EXPO_TOKEN });
+  });
+
+  test("이 기기에 등록한 토큰을 한 번만 꺼낸다", async () => {
+    await registerPushToken();
+
+    await expect(takePushToken()).resolves.toBe(EXPO_TOKEN);
+    await expect(takePushToken()).resolves.toBeNull();
+  });
+
+  test("이번 실행에 등록하지 않았어도 지난 실행에 등록한 토큰을 꺼낸다", async () => {
+    await AsyncStorage.setItem(PUSH_TOKEN_STORAGE_KEY, EXPO_TOKEN);
+
+    await expect(takePushToken()).resolves.toBe(EXPO_TOKEN);
+  });
+
+  test("등록 중이면 등록이 끝난 뒤 그 토큰을 꺼낸다", async () => {
+    const registration = deferred();
+    jest
+      .mocked(putPushToken)
+      .mockReturnValueOnce(registration.promise.then(() => undefined));
+    const registering = registerPushToken();
+    await act(async () => {});
+
+    const taking = takePushToken();
+    registration.resolve();
+    await registering;
+
+    await expect(taking).resolves.toBe(EXPO_TOKEN);
+  });
+
+  // 로그아웃은 "빠져나가기"라 등록 지연으로 붙잡지 않는다.
+  test("등록이 3초 안에 끝나지 않으면 기다리지 않는다", async () => {
+    jest.mocked(putPushToken).mockReturnValueOnce(new Promise(() => {}));
+    jest.useFakeTimers();
+    void registerPushToken();
+
+    const taking = takePushToken();
+    await jest.advanceTimersByTimeAsync(3000);
+
+    await expect(taking).resolves.toBeNull();
+    jest.useRealTimers();
+  });
+});
+
+describe("usePushTokenSync", () => {
+  beforeEach(() => {
+    jest
+      .mocked(getExpoPushTokenAsync)
+      .mockResolvedValue({ type: "expo", data: EXPO_TOKEN });
+  });
+
+  // 로그아웃한 채로 다시 켠 앱도 지난번에 못 보낸 로그아웃(푸시 토큰 삭제)을 마저 보낸다.
+  test("로그인하지 않았어도 앱이 시작되면 남은 로그아웃 요청을 보낸다", async () => {
+    await renderHook(() => usePushTokenSync(false));
+
+    expect(flushPendingLogout).toHaveBeenCalledTimes(1);
+  });
+
+  test("로그인 상태에서 알림이 허용돼 있으면 토큰을 등록한다", async () => {
+    jest.mocked(getPermissionsAsync).mockResolvedValue(GRANTED);
+
+    await renderHook(() => usePushTokenSync(true));
+
+    await waitFor(() => expect(putPushToken).toHaveBeenCalledTimes(1));
+  });
+
+  test("알림이 허용되지 않았으면 등록하지 않는다", async () => {
+    jest.mocked(getPermissionsAsync).mockResolvedValue(DENIED);
+
+    await renderHook(() => usePushTokenSync(true));
+
+    await waitFor(() => expect(getPermissionsAsync).toHaveBeenCalled());
+    await act(async () => {});
+    expect(getExpoPushTokenAsync).not.toHaveBeenCalled();
+  });
+
+  // 권한 팝업 결과(requestNotificationPermission)와 OS 설정에서 돌아온 뒤의 포커스 재조회가 모두 이 쿼리를 바꾼다.
+  test("권한이 허용으로 바뀌면 바로 등록한다", async () => {
+    jest.mocked(getPermissionsAsync).mockResolvedValue(DENIED);
+    await renderHook(() => usePushTokenSync(true));
+    await waitFor(() => expect(getPermissionsAsync).toHaveBeenCalled());
+
+    await act(async () => {
+      queryClient.setQueryData(
+        notificationQueries.permission().queryKey,
+        "granted",
+      );
+    });
+
+    await waitFor(() => expect(putPushToken).toHaveBeenCalledTimes(1));
+  });
+
+  test("로그인 상태가 아니면 아무것도 하지 않는다", async () => {
+    await renderHook(() => usePushTokenSync(false));
+
+    await act(async () => {});
+    expect(getPermissionsAsync).not.toHaveBeenCalled();
   });
 });

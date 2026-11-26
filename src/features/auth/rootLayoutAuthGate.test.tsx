@@ -6,6 +6,7 @@ jest.mock("@/features/auth/hooks/useAuthGate", () => ({
 jest.mock("@shared/api", () => ({
   ...jest.requireActual("@shared/api/token"),
   apiClient: { get: jest.fn(), post: jest.fn() },
+  setSessionRejectedHandler: jest.fn(),
 }));
 // 루트 레이아웃이 불러오는 전역 CSS 는 jest 가 파싱하지 못한다.
 jest.mock("@/global.css", () => ({}));

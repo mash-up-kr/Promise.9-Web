@@ -17,6 +17,15 @@ function getAuthClient(): AxiosInstance {
 
 let inFlight: Promise<string> | null = null;
 
+let onSessionRejected: ((refreshToken: string) => void) | null = null;
+
+// 서버가 세션을 거절해 로그아웃될 때 부를 처리기 — 앱은 거절된 토큰으로 로그아웃을 보내 이 기기의 푸시 토큰을 지운다.
+export function setSessionRejectedHandler(
+  handler: ((refreshToken: string) => void) | null,
+): void {
+  onSessionRejected = handler;
+}
+
 // 401 재발급. 같은 문서 안의 동시 호출은 진행 중인 하나를 공유하고, 다른 문서와는
 // `runExclusive` 로 직렬화한다(둘 다 없으면 RTR 이 뒤늦은 재발급을 재사용으로 거부한다).
 export function refreshAccessToken(): Promise<string> {
@@ -60,6 +69,7 @@ async function doRefresh(): Promise<string> {
     // 서버가 토큰을 거절했을 때만 지운다 — 네트워크·타임아웃·5xx 같은 일시 장애로 세션을 날리지 않도록
     // (공유 익스텐션은 매 실행마다 refresh 를 거치므로 그 영향이 메인 앱까지 미친다).
     if (isTokenRejected(error)) {
+      onSessionRejected?.(refreshToken);
       await clearTokens();
     }
     throw error;
