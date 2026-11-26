@@ -37,6 +37,7 @@ import {
   ROUTES,
 } from "@/constants/routes.constants";
 import { useScreenBottomPadding } from "@/hooks/useScreenBottomPadding";
+import { requestNotificationPermissionOnce } from "@/lib/notifications";
 import { formatCalendarDate } from "@/utils/format";
 import { openExternalUrl } from "@/utils/openExternalUrl";
 import { shareUrl } from "@/utils/share";
@@ -182,6 +183,9 @@ function LinkDetailContent() {
         message: "선택한 시간이 이미 지났어요. 날짜나 시간을 변경해 주세요",
       });
       return;
+    }
+    if (next) {
+      requestNotificationPermissionOnce();
     }
     const prev = field.value;
     field.onChange(next);

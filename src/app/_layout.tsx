@@ -22,6 +22,10 @@ import { SplashOverlay } from "@/features/splash/components/SplashOverlay";
 import { useAppFonts } from "@/features/splash/hooks/useAppFonts";
 import { useSplashPhase } from "@/features/splash/hooks/useSplashPhase";
 import { setupFocusManager } from "@/lib/focus-manager";
+import {
+  setupNotifications,
+  useNotificationResponseNavigation,
+} from "@/lib/notifications";
 import { setupOnlineManager } from "@/lib/online-manager";
 import { queryClient } from "@/lib/queryClient";
 import { tokenPersistence } from "@/lib/tokenStorage";
@@ -34,6 +38,7 @@ SplashScreen.preventAutoHideAsync();
 setTokenPersistence(tokenPersistence);
 setupOnlineManager();
 setupFocusManager();
+setupNotifications();
 
 const transparentBackgroundTheme = {
   ...DefaultTheme,
@@ -77,6 +82,11 @@ export default function RootLayout() {
   // 실제 초기화가 짧아 최소 노출을 빼면 마스코트가 깜빡이는 플리커만 남는다.
   const isSplashEnabled = !isWeb;
   const authStatus = useAuthGate();
+  // 아래 Stack 이 뜬 뒤에만 이동할 수 있다(폰트·인증 확인 전엔 스플래시만 그린다).
+  useNotificationResponseNavigation({
+    isReady: isFontsReady && authStatus === "authenticated",
+    isSignedOut: authStatus === "unauthenticated",
+  });
   const splashPhase = useSplashPhase(isFontsReady && authStatus !== "checking");
 
   if (!isFontsReady || authStatus === "checking") {
