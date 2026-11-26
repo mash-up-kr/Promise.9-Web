@@ -82,6 +82,15 @@ describe("LEGAL_CONTENT", () => {
     expect(privacy).toContain("알림 내용이 계속 전송될 수 있으므로");
   });
 
+  // 시행령 §31①2: 국외 이전의 근거, 법 §28조의8②3: 이전받는 자의 명칭과 연락처
+  test("처리방침은 국외 이전의 근거와 이전받는 회사마다 연락처를 적는다", () => {
+    const privacy = LEGAL_CONTENT.privacy.markdown;
+    expect(privacy).toContain("제28조의8 제1항 제3호");
+    expect(privacy).toContain("연락처: privacy@openai.com");
+    expect(privacy).toContain("연락처: support@tinyfish.ai");
+    expect(privacy).toContain("연락처: https://expo.dev/contact");
+  });
+
   test("약관 면책 조항은 고의·중대한 과실을 면책에서 제외한다", () => {
     // 약관규제법 §7: 고의·중과실 면책은 불공정약관으로 무효
     expect(LEGAL_CONTENT.terms.markdown).toContain("고의 또는 중대한 과실");
