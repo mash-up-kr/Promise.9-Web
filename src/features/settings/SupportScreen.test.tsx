@@ -42,5 +42,8 @@ describe("SupportScreen", () => {
     await renderScreen();
     expect(screen.getByText(/이메일로 보내드리고/)).toBeOnTheScreen();
     expect(screen.getByText(/기기 알림으로도 보내드립니다/)).toBeOnTheScreen();
+    expect(
+      screen.getByText(/앱의 설정 > 알림 > 앱 푸시 알림이 켜져 있는지/),
+    ).toBeOnTheScreen();
   });
 });
