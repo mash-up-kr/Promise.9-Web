@@ -1,3 +1,4 @@
+import { Settings } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTrack } from "@/analytics/AnalyticsContext";
 
@@ -11,6 +12,7 @@ import {
   FolderSection,
   FolderSectionFrame,
 } from "@/sidepanel/components/FolderSection";
+import { IconButton } from "@/sidepanel/components/IconButton";
 import { LinkCard } from "@/sidepanel/components/LinkCard";
 import { MemoField } from "@/sidepanel/components/MemoField";
 import { RemindSection } from "@/sidepanel/components/RemindSection";
@@ -32,6 +34,7 @@ export interface SaveScreenProps {
   isSaving: boolean;
   onSave: (payload: SaveLinkPayload) => void;
   onCreateFolder: () => void;
+  onOpenSettings: () => void;
 }
 
 /** 시안 `chrome-extension / popup` — 카드 + 폴더 + 메모 + 하단 고정 Footer. */
@@ -49,6 +52,7 @@ export function SaveScreen({
   isSaving,
   onSave,
   onCreateFolder,
+  onOpenSettings,
 }: SaveScreenProps) {
   const { ref: trackingRef } = useTrack("link.save", { disabled: isSaving });
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -85,7 +89,14 @@ export function SaveScreen({
   return (
     // 패널 높이를 꽉 채우고, 넘치는 본문만 스크롤한다 — Footer 는 항상 바닥에 붙어 있다.
     <div className="flex h-full flex-col">
-      <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
+      <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-5 pt-3 pb-4">
+        <div className="flex h-10 justify-end">
+          <IconButton
+            iconNode={Settings}
+            label="설정"
+            onClick={onOpenSettings}
+          />
+        </div>
         <LinkCard tab={tab} />
         <AsyncBoundary
           pending={<FolderSectionPending />}

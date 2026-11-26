@@ -12,6 +12,8 @@ import { getSavableUrl } from "@/lib/savableUrl";
 import type { SavePhase } from "@/lib/saveSession";
 import {
   clearSaveRecord,
+  type OpenSettingsRequest,
+  openSettingsRequest,
   readSaveRecord,
   type SaveRecord,
   subscribeSaveRecord,
@@ -26,6 +28,11 @@ import {
   ResultScreen,
 } from "@/sidepanel/screens/ResultScreen";
 import { SaveScreen } from "@/sidepanel/screens/SaveScreen";
+import {
+  type SaveFailure,
+  SaveFailureSnackbar,
+  SettingsScreen,
+} from "@/sidepanel/screens/SettingsScreen";
 import { TimePickerScreen } from "@/sidepanel/screens/TimePickerScreen";
 
 /** 저장 phase → 결과 화면. `saving` 은 결과가 아니라 저장 화면이 그대로 뜬 채 버튼만 잠긴다. */
@@ -68,6 +75,37 @@ const closeOverlay = (previous: Draft): Draft => ({
 });
 
 export function SidePanelApp() {
+  // 설정 저장 실패는 설정 화면을 나간 뒤에 끝날 수도 있어 화면보다 위에서 알린다.
+  // 같은 실패가 다시 나도 2.5초를 새로 세도록 매번 새 key 로 띄운다.
+  const [saveFailure, setSaveFailure] = useState<{
+    id: number;
+    kind: SaveFailure;
+  } | null>(null);
+  const dismissSaveFailure = useCallback(() => setSaveFailure(null), []);
+
+  return (
+    <>
+      <PanelScreens
+        onSettingsSaveFailure={(kind) =>
+          setSaveFailure({ id: Date.now(), kind })
+        }
+      />
+      {saveFailure ? (
+        <SaveFailureSnackbar
+          key={saveFailure.id}
+          kind={saveFailure.kind}
+          onDismiss={dismissSaveFailure}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function PanelScreens({
+  onSettingsSaveFailure,
+}: {
+  onSettingsSaveFailure: (kind: SaveFailure) => void;
+}) {
   const analytics = useAnalytics();
   const { screen: analyticsScreen } = useAnalyticsScreen();
   const isClosing = useRef(false);
@@ -76,6 +114,8 @@ export function SidePanelApp() {
   const [loggedIn, setLoggedIn] = useState<boolean>();
   const [saveRecord, setSaveRecord] = useState<SaveRecord | null>();
   const [draft, setDraft] = useState<Draft>(() => emptyDraft(undefined));
+  // 초안(링크별)과 따로 둔다 — 설정을 보는 중에 탭을 옮겨도 설정 화면이 유지되게.
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,6 +148,30 @@ export function SidePanelApp() {
       unsubscribeSave();
       unsubscribeLogin();
     };
+  }, []);
+
+  // 아이콘 우클릭 메뉴 "설정" — 패널이 이미 열려 있으면 변경으로, 이제 열리는 중이면 읽기로 받는다.
+  // 다른 창에서 누른 요청은 그 창의 패널 몫이라 건드리지 않는다.
+  useEffect(() => {
+    let windowId: number | undefined;
+    const open = (request: OpenSettingsRequest | null) => {
+      if (!request || request.windowId !== windowId) return;
+      void openSettingsRequest.clear();
+      // 로그인 전이면 요청만 버린다 — 남겨 두면 로그인하자마자 설정이 뜬다.
+      void isLoggedIn().then((value) => {
+        if (value) setIsSettingsOpen(true);
+      });
+    };
+    const unsubscribe = openSettingsRequest.subscribe(open);
+    void chrome.windows
+      .getCurrent()
+      .then((current) => {
+        windowId = current.id;
+        return openSettingsRequest.read();
+      })
+      .then(open);
+
+    return unsubscribe;
   }, []);
 
   // 탭이 바뀌면 다른 링크를 저장하는 것이므로 이전 링크의 초안(폴더·메모·새 폴더 화면)은 버린다.
@@ -146,6 +210,19 @@ export function SidePanelApp() {
   // 활성 탭·로그인 상태를 읽는 동안. chrome 로컬 조회라 사실상 한 프레임이다.
   if (!tab || loggedIn === undefined || saveRecord === undefined) return null;
 
+  const openSettings = () => setIsSettingsOpen(true);
+
+  if (loggedIn && isSettingsOpen) {
+    return (
+      <AnalyticsScreen name="settings">
+        <SettingsScreen
+          onBack={() => setIsSettingsOpen(false)}
+          onSaveFailure={onSettingsSaveFailure}
+        />
+      </AnalyticsScreen>
+    );
+  }
+
   const savable = getSavableUrl(url);
   if (!savable.ok) {
     return (
@@ -156,6 +233,7 @@ export function SidePanelApp() {
             savable.reason ? LINK_URL_ERROR_MESSAGES[savable.reason] : undefined
           }
           onAction={closePanel}
+          onOpenSettings={loggedIn ? openSettings : undefined}
         />
       </AnalyticsScreen>
     );
@@ -225,6 +303,7 @@ export function SidePanelApp() {
       <AnalyticsScreen name={`result.${resultKind}`}>
         <ResultScreen
           kind={resultKind}
+          onOpenSettings={openSettings}
           onAction={() => {
             switch (resultKind) {
               case "success":
@@ -285,6 +364,7 @@ export function SidePanelApp() {
         onCreateFolder={() =>
           setDraft((previous) => ({ ...previous, overlay: "new-folder" }))
         }
+        onOpenSettings={openSettings}
       />
     </AnalyticsScreen>
   );

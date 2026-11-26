@@ -40,3 +40,17 @@ export function subscribeSaveRecord(
 ): () => void {
   return saveRecord.subscribe(onChange);
 }
+
+/**
+ * 아이콘 우클릭 메뉴 "설정" 요청. storage 변경은 모든 창의 패널에 가므로 누른 창을 담는다.
+ * 요청 시각은 같은 창에서 다시 눌러도 값이 달라져 변경 이벤트가 뜨게 하려고 둔다.
+ */
+export interface OpenSettingsRequest {
+  windowId: number;
+  requestedAt: number;
+}
+
+export const openSettingsRequest = createStorageEntry<OpenSettingsRequest>(
+  "session",
+  "openSettings",
+);

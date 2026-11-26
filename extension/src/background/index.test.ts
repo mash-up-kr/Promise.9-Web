@@ -85,6 +85,34 @@ describe("background 툴바 메뉴", () => {
     });
   });
 
+  it("설치 시 아이콘 우클릭 메뉴에 설정도 등록한다", async () => {
+    const chromeMock = installChromeMock();
+    await loadBackground();
+
+    chromeMock.emitInstalled();
+    await flush();
+
+    expect(chromeMock.createContextMenu).toHaveBeenCalledWith({
+      id: "open-settings",
+      title: "설정",
+      contexts: ["action"],
+    });
+  });
+
+  it("설정을 누르면 그 창에 사이드 패널을 열고 설정 화면을 요청한다", async () => {
+    const chromeMock = installChromeMock();
+    await loadBackground();
+
+    chromeMock.emitContextMenuClick("open-settings", { windowId: 7 });
+    await flush();
+
+    expect(chromeMock.openSidePanel).toHaveBeenCalledWith({ windowId: 7 });
+    expect(await chrome.storage.session.get("openSettings")).toEqual({
+      openSettings: { windowId: 7, requestedAt: expect.any(Number) },
+    });
+    expect(chromeMock.createTab).not.toHaveBeenCalled();
+  });
+
   it("다른 메뉴 항목 클릭에는 반응하지 않는다", async () => {
     const chromeMock = installChromeMock();
     await loadBackground();

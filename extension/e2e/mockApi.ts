@@ -58,6 +58,10 @@ function respond(route: string, body: unknown): string | null {
         },
         folders: FOLDERS,
       });
+    case "GET /users/me/notification-settings":
+      return success({ email: true, push: true });
+    case "PATCH /users/me/notification-settings":
+      return success({ push: true, ...(body as object) });
     case "POST /links":
       return success({
         linkId: 42,

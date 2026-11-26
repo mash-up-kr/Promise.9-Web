@@ -11,6 +11,7 @@ import {
 } from "@/lib/messages";
 import { resolveFailure, resolveSuccess, startSaving } from "@/lib/saveSession";
 import {
+  openSettingsRequest,
   readSaveRecord,
   type SaveRecord,
   writeSaveRecord,
@@ -18,6 +19,7 @@ import {
 import { WEB_APP_PATH, webAppUrl } from "@/lib/webApp";
 
 const ARCHIVE_MENU_ID = "open-archive";
+const SETTINGS_MENU_ID = "open-settings";
 
 /**
  * 저장을 수행한다.
@@ -105,7 +107,7 @@ chrome.runtime.onMessage.addListener((message: unknown) => {
  *
  * - 아이콘 클릭 = 사이드패널 열기. `default_popup` 이 없을 때 크롬이 아이콘 클릭을 사이드패널로
  *   연결해주는 설정으로, 켜지 않으면 아이콘을 눌러도 아무 일도 일어나지 않는다.
- * - 아이콘 우클릭 메뉴. 확장 이름 항목은 Chrome 이 homepage_url(웹 홈)로 연결하므로 보관함만 더한다.
+ * - 아이콘 우클릭 메뉴. 확장 이름 항목은 Chrome 이 homepage_url(웹 홈)로 연결하므로 보관함·설정만 더한다.
  *   브라우저 업데이트(chrome_update)에도 이 이벤트가 뜨는데 그때는 저장된 메뉴가 남아 있어
  *   바로 만들면 중복 id 오류가 난다 — 비우고 만든다.
  */
@@ -117,13 +119,27 @@ chrome.runtime.onInstalled.addListener(() => {
       title: "보관함 열기",
       contexts: ["action"],
     });
+    chrome.contextMenus.create({
+      id: SETTINGS_MENU_ID,
+      title: "설정",
+      contexts: ["action"],
+    });
   });
 });
 
-chrome.contextMenus.onClicked.addListener((info) => {
-  if (info.menuItemId !== ARCHIVE_MENU_ID) return;
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === ARCHIVE_MENU_ID) {
+    void chrome.tabs.create({ url: webAppUrl(WEB_APP_PATH.archive) });
+    return;
+  }
+  if (info.menuItemId !== SETTINGS_MENU_ID || !tab) return;
 
-  void chrome.tabs.create({ url: webAppUrl(WEB_APP_PATH.archive) });
+  // sidePanel.open 은 사용자 동작 안에서만 허용돼 await 앞에서 부른다.
+  void chrome.sidePanel.open({ windowId: tab.windowId });
+  void openSettingsRequest.write({
+    windowId: tab.windowId,
+    requestedAt: Date.now(),
+  });
 });
 
 /**
