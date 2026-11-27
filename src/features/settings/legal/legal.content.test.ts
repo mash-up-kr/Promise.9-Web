@@ -39,7 +39,7 @@ describe("LEGAL_CONTENT", () => {
     expect(privacy).not.toContain("분석 도구(SDK 등)를 사용하지 않습니다");
     expect(privacy).toContain("수집일로부터 24개월");
     expect(privacy).toContain(
-      "회원 계정에 저장한 유입 경로는 제1호를 따릅니다",
+      "회원 계정에 저장한 유입 경로는 제1호·제2호를 따릅니다",
     );
     expect(privacy).toContain("회원 식별값을 담지 않습니다");
     // 거부 방법은 설정 화면 토글 이름과 같아야 사용자가 찾을 수 있다.
@@ -66,7 +66,7 @@ describe("LEGAL_CONTENT", () => {
     expect(privacy).toContain("로그아웃할 때 삭제를 요청");
     expect(privacy).toContain("다시 로그인한 계정으로 옮겨지거나");
     expect(privacy).not.toContain("로그인이 만료되면 삭제");
-    expect(privacy).toContain("회원 탈퇴 시에는 제1호와 달리 즉시 삭제");
+    expect(privacy).toContain("회원 탈퇴 시에는 제2호와 같이 즉시 삭제");
     expect(privacy).toContain("650 Industries, Inc.");
     expect(privacy).toContain("앱 설치 식별값");
     expect(privacy).toContain("기기에서 Expo 로 직접");
@@ -89,6 +89,44 @@ describe("LEGAL_CONTENT", () => {
     expect(privacy).toContain("연락처: privacy@openai.com");
     expect(privacy).toContain("연락처: support@tinyfish.ai");
     expect(privacy).toContain("연락처: https://expo.dev/contact");
+  });
+
+  // 법 §30①2·3의2: 처리·보유 기간과 파기, 법령상 보존 시 그 근거와 항목
+  test("처리방침은 보유기간·탈퇴 때 지우는 항목·법령상 보존 여부를 구체적으로 적는다", () => {
+    const privacy = LEGAL_CONTENT.privacy.markdown;
+    expect(privacy).toContain("회원 탈퇴 시까지 보유·이용");
+    // 서버는 탈퇴 즉시 소셜 계정 연결·리프레시 토큰·푸시 토큰을 지운다.
+    expect(privacy).toContain(
+      "소셜 계정 연결 정보, 로그인 유지용 토큰, 푸시 토큰은 즉시 삭제",
+    );
+    expect(privacy).toContain("따로 보존하는 개인정보는 없습니다");
+    expect(privacy).not.toContain("관계 법령에 특별한 보존 규정");
+    expect(privacy).not.toContain("부정이용 방지 등을");
+  });
+
+  test("처리방침은 소셜 로그인에서 받는 회원 식별값을 수집 항목에 적는다", () => {
+    expect(LEGAL_CONTENT.privacy.markdown).toContain(
+      "이메일 주소와 그 서비스의 회원 식별값",
+    );
+  });
+
+  // 법 §29·시행령 §30①: 실제로 하는 조치만 적는다.
+  test("처리방침은 안전성 확보 조치를 실제 조치로 구체적으로 적는다", () => {
+    const privacy = LEGAL_CONTENT.privacy.markdown;
+    expect(privacy).toContain("다단계 인증");
+    expect(privacy).toContain("HTTPS");
+    expect(privacy).toContain("해시값으로 저장");
+    expect(privacy).not.toContain("해킹 등에 대비한 기술적 대책");
+  });
+
+  test("처리방침은 개정 이력에 지금 시행일과 최초 시행일을 적는다", () => {
+    const privacy = LEGAL_CONTENT.privacy.markdown;
+    const effective = privacy.match(
+      /시행일: (\d{4}년 \d{1,2}월 \d{1,2}일)/,
+    )?.[1];
+    expect(privacy).toContain("## 개정 이력");
+    expect(privacy).toContain(`- ${effective} 시행`);
+    expect(privacy).toContain("- 2026년 8월 29일 시행");
   });
 
   test("약관 면책 조항은 고의·중대한 과실을 면책에서 제외한다", () => {
