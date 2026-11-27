@@ -38,9 +38,24 @@ describe("SupportScreen", () => {
     expect(screen.getByText(/개인정보처리방침/)).toBeOnTheScreen();
   });
 
-  // 리마인드가 기기 알림이라는 오해를 지원 문서에서도 막는다(심사 문구 정합성).
-  test("리마인드가 이메일로 간다고 밝힌다", async () => {
+  test("리마인드가 이메일과 앱 기기 알림으로 간다고 밝힌다", async () => {
     await renderScreen();
-    expect(screen.getByText(/이메일로 보내드립니다/)).toBeOnTheScreen();
+    expect(screen.getByText(/이메일로 보내드리고/)).toBeOnTheScreen();
+    expect(screen.getByText(/기기 알림으로도 보내드립니다/)).toBeOnTheScreen();
+    expect(
+      screen.getByText(/앱의 설정 > 알림 > 앱 푸시 알림이 켜져 있는지/),
+    ).toBeOnTheScreen();
+  });
+
+  test("이메일이 오지 않을 때 이메일 알림 설정과 둘 다 끈 경우를 안내한다", async () => {
+    await renderScreen();
+    expect(
+      screen.getByText(/설정 > 알림 > 이메일 알림이 켜져 있는지/),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        /이메일 알림과 앱 푸시 알림을 모두 끄면 리마인드를 보내지 않습니다/,
+      ),
+    ).toBeOnTheScreen();
   });
 });
