@@ -46,4 +46,16 @@ describe("SupportScreen", () => {
       screen.getByText(/앱의 설정 > 알림 > 앱 푸시 알림이 켜져 있는지/),
     ).toBeOnTheScreen();
   });
+
+  test("이메일이 오지 않을 때 이메일 알림 설정과 둘 다 끈 경우를 안내한다", async () => {
+    await renderScreen();
+    expect(
+      screen.getByText(/설정 > 알림 > 이메일 알림이 켜져 있는지/),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        /이메일 알림과 앱 푸시 알림을 모두 끄면 리마인드를 보내지 않습니다/,
+      ),
+    ).toBeOnTheScreen();
+  });
 });
